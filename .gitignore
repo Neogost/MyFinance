@@ -1,0 +1,51 @@
+# =============================================================
+#  JAVA / MAVEN
+# =============================================================
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/wrapper/maven-wrapper.jar
+
+# =============================================================
+#  INTELLIJ / VSCODE
+# =============================================================
+.idea/
+*.iml
+*.iws
+.vscode/
+!.vscode/extensions.json        # garder les recommandations de plugins
+
+# =============================================================
+#  DONNÉES SENSIBLES — ne jamais committer !
+# =============================================================
+data/                           # fichier SQLite
+logs/
+.env                            # variables d'environnement réelles
+*.db
+*.sqlite
+
+# =============================================================
+#  PROFILES DE CONFIGURATION SENSIBLES
+# =============================================================
+application-prod.properties     # contient l'IP du NAS, chemins, etc.
+application-secrets.properties
+
+# =============================================================
+#  NODE / REACT (frontend)
+# =============================================================
+node_modules/
+dist/
+build/
+.npm
+.eslintcache
+*.tsbuildinfo
+
+# =============================================================
+#  OS
+# =============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
