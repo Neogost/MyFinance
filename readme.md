@@ -1,4 +1,4 @@
-# Investment Tracker
+# My Finance
 
 Application personnelle de gestion d'investissements, hébergée sur NAS en réseau local.
 
