@@ -30,6 +30,7 @@ logs/
 # =============================================================
 #  PROFILES DE CONFIGURATION SENSIBLES
 # =============================================================
+application-dev.properties      # configuration locale de développement
 application-prod.properties     # contient l'IP du NAS, chemins, etc.
 application-secrets.properties
 
