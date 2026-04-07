@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.User;
+import com.myfinance.dto.ChangePasswordRequest;
 import com.myfinance.dto.CreateUserRequest;
 import com.myfinance.dto.UpdateUserRequest;
 import com.myfinance.dto.UserDto;
@@ -90,6 +91,22 @@ public class UserService implements UserDetailsService {
         }
 
         return UserDto.from(userRepository.save(user));
+    }
+
+    // ── Changement de mot de passe (self-service) ─────────────
+
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Utilisateur introuvable : " + userId));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                    "Mot de passe actuel incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
     // ── Suppression ────────────────────────────────────────────
