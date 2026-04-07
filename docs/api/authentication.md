@@ -119,6 +119,41 @@ GET /api/auth/me
 
 ---
 
+## PUT /api/auth/password
+
+Permet à l'utilisateur connecté de changer son propre mot de passe.
+
+**Accès** : authentifié
+
+```http
+PUT /api/auth/password
+Content-Type: application/json
+
+{
+  "currentPassword": "ancien_mdp",
+  "newPassword": "nouveau_mdp"
+}
+```
+
+### Champs
+
+| Champ             | Type     | Obligatoire | Description              |
+|-------------------|----------|-------------|--------------------------|
+| `currentPassword` | `string` | oui         | Mot de passe actuel      |
+| `newPassword`     | `string` | oui         | Nouveau mot de passe     |
+
+### Réponses
+
+**204 No Content** — Mot de passe modifié avec succès.
+
+**401 Unauthorized** — Mot de passe actuel incorrect.
+
+**400 Bad Request** — Champs manquants ou vides.
+
+> Pour qu'un admin change le mot de passe d'un autre utilisateur, utiliser `PUT /api/users/{id}` avec le champ `password`.
+
+---
+
 ## Modèle `UserDto`
 
 | Champ       | Type     | Description              |
