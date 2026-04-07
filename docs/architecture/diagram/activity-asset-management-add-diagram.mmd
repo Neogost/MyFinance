@@ -1,0 +1,41 @@
+stateDiagram 
+    %% state
+    state "Choisi un type de position" as chooseType
+    state "Type de position" as if_typeOfPosition 
+
+    state "Saisie un titre" as chooseTitle
+    state "Saisie une valeur" as chooseValue
+    state "Saisie une quantité" as chooseQuantity
+    state "Liste des ISBN existants" as listOfExistingISBN
+    state "Saisie un nouveau ISBN" as setISBN
+    state "Liste des Token existants" as listOfExistingToken
+    state "Saisie un nouveau Token" as setToken
+    state "Date d'exécution" as chooseDateExecution
+    state "Verification des données saisies" as verifyData
+    state "Sauvegarde de la position" as saveData
+    state "Erreur de saisies" as errorFromUser
+
+
+    [*] --> chooseType
+    chooseType --> if_typeOfPosition
+    if_typeOfPosition --> listOfExistingISBN: type = Bourse
+    listOfExistingISBN --> setISBN : Création d'un ISBN
+    listOfExistingISBN --> chooseTitle : Réutilisation d'un ISBN existant
+    setISBN --> chooseTitle
+
+    if_typeOfPosition --> listOfExistingToken : type = Crypto-monnaie
+    listOfExistingToken --> setToken : Création d'un Token
+    listOfExistingToken --> chooseTitle : Réutilisation d'un Token existant
+    setToken --> chooseTitle
+
+    if_typeOfPosition --> chooseTitle : type = Autresx
+    chooseTitle --> chooseValue
+    chooseValue --> chooseQuantity
+    chooseQuantity --> chooseDateExecution
+    chooseDateExecution --> verifyData
+    verifyData --> saveData : OK
+    verifyData --> errorFromUser : KO
+    
+    
+     saveData--> [*]
+     errorFromUser--> chooseType

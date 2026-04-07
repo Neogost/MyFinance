@@ -1,0 +1,18 @@
+stateDiagram
+    %% state
+    state "Selection du type de revenu" as typeOfIncome
+    state "Saisie des données de salaire" as dataFromSalary
+    state "Saisie des données de dividende" as dataFromDividend
+    state "Verification des données" as verifyData
+    state "Sauvegarde" as save
+    state "Erreur de saisie" as errorFromUser
+
+    [*] --> typeOfIncome
+    typeOfIncome --> dataFromSalary : type = Salary
+    typeOfIncome --> dataFromDividend : type = dividende
+    dataFromSalary --> verifyData
+    dataFromDividend --> verifyData
+    verifyData --> save : OK
+    verifyData --> errorFromUser : KO
+    errorFromUser --> typeOfIncome
+    save --> [*]

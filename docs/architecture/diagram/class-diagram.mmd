@@ -1,0 +1,94 @@
+classDiagram
+
+    %% ── Utilisateurs ──────────────────────────────────────────
+    class User {
+        +Long id
+        +String firstName
+        +String lastName
+        +LocalDate birthDate
+        +String login
+        +String password
+        +RoleEnum role
+    }
+
+    class RoleEnum {
+        USER
+        ADMIN
+    }
+
+    class FamilyGroup {
+        +Long id
+        +String name
+    }
+
+    %% ── Revenus ───────────────────────────────────────────────
+    class AnnualIncome {
+        +Long id
+        +Date startPeriod
+        +Date endPeriod
+        +Float grossPay
+        +Float netPay
+        +Float takeHomePay
+        +Float incomeTax
+    }
+
+    class Income {
+        +Long id
+        +Date startPeriod
+        +Date endPeriod
+        +Float grossPay
+        +Float netPay
+        +Float takeHomePay
+        +Float incomeTax
+    }
+
+    class Dividend {
+        +Long id
+        +Float value
+        +Date date
+    }
+
+    %% ── Ordres / Positions ────────────────────────────────────
+    class Ordre {
+        +Long id
+        +DateTime createdAt
+        +DateTime dateOfExecution
+        +String title
+        +Float value
+        +Float quantity
+    }
+
+    class TypeEnum {
+        BOURSE
+        CRYPTO
+        AUTRE
+    }
+
+    class Isbn {
+        +String id
+        +String name
+        +String title
+    }
+
+    class Token {
+        +String id
+        +String name
+        +String trigramme
+    }
+
+    %% ── Relations utilisateurs ────────────────────────────────
+    User --> RoleEnum : role
+    User "0..*" --> "0..1" FamilyGroup : appartient à
+    FamilyGroup "1" --> "1" User : owner
+
+    %% ── Relations revenus ─────────────────────────────────────
+    User "1" o-- "0..*" AnnualIncome : annualIncomes
+    AnnualIncome "1" o-- "0..*" Income : monthlyIncomes
+    User "1" o-- "0..*" Dividend : dividends
+
+    %% ── Relations ordres ──────────────────────────────────────
+    User "1" o-- "0..*" Ordre : orders
+    Ordre --> TypeEnum : type
+    Ordre "0..*" --> "0..1" Isbn : isbn
+    Ordre "0..*" --> "0..1" Token : token
+    Dividend "0..*" --> "1" Isbn : isbn

@@ -6,7 +6,7 @@ Application personnelle de gestion d'investissements, hébergée sur NAS en rés
 
 | Couche | Technologie |
 |--------|-------------|
-| Backend | Java 21 + Spring Boot 3.5 |
+| Backend | Java 17 + Spring Boot 3.5 |
 | Base de données | SQLite |
 | Frontend | React + Recharts |
 | Mise à jour des cours | Yahoo Finance API (@Scheduled) |
@@ -14,7 +14,7 @@ Application personnelle de gestion d'investissements, hébergée sur NAS en rés
 ## Lancer le projet en développement
 
 ### Prérequis
-- Java 21+
+- Java 17+
 - Maven 3.9+
 - Node.js 20+ (pour le frontend)
 
@@ -54,7 +54,7 @@ java -jar -Dspring.profiles.active=prod target/investment-tracker-0.0.1-SNAPSHOT
 ## Structure du projet
 
 ```
-src/main/java/com/monportefeuille/investmenttracker/
+src/main/java/com/myfinance/
 ├── config/        Configuration (CORS, Scheduler)
 ├── domain/        Entités JPA (Asset, Portfolio, Transaction)
 ├── repository/    Accès base de données (Spring Data JPA)
