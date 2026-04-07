@@ -1,0 +1,239 @@
+package com.myfinance.service;
+
+import com.myfinance.domain.RoleEnum;
+import com.myfinance.domain.User;
+import com.myfinance.dto.CreateUserRequest;
+import com.myfinance.dto.UpdateUserRequest;
+import com.myfinance.dto.UserDto;
+import com.myfinance.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock UserRepository userRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @InjectMocks UserService userService;
+
+    User user;
+
+    @BeforeEach
+    void setUp() {
+        user = User.builder()
+                .id(1L)
+                .firstName("Jean")
+                .lastName("Dupont")
+                .login("jean.dupont")
+                .password("hashed_password")
+                .role(RoleEnum.USER)
+                .build();
+    }
+
+    // ── findAll ────────────────────────────────────────────────
+
+    @Test
+    void findAll_retourneLaListeDesUtilisateurs() {
+        when(userRepository.findAll()).thenReturn(List.of(user));
+
+        List<UserDto> result = userService.findAll();
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).login()).isEqualTo("jean.dupont");
+    }
+
+    @Test
+    void findAll_retourneListeVide_siAucunUtilisateur() {
+        when(userRepository.findAll()).thenReturn(List.of());
+
+        assertThat(userService.findAll()).isEmpty();
+    }
+
+    // ── findById ───────────────────────────────────────────────
+
+    @Test
+    void findById_retourneLutilisateur_siTrouve() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        UserDto result = userService.findById(1L);
+
+        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.login()).isEqualTo("jean.dupont");
+        assertThat(result.role()).isEqualTo(RoleEnum.USER);
+    }
+
+    @Test
+    void findById_leve404_siIntrouvable() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findById(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── create ─────────────────────────────────────────────────
+
+    @Test
+    void create_sauvegardeEtRetourneLutilisateur() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password")).thenReturn("hashed_password");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        UserDto result = userService.create(request);
+
+        assertThat(result.login()).isEqualTo("jean.dupont");
+        verify(passwordEncoder).encode("password");
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void create_leve409_siLoginDejaUtilise() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.create(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    // ── update ─────────────────────────────────────────────────
+
+    @Test
+    void update_modifieLesChamps_sansChangerLeMdp_siPasswordVide() {
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Marie", "Martin", null, "marie.martin", "", RoleEnum.ADMIN);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByLogin("marie.martin")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UserDto result = userService.update(1L, request);
+
+        assertThat(result.firstName()).isEqualTo("Marie");
+        assertThat(result.login()).isEqualTo("marie.martin");
+        assertThat(result.role()).isEqualTo(RoleEnum.ADMIN);
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void update_hasheLeNouveauMdp_siPasswordFourni() {
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", "nouveau_mdp", RoleEnum.USER);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("nouveau_mdp")).thenReturn("nouveau_hash");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userService.update(1L, request);
+
+        verify(passwordEncoder).encode("nouveau_mdp");
+    }
+
+    @Test
+    void update_leve404_siUtilisateurIntrouvable() {
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER);
+
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.update(99L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void update_leve409_siNouveauLoginPrisParAutreUtilisateur() {
+        User autreUser = User.builder().id(2L).login("marie.martin").build();
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Jean", "Dupont", null, "marie.martin", null, RoleEnum.USER);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByLogin("marie.martin")).thenReturn(Optional.of(autreUser));
+
+        assertThatThrownBy(() -> userService.update(1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void update_accepteLeMemeLLogin_siLeMemeUtilisateur() {
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        // findByLogin retourne le même utilisateur → pas de conflit
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(userService.update(1L, request).login()).isEqualTo("jean.dupont");
+    }
+
+    // ── delete ─────────────────────────────────────────────────
+
+    @Test
+    void delete_supprimeLutilisateur_siExistant() {
+        when(userRepository.existsById(1L)).thenReturn(true);
+
+        userService.delete(1L);
+
+        verify(userRepository).deleteById(1L);
+    }
+
+    @Test
+    void delete_leve404_siIntrouvable() {
+        when(userRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.delete(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+
+        verify(userRepository, never()).deleteById(any());
+    }
+
+    // ── loadUserByUsername ─────────────────────────────────────
+
+    @Test
+    void loadUserByUsername_retourneLutilisateur_siTrouve() {
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
+
+        assertThat(userService.loadUserByUsername("jean.dupont").getUsername())
+                .isEqualTo("jean.dupont");
+    }
+
+    @Test
+    void loadUserByUsername_leveUsernameNotFoundException_siIntrouvable() {
+        when(userRepository.findByLogin("inconnu")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.loadUserByUsername("inconnu"))
+                .isInstanceOf(UsernameNotFoundException.class);
+    }
+}

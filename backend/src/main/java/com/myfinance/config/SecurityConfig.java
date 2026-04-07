@@ -23,7 +23,7 @@ import java.util.Map;
 @EnableWebSecurity
 @EnableMethodSecurity // active @PreAuthorize sur les controllers
 @RequiredArgsConstructor
-class SecurityConfig {
+public class SecurityConfig {
 
     private final ObjectMapper objectMapper;
 
