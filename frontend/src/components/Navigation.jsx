@@ -1,13 +1,9 @@
 import { useState } from 'react'
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout }) {
-  const [incomeOpen, setIncomeOpen] = useState(false)
-
-  const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
-
-  const NavBtn = ({ page, label }) => (
+function NavBtn({ page, label, currentPage, onNavigate, onClose }) {
+  return (
     <button
-      onClick={() => { onNavigate(page); setIncomeOpen(false) }}
+      onClick={() => { onNavigate(page); onClose() }}
       className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
         currentPage === page
           ? 'bg-indigo-600 text-white'
@@ -17,13 +13,19 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
       {label}
     </button>
   )
+}
+
+export default function Navigation({ user, currentPage, onNavigate, onLogout }) {
+  const [incomeOpen, setIncomeOpen] = useState(false)
+
+  const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white shadow-sm">
       <h1 className="text-lg font-bold text-gray-900">MyFinance</h1>
 
       <nav className="flex items-center gap-1">
-        <NavBtn page="dashboard" label="Tableau de bord" />
+        <NavBtn page="dashboard" label="Tableau de bord" currentPage={currentPage} onNavigate={onNavigate} onClose={() => setIncomeOpen(false)} />
 
         {/* ── Menu Revenus avec sous-menu ── */}
         <div className="relative">
@@ -69,8 +71,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
           )}
         </div>
 
-        {user.role === 'ADMIN' && <NavBtn page="users" label="Utilisateurs" />}
-        <NavBtn page="profile" label="Mon profil" />
+        {user.role === 'ADMIN' && <NavBtn page="users" label="Utilisateurs" currentPage={currentPage} onNavigate={onNavigate} onClose={() => setIncomeOpen(false)} />}
+        <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={() => setIncomeOpen(false)} />
       </nav>
 
       <div className="flex items-center gap-3 text-sm">
