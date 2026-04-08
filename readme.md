@@ -1,15 +1,28 @@
-# My Finance
+# MyFinance
 
-Application personnelle de gestion d'investissements, hébergée sur NAS en réseau local.
+Application web personnelle de gestion financière, hébergée sur NAS QNAP en réseau local.
+
+## Fonctionnalités
+
+| Domaine | Statut | Description |
+|---------|--------|-------------|
+| Authentification | ✅ Implémenté | Login/logout par session cookie, changement de mot de passe |
+| Gestion des utilisateurs | ✅ Implémenté | CRUD complet (admin), rôles ADMIN / USER |
+| Revenus salariaux | ✅ Implémenté | Contrats, projections net/mensuel/journalier/horaire, bulletins de paie réels |
+| Revenus complémentaires | ✅ Implémenté | Locatif, dividendes, aides sociales, autres — totaux par catégorie |
+| Gestion du patrimoine | 🔜 À venir | Positions, ordres, valorisation |
+| Tableau de bord | 🔜 À venir | Graphiques Recharts (patrimoine, revenus, dépenses) |
+| Mise à jour des cours | 🔜 À venir | Yahoo Finance API via tâches @Scheduled |
 
 ## Stack technique
 
 | Couche | Technologie |
 |--------|-------------|
 | Backend | Java 17 + Spring Boot 3.5 |
-| Base de données | SQLite |
-| Frontend | React + Vite + Recharts |
-| Mise à jour des cours | Yahoo Finance API (@Scheduled) |
+| Base de données | SQLite (fichier local) |
+| Frontend | React 19 + Vite + Tailwind CSS v4 |
+| Graphiques | Recharts |
+| Documentation API | Swagger UI (`/swagger-ui.html`) |
 
 ## Structure du projet
 
@@ -60,3 +73,23 @@ java -jar -Dspring.profiles.active=prod target/myFinance-0.0.1-SNAPSHOT.jar
 
 Le fichier `backend/src/main/resources/application-prod.properties` est dans le `.gitignore`.
 Créer ce fichier sur le NAS avant le premier démarrage en prod.
+
+## Tests
+
+```bash
+cd backend
+./mvnw test
+# 107 tests unitaires (services + controllers)
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| `docs/architecture/overview.md` | Architecture générale et diagrammes |
+| `docs/architecture/salary.md` | Modèle de données revenus, formules de calcul |
+| `docs/api/authentication.md` | API authentification |
+| `docs/api/users.md` | API utilisateurs |
+| `docs/api/salary-contracts.md` | API contrats salariaux et bulletins |
+| `docs/api/other-incomes.md` | API revenus complémentaires |
+| `docs/architecture/decisions/` | Décisions d'architecture (ADR) |
