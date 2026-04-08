@@ -43,12 +43,22 @@ com.myfinance
 ## Structure frontend
 ```
 frontend/src/
-├── api/              Appels HTTP (auth.js, users.js) — axios avec withCredentials: true
+├── api/
+│   ├── auth.js       Login, logout, me
+│   ├── users.js      CRUD utilisateurs
+│   └── income.js     CRUD salary-contracts, pay-slips, other-incomes
 ├── components/
 │   ├── LoginForm.jsx
 │   ├── Navigation.jsx
-│   └── users/        UserList, UserForm, ChangePasswordForm
-├── App.jsx           Routage par état (currentPage : dashboard | users | profile)
+│   ├── users/        UserList, UserForm, ChangePasswordForm
+│   └── income/
+│       ├── SalaryContractPage.jsx   Page principale revenus salariaux
+│       ├── SalaryContractForm.jsx   Modal création/édition contrat
+│       ├── ProjectionGrid.jsx       Grille de projections calculées
+│       ├── PaySlipPanel.jsx         Panel bulletins de paie réels
+│       ├── OtherIncomePage.jsx      Page revenus complémentaires
+│       └── OtherIncomeForm.jsx      Modal création/édition revenu
+├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | users | profile)
 ├── App.css           Fichier vide (styles migrés vers Tailwind)
 └── index.css         Point d'entrée CSS — @import "tailwindcss"
 ```
@@ -62,24 +72,57 @@ frontend/src/
 ## Documentation associée
 - Fonctionnalités détaillées : `docs/architecture/overview.md`
 - Gestion des utilisateurs et droits : `docs/architecture/userManagement.md`
+- Gestion des revenus (entités, formules, accès) : `docs/architecture/salary.md`
 - Modèle de données (diagramme de classes) : `docs/architecture/diagram/class-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
 - API authentification : `docs/api/authentication.md`
 - API utilisateurs : `docs/api/users.md`
+- API contrats salariaux et bulletins : `docs/api/salary-contracts.md`
+- API revenus complémentaires : `docs/api/other-incomes.md`
 
 ## Endpoints backend existants
 
+### Authentification
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
 | `POST` | `/api/auth/login` | Public | Login (form-urlencoded) → cookie JSESSIONID |
 | `POST` | `/api/auth/logout` | Authentifié | Déconnexion |
 | `GET` | `/api/auth/me` | Authentifié | Utilisateur courant |
 | `PUT` | `/api/auth/password` | Authentifié | Changement de son propre mot de passe |
+
+### Utilisateurs
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
 | `GET` | `/api/users` | ADMIN | Liste tous les utilisateurs |
 | `GET` | `/api/users/{id}` | ADMIN | Détail d'un utilisateur |
 | `POST` | `/api/users` | ADMIN | Créer un utilisateur |
 | `PUT` | `/api/users/{id}` | ADMIN | Modifier un utilisateur (password optionnel) |
 | `DELETE` | `/api/users/{id}` | ADMIN | Supprimer un utilisateur |
+
+### Contrats salariaux
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts` | Authentifié | Liste ses contrats (avec projections calculées) |
+| `GET` | `/api/salary-contracts/{id}` | Authentifié | Détail + projections d'un contrat |
+| `POST` | `/api/salary-contracts` | Authentifié | Créer un contrat (1 seul actif à la fois) |
+| `PUT` | `/api/salary-contracts/{id}` | Authentifié | Modifier un contrat |
+| `DELETE` | `/api/salary-contracts/{id}` | Authentifié | Supprimer un contrat (cascade bulletins) |
+
+### Bulletins de paie mensuels
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts/{id}/pay-slips` | Authentifié | Liste des bulletins d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/pay-slips` | Authentifié | Ajouter un bulletin (1 par période) |
+| `PUT` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Authentifié | Modifier un bulletin |
+| `DELETE` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Authentifié | Supprimer un bulletin |
+
+### Revenus complémentaires
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/other-incomes` | Authentifié | Liste ses revenus complémentaires |
+| `POST` | `/api/other-incomes` | Authentifié | Ajouter un revenu (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) |
+| `PUT` | `/api/other-incomes/{id}` | Authentifié | Modifier un revenu |
+| `DELETE` | `/api/other-incomes/{id}` | Authentifié | Supprimer un revenu |
 
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
@@ -90,7 +133,9 @@ frontend/src/
 - Tests unitaires service : `@ExtendWith(MockitoExtension.class)` + `@Mock` / `@InjectMocks`
 - Tests controller : `@WebMvcTest(XController.class)` + `@Import({SecurityConfig.class, PasswordEncoderConfig.class})`
   + `@TestPropertySource(properties = "cors.allowed-origins=http://localhost:3000")`
-  + `@MockitoBean XService` + `@WithMockUser(roles = "ADMIN")` pour les endpoints protégés
+  + `@MockitoBean XService`
+  + `@WithMockUser(roles = "ADMIN")` pour les controllers qui n'utilisent pas `@AuthenticationPrincipal`
+  + `@WithMockCustomUser` (annotation custom dans `support/`) pour les controllers income qui injectent `@AuthenticationPrincipal User` — `@WithMockUser` standard est incompatible avec notre entité `User`
 - `SecurityConfig` et `PasswordEncoderConfig` doivent rester `public` pour être importables dans les tests
 
 ## Conventions de code
@@ -101,6 +146,7 @@ frontend/src/
 - Nommage : `camelCase` pour les variables/méthodes, `PascalCase` pour les classes
 - Commentaires en **français**
 - Endpoints admin protégés par `@PreAuthorize("hasRole('ADMIN')")`
+- Les controleurs ou services doivent être couvert par des Tests unitaires
 
 ## Commandes utiles
 ```bash
@@ -145,8 +191,10 @@ npm run dev
 **Implémenté :**
 - Authentification (session cookie, BCrypt, login/logout/me)
 - Gestion des utilisateurs CRUD (admin) + changement de mot de passe self-service
-- Frontend : navigation, tableau CRUD utilisateurs, formulaire modal, page profil
-- Tests unitaires : 28 tests (UserService + UserController)
+- Gestion des revenus salariaux : contrats, projections (net/mensuel/journalier/horaire), bulletins de paie réels
+- Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) avec totaux par catégorie
+- Frontend : navigation avec menu Revenus, pages Salariat et Complémentaires, formulaires modaux
+- Tests unitaires : 107 tests (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, OtherIncomeService, OtherIncomeController, SalaryContractDto)
 - Documentation API : `docs/api/` | ADR : `docs/architecture/decisions/`
 
 **À venir :**

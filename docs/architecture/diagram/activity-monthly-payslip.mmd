@@ -1,0 +1,49 @@
+stateDiagram-v2
+    %% ── États ────────────────────────────────────────────────
+    state "Page Revenus > Bulletins de salaire" as pageBulletins
+    state "Liste des bulletins\ndu contrat actif" as listPaySlips
+    state "Formulaire de saisie\n(nouveau bulletin)" as formCreate
+    state "Formulaire de saisie\n(modification)" as formEdit
+    state "Validation des données\n(période unique, montants > 0)" as validate
+    state "Erreurs de validation" as validationError
+    state "Sauvegarde en base" as save
+    state "Vue récapitulative\nRéel vs Théorique (SalaryProjectionDto)" as recap
+    state "Demande de confirmation\nde suppression" as confirmDelete
+    state "Suppression du bulletin" as deletePaySlip
+
+    state contractChoice <<choice>>
+    state actionChoice <<choice>>
+    state validationResult <<choice>>
+    state deleteConfirm <<choice>>
+
+    %% ── Flux ─────────────────────────────────────────────────
+    [*] --> pageBulletins
+
+    pageBulletins --> contractChoice
+    contractChoice --> listPaySlips  : contrat actif existant
+    contractChoice --> pageBulletins : aucun contrat\n(redirection vers saisie contrat)
+
+    listPaySlips --> actionChoice
+    actionChoice --> formCreate    : Ajouter un bulletin
+    actionChoice --> formEdit      : Modifier un bulletin
+    actionChoice --> confirmDelete : Supprimer un bulletin
+    actionChoice --> recap         : Voir récapitulatif
+
+    formCreate --> validate
+    formEdit   --> validate
+
+    validate --> validationResult
+    validationResult --> save            : données valides
+    validationResult --> validationError : données invalides
+
+    validationError --> formCreate : retour formulaire création
+    validationError --> formEdit   : retour formulaire modification
+
+    save --> listPaySlips
+
+    confirmDelete --> deleteConfirm
+    deleteConfirm --> deletePaySlip : confirmé
+    deleteConfirm --> listPaySlips  : annulé
+    deletePaySlip --> listPaySlips
+
+    recap --> listPaySlips

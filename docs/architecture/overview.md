@@ -5,7 +5,7 @@ Cette page décrit l’architecture de l’application **MyFinance** et de ses f
 ## 1. Description générale
 
 - Application web personnelle pour gérer un portefeuille d’investissements.
-- Frontend en **React 18**.
+- Frontend en **React 19**.
 - Backend en **Spring Boot 3.5 / Java 17**.
 - Base de données **SQLite** locale.
 - Scheduler pour mise à jour automatique des données boursière et crypto-currency
@@ -206,7 +206,11 @@ stateDiagram
 
 #### Ajouter une source de revenue
 
-Chaque utilisateur peut ajouté a son profils des données de rémunération annuel. 
+Chaque utilisateur peut ajouter à son profil des données de rémunération. La gestion des revenus est décrite en détail dans [`docs/architecture/salary.md`](salary.md).
+
+**Implémenté :** contrats salariaux (`SalaryContract`) avec projections théoriques, bulletins de paie mensuels réels (`MonthlyPaySlip`), et revenus complémentaires (`OtherIncome` : locatif, dividende, aide sociale, autre).
+
+
 
 ```mermaid
 %% Contenu copié depuis docs/architecture/diagram/activity-income-management-add-diagram.mmd

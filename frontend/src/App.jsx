@@ -3,10 +3,12 @@ import LoginForm from './components/LoginForm'
 import Navigation from './components/Navigation'
 import UserList from './components/users/UserList'
 import ChangePasswordForm from './components/users/ChangePasswordForm'
+import SalaryContractPage from './components/income/SalaryContractPage'
+import OtherIncomePage from './components/income/OtherIncomePage'
 import { logout } from './api/auth'
 
 export default function App() {
-  const [user, setUser]           = useState(null)
+  const [user, setUser]               = useState(null)
   const [currentPage, setCurrentPage] = useState('dashboard')
 
   async function handleLogout() {
@@ -16,7 +18,6 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    // Seul un admin peut accéder à la gestion des utilisateurs
     if (page === 'users' && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
@@ -44,13 +45,13 @@ export default function App() {
           </div>
         )}
 
-        {currentPage === 'users' && user.role === 'ADMIN' && (
-          <UserList />
-        )}
+        {currentPage === 'salary' && <SalaryContractPage />}
 
-        {currentPage === 'profile' && (
-          <ChangePasswordForm user={user} />
-        )}
+        {currentPage === 'other-incomes' && <OtherIncomePage />}
+
+        {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
+
+        {currentPage === 'profile' && <ChangePasswordForm user={user} />}
       </main>
     </div>
   )

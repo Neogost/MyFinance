@@ -1,0 +1,50 @@
+stateDiagram-v2
+    %% ── États ────────────────────────────────────────────────
+    state "Page Revenus > Salariat" as pageRevenues
+    state "Affichage du contrat actuel\n+ projections calculées" as displayContract
+    state "Formulaire de saisie\n(création)" as formCreate
+    state "Formulaire de saisie\n(modification)" as formEdit
+    state "Validation des données" as validate
+
+    state "Erreurs de validation\n(champs obligatoires / valeurs négatives)" as validationError
+    state "Sauvegarde en base" as save
+    state "Affichage des projections\ncalculées à la volée" as showProjections
+    state "Demande de confirmation\nde suppression" as confirmDelete
+    state "Suppression du contrat" as deleteContract
+
+    state contractExists <<choice>>
+    state actionChoice <<choice>>
+    state validationResult <<choice>>
+    state deleteConfirm <<choice>>
+
+    %% ── Flux ─────────────────────────────────────────────────
+    [*] --> pageRevenues
+
+    pageRevenues --> contractExists
+
+    contractExists --> displayContract : contrat existant
+    contractExists --> formCreate      : aucun contrat
+
+    displayContract --> actionChoice
+    actionChoice --> formEdit          : Modifier le contrat
+    actionChoice --> formCreate        : Nouveau contrat (archiver l'actuel)
+    actionChoice --> confirmDelete     : Supprimer le contrat
+
+    formCreate --> validate
+    formEdit   --> validate
+
+    validate --> validationResult
+    validationResult --> save             : données valides
+    validationResult --> validationError  : données invalides
+
+    validationError --> formCreate : retour formulaire création
+    validationError --> formEdit   : retour formulaire modification
+
+    save --> showProjections
+    showProjections --> displayContract
+
+    confirmDelete --> deleteConfirm
+    deleteConfirm --> deleteContract : confirmé
+    deleteConfirm --> displayContract : annulé
+
+    deleteContract --> pageRevenues

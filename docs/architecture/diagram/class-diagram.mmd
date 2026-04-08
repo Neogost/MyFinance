@@ -21,31 +21,56 @@ classDiagram
         +String name
     }
 
-    %% ── Revenus ───────────────────────────────────────────────
-    class AnnualIncome {
+    %% ── Revenus salariaux — vue théorique ─────────────────────
+    class SalaryContract {
         +Long id
-        +Date startPeriod
-        +Date endPeriod
-        +Float grossPay
-        +Float netPay
-        +Float takeHomePay
-        +Float incomeTax
+        +LocalDate startDate
+        +LocalDate endDate
+        +Float annualGrossSalary
+        +Integer paidMonthsPerYear
+        +Float weeklyHours
+        +Float mealVoucherAmount
+        +Float mealVoucherEmployeeRate
     }
 
-    class Income {
-        +Long id
-        +Date startPeriod
-        +Date endPeriod
-        +Float grossPay
-        +Float netPay
-        +Float takeHomePay
-        +Float incomeTax
+    class SalaryProjectionDto {
+        <<DTO — calculé, non persisté>>
+        +Float annualNetSalary
+        +Float monthlyGrossSalary
+        +Float monthlyNetSalary
+        +Float annualWorkingHours
+        +Float hourlyGrossSalary
+        +Float hourlyNetSalary
+        +Float dailyGrossSalary
+        +Float dailyNetSalary
+        +Float employeeMonthlyMealVoucherCost
+        +Float employerMonthlyMealVoucherCost
     }
 
-    class Dividend {
+    %% ── Revenus salariaux — bulletins réels ───────────────────
+    class MonthlyPaySlip {
         +Long id
-        +Float value
-        +Date date
+        +LocalDate period
+        +Float grossSalary
+        +Float taxableNetSalary
+        +Float netSalary
+        +Float incomeTaxWithholding
+    }
+
+    %% ── Revenus non salariés ──────────────────────────────────
+    class OtherIncome {
+        +Long id
+        +OtherIncomeTypeEnum type
+        +String label
+        +Float amount
+        +LocalDate date
+    }
+
+    class OtherIncomeTypeEnum {
+        LOCATIF
+        DIVIDENDE
+        AIDE_SOCIALE
+        AUTRE
     }
 
     %% ── Ordres / Positions ────────────────────────────────────
@@ -81,14 +106,17 @@ classDiagram
     User "0..*" --> "0..1" FamilyGroup : appartient à
     FamilyGroup "1" --> "1" User : owner
 
-    %% ── Relations revenus ─────────────────────────────────────
-    User "1" o-- "0..*" AnnualIncome : annualIncomes
-    AnnualIncome "1" o-- "0..*" Income : monthlyIncomes
-    User "1" o-- "0..*" Dividend : dividends
+    %% ── Relations revenus salariaux ───────────────────────────
+    User "1" o-- "0..*" SalaryContract : salaryContracts
+    SalaryContract ..> SalaryProjectionDto : calcule
+    SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
+
+    %% ── Relations revenus non salariés ───────────────────────
+    User "1" o-- "0..*" OtherIncome : otherIncomes
+    OtherIncome --> OtherIncomeTypeEnum : type
 
     %% ── Relations ordres ──────────────────────────────────────
     User "1" o-- "0..*" Ordre : orders
     Ordre --> TypeEnum : type
     Ordre "0..*" --> "0..1" Isbn : isbn
     Ordre "0..*" --> "0..1" Token : token
-    Dividend "0..*" --> "1" Isbn : isbn

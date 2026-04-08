@@ -1,0 +1,54 @@
+flowchart TD
+    %% ── Données saisies (persistées) ─────────────────────────
+    subgraph INPUT["📥 Données saisies — SalaryContract"]
+        I1["annualGrossSalary\nSalaire brut annuel"]
+        I2["paidMonthsPerYear\nNombre de mois de paie"]
+        I3["weeklyHours\nHeures travaillées / semaine"]
+        I4["mealVoucherAmount\nMontant ticket restaurant"]
+        I5["mealVoucherEmployeeRate\n% part salarié ticket restaurant"]
+    end
+
+    %% ── Calculs intermédiaires ───────────────────────────────
+    subgraph INTER["⚙️ Calculs intermédiaires"]
+        C1["annualNetSalary\n= annualGrossSalary × 0,75"]
+        C2["annualWorkingHours\n= weeklyHours × (228 ÷ 5)\n≈ weeklyHours × 45,6"]
+    end
+
+    %% ── Résultats affichés (DTO) ─────────────────────────────
+    subgraph OUTPUT["📊 Projections affichées — SalaryProjectionDto"]
+        subgraph MONTHLY["Mensuel"]
+            O1["monthlyGrossSalary\n= annualGrossSalary ÷ paidMonthsPerYear"]
+            O2["monthlyNetSalary\n= annualNetSalary ÷ paidMonthsPerYear"]
+        end
+        subgraph DAILY["Journalier  (base 228 j/an)"]
+            O3["dailyGrossSalary\n= annualGrossSalary ÷ 228"]
+            O4["dailyNetSalary\n= annualNetSalary ÷ 228"]
+        end
+        subgraph HOURLY["Horaire"]
+            O5["hourlyGrossSalary\n= annualGrossSalary ÷ annualWorkingHours"]
+            O6["hourlyNetSalary\n= annualNetSalary ÷ annualWorkingHours"]
+        end
+        subgraph MEAL["Ticket restaurant  (base 19 j/mois)"]
+            O7["employeeMonthlyMealVoucherCost\n= mealVoucherAmount × (employeeRate ÷ 100) × 19"]
+            O8["employerMonthlyMealVoucherCost\n= mealVoucherAmount × ((100 − employeeRate) ÷ 100) × 19"]
+        end
+    end
+
+    %% ── Dépendances ──────────────────────────────────────────
+    I1 --> C1
+    I1 --> O1
+    I1 --> O3
+    I1 --> O5
+    I2 --> O1
+    I2 --> O2
+    I3 --> C2
+    I4 --> O7
+    I4 --> O8
+    I5 --> O7
+    I5 --> O8
+
+    C1 --> O2
+    C1 --> O4
+    C1 --> O6
+    C2 --> O5
+    C2 --> O6

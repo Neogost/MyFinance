@@ -1,0 +1,58 @@
+stateDiagram-v2
+    %% ── États ────────────────────────────────────────────────
+    state "Page Revenus > Revenus complémentaires" as pageOtherIncome
+    state "Liste des revenus non salariés" as listOtherIncome
+    state "Sélection du type de revenu" as selectType
+    state "Formulaire de saisie\n(type, libellé, montant, date)" as formCreate
+    state "Formulaire de modification" as formEdit
+    state "Validation des données\n(montant > 0, date requise)" as validate
+    state "Erreurs de validation" as validationError
+    state "Sauvegarde en base" as save
+    state "Demande de confirmation\nde suppression" as confirmDelete
+    state "Suppression du revenu" as deleteIncome
+
+    state actionChoice <<choice>>
+    state validationResult <<choice>>
+    state deleteConfirm <<choice>>
+
+    %% ── Types de revenus disponibles ─────────────────────────
+    state "Type : LOCATIF\n(loyer perçu, charges récupérées…)" as typeLocatif
+    state "Type : DIVIDENDE\n(hors portefeuille suivi)" as typeDividende
+    state "Type : AIDE_SOCIALE\n(allocations, aides…)" as typeAide
+    state "Type : AUTRE\n(libellé libre)" as typeAutre
+
+    %% ── Flux ─────────────────────────────────────────────────
+    [*] --> pageOtherIncome
+    pageOtherIncome --> listOtherIncome
+
+    listOtherIncome --> actionChoice
+    actionChoice --> selectType    : Ajouter un revenu
+    actionChoice --> formEdit      : Modifier un revenu
+    actionChoice --> confirmDelete : Supprimer un revenu
+
+    selectType --> typeLocatif
+    selectType --> typeDividende
+    selectType --> typeAide
+    selectType --> typeAutre
+
+    typeLocatif   --> formCreate
+    typeDividende --> formCreate
+    typeAide      --> formCreate
+    typeAutre     --> formCreate
+
+    formCreate --> validate
+    formEdit   --> validate
+
+    validate --> validationResult
+    validationResult --> save            : données valides
+    validationResult --> validationError : données invalides
+
+    validationError --> formCreate : retour formulaire création
+    validationError --> formEdit   : retour formulaire modification
+
+    save --> listOtherIncome
+
+    confirmDelete --> deleteConfirm
+    deleteConfirm --> deleteIncome  : confirmé
+    deleteConfirm --> listOtherIncome : annulé
+    deleteIncome  --> listOtherIncome

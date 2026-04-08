@@ -36,6 +36,22 @@ L'authentification repose sur Spring Security avec :
 | — Fermeture d'une position                    | Admin, User |
 | Actualisation manuelle des données stockées   | Admin, User |
 
+### Gestion des revenus salariaux
+
+| Fonctionnalité | Accès |
+| --- | --- |
+| Créer / modifier / supprimer son contrat salarial | Admin, User |
+| Consulter ses projections salariales | Admin, User |
+| Ajouter / modifier / supprimer ses bulletins mensuels | Admin, User |
+| Consulter les données d'un autre utilisateur | Admin |
+
+### Gestion des revenus complémentaires
+
+| Fonctionnalité | Accès |
+| --- | --- |
+| Ajouter / modifier / supprimer ses revenus complémentaires | Admin, User |
+| Consulter les revenus d'un autre utilisateur | Admin |
+
 ### Gestion des automatisations
 
 | Fonctionnalité                        | Accès       |
