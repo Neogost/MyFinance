@@ -204,80 +204,90 @@ stateDiagram
     deleteOrder --> [*]
 ```
 
-#### Ajouter une source de revenue
+#### Gestion des revenus
 
-Chaque utilisateur peut ajouter à son profil des données de rémunération. La gestion des revenus est décrite en détail dans [`docs/architecture/salary.md`](salary.md).
+Chaque utilisateur peut gérer deux types de revenus depuis le menu **Revenus** de l'application. La documentation détaillée (formules, règles métier, endpoints) est dans [`docs/architecture/salary.md`](salary.md).
 
-**Implémenté :** contrats salariaux (`SalaryContract`) avec projections théoriques, bulletins de paie mensuels réels (`MonthlyPaySlip`), et revenus complémentaires (`OtherIncome` : locatif, dividende, aide sociale, autre).
+##### Revenus salariaux
 
+Un contrat salarial (`SalaryContract`) modélise les conditions d'un emploi. À partir du brut annuel, de la durée hebdomadaire et du nombre de mois payés, l'application calcule automatiquement des projections théoriques. Un seul contrat peut être actif à la fois (sans date de fin).
 
+Des bulletins de paie mensuels réels (`MonthlyPaySlip`) peuvent être saisis pour chaque période afin de comparer le réel au théorique.
 
 ```mermaid
-%% Contenu copié depuis docs/architecture/diagram/activity-income-management-add-diagram.mmd
-stateDiagram
-    %% state
-    state "Selection du type de revenu" as typeOfIncome
-    state "Saisie des données de salaire" as dataFromSalary
-    state "Saisie des données de dividende" as dataFromDividend
-    state "Verification des données" as verifyData
-    state "Sauvegarde" as save
-    state "Erreur de saisie" as errorFromUser
+stateDiagram-v2
+    state "Saisir un contrat salarial" as contract
+    state "Visualiser les projections" as projections
+    state "Ajouter un bulletin mensuel" as slip
+    state "Comparer réel / théorique" as compare
 
-    [*] --> typeOfIncome
-    typeOfIncome --> dataFromSalary : type = Salary
-    typeOfIncome --> dataFromDividend : type = dividende
-    dataFromSalary --> verifyData
-    dataFromDividend --> verifyData
-    verifyData --> save : OK
-    verifyData --> errorFromUser : KO
-    errorFromUser --> typeOfIncome
-    save --> [*]
+    [*] --> contract
+    contract --> projections : calcul automatique
+    projections --> slip : optionnel
+    slip --> compare
+    compare --> slip : mois suivant
 ```
 
-Structure d'une source de revenue de type Salaire et/ou dividende :
+##### Revenus complémentaires
+
+Les revenus complémentaires (`OtherIncome`) permettent de saisir tout revenu ponctuel ou récurrent hors salaire, classé par type.
+
+| Type | Description |
+|------|-------------|
+| `LOCATIF` | Loyers perçus |
+| `DIVIDENDE` | Dividendes d'actions ou parts sociales |
+| `AIDE_SOCIALE` | CAF, allocations, aides diverses |
+| `AUTRE` | Tout autre revenu |
+
+##### Modèle de données
 
 ```mermaid
-%% Extrait depuis docs/architecture/diagram/class-diagram.mmd
 classDiagram
     class User {
         +Long id
         +String firstName
         +String lastName
-        +LocalDate birthDate
         +String login
-        +String password
         +RoleEnum role
     }
 
-    class AnnualIncome {
+    class SalaryContract {
         +Long id
-        +Date startPeriod
-        +Date endPeriod
-        +Float grossPay
-        +Float netPay
-        +Float takeHomePay
-        +Float incomeTax
+        +LocalDate startDate
+        +LocalDate endDate
+        +Float annualGrossSalary
+        +Integer paidMonthsPerYear
+        +Float weeklyHours
     }
 
-    class Income {
+    class MonthlyPaySlip {
         +Long id
-        +Date startPeriod
-        +Date endPeriod
-        +Float grossPay
-        +Float netPay
-        +Float takeHomePay
-        +Float incomeTax
+        +String period
+        +Float grossAmount
+        +Float netAmount
+        +Integer mealVoucherCount
     }
 
-    class Dividend {
+    class OtherIncome {
         +Long id
-        +Float value
-        +Date date
+        +OtherIncomeTypeEnum type
+        +String label
+        +Float amount
+        +LocalDate date
     }
 
-    User "1" o-- "0..*" AnnualIncome : annualIncomes
-    AnnualIncome "1" o-- "0..*" Income : monthlyIncomes
-    User "1" o-- "0..*" Dividend : dividends
+    class OtherIncomeTypeEnum {
+        LOCATIF
+        DIVIDENDE
+        AIDE_SOCIALE
+        AUTRE
+    }
+
+    User "1" o-- "0..*" SalaryContract : contracts
+    SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
+    User "1" o-- "0..*" OtherIncome : otherIncomes
+    OtherIncome --> OtherIncomeTypeEnum : type
 ```
-L'entité `AnnualIncome` permet à l'utilisateur de saisir ses revenues salarial annuel. Les salaires mensuel `Income` sont là pour completer et ajuster le déclaratif effectué annuellement par l'utilisateur. Les Salaire ont regroupé par Année via l'année de début et fin de période.
+
+Les projections (net mensuel, journalier, horaire) sont calculées à la volée dans `SalaryContractDto` et ne sont jamais persistées en base.
 
