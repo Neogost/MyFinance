@@ -7,6 +7,10 @@ export default function LoginForm({ onSuccess }) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') handleSubmit(e)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
@@ -53,6 +57,7 @@ export default function LoginForm({ onSuccess }) {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="••••••••"
               required
               className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
