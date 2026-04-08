@@ -40,6 +40,7 @@ MyFinance/
 | Backend | Java 17 + Spring Boot 3.5 | Écosystème mature, Spring Security intégré |
 | Base de données | SQLite | Zéro configuration, fichier local, adapté au mono-utilisateur |
 | Frontend | React + Vite | Réactivité UI, écosystème riche (Recharts pour les graphiques) |
+| Styles | Tailwind CSS v4 (`@tailwindcss/vite`) | Utilitaires inline, pas de fichier CSS custom à maintenir — voir ADR-002 |
 | ORM | Spring Data JPA + Hibernate (dialect SQLite) | Abstraction de la base, pas de SQL manuel |
 | Authentification | Spring Security (session cookie + BCrypt) | Simple, sans JWT ni SSO |
 | Documentation API | springdoc-openapi (Swagger UI) | Génération automatique depuis les annotations |

@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { changePassword } from '../../api/users'
 
+const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
+const labelCls = 'text-sm font-semibold text-gray-700'
+
 export default function ChangePasswordForm({ user }) {
   const [form, setForm]       = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [error, setError]     = useState(null)
@@ -38,49 +41,69 @@ export default function ChangePasswordForm({ user }) {
   }
 
   return (
-    <div className="profile-card">
-      <h2>Mon profil</h2>
-      <p>Connecté en tant que <strong>{user.login}</strong> — <span className="role-badge">{user.role}</span></p>
+    <div className="bg-white rounded-xl shadow-sm p-8 max-w-md">
+      <h2 className="text-xl font-bold text-gray-900 mb-1">Mon profil</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Connecté en tant que <strong className="text-gray-700">{user.login}</strong>
+        {' '}—{' '}
+        <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
+          {user.role}
+        </span>
+      </p>
 
-      <h3>Changer mon mot de passe</h3>
-      <form onSubmit={handleSubmit} className="login-form">
-        <div className="field">
-          <label>Mot de passe actuel *</label>
+      <h3 className="text-base font-semibold text-gray-800 mb-4">Changer mon mot de passe</h3>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Mot de passe actuel *</label>
           <input
             name="currentPassword"
             type="password"
             value={form.currentPassword}
             onChange={handleChange}
             required
+            className={inputCls}
           />
         </div>
 
-        <div className="field">
-          <label>Nouveau mot de passe *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Nouveau mot de passe *</label>
           <input
             name="newPassword"
             type="password"
             value={form.newPassword}
             onChange={handleChange}
             required
+            className={inputCls}
           />
         </div>
 
-        <div className="field">
-          <label>Confirmer le nouveau mot de passe *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Confirmer le nouveau mot de passe *</label>
           <input
             name="confirm"
             type="password"
             value={form.confirm}
             onChange={handleChange}
             required
+            className={inputCls}
           />
         </div>
 
-        {error   && <p className="error">{error}</p>}
-        {success && <p className="success">Mot de passe modifié avec succès.</p>}
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+        )}
+        {success && (
+          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            Mot de passe modifié avec succès.
+          </p>
+        )}
 
-        <button type="submit" disabled={loading}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-1 py-3 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+        >
           {loading ? 'Enregistrement…' : 'Changer le mot de passe'}
         </button>
       </form>

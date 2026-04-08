@@ -9,7 +9,7 @@ visualiser l'évolution dans le temps et mettre à jour les cours automatiquemen
 ## Stack technique
 - **Backend** : Java 17, Spring Boot 3.5, Maven
 - **Base de données** : SQLite (fichier local `backend/data/myfinance-dev.db`)
-- **Frontend** : React + Vite, Recharts (graphiques), Axios (appels API)
+- **Frontend** : React + Vite, Tailwind CSS v4 (styles), Recharts (graphiques), Axios (appels API)
 - **Mise à jour des cours** : Yahoo Finance API via tâches @Scheduled Spring
 - **Documentation API** : Swagger UI via springdoc-openapi (`/swagger-ui.html`)
 
@@ -49,8 +49,15 @@ frontend/src/
 │   ├── Navigation.jsx
 │   └── users/        UserList, UserForm, ChangePasswordForm
 ├── App.jsx           Routage par état (currentPage : dashboard | users | profile)
-└── App.css           Styles globaux
+├── App.css           Fichier vide (styles migrés vers Tailwind)
+└── index.css         Point d'entrée CSS — @import "tailwindcss"
 ```
+
+## Styles et thème
+- **Tailwind CSS v4** via plugin `@tailwindcss/vite` — pas de `tailwind.config.js` requis
+- Toutes les classes sont des utilitaires Tailwind inline dans les JSX
+- Palette : indigo-600 (primaire), gray-100 (fond), violet-100/800 (badges rôle)
+- `App.css` est conservé vide pour compatibilité — ne pas y remettre de styles
 
 ## Documentation associée
 - Fonctionnalités détaillées : `docs/architecture/overview.md`

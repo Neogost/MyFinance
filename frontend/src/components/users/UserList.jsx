@@ -38,41 +38,62 @@ export default function UserList() {
     setUsers(us => us.filter(u => u.id !== user.id))
   }
 
-  if (loading) return <p>Chargement…</p>
-  if (error)   return <p className="error">{error}</p>
+  if (loading) return <p className="text-gray-500">Chargement…</p>
+  if (error)   return <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
 
   return (
     <div>
-      <div className="page-header">
-        <h2>Gestion des utilisateurs</h2>
-        <button onClick={() => setUserToEdit({})}>+ Nouvel utilisateur</button>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Gestion des utilisateurs</h2>
+        <button
+          onClick={() => setUserToEdit({})}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+        >
+          + Nouvel utilisateur
+        </button>
       </div>
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Login</th>
-            <th>Prénom</th>
-            <th>Nom</th>
-            <th>Rôle</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map(u => (
-            <tr key={u.id}>
-              <td>{u.login}</td>
-              <td>{u.firstName}</td>
-              <td>{u.lastName}</td>
-              <td><span className="role-badge">{u.role}</span></td>
-              <td className="actions">
-                <button className="btn-sm" onClick={() => setUserToEdit(u)}>Modifier</button>
-                <button className="btn-sm btn-danger" onClick={() => handleDelete(u)}>Supprimer</button>
-              </td>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Login</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prénom</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Rôle</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
+                <td className="px-4 py-3 text-sm text-gray-800">{u.login}</td>
+                <td className="px-4 py-3 text-sm text-gray-800">{u.firstName}</td>
+                <td className="px-4 py-3 text-sm text-gray-800">{u.lastName}</td>
+                <td className="px-4 py-3">
+                  <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
+                    {u.role}
+                  </span>
+                </td>
+                <td className="px-4 py-3 flex gap-2">
+                  <button
+                    onClick={() => setUserToEdit(u)}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
+                  >
+                    Modifier
+                  </button>
+                  <button
+                    onClick={() => handleDelete(u)}
+                    className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {userToEdit !== null && (
         <UserForm

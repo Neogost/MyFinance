@@ -4,7 +4,6 @@ import Navigation from './components/Navigation'
 import UserList from './components/users/UserList'
 import ChangePasswordForm from './components/users/ChangePasswordForm'
 import { logout } from './api/auth'
-import './App.css'
 
 export default function App() {
   const [user, setUser]           = useState(null)
@@ -27,7 +26,7 @@ export default function App() {
   }
 
   return (
-    <div className="dashboard">
+    <div className="min-h-screen bg-gray-100">
       <Navigation
         user={user}
         currentPage={currentPage}
@@ -35,11 +34,13 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      <main className="main-content">
+      <main className="p-8">
         {currentPage === 'dashboard' && (
           <div>
-            <h2>Tableau de bord</h2>
-            <p>Bienvenue, <strong>{user.firstName}</strong> ! Le tableau de bord arrive bientôt.</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Tableau de bord</h2>
+            <p className="text-gray-600">
+              Bienvenue, <strong>{user.firstName}</strong> ! Le tableau de bord arrive bientôt.
+            </p>
           </div>
         )}
 
