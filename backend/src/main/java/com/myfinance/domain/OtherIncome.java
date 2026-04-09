@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+
 @Entity
 @Table(name = "other_incomes")
 @Data
@@ -36,4 +37,12 @@ public class OtherIncome {
 
     @Column(nullable = false)
     private LocalDate date;
+
+    // ── Informations fiscales ──────────────────────────────────
+    // Nullable pour compatibilité avec les revenus existants avant cette fonctionnalité.
+    // Le simulateur traite null comme isTaxable=true et specificTaxRate=null (barème IRPP).
+
+    private Boolean isTaxable; // Ce revenu est-il imposable ?
+
+    private Float specificTaxRate; // Taux fixe en % (ex : 30.0 pour flat tax) — null = barème IRPP normal
 }

@@ -12,5 +12,8 @@ public record UpdateUserRequest(
         LocalDate birthDate,
         @NotBlank String login,
         String password, // null = mot de passe inchangé
-        @NotNull RoleEnum role
+        @NotNull RoleEnum role,
+        Float fiscalParts,               // null → inchangé
+        Boolean useFlatRateDeduction,    // null → inchangé
+        Float customProfessionalDeduction // obligatoire si useFlatRateDeduction = false
 ) {}

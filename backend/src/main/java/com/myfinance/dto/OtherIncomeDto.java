@@ -10,15 +10,21 @@ public record OtherIncomeDto(
         OtherIncomeTypeEnum type,
         String label,
         Float amount,
-        LocalDate date
+        LocalDate date,
+        Boolean isTaxable,
+        Float specificTaxRate
 ) {
     public static OtherIncomeDto from(OtherIncome income) {
+        // isTaxable null en base (revenus antérieurs) → traité comme imposable par défaut
+        Boolean taxable = income.getIsTaxable() != null ? income.getIsTaxable() : Boolean.TRUE;
         return new OtherIncomeDto(
                 income.getId(),
                 income.getType(),
                 income.getLabel(),
                 income.getAmount(),
-                income.getDate()
+                income.getDate(),
+                taxable,
+                income.getSpecificTaxRate()
         );
     }
 }

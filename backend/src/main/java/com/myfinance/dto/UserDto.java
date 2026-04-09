@@ -3,12 +3,18 @@ package com.myfinance.dto;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
 
+import java.time.LocalDate;
+
 public record UserDto(
         Long id,
         String login,
         String firstName,
         String lastName,
-        RoleEnum role
+        LocalDate birthDate,
+        RoleEnum role,
+        Float fiscalParts,
+        Boolean useFlatRateDeduction,
+        Float customProfessionalDeduction
 ) {
     public static UserDto from(User user) {
         return new UserDto(
@@ -16,7 +22,11 @@ public record UserDto(
                 user.getLogin(),
                 user.getFirstName(),
                 user.getLastName(),
-                user.getRole()
+                user.getBirthDate(),
+                user.getRole(),
+                user.getFiscalParts(),
+                user.getUseFlatRateDeduction(),
+                user.getCustomProfessionalDeduction()
         );
     }
 }

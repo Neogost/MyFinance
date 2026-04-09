@@ -12,5 +12,8 @@ public record CreateUserRequest(
         LocalDate birthDate,
         @NotBlank String login,
         @NotBlank String password,
-        @NotNull RoleEnum role
+        @NotNull RoleEnum role,
+        Float fiscalParts,               // null → 1.0 par défaut dans le service
+        Boolean useFlatRateDeduction,    // null → true par défaut dans le service
+        Float customProfessionalDeduction // obligatoire si useFlatRateDeduction = false
 ) {}

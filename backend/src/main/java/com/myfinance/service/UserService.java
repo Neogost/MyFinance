@@ -47,6 +47,14 @@ public class UserService implements UserDetailsService {
                         "Utilisateur introuvable : " + id));
     }
 
+    // ── Lecture (entité) — usage interne et simulateur ────────
+
+    public User findEntityById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Utilisateur introuvable : " + id));
+    }
+
     // ── Création ───────────────────────────────────────────────
 
     public UserDto create(CreateUserRequest request) {
@@ -55,6 +63,8 @@ public class UserService implements UserDetailsService {
                     "Ce login est déjà utilisé : " + request.login());
         }
 
+        validerProfilFiscal(request.useFlatRateDeduction(), request.customProfessionalDeduction());
+
         User user = User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
@@ -62,6 +72,9 @@ public class UserService implements UserDetailsService {
                 .login(request.login())
                 .password(passwordEncoder.encode(request.password()))
                 .role(request.role())
+                .fiscalParts(request.fiscalParts() != null ? request.fiscalParts() : 1.0f)
+                .useFlatRateDeduction(request.useFlatRateDeduction() != null ? request.useFlatRateDeduction() : true)
+                .customProfessionalDeduction(request.customProfessionalDeduction())
                 .build();
 
         return UserDto.from(userRepository.save(user));
@@ -80,6 +93,8 @@ public class UserService implements UserDetailsService {
                 .ifPresent(existing -> { throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Ce login est déjà utilisé : " + request.login()); });
 
+        validerProfilFiscal(request.useFlatRateDeduction(), request.customProfessionalDeduction());
+
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setBirthDate(request.birthDate());
@@ -90,7 +105,23 @@ public class UserService implements UserDetailsService {
             user.setPassword(passwordEncoder.encode(request.password()));
         }
 
+        // Mise à jour profil fiscal uniquement si les champs sont fournis
+        if (request.fiscalParts() != null) user.setFiscalParts(request.fiscalParts());
+        if (request.useFlatRateDeduction() != null) {
+            user.setUseFlatRateDeduction(request.useFlatRateDeduction());
+            user.setCustomProfessionalDeduction(request.customProfessionalDeduction());
+        }
+
         return UserDto.from(userRepository.save(user));
+    }
+
+    // ── Validation profil fiscal ───────────────────────────────
+
+    private void validerProfilFiscal(Boolean useFlatRate, Float customDeduction) {
+        if (Boolean.FALSE.equals(useFlatRate) && customDeduction == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le montant des frais réels est obligatoire quand l'abattement forfaitaire est désactivé");
+        }
     }
 
     // ── Changement de mot de passe (self-service) ─────────────

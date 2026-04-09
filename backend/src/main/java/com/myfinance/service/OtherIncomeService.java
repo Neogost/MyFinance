@@ -38,6 +38,8 @@ public class OtherIncomeService {
                 .label(request.label())
                 .amount(request.amount())
                 .date(request.date())
+                .isTaxable(request.isTaxable() != null ? request.isTaxable() : true)
+                .specificTaxRate(request.specificTaxRate())
                 .build();
 
         return OtherIncomeDto.from(otherIncomeRepository.save(income));
@@ -52,6 +54,8 @@ public class OtherIncomeService {
         income.setLabel(request.label());
         income.setAmount(request.amount());
         income.setDate(request.date());
+        income.setIsTaxable(request.isTaxable() != null ? request.isTaxable() : true);
+        income.setSpecificTaxRate(request.specificTaxRate());
 
         return OtherIncomeDto.from(otherIncomeRepository.save(income));
     }

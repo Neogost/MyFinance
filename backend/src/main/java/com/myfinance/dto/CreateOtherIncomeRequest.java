@@ -11,5 +11,7 @@ public record CreateOtherIncomeRequest(
         @NotNull OtherIncomeTypeEnum type,
         @NotBlank String label,
         @NotNull @Positive Float amount,
-        @NotNull LocalDate date
+        @NotNull LocalDate date,
+        Boolean isTaxable,      // null → true par défaut dans le service
+        Float specificTaxRate   // null → barème IRPP normal
 ) {}
