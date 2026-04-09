@@ -307,6 +307,257 @@ DELETE /api/salary-contracts/1/pay-slips/1
 
 ---
 
+## Primes — `/api/salary-contracts/{contractId}/bonuses`
+
+Les primes sont **rattachées à un contrat** et représentent les versements exceptionnels ou annuels (13ème mois, prime de vacances, prime Macron, etc.).
+
+---
+
+### GET /api/salary-contracts/{contractId}/bonuses
+
+Retourne la liste des primes du contrat, triées de la plus récente à la plus ancienne.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+GET /api/salary-contracts/1/bonuses
+```
+
+#### Réponses
+
+**200 OK**
+
+```json
+[
+  {
+    "id": 1,
+    "label": "Prime de vacances",
+    "grossAmount": 1500.0,
+    "type": "ANNUELLE",
+    "paymentDate": null,
+    "paymentMonth": 6
+  },
+  {
+    "id": 2,
+    "label": "Prime Macron",
+    "grossAmount": 3000.0,
+    "type": "EXCEPTIONNELLE",
+    "paymentDate": "2025-03-01",
+    "paymentMonth": null
+  }
+]
+```
+
+---
+
+### POST /api/salary-contracts/{contractId}/bonuses
+
+Ajoute une prime au contrat. Le champ `paymentDate` est requis pour une prime `EXCEPTIONNELLE`, le champ `paymentMonth` est requis pour une prime `ANNUELLE`.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+POST /api/salary-contracts/1/bonuses
+Content-Type: application/json
+
+{
+  "label": "Prime de vacances",
+  "grossAmount": 1500.0,
+  "type": "ANNUELLE",
+  "paymentDate": null,
+  "paymentMonth": 6
+}
+```
+
+#### Champs
+
+| Champ | Type | Obligatoire | Contraintes | Description |
+|-------|------|-------------|-------------|-------------|
+| `label` | `string` | oui | non vide | Nom de la prime (ex : "13ème mois") |
+| `grossAmount` | `number` | oui | > 0 | Montant brut (€) |
+| `type` | `enum` | oui | `EXCEPTIONNELLE` ou `ANNUELLE` | Type de prime |
+| `paymentDate` | `date` | si `EXCEPTIONNELLE` | | Premier jour du mois de versement |
+| `paymentMonth` | `integer` | si `ANNUELLE` | 1–12 | Mois de versement (1 = janvier) |
+
+#### Réponses
+
+**201 Created** — Retourne la prime créée.
+
+**400 Bad Request** — Validation échouée (ex : `paymentDate` manquant pour une prime `EXCEPTIONNELLE`).
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Contrat introuvable.
+
+---
+
+### PUT /api/salary-contracts/{contractId}/bonuses/{bonusId}
+
+Modifie une prime existante (remplacement complet).
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+PUT /api/salary-contracts/1/bonuses/1
+Content-Type: application/json
+
+{
+  "label": "Prime de vacances",
+  "grossAmount": 1800.0,
+  "type": "ANNUELLE",
+  "paymentDate": null,
+  "paymentMonth": 6
+}
+```
+
+#### Réponses
+
+**200 OK** — Retourne la prime mise à jour.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Prime ou contrat introuvable.
+
+---
+
+### DELETE /api/salary-contracts/{contractId}/bonuses/{bonusId}
+
+Supprime une prime.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+DELETE /api/salary-contracts/1/bonuses/1
+```
+
+#### Réponses
+
+**204 No Content** — Suppression réussie.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Prime ou contrat introuvable.
+
+---
+
+## Avantages en nature — `/api/salary-contracts/{contractId}/benefits`
+
+Les avantages en nature sont **rattachés à un contrat** et représentent des compléments de rémunération mensuels versés par l'employeur (frais de télétravail, forfait téléphone, etc.). Leur montant s'ajoute au **net estimé** dans les projections.
+
+---
+
+### GET /api/salary-contracts/{contractId}/benefits
+
+Retourne la liste des avantages du contrat, triés par libellé.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+GET /api/salary-contracts/1/benefits
+```
+
+#### Réponses
+
+**200 OK**
+
+```json
+[
+  {
+    "id": 1,
+    "label": "Forfait téléphone",
+    "monthlyAmount": 30.0
+  },
+  {
+    "id": 2,
+    "label": "Frais de télétravail",
+    "monthlyAmount": 50.0
+  }
+]
+```
+
+---
+
+### POST /api/salary-contracts/{contractId}/benefits
+
+Ajoute un avantage en nature au contrat.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+POST /api/salary-contracts/1/benefits
+Content-Type: application/json
+
+{
+  "label": "Frais de télétravail",
+  "monthlyAmount": 50.0
+}
+```
+
+#### Champs
+
+| Champ | Type | Obligatoire | Contraintes | Description |
+|-------|------|-------------|-------------|-------------|
+| `label` | `string` | oui | non vide | Type d'avantage (ex : "Forfait téléphone") |
+| `monthlyAmount` | `number` | oui | > 0 | Montant mensuel en € |
+
+#### Réponses
+
+**201 Created** — Retourne l'avantage créé.
+
+**400 Bad Request** — Validation échouée.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Contrat introuvable.
+
+---
+
+### PUT /api/salary-contracts/{contractId}/benefits/{benefitId}
+
+Modifie un avantage existant.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+PUT /api/salary-contracts/1/benefits/1
+Content-Type: application/json
+
+{
+  "label": "Frais de télétravail",
+  "monthlyAmount": 60.0
+}
+```
+
+#### Réponses
+
+**200 OK** — Retourne l'avantage mis à jour.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Avantage ou contrat introuvable.
+
+---
+
+### DELETE /api/salary-contracts/{contractId}/benefits/{benefitId}
+
+Supprime un avantage en nature.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+DELETE /api/salary-contracts/1/benefits/1
+```
+
+#### Réponses
+
+**204 No Content** — Suppression réussie.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Avantage ou contrat introuvable.
+
+---
+
 ## Modèles
 
 ### `SalaryContractDto`
@@ -342,3 +593,22 @@ DELETE /api/salary-contracts/1/pay-slips/1
 | `taxableNetSalary` | `number` | Net fiscal réel |
 | `netSalary` | `number` | Net net versé |
 | `incomeTaxWithholding` | `number` | Prélèvement à la source réel |
+
+### `ContractBonusDto`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant |
+| `label` | `string` | Nom de la prime |
+| `grossAmount` | `number` | Montant brut (€) |
+| `type` | `enum` | `EXCEPTIONNELLE` ou `ANNUELLE` |
+| `paymentDate` | `date\|null` | Premier jour du mois de versement — renseigné si `EXCEPTIONNELLE` |
+| `paymentMonth` | `integer\|null` | Mois de versement (1–12) — renseigné si `ANNUELLE` |
+
+### `ContractBenefitDto`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant |
+| `label` | `string` | Type d'avantage (ex : "Forfait téléphone") |
+| `monthlyAmount` | `number` | Montant mensuel (€) |

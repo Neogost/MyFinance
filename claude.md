@@ -46,7 +46,7 @@ frontend/src/
 ├── api/
 │   ├── auth.js       Login, logout, me
 │   ├── users.js      CRUD utilisateurs
-│   └── income.js     CRUD salary-contracts, pay-slips, other-incomes
+│   └── income.js     CRUD salary-contracts, pay-slips, bonuses, benefits, other-incomes
 ├── components/
 │   ├── LoginForm.jsx
 │   ├── Navigation.jsx
@@ -54,8 +54,12 @@ frontend/src/
 │   └── income/
 │       ├── SalaryContractPage.jsx   Page principale revenus salariaux
 │       ├── SalaryContractForm.jsx   Modal création/édition contrat
-│       ├── ProjectionGrid.jsx       Grille de projections calculées
+│       ├── ProjectionGrid.jsx       Grille de projections calculées (brut+primes, net+TR+avantages)
 │       ├── PaySlipPanel.jsx         Panel bulletins de paie réels
+│       ├── BonusPanel.jsx           Panel primes annuelles/exceptionnelles
+│       ├── BonusForm.jsx            Modal création/édition prime
+│       ├── BenefitPanel.jsx         Panel avantages en nature
+│       ├── BenefitForm.jsx          Modal création/édition avantage
 │       ├── OtherIncomePage.jsx      Page revenus complémentaires
 │       └── OtherIncomeForm.jsx      Modal création/édition revenu
 ├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | users | profile)
@@ -115,6 +119,22 @@ frontend/src/
 | `POST` | `/api/salary-contracts/{id}/pay-slips` | Authentifié | Ajouter un bulletin (1 par période) |
 | `PUT` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Authentifié | Modifier un bulletin |
 | `DELETE` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Authentifié | Supprimer un bulletin |
+
+### Primes (ContractBonus)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts/{id}/bonuses` | Authentifié | Liste des primes d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/bonuses` | Authentifié | Ajouter une prime (EXCEPTIONNELLE ou ANNUELLE) |
+| `PUT` | `/api/salary-contracts/{id}/bonuses/{bonusId}` | Authentifié | Modifier une prime |
+| `DELETE` | `/api/salary-contracts/{id}/bonuses/{bonusId}` | Authentifié | Supprimer une prime |
+
+### Avantages en nature (ContractBenefit)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts/{id}/benefits` | Authentifié | Liste des avantages d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/benefits` | Authentifié | Ajouter un avantage (label + montant mensuel) |
+| `PUT` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Authentifié | Modifier un avantage |
+| `DELETE` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Authentifié | Supprimer un avantage |
 
 ### Revenus complémentaires
 | Méthode | URL | Rôle requis | Description |
@@ -192,9 +212,10 @@ npm run dev
 - Authentification (session cookie, BCrypt, login/logout/me)
 - Gestion des utilisateurs CRUD (admin) + changement de mot de passe self-service
 - Gestion des revenus salariaux : contrats, projections (net/mensuel/journalier/horaire), bulletins de paie réels
+- Primes sur contrat (EXCEPTIONNELLE avec date de versement, ANNUELLE avec mois de versement)
 - Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) avec totaux par catégorie
 - Frontend : navigation avec menu Revenus, pages Salariat et Complémentaires, formulaires modaux
-- Tests unitaires : 107 tests (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, OtherIncomeService, OtherIncomeController, SalaryContractDto)
+- Tests unitaires : (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, ContractBonusService, ContractBonusController, ContractBenefitService, ContractBenefitController, OtherIncomeService, OtherIncomeController, SalaryContractDto)
 - Documentation API : `docs/api/` | ADR : `docs/architecture/decisions/`
 
 **À venir :**

@@ -2,12 +2,14 @@
 
 ## Vue d'ensemble
 
-La gestion des revenus repose sur **trois niveaux complémentaires** :
+La gestion des revenus repose sur **quatre niveaux complémentaires** :
 
 | Niveau | Entité | Objectif |
 |--------|--------|----------|
 | Vue théorique | `SalaryContract` | Projections à partir du contrat (brut annuel, tickets resto…) |
 | Réel mensuel | `MonthlyPaySlip` | Bulletins de salaire saisis mois par mois |
+| Primes | `ContractBonus` | Versements exceptionnels ou annuels rattachés à un contrat |
+| Avantages en nature | `ContractBenefit` | Compléments mensuels nets (télétravail, téléphone…) rattachés à un contrat |
 | Revenus complémentaires | `OtherIncome` | Tout revenu hors salaire (locatif, dividendes, aides…) |
 
 La **vue théorique** (`SalaryProjectionDto`) et les **bulletins réels** (`MonthlyPaySlip`) sont affichables côte à côte pour permettre à l'utilisateur de mesurer l'écart entre les projections et la réalité (primes, avantages en nature, variation de salaire).
@@ -97,7 +99,74 @@ Pour un mois M :
 
 ---
 
-## 3. Revenus non salariés — `OtherIncome`
+## 3. Primes — `ContractBonus`
+
+### Objectif
+
+Enregistrer les **versements ponctuels ou récurrents** liés au contrat (13ème mois, prime de vacances, prime exceptionnelle, etc.) pour les distinguer du salaire mensuel de base et les intégrer dans la vision globale des revenus.
+
+### Modèle persisté
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `label` | `String` | Nom de la prime (ex : "Prime Macron", "13ème mois") |
+| `grossAmount` | `Float` | Montant brut en € |
+| `type` | `BonusTypeEnum` | `EXCEPTIONNELLE` ou `ANNUELLE` |
+| `paymentDate` | `LocalDate` | Premier jour du mois de versement — renseigné si `EXCEPTIONNELLE` |
+| `paymentMonth` | `Integer` | Mois de versement (1–12) — renseigné si `ANNUELLE` |
+
+### Types de primes (`BonusTypeEnum`)
+
+| Valeur | Description | Champ associé |
+|--------|-------------|---------------|
+| `EXCEPTIONNELLE` | Prime versée à une date précise (usage unique ou ponctuel) | `paymentDate` (obligatoire) |
+| `ANNUELLE` | Prime récurrente versée chaque année à un mois fixe | `paymentMonth` (obligatoire, 1–12) |
+
+### Relations
+
+- Un `ContractBonus` est **rattaché à un `SalaryContract`**
+- Un contrat peut avoir **plusieurs primes**
+- Les primes sont supprimées en **cascade** si le contrat est supprimé
+
+---
+
+## 4. Avantages en nature — `ContractBenefit`
+
+### Objectif
+
+Enregistrer les **compléments de rémunération mensuels** versés par l'employeur (frais de télétravail, forfait téléphone, mutuelle…). Contrairement aux primes, il s'agit de montants fixes et récurrents qui s'ajoutent directement au **net estimé** dans les projections — ils ne transitent pas par le brut et ne sont pas soumis aux cotisations salariales.
+
+### Modèle persisté
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `label` | `String` | Type d'avantage (ex : "Frais de télétravail", "Forfait téléphone") |
+| `monthlyAmount` | `Float` | Montant mensuel en € |
+
+### Intégration dans les projections (frontend)
+
+Les montants mensuels sont ramenés aux différentes périodes selon les mêmes constantes que le reste des projections :
+
+| Période | Calcul |
+|---------|--------|
+| Annuel | `monthlyAmount × 12` |
+| Mensuel | `monthlyAmount` |
+| Journalier | `monthlyAmount × 12 ÷ 228` |
+| Horaire | `monthlyAmount × 12 ÷ 228 ÷ hoursPerDay` |
+
+Chaque ligne d'avantage apparaît dans le tooltip du "Net estimé" correspondant.
+
+### Relations
+
+- Un `ContractBenefit` est **rattaché à un `SalaryContract`**
+- Un contrat peut avoir **plusieurs avantages**
+- Les avantages sont supprimés en **cascade** si le contrat est supprimé
+
+---
+
+## 5. Revenus non salariés — `OtherIncome`
 
 ### Objectif
 
@@ -163,6 +232,23 @@ classDiagram
         +Float netSalary
         +Float incomeTaxWithholding
     }
+    class ContractBonus {
+        +Long id
+        +String label
+        +Float grossAmount
+        +BonusTypeEnum type
+        +LocalDate paymentDate
+        +Integer paymentMonth
+    }
+    class BonusTypeEnum {
+        EXCEPTIONNELLE
+        ANNUELLE
+    }
+    class ContractBenefit {
+        +Long id
+        +String label
+        +Float monthlyAmount
+    }
     class OtherIncome {
         +Long id
         +OtherIncomeTypeEnum type
@@ -185,6 +271,9 @@ classDiagram
     User "1" o-- "0..*" SalaryContract : salaryContracts
     SalaryContract ..> SalaryProjectionDto : calcule
     SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
+    SalaryContract "1" o-- "0..*" ContractBonus : bonuses
+    ContractBonus --> BonusTypeEnum : type
+    SalaryContract "1" o-- "0..*" ContractBenefit : benefits
     User "1" o-- "0..*" OtherIncome : otherIncomes
     OtherIncome --> OtherIncomeTypeEnum : type
 ```
@@ -210,6 +299,22 @@ classDiagram
 | `PUT` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Modifier un bulletin |
 | `DELETE` | `/api/salary-contracts/{id}/pay-slips/{slipId}` | Supprimer un bulletin |
 
+### Primes
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/salary-contracts/{id}/bonuses` | Liste des primes d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/bonuses` | Ajouter une prime |
+| `PUT` | `/api/salary-contracts/{id}/bonuses/{bonusId}` | Modifier une prime |
+| `DELETE` | `/api/salary-contracts/{id}/bonuses/{bonusId}` | Supprimer une prime |
+
+### Avantages en nature
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/salary-contracts/{id}/benefits` | Liste des avantages d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/benefits` | Ajouter un avantage |
+| `PUT` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Modifier un avantage |
+| `DELETE` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Supprimer un avantage |
+
 ### Revenus complémentaires
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -226,6 +331,8 @@ classDiagram
 |--------|------------|
 | Gérer son contrat salarial | USER, ADMIN |
 | Gérer ses bulletins mensuels | USER, ADMIN |
+| Gérer ses primes | USER, ADMIN |
+| Gérer ses avantages en nature | USER, ADMIN |
 | Gérer ses revenus non salariés | USER, ADMIN |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 
