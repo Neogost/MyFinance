@@ -43,7 +43,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userDto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", RoleEnum.USER);
+        userDto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER, 1.0f, true, null);
     }
 
     // ── GET /api/users ─────────────────────────────────────────
@@ -102,7 +102,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void create_avecCorpsValide_retourne201() throws Exception {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
 
         when(userService.create(any(CreateUserRequest.class))).thenReturn(userDto);
 
@@ -118,7 +118,7 @@ class UserControllerTest {
     void create_avecCorpsInvalide_retourne400() throws Exception {
         // firstName vide → violation de @NotBlank
         CreateUserRequest request = new CreateUserRequest(
-                "", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+                "", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,7 +130,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void create_loginDejaUtilise_retourne409() throws Exception {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
 
         when(userService.create(any(CreateUserRequest.class)))
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));
@@ -147,8 +147,8 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void update_avecCorpsValide_retourne200() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Marie", "Martin", null, "marie.martin", null, RoleEnum.USER);
-        UserDto updated = new UserDto(1L, "marie.martin", "Marie", "Martin", RoleEnum.USER);
+                "Marie", "Martin", null, "marie.martin", null, RoleEnum.USER, null, null, null);
+        UserDto updated = new UserDto(1L, "marie.martin", "Marie", "Martin", null, RoleEnum.USER, null, null, null);
 
         when(userService.update(eq(1L), any(UpdateUserRequest.class))).thenReturn(updated);
 
@@ -163,7 +163,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void update_introuvable_retourne404() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER, null, null, null);
 
         when(userService.update(eq(99L), any(UpdateUserRequest.class)))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));

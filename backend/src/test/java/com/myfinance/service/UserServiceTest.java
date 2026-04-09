@@ -93,7 +93,7 @@ class UserServiceTest {
     @Test
     void create_sauvegardeEtRetourneLutilisateur() {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
 
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password")).thenReturn("hashed_password");
@@ -109,7 +109,7 @@ class UserServiceTest {
     @Test
     void create_leve409_siLoginDejaUtilise() {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
 
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
 
@@ -126,7 +126,7 @@ class UserServiceTest {
     @Test
     void update_modifieLesChamps_sansChangerLeMdp_siPasswordVide() {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Marie", "Martin", null, "marie.martin", "", RoleEnum.ADMIN);
+                "Marie", "Martin", null, "marie.martin", "", RoleEnum.ADMIN, null, null, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findByLogin("marie.martin")).thenReturn(Optional.empty());
@@ -143,7 +143,7 @@ class UserServiceTest {
     @Test
     void update_hasheLeNouveauMdp_siPasswordFourni() {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "nouveau_mdp", RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", "nouveau_mdp", RoleEnum.USER, null, null, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
@@ -158,7 +158,7 @@ class UserServiceTest {
     @Test
     void update_leve404_siUtilisateurIntrouvable() {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER, null, null, null);
 
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -172,7 +172,7 @@ class UserServiceTest {
     void update_leve409_siNouveauLoginPrisParAutreUtilisateur() {
         User autreUser = User.builder().id(2L).login("marie.martin").build();
         UpdateUserRequest request = new UpdateUserRequest(
-                "Jean", "Dupont", null, "marie.martin", null, RoleEnum.USER);
+                "Jean", "Dupont", null, "marie.martin", null, RoleEnum.USER, null, null, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.findByLogin("marie.martin")).thenReturn(Optional.of(autreUser));
@@ -186,7 +186,7 @@ class UserServiceTest {
     @Test
     void update_accepteLeMemeLLogin_siLeMemeUtilisateur() {
         UpdateUserRequest request = new UpdateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER);
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER, null, null, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         // findByLogin retourne le même utilisateur → pas de conflit

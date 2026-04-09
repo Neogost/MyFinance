@@ -77,7 +77,7 @@ class OtherIncomeServiceTest {
     @Test
     void create_sauvegardeEtRetourneLDto() {
         CreateOtherIncomeRequest request = new CreateOtherIncomeRequest(
-                OtherIncomeTypeEnum.DIVIDENDE, "Dividendes SCPI", 210.50f, LocalDate.of(2025, 1, 15));
+                OtherIncomeTypeEnum.DIVIDENDE, "Dividendes SCPI", 210.50f, LocalDate.of(2025, 1, 15), null, null);
 
         when(otherIncomeRepository.save(any(OtherIncome.class))).thenAnswer(inv -> {
             OtherIncome i = inv.getArgument(0);
@@ -101,7 +101,7 @@ class OtherIncomeServiceTest {
     @Test
     void update_modifieLeRevenu() {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1));
+                OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1), null, null);
 
         when(otherIncomeRepository.findById(1L)).thenReturn(Optional.of(income));
         when(otherIncomeRepository.save(any(OtherIncome.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -115,7 +115,7 @@ class OtherIncomeServiceTest {
     @Test
     void update_leve404_siRevenuIntrouvable() {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.AUTRE, "Test", 100f, LocalDate.now());
+                OtherIncomeTypeEnum.AUTRE, "Test", 100f, LocalDate.now(), null, null);
 
         when(otherIncomeRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -128,7 +128,7 @@ class OtherIncomeServiceTest {
     @Test
     void update_leve403_siAutreUtilisateurNonAdmin() {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Loyer", 750f, LocalDate.of(2025, 3, 1));
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 750f, LocalDate.of(2025, 3, 1), null, null);
 
         when(otherIncomeRepository.findById(1L)).thenReturn(Optional.of(income));
 
@@ -143,7 +143,7 @@ class OtherIncomeServiceTest {
     @Test
     void update_autorisePourAdmin() {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Loyer admin", 750f, LocalDate.of(2025, 3, 1));
+                OtherIncomeTypeEnum.LOCATIF, "Loyer admin", 750f, LocalDate.of(2025, 3, 1), null, null);
 
         when(otherIncomeRepository.findById(1L)).thenReturn(Optional.of(income));
         when(otherIncomeRepository.save(any(OtherIncome.class))).thenAnswer(inv -> inv.getArgument(0));
