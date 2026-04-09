@@ -1,0 +1,27 @@
+## Paramètres fiscaux — Barème IRPP
+## Mis à jour annuellement par l'administrateur après la loi de finances.
+## Modifier ce fichier et redémarrer l'application suffit (pas de recompilation nécessaire).
+
+tax:
+  year: 2025
+  income-period: "2024"
+  flat-rate-deduction:
+    rate: 0.10      # Taux abattement forfaitaire frais professionnels (10%)
+    min: 504.0      # Plancher de l'abattement en €
+    max: 13522.0    # Plafond de l'abattement en €
+  brackets:
+    - from: 0.0
+      to: 11497.0
+      rate: 0.00
+    - from: 11497.0
+      to: 29315.0
+      rate: 0.11
+    - from: 29315.0
+      to: 83823.0
+      rate: 0.30
+    - from: 83823.0
+      to: 180294.0
+      rate: 0.41
+    - from: 180294.0
+      to: ~          # null = borne supérieure infinie
+      rate: 0.45

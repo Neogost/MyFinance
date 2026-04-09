@@ -12,4 +12,7 @@ public interface SalaryContractRepository extends JpaRepository<SalaryContract, 
 
     // Vérifie qu'un utilisateur n'a pas déjà un contrat actif (endDate = null)
     boolean existsByUserAndEndDateIsNull(User user);
+
+    // Récupère le contrat actif d'un utilisateur (utilisé par le simulateur)
+    java.util.Optional<SalaryContract> findByUserAndEndDateIsNull(User user);
 }
