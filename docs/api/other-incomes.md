@@ -30,14 +30,18 @@ GET /api/other-incomes
     "type": "LOCATIF",
     "label": "Loyer appartement Lyon",
     "amount": 750.0,
-    "date": "2025-03-01"
+    "date": "2025-03-01",
+    "isTaxable": true,
+    "specificTaxRate": null
   },
   {
     "id": 2,
     "type": "DIVIDENDE",
     "label": "Dividendes SCPI",
     "amount": 210.50,
-    "date": "2025-01-15"
+    "date": "2025-01-15",
+    "isTaxable": true,
+    "specificTaxRate": 30.0
   }
 ]
 ```
@@ -58,7 +62,9 @@ Content-Type: application/json
   "type": "LOCATIF",
   "label": "Loyer appartement Lyon",
   "amount": 750.0,
-  "date": "2025-03-01"
+  "date": "2025-03-01",
+  "isTaxable": true,
+  "specificTaxRate": null
 }
 ```
 
@@ -70,15 +76,19 @@ Content-Type: application/json
 | `label` | `string` | oui | non vide | Description libre |
 | `amount` | `number` | oui | > 0 | Montant perçu (€) |
 | `date` | `date` | oui | | Date de perception (ISO 8601) |
+| `isTaxable` | `boolean` | oui | | Ce revenu est-il imposable ? Pré-rempli selon le type (voir tableau ci-dessous) |
+| `specificTaxRate` | `number` | non | 0–100 | Taux d'imposition fixe en % (ex : `30.0` pour la flat tax). `null` = inclus dans le barème IRPP normal |
 
 ### Types disponibles (`OtherIncomeTypeEnum`)
 
-| Valeur | Description |
-|--------|-------------|
-| `LOCATIF` | Revenu locatif (loyers, charges récupérées…) |
-| `DIVIDENDE` | Dividendes hors portefeuille suivi |
-| `AIDE_SOCIALE` | Allocations, aides (CAF, Pôle Emploi…) |
-| `AUTRE` | Autre revenu non salarial (libellé libre) |
+| Valeur | Description | `isTaxable` suggéré | `specificTaxRate` suggéré |
+|--------|-------------|---------------------|---------------------------|
+| `LOCATIF` | Revenu locatif (loyers, charges récupérées…) | `true` | `null` (barème IRPP) |
+| `DIVIDENDE` | Dividendes hors portefeuille suivi | `true` | `30.0` (flat tax PFU fréquente) |
+| `AIDE_SOCIALE` | Allocations, aides (CAF, Pôle Emploi…) | `false` | — |
+| `AUTRE` | Autre revenu non salarial (libellé libre) | `true` | `null` |
+
+> Les valeurs suggérées sont pré-remplies à la saisie mais restent modifiables par l'utilisateur.
 
 ### Réponses
 
@@ -90,7 +100,9 @@ Content-Type: application/json
   "type": "LOCATIF",
   "label": "Loyer appartement Lyon",
   "amount": 750.0,
-  "date": "2025-03-01"
+  "date": "2025-03-01",
+  "isTaxable": true,
+  "specificTaxRate": null
 }
 ```
 
@@ -110,9 +122,13 @@ Content-Type: application/json
   "type": "LOCATIF",
   "label": "Loyer appartement Lyon (révisé)",
   "amount": 780.0,
-  "date": "2025-04-01"
+  "date": "2025-04-01",
+  "isTaxable": true,
+  "specificTaxRate": null
 }
 ```
+
+Champs identiques à POST — voir tableau ci-dessus.
 
 ### Réponses
 
@@ -157,3 +173,5 @@ DELETE /api/other-incomes/3
 | `label` | `string` | Description libre |
 | `amount` | `number` | Montant perçu (€) |
 | `date` | `date` | Date de perception |
+| `isTaxable` | `boolean` | Ce revenu est-il soumis à l'impôt |
+| `specificTaxRate` | `number` | Taux fixe en % si hors barème IRPP (nullable) |

@@ -90,20 +90,26 @@ Content-Type: application/json
   "birthDate": "1990-05-14",
   "login": "marie.dupont",
   "password": "motdepasse",
-  "role": "USER"
+  "role": "USER",
+  "fiscalParts": 1.0,
+  "useFlatRateDeduction": true,
+  "customProfessionalDeduction": null
 }
 ```
 
 ### Champs
 
-| Champ       | Type     | Obligatoire | Description                 |
-|-------------|----------|-------------|-----------------------------|
-| `firstName` | `string` | oui         | Prénom                       |
-| `lastName`  | `string` | oui         | Nom de famille               |
-| `birthDate` | `date`   | non         | Date de naissance (ISO 8601) |
-| `login`     | `string` | oui         | Identifiant unique           |
-| `password`  | `string` | oui         | Mot de passe en clair        |
-| `role`      | `string` | oui         | `USER` ou `ADMIN`            |
+| Champ | Type | Obligatoire | Description |
+|-------|------|-------------|-------------|
+| `firstName` | `string` | oui | Prénom |
+| `lastName` | `string` | oui | Nom de famille |
+| `birthDate` | `date` | non | Date de naissance (ISO 8601) |
+| `login` | `string` | oui | Identifiant unique |
+| `password` | `string` | oui | Mot de passe en clair |
+| `role` | `string` | oui | `USER` ou `ADMIN` |
+| `fiscalParts` | `number` | non | Parts fiscales (quotient familial). Défaut : `1.0`. Minimum : `0.5` |
+| `useFlatRateDeduction` | `boolean` | non | `true` = abattement 10% ; `false` = frais réels. Défaut : `true` |
+| `customProfessionalDeduction` | `number` | conditionnel | Obligatoire si `useFlatRateDeduction = false`. Montant en € (≥ 0) |
 
 ### Réponses
 
@@ -115,7 +121,10 @@ Content-Type: application/json
   "login": "marie.dupont",
   "firstName": "Marie",
   "lastName": "Dupont",
-  "role": "USER"
+  "role": "USER",
+  "fiscalParts": 1.0,
+  "useFlatRateDeduction": true,
+  "customProfessionalDeduction": null
 }
 ```
 
@@ -139,9 +148,14 @@ Content-Type: application/json
   "birthDate": "1990-05-14",
   "login": "marie.martin",
   "password": "",
-  "role": "USER"
+  "role": "USER",
+  "fiscalParts": 2.5,
+  "useFlatRateDeduction": false,
+  "customProfessionalDeduction": 3200.0
 }
 ```
+
+Champs identiques à POST — voir tableau ci-dessus.
 
 ### Réponses
 
@@ -173,12 +187,16 @@ DELETE /api/users/2
 
 ## Modèle `UserDto`
 
-| Champ       | Type     | Description              |
-|-------------|----------|--------------------------|
-| `id`        | `number` | Identifiant unique        |
-| `login`     | `string` | Nom d'utilisateur         |
-| `firstName` | `string` | Prénom                    |
-| `lastName`  | `string` | Nom de famille            |
-| `role`      | `string` | `USER` ou `ADMIN`         |
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant unique |
+| `login` | `string` | Nom d'utilisateur |
+| `firstName` | `string` | Prénom |
+| `lastName` | `string` | Nom de famille |
+| `birthDate` | `date` | Date de naissance (nullable) |
+| `role` | `string` | `USER` ou `ADMIN` |
+| `fiscalParts` | `number` | Parts fiscales (quotient familial) |
+| `useFlatRateDeduction` | `boolean` | Abattement forfaitaire 10% activé |
+| `customProfessionalDeduction` | `number` | Frais réels déclarés en € (nullable) |
 
 > Le mot de passe n'est jamais retourné dans les réponses.

@@ -52,6 +52,14 @@ L'authentification repose sur Spring Security avec :
 | Ajouter / modifier / supprimer ses revenus complémentaires | Admin, User |
 | Consulter les revenus d'un autre utilisateur | Admin |
 
+### Simulateur des impôts
+
+| Fonctionnalité | Accès |
+| --- | --- |
+| Mettre à jour son profil fiscal (parts, abattement) | Admin, User |
+| Lancer sa propre simulation d'impôt | Admin, User |
+| Lancer la simulation d'un autre utilisateur | Admin |
+
 ### Gestion des automatisations
 
 | Fonctionnalité                        | Accès       |
@@ -95,6 +103,9 @@ classDiagram
         +String login
         +String password
         +RoleEnum role
+        +Float fiscalParts
+        +Boolean useFlatRateDeduction
+        +Float customProfessionalDeduction
     }
 
     class RoleEnum {
@@ -111,6 +122,18 @@ classDiagram
     FamilyGroup "1" --> "1" User : owner
     User "0..*" --> "0..1" FamilyGroup : appartient à
 ```
+
+## Profil fiscal
+
+Chaque utilisateur dispose d'un profil fiscal utilisé par le **Simulateur des impôts**.
+
+| Champ | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `fiscalParts` | `Float` | Non | Nombre de parts fiscales (quotient familial). Ex : 1.0 célibataire, 2.5 couple + 1 enfant |
+| `useFlatRateDeduction` | `Boolean` | Non | `true` = abattement forfaitaire 10% sur les revenus salariaux ; `false` = frais réels déclarés |
+| `customProfessionalDeduction` | `Float` | Oui | Montant des frais réels déclarés (€). Obligatoire si `useFlatRateDeduction = false` |
+
+Ces champs sont gérés via `PUT /api/users/{id}` (admin) ou via la page **Profil** de l'utilisateur connecté. La documentation détaillée de la simulation est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).
 
 ## Gestion des regroupements familiaux
 

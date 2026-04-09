@@ -9,6 +9,9 @@ classDiagram
         +String login
         +String password
         +RoleEnum role
+        +Float fiscalParts
+        +Boolean useFlatRateDeduction
+        +Float customProfessionalDeduction
     }
 
     class RoleEnum {
@@ -64,6 +67,27 @@ classDiagram
         +String label
         +Float amount
         +LocalDate date
+        +Boolean isTaxable
+        +Float specificTaxRate
+    }
+
+    %% ── Simulateur des impôts ─────────────────────────────────
+    class TaxSimulationDto {
+        <<DTO — calculé, non persisté>>
+        +Integer year
+        +String salaryIncomeSource
+        +Float salaryIncome
+        +Float otherIncomeInBareme
+        +Float otherIncomeSeparatelyTaxed
+        +Float separateTaxAmount
+        +Float grossTaxableIncome
+        +Float professionalDeduction
+        +String deductionType
+        +Float netTaxableIncome
+        +Float fiscalParts
+        +Float baremeEstimatedTax
+        +Float totalEstimatedTax
+        +Float effectiveTaxRate
     }
 
     class OtherIncomeTypeEnum {
@@ -114,6 +138,9 @@ classDiagram
     %% ── Relations revenus non salariés ───────────────────────
     User "1" o-- "0..*" OtherIncome : otherIncomes
     OtherIncome --> OtherIncomeTypeEnum : type
+
+    %% ── Relations simulateur des impôts ───────────────────────
+    User ..> TaxSimulationDto : simule
 
     %% ── Relations ordres ──────────────────────────────────────
     User "1" o-- "0..*" Ordre : orders

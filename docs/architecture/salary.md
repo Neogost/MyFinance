@@ -181,19 +181,21 @@ Enregistrer tout revenu hors salariat : revenu locatif, dividendes non liés au 
 | `label` | `String` | Description libre (ex : "Loyer appartement Lyon") |
 | `amount` | `Float` | Montant perçu (en €) |
 | `date` | `LocalDate` | Date de perception |
+| `isTaxable` | `Boolean` | Indique si ce revenu est soumis à l'impôt |
+| `specificTaxRate` | `Float` | Taux d'imposition fixe en % (ex : 30.0 pour la flat tax). `null` = inclus dans le barème IRPP normal |
 
 ### Types de revenus (`OtherIncomeTypeEnum`)
 
-| Valeur | Description |
-|--------|-------------|
-| `LOCATIF` | Revenu locatif (loyers perçus, charges récupérées…) |
-| `DIVIDENDE` | Dividendes hors portefeuille suivi dans l'application |
-| `AIDE_SOCIALE` | Allocations, aides (CAF, Pôle Emploi, etc.) |
-| `AUTRE` | Tout autre revenu non salarial (libellé libre) |
+| Valeur | Description | `isTaxable` suggéré | `specificTaxRate` suggéré |
+|--------|-------------|---------------------|---------------------------|
+| `LOCATIF` | Revenu locatif (loyers perçus, charges récupérées…) | `true` | `null` (barème IRPP) |
+| `DIVIDENDE` | Dividendes hors portefeuille suivi dans l'application | `true` | `30.0` (flat tax PFU fréquente) |
+| `AIDE_SOCIALE` | Allocations, aides (CAF, Pôle Emploi, etc.) | `false` | — |
+| `AUTRE` | Tout autre revenu non salarial (libellé libre) | `true` | `null` |
 
 > **Note :** Les dividendes liés à une position du portefeuille sont gérés via l'entité `Dividend` (liée à `Isbn`). `OtherIncome` de type `DIVIDENDE` couvre les dividendes hors portefeuille.
 
-> **Évolution future :** L'alimentation de `OtherIncome` pourra être automatisée (import bancaire, connexion à des API) sans modifier le modèle.
+> **Note fiscale :** Les champs `isTaxable` et `specificTaxRate` sont utilisés par le Simulateur des impôts pour déterminer si ce revenu entre dans le calcul IRPP et à quel taux. Voir [`docs/architecture/tax-simulator.md`](tax-simulator.md).
 
 ---
 
@@ -255,6 +257,8 @@ classDiagram
         +String label
         +Float amount
         +LocalDate date
+        +Boolean isTaxable
+        +Float specificTaxRate
     }
     class OtherIncomeTypeEnum {
         LOCATIF
@@ -280,7 +284,7 @@ classDiagram
 
 ---
 
-## Endpoints prévus
+## Endpoints
 
 ### Contrats salariaux
 | Méthode | URL | Description |
@@ -338,10 +342,12 @@ classDiagram
 
 ---
 
-## Extension future — Calculateur d'impôts
+## Lien avec le Simulateur des impôts
 
-À partir de `annualNetSalary` (SalaryProjectionDto) + `incomeTaxWithholding` cumulé (MonthlyPaySlip) + `OtherIncome`, il sera possible d'implémenter un calculateur d'IRPP théorique incluant :
-- Quotient familial (nombre de parts)
-- Tranches d'imposition en vigueur
-- Abattements (10% frais professionnels, etc.)
-- Comparaison prélèvement à la source versé vs impôt théorique
+Les données de revenus salariaux et complémentaires alimentent le **Simulateur des impôts** :
+
+- `MonthlyPaySlip.taxableNetSalary` → utilisé si l'option "Bulletins réels" est choisie
+- `SalaryContract.annualGrossSalary × 0,75` → utilisé si l'option "Projection contrat" est choisie
+- `OtherIncome.amount` (filtrés par `isTaxable` et `specificTaxRate`) → revenus complémentaires
+
+La documentation complète du simulateur est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).

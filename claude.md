@@ -46,23 +46,26 @@ frontend/src/
 ├── api/
 │   ├── auth.js       Login, logout, me
 │   ├── users.js      CRUD utilisateurs
-│   └── income.js     CRUD salary-contracts, pay-slips, bonuses, benefits, other-incomes
+│   ├── income.js     CRUD salary-contracts, pay-slips, bonuses, benefits, other-incomes
+│   └── tools.js      Appels simulateur des impôts
 ├── components/
 │   ├── LoginForm.jsx
-│   ├── Navigation.jsx
-│   ├── users/        UserList, UserForm, ChangePasswordForm
-│   └── income/
-│       ├── SalaryContractPage.jsx   Page principale revenus salariaux
-│       ├── SalaryContractForm.jsx   Modal création/édition contrat
-│       ├── ProjectionGrid.jsx       Grille de projections calculées (brut+primes, net+TR+avantages)
-│       ├── PaySlipPanel.jsx         Panel bulletins de paie réels
-│       ├── BonusPanel.jsx           Panel primes annuelles/exceptionnelles
-│       ├── BonusForm.jsx            Modal création/édition prime
-│       ├── BenefitPanel.jsx         Panel avantages en nature
-│       ├── BenefitForm.jsx          Modal création/édition avantage
-│       ├── OtherIncomePage.jsx      Page revenus complémentaires
-│       └── OtherIncomeForm.jsx      Modal création/édition revenu
-├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | users | profile)
+│   ├── Navigation.jsx        Menu principal avec dropdowns Revenus et Outils
+│   ├── users/        UserList, UserForm (+ profil fiscal), ChangePasswordForm
+│   ├── income/
+│   │   ├── SalaryContractPage.jsx   Page principale revenus salariaux
+│   │   ├── SalaryContractForm.jsx   Modal création/édition contrat
+│   │   ├── ProjectionGrid.jsx       Grille de projections calculées (brut+primes, net+TR+avantages)
+│   │   ├── PaySlipPanel.jsx         Panel bulletins de paie réels
+│   │   ├── BonusPanel.jsx           Panel primes annuelles/exceptionnelles
+│   │   ├── BonusForm.jsx            Modal création/édition prime
+│   │   ├── BenefitPanel.jsx         Panel avantages en nature
+│   │   ├── BenefitForm.jsx          Modal création/édition avantage
+│   │   ├── OtherIncomePage.jsx      Page revenus complémentaires (badges fiscaux)
+│   │   └── OtherIncomeForm.jsx      Modal création/édition revenu (+ champs fiscaux)
+│   └── tools/
+│       └── TaxSimulatorPage.jsx     Simulateur des impôts
+├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | tax-simulator | users | profile)
 ├── App.css           Fichier vide (styles migrés vers Tailwind)
 └── index.css         Point d'entrée CSS — @import "tailwindcss"
 ```
@@ -77,12 +80,14 @@ frontend/src/
 - Fonctionnalités détaillées : `docs/architecture/overview.md`
 - Gestion des utilisateurs et droits : `docs/architecture/userManagement.md`
 - Gestion des revenus (entités, formules, accès) : `docs/architecture/salary.md`
+- Simulateur des impôts (algorithme, barème, config) : `docs/architecture/tax-simulator.md`
 - Modèle de données (diagramme de classes) : `docs/architecture/diagram/class-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
 - API authentification : `docs/api/authentication.md`
 - API utilisateurs : `docs/api/users.md`
 - API contrats salariaux et bulletins : `docs/api/salary-contracts.md`
 - API revenus complémentaires : `docs/api/other-incomes.md`
+- API simulateur des impôts : `docs/api/tax-simulator.md`
 
 ## Endpoints backend existants
 
@@ -143,6 +148,12 @@ frontend/src/
 | `POST` | `/api/other-incomes` | Authentifié | Ajouter un revenu (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) |
 | `PUT` | `/api/other-incomes/{id}` | Authentifié | Modifier un revenu |
 | `DELETE` | `/api/other-incomes/{id}` | Authentifié | Supprimer un revenu |
+
+### Simulateur des impôts
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/tax-simulator` | Authentifié | Simulation IRPP pour l'utilisateur connecté |
+| `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Simulation IRPP pour un autre utilisateur |
 
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
@@ -215,8 +226,9 @@ npm run dev
 - Primes sur contrat (EXCEPTIONNELLE avec date de versement, ANNUELLE avec mois de versement)
 - Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) avec totaux par catégorie
 - Frontend : navigation avec menu Revenus, pages Salariat et Complémentaires, formulaires modaux
-- Tests unitaires : (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, ContractBonusService, ContractBonusController, ContractBenefitService, ContractBenefitController, OtherIncomeService, OtherIncomeController, SalaryContractDto)
+- Tests unitaires : (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, ContractBonusService, ContractBonusController, ContractBenefitService, ContractBenefitController, OtherIncomeService, OtherIncomeController, SalaryContractDto, TaxSimulatorService, TaxSimulatorController)
 - Documentation API : `docs/api/` | ADR : `docs/architecture/decisions/`
+- **Simulateur des impôts** : profil fiscal utilisateur (parts, abattement), simulation IRPP avec choix de source salariale et sélection des revenus complémentaires — doc : `docs/architecture/tax-simulator.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

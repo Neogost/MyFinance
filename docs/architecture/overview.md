@@ -291,3 +291,14 @@ classDiagram
 
 Les projections (net mensuel, journalier, horaire) sont calculées à la volée dans `SalaryContractDto` et ne sont jamais persistées en base.
 
+### Outils
+
+Un menu **Outils** regroupe les fonctionnalités de simulation et d'analyse transverses.
+
+#### Simulateur des impôts
+
+Permet d'estimer l'impôt sur le revenu (IRPP) à partir des données saisies dans l'application. L'utilisateur choisit l'année à simuler, la source des revenus salariaux (projection ou bulletins réels) et peut inclure ou exclure individuellement ses revenus complémentaires.
+
+La documentation détaillée (algorithme, barème, configuration) est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).
+La documentation API est dans [`docs/api/tax-simulator.md`](../api/tax-simulator.md).
+
