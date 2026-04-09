@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import {
   getSalaryContracts, createSalaryContract,
-  updateSalaryContract, deleteSalaryContract,
+  updateSalaryContract, deleteSalaryContract, getBonuses, getBenefits,
 } from '../../api/income'
 import SalaryContractForm from './SalaryContractForm'
 import ProjectionGrid from './ProjectionGrid'
 import PaySlipPanel from './PaySlipPanel'
+import BonusPanel from './BonusPanel'
+import BenefitPanel from './BenefitPanel'
 
 export default function SalaryContractPage() {
   const [contracts, setContracts] = useState([])
@@ -14,8 +16,31 @@ export default function SalaryContractPage() {
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
   const [showSlips, setShowSlips] = useState(false)
+  const [showBonuses, setShowBonuses] = useState(false)
+  const [showBenefits, setShowBenefits] = useState(false)
+  const [annualBonuses, setAnnualBonuses] = useState([])
+  const [benefits, setBenefits] = useState([])
 
   useEffect(() => { fetchContracts() }, [])
+
+  function fetchAnnualBonuses(contractId) {
+    if (!contractId) { setAnnualBonuses([]); return }
+    getBonuses(contractId)
+      .then(bs => setAnnualBonuses(bs.filter(b => b.type === 'ANNUELLE')))
+      .catch(() => setAnnualBonuses([]))
+  }
+
+  function fetchBenefits(contractId) {
+    if (!contractId) { setBenefits([]); return }
+    getBenefits(contractId)
+      .then(bs => setBenefits(bs))
+      .catch(() => setBenefits([]))
+  }
+
+  useEffect(() => {
+    fetchAnnualBonuses(selected?.id)
+    fetchBenefits(selected?.id)
+  }, [selected?.id])
 
   async function fetchContracts() {
     try {
@@ -75,7 +100,7 @@ export default function SalaryContractPage() {
           {contracts.map(c => (
             <button
               key={c.id}
-              onClick={() => { setSelected(c); setShowSlips(false) }}
+              onClick={() => { setSelected(c); setShowSlips(false); setShowBonuses(false); setShowBenefits(false) }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 selected?.id === c.id
                   ? 'bg-indigo-600 text-white'
@@ -107,6 +132,9 @@ export default function SalaryContractPage() {
                 <span>Brut annuel : <strong className="text-gray-900">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
                 <span>{selected.paidMonthsPerYear} mois / an</span>
                 <span>{selected.weeklyHours} h / semaine</span>
+                {annualBonuses.length > 0 && (
+                  <span>Primes annuelles : <strong className="text-blue-700">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -126,10 +154,39 @@ export default function SalaryContractPage() {
           </div>
 
           {/* Projections */}
-          <ProjectionGrid contract={selected} />
+          <ProjectionGrid contract={selected} annualBonuses={annualBonuses} benefits={benefits} />
+
+          {/* Séparateur + bouton primes */}
+          <div className="border-t border-gray-100 mt-6 pt-4">
+            <button
+              onClick={() => setShowBonuses(v => !v)}
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition"
+            >
+              {showBonuses ? '▲ Masquer les primes' : '▼ Afficher les primes'}
+            </button>
+            {showBonuses && (
+              <BonusPanel contractId={selected.id} onBonusChange={() => fetchAnnualBonuses(selected.id)} />
+            )}
+          </div>
+
+          {/* Séparateur + bouton avantages en nature */}
+          <div className="border-t border-gray-100 mt-4 pt-4">
+            <button
+              onClick={() => setShowBenefits(v => !v)}
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition"
+            >
+              {showBenefits ? '▲ Masquer les avantages en nature' : '▼ Afficher les avantages en nature'}
+            </button>
+            {showBenefits && (
+              <BenefitPanel
+                contractId={selected.id}
+                onBenefitChange={() => fetchBenefits(selected.id)}
+              />
+            )}
+          </div>
 
           {/* Séparateur + bouton bulletins */}
-          <div className="border-t border-gray-100 mt-6 pt-4">
+          <div className="border-t border-gray-100 mt-4 pt-4">
             <button
               onClick={() => setShowSlips(v => !v)}
               className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition"

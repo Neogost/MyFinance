@@ -15,6 +15,18 @@ export const createPaySlip  = (contractId, data)    => api.post(`/api/salary-con
 export const updatePaySlip  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/pay-slips/${id}`, data).then(r => r.data)
 export const deletePaySlip  = (contractId, id)      => api.delete(`/api/salary-contracts/${contractId}/pay-slips/${id}`)
 
+// ── Primes ─────────────────────────────────────────────────────
+export const getBonuses    = (contractId)           => api.get(`/api/salary-contracts/${contractId}/bonuses`).then(r => r.data)
+export const createBonus   = (contractId, data)     => api.post(`/api/salary-contracts/${contractId}/bonuses`, data).then(r => r.data)
+export const updateBonus   = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/bonuses/${id}`, data).then(r => r.data)
+export const deleteBonus   = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/bonuses/${id}`)
+
+// ── Avantages en nature ────────────────────────────────────────
+export const getBenefits    = (contractId)           => api.get(`/api/salary-contracts/${contractId}/benefits`).then(r => r.data)
+export const createBenefit  = (contractId, data)     => api.post(`/api/salary-contracts/${contractId}/benefits`, data).then(r => r.data)
+export const updateBenefit  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/benefits/${id}`, data).then(r => r.data)
+export const deleteBenefit  = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/benefits/${id}`)
+
 // ── Revenus complémentaires ────────────────────────────────────
 export const getOtherIncomes   = ()          => api.get('/api/other-incomes').then(r => r.data)
 export const createOtherIncome = (data)      => api.post('/api/other-incomes', data).then(r => r.data)
