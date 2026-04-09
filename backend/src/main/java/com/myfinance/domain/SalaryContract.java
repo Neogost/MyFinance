@@ -50,4 +50,12 @@ public class SalaryContract {
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MonthlyPaySlip> paySlips = new ArrayList<>();
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ContractBonus> bonuses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ContractBenefit> benefits = new ArrayList<>();
 }
