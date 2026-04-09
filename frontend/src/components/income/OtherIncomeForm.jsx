@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 
 const TYPES = [
-  { value: 'LOCATIF',     label: 'Revenu locatif' },
-  { value: 'DIVIDENDE',   label: 'Dividende' },
+  { value: 'LOCATIF',      label: 'Revenu locatif' },
+  { value: 'DIVIDENDE',    label: 'Dividende' },
   { value: 'AIDE_SOCIALE', label: 'Aide sociale' },
-  { value: 'AUTRE',       label: 'Autre' },
+  { value: 'AUTRE',        label: 'Autre' },
 ]
 
-const EMPTY = { type: 'LOCATIF', label: '', amount: '', date: '' }
+const EMPTY = { type: 'LOCATIF', label: '', amount: '', date: '', isTaxable: true, specificTaxRate: '' }
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 const labelCls = 'text-sm font-semibold text-gray-700'
@@ -20,13 +20,26 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
 
   useEffect(() => {
     setForm(income
-      ? { type: income.type, label: income.label, amount: income.amount, date: income.date }
+      ? {
+          type:            income.type,
+          label:           income.label,
+          amount:          income.amount,
+          date:            income.date,
+          isTaxable:       income.isTaxable ?? true,
+          specificTaxRate: income.specificTaxRate ?? '',
+        }
       : EMPTY
     )
   }, [income])
 
   function handleChange(e) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+    const { name, value, type, checked } = e.target
+    setForm(f => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value,
+      // Effacer le taux si on coche "non imposable"
+      ...(name === 'isTaxable' && !checked ? { specificTaxRate: '' } : {}),
+    }))
   }
 
   async function handleSubmit(e) {
@@ -34,7 +47,11 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
     setError(null)
     setLoading(true)
     try {
-      await onSubmit({ ...form, amount: parseFloat(form.amount) })
+      await onSubmit({
+        ...form,
+        amount:          parseFloat(form.amount),
+        specificTaxRate: form.specificTaxRate !== '' ? parseFloat(form.specificTaxRate) : null,
+      })
     } catch {
       setError('Une erreur est survenue.')
     } finally {
@@ -79,6 +96,34 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
               <label className={labelCls}>Date de perception *</label>
               <input name="date" type="date" value={form.date} onChange={handleChange} required className={inputCls} />
             </div>
+          </div>
+
+          {/* ── Fiscalité ── */}
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fiscalité</p>
+
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox" name="isTaxable" checked={form.isTaxable}
+                onChange={handleChange} className="accent-indigo-600 w-4 h-4"
+              />
+              <span className="text-sm text-gray-700">Revenu imposable</span>
+            </label>
+
+            {form.isTaxable && (
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>
+                  Taux d'imposition spécifique (%)
+                  <span className="ml-1 font-normal text-gray-400">— laisser vide pour le barème progressif</span>
+                </label>
+                <input
+                  name="specificTaxRate" type="number" min="0" max="100" step="0.1"
+                  value={form.specificTaxRate} onChange={handleChange}
+                  placeholder="ex : 12.8 pour le PFU dividendes"
+                  className={inputCls}
+                />
+              </div>
+            )}
           </div>
 
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}

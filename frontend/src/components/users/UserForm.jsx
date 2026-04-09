@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', birthDate: '', login: '', password: '', role: 'USER',
+  fiscalParts: '1.0', useFlatRateDeduction: true, customProfessionalDeduction: '',
 }
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
@@ -16,12 +17,15 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
   useEffect(() => {
     if (userToEdit) {
       setForm({
-        firstName: userToEdit.firstName ?? '',
-        lastName:  userToEdit.lastName  ?? '',
-        birthDate: userToEdit.birthDate ?? '',
-        login:     userToEdit.login     ?? '',
-        password:  '',
-        role:      userToEdit.role      ?? 'USER',
+        firstName:                 userToEdit.firstName                 ?? '',
+        lastName:                  userToEdit.lastName                  ?? '',
+        birthDate:                 userToEdit.birthDate                 ?? '',
+        login:                     userToEdit.login                     ?? '',
+        password:                  '',
+        role:                      userToEdit.role                      ?? 'USER',
+        fiscalParts:               userToEdit.fiscalParts               ?? '1.0',
+        useFlatRateDeduction:      userToEdit.useFlatRateDeduction      ?? true,
+        customProfessionalDeduction: userToEdit.customProfessionalDeduction ?? '',
       })
     } else {
       setForm(EMPTY_FORM)
@@ -29,7 +33,12 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
   }, [userToEdit])
 
   function handleChange(e) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+    const { name, value, type, checked } = e.target
+    setForm(f => ({
+      ...f,
+      [name]: type === 'checkbox' ? checked : value,
+      ...(name === 'useFlatRateDeduction' && checked ? { customProfessionalDeduction: '' } : {}),
+    }))
   }
 
   async function handleSubmit(e) {
@@ -38,7 +47,13 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
     setLoading(true)
     try {
       // En édition, on n'envoie le mot de passe que s'il est renseigné
-      const payload = { ...form }
+      const payload = {
+        ...form,
+        fiscalParts: form.fiscalParts !== '' ? parseFloat(form.fiscalParts) : null,
+        customProfessionalDeduction: form.customProfessionalDeduction !== ''
+          ? parseFloat(form.customProfessionalDeduction)
+          : null,
+      }
       if (isEdit && !payload.password) delete payload.password
       await onSubmit(payload)
     } catch (err) {
@@ -98,6 +113,54 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
               <option value="USER">Utilisateur</option>
               <option value="ADMIN">Administrateur</option>
             </select>
+          </div>
+
+          {/* ── Profil fiscal ── */}
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Profil fiscal</p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>Quotient familial (parts)</label>
+              <input
+                name="fiscalParts" type="number" min="1" max="10" step="0.25"
+                value={form.fiscalParts} onChange={handleChange}
+                className={inputCls}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className={labelCls}>Type d'abattement professionnel</label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio" name="useFlatRateDeduction" value="true"
+                  checked={form.useFlatRateDeduction === true}
+                  onChange={() => setForm(f => ({ ...f, useFlatRateDeduction: true, customProfessionalDeduction: '' }))}
+                  className="accent-indigo-600"
+                />
+                Forfaitaire 10% (défaut)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio" name="useFlatRateDeduction" value="false"
+                  checked={form.useFlatRateDeduction === false}
+                  onChange={() => setForm(f => ({ ...f, useFlatRateDeduction: false }))}
+                  className="accent-indigo-600"
+                />
+                Frais réels
+              </label>
+            </div>
+
+            {form.useFlatRateDeduction === false && (
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Montant des frais réels (€)</label>
+                <input
+                  name="customProfessionalDeduction" type="number" min="0" step="1"
+                  value={form.customProfessionalDeduction} onChange={handleChange}
+                  placeholder="ex : 8000"
+                  className={inputCls}
+                />
+              </div>
+            )}
           </div>
 
           {error && (

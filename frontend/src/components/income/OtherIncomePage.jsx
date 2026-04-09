@@ -128,6 +128,7 @@ export default function OtherIncomePage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Fiscalité</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Montant</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -142,6 +143,15 @@ export default function OtherIncomePage() {
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800">{income.label}</td>
+                    <td className="px-4 py-3">
+                      {income.isTaxable === false ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Non imposable</span>
+                      ) : income.specificTaxRate != null ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Taux fixe {income.specificTaxRate}%</span>
+                      ) : (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Barème</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       {income.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </td>

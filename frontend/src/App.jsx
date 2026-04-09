@@ -5,6 +5,7 @@ import UserList from './components/users/UserList'
 import ChangePasswordForm from './components/users/ChangePasswordForm'
 import SalaryContractPage from './components/income/SalaryContractPage'
 import OtherIncomePage from './components/income/OtherIncomePage'
+import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import { logout } from './api/auth'
 
 export default function App() {
@@ -48,6 +49,8 @@ export default function App() {
         {currentPage === 'salary' && <SalaryContractPage />}
 
         {currentPage === 'other-incomes' && <OtherIncomePage />}
+
+        {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 
