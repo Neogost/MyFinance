@@ -35,7 +35,7 @@ public class TaxSimulatorService {
      * @param user            Utilisateur cible
      * @param year            Année fiscale à simuler
      * @param salarySource    SOURCE_PROJECTION ou SOURCE_BULLETINS
-     * @param includedIds     IDs des OtherIncome à inclure (null = tous les isTaxable=true de l'année)
+     * @param includedIds     IDs des OtherIncome à inclure (null ou liste vide = aucun revenu complémentaire)
      */
     public TaxSimulationDto simulate(User user, int year, String salarySource, List<Long> includedIds) {
 
@@ -160,17 +160,14 @@ public class TaxSimulatorService {
     // ── Filtrage des revenus complémentaires ───────────────────
 
     private List<OtherIncome> filtrerRevenus(List<OtherIncome> all, List<Long> includedIds) {
+        // null ou liste vide = aucun revenu complémentaire inclus
+        if (includedIds == null || includedIds.isEmpty()) {
+            return List.of();
+        }
         return all.stream()
                 .filter(i -> {
-                    // Les revenus sans isTaxable (avant migration) sont traités comme imposables
                     boolean taxable = i.getIsTaxable() == null || i.getIsTaxable();
-                    if (!taxable) return false;
-
-                    // null = inclure tous les imposables ; liste (même vide) = filtrer strictement
-                    if (includedIds != null) {
-                        return includedIds.contains(i.getId());
-                    }
-                    return true; // par défaut : tous les imposables
+                    return taxable && includedIds.contains(i.getId());
                 })
                 .toList();
     }

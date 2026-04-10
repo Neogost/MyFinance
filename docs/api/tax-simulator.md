@@ -21,7 +21,7 @@ Lance le calcul de simulation d'impôt pour l'utilisateur connecté.
 |-----------|------|-------------|--------|-------------|
 | `year` | `Integer` | Non | Année en cours | Année fiscale à simuler |
 | `salarySource` | `String` | Non | `PROJECTION_CONTRAT` | Source des revenus salariaux : `PROJECTION_CONTRAT` ou `BULLETINS_REELS` |
-| `includedIncomes` | `List<Long>` | Non | Tous les `isTaxable=true` de l'année | IDs des `OtherIncome` à inclure. `null` = tous les imposables ; liste vide = aucun ; liste d'IDs = uniquement ceux-ci |
+| `includedIncomes` | `List<Long>` | Non | Aucun (liste vide) | IDs des `OtherIncome` à inclure dans le calcul. Absent ou vide = aucun revenu complémentaire ; liste d'IDs = uniquement ceux-ci |
 
 ### Exemple de requête
 

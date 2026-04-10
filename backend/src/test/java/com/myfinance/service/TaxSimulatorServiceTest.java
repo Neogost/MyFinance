@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -70,8 +71,9 @@ class TaxSimulatorServiceTest {
         flatRate.setMin(504f);
         flatRate.setMax(13522f);
 
-        when(taxParameters.getBrackets()).thenReturn(brackets);
-        when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
+        // lenient : certains tests lèvent une exception avant d'atteindre le calcul fiscal
+        Mockito.lenient().when(taxParameters.getBrackets()).thenReturn(brackets);
+        Mockito.lenient().when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
     }
 
     // ── Source : projection du contrat ────────────────────────
@@ -164,7 +166,7 @@ class TaxSimulatorServiceTest {
         // salaire = 0, abattement = 504 (min), mais netTaxable >= 0
         // otherIncomeInBareme = 5000
         // netTaxableIncome = (0 - 504) + 5000 → max(0, -504 + 5000) = 4496
-        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(1L));
 
         assertThat(result.otherIncomeInBareme()).isEqualTo(5000f);
         assertThat(result.otherIncomeSeparatelyTaxed()).isEqualTo(0f);
@@ -185,7 +187,7 @@ class TaxSimulatorServiceTest {
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(dividende));
 
-        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(2L));
 
         assertThat(result.otherIncomeSeparatelyTaxed()).isEqualTo(10000f);
         assertThat(result.separateTaxAmount()).isCloseTo(1280f, org.assertj.core.data.Offset.offset(0.01f));
@@ -205,7 +207,8 @@ class TaxSimulatorServiceTest {
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(nonImposable));
 
-        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
+        // Passer l'ID du revenu non imposable : il doit quand même être exclu
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(3L));
 
         assertThat(result.otherIncomeInBareme()).isEqualTo(0f);
         assertThat(result.grossTaxableIncome()).isEqualTo(0f);
@@ -248,7 +251,7 @@ class TaxSimulatorServiceTest {
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
         assertThat(result.professionalDeduction()).isEqualTo(504f);
-        assertThat(result.netTaxableIncome()).isEqualTo(0f); // max(0, 750 - 504) = 246 → mais wait: 750-504=246
+        assertThat(result.netTaxableIncome()).isEqualTo(246f); // max(0, 750 - 504) = 246
     }
 
     @Test

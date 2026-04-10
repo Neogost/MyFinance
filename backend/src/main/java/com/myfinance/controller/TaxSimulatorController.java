@@ -39,7 +39,7 @@ public class TaxSimulatorController {
             @RequestParam(required = false) Integer year,
             @Parameter(description = "Source des revenus salariaux : PROJECTION_CONTRAT ou BULLETINS_REELS")
             @RequestParam(required = false, defaultValue = TaxSimulatorService.SOURCE_PROJECTION) String salarySource,
-            @Parameter(description = "IDs des revenus complémentaires à inclure (défaut : tous les imposables)")
+            @Parameter(description = "IDs des revenus complémentaires à inclure (absent ou vide = aucun revenu complémentaire)")
             @RequestParam(required = false) List<Long> includedIncomes) {
 
         int annee = year != null ? year : LocalDate.now().getYear();
@@ -60,7 +60,7 @@ public class TaxSimulatorController {
             @RequestParam(required = false) Integer year,
             @Parameter(description = "Source des revenus salariaux : PROJECTION_CONTRAT ou BULLETINS_REELS")
             @RequestParam(required = false, defaultValue = TaxSimulatorService.SOURCE_PROJECTION) String salarySource,
-            @Parameter(description = "IDs des revenus complémentaires à inclure (défaut : tous les imposables)")
+            @Parameter(description = "IDs des revenus complémentaires à inclure (absent ou vide = aucun revenu complémentaire)")
             @RequestParam(required = false) List<Long> includedIncomes) {
 
         User targetUser = userService.findEntityById(userId);
