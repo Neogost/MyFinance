@@ -60,8 +60,7 @@ export default function TaxSimulatorPage() {
     setLoading(true)
     setResult(null)
     try {
-      const allChecked = taxableIncomes.every(i => checkedIds.has(i.id))
-      const includedIncomes = allChecked ? null : [...checkedIds]
+      const includedIncomes = [...checkedIds]
       setResult(await simulateTax({ year, salarySource, includedIncomes }))
     } catch (err) {
       setError(err.response?.data?.message ?? 'Une erreur est survenue. Vérifiez que votre contrat ou vos bulletins sont renseignés.')
@@ -166,14 +165,19 @@ export default function TaxSimulatorPage() {
           </h3>
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-indigo-50 rounded-xl p-5 text-center">
-              <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1">Impôt estimé</p>
-              <p className="text-3xl font-bold text-indigo-700">{fmt(result.totalEstimatedTax)}</p>
+              <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1">Impôt annuel</p>
+              <p className="text-2xl font-bold text-indigo-700">{fmt(result.totalEstimatedTax)}</p>
+            </div>
+            <div className="bg-indigo-100 rounded-xl p-5 text-center">
+              <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Impôt mensuel</p>
+              <p className="text-2xl font-bold text-indigo-800">{fmt(result.totalEstimatedTax / 12)}</p>
+              <p className="text-xs text-indigo-400 mt-1">÷ 12 mois</p>
             </div>
             <div className="bg-indigo-50 rounded-xl p-5 text-center">
               <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1">Taux effectif</p>
-              <p className="text-3xl font-bold text-indigo-700">{result.effectiveTaxRate?.toFixed(2)} %</p>
+              <p className="text-2xl font-bold text-indigo-700">{result.effectiveTaxRate?.toFixed(2)} %</p>
             </div>
           </div>
 
@@ -196,7 +200,8 @@ export default function TaxSimulatorPage() {
               <ResultRow label="Quotient familial (parts)" value={result.fiscalParts} />
               <ResultRow label="Impôt au barème progressif" value={fmt(result.baremeEstimatedTax)} />
               <ResultRow label="Impôt à taux fixe" value={fmt(result.separateTaxAmount)} />
-              <ResultRow label="Impôt total estimé" value={fmt(result.totalEstimatedTax)} highlight />
+              <ResultRow label="Impôt total estimé (annuel)" value={fmt(result.totalEstimatedTax)} highlight />
+              <ResultRow label="Impôt mensuel estimé" value={fmt(result.totalEstimatedTax / 12)} highlight />
               <ResultRow label="Taux effectif d'imposition" value={`${result.effectiveTaxRate?.toFixed(2)} %`} highlight />
             </tbody>
           </table>

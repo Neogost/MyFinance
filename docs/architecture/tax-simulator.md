@@ -211,7 +211,8 @@ pour chaque tranche [from, to, rate] :
 | Abattement appliqué | Montant en € + type (forfaitaire 10% ou frais réels) |
 | Revenu net imposable au barème | Montant en € |
 | Quotient familial | Nombre de parts |
-| **Impôt estimé total** | **Montant en €** |
+| **Impôt estimé total** | **Montant annuel en €** |
+| **Impôt mensuel estimé** | **Impôt annuel ÷ 12 — indicatif prélèvement à la source** |
 | **Taux effectif** | **En %** |
 
 ---
