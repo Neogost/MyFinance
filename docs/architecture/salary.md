@@ -34,6 +34,8 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 | `weeklyHours` | `Float` | Heures travaillées par semaine |
 | `mealVoucherAmount` | `Float` | Valeur faciale d'un ticket restaurant (en €) |
 | `mealVoucherEmployeeRate` | `Float` | Part salarié du ticket restaurant (en %, ex : 50.0) |
+| `isCadre` | `Boolean` | `true` = statut cadre (APEC applicable). `null` traité comme `false` |
+| `employeePrevoyanceRate` | `Float` | Taux prévoyance/mutuelle salarié en décimal (ex : `0.015` = 1,5%). Nullable |
 
 **Règle** : un seul contrat peut avoir `endDate = null` par utilisateur (contrat actif).
 
@@ -41,7 +43,7 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 
 | Champ | Formule |
 |-------|---------|
-| `annualNetSalary` | `annualGrossSalary × 0,75` |
+| `annualNetSalary` | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` |
 | `monthlyGrossSalary` | `annualGrossSalary ÷ paidMonthsPerYear` |
 | `monthlyNetSalary` | `annualNetSalary ÷ paidMonthsPerYear` |
 | `annualWorkingHours` | `weeklyHours × (228 ÷ 5)` |
@@ -52,14 +54,80 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 | `employeeMonthlyMealVoucherCost` | `mealVoucherAmount × (employeeRate ÷ 100) × 19` |
 | `employerMonthlyMealVoucherCost` | `mealVoucherAmount × ((100 − employeeRate) ÷ 100) × 19` |
 
+> `annualNetSalary` représente le **net imposable annuel**, calculé à partir des taux de cotisations salariales réels (voir section [NetImposableCalculator](#nettoimposablecalculator--calcul-du-net-imposable) ci-dessous).
+
 ### Constantes utilisées
 
 | Constante | Valeur | Justification |
 |-----------|--------|---------------|
-| Ratio brut → net | `0,75` | Estimation forfaitaire des cotisations salariales françaises |
+| PASS (Plafond Annuel SS) | `47 100 €` (2025) | Seuil de plafonnement des cotisations vieillesse et AGIRC-ARRCO T1 — externalisé dans `tax-parameters.yml` |
 | Jours travaillés / an | `228` | Convention standard (tooltip explicatif prévu dans l'IHM) |
 | Jours travaillés / mois | `19` | 228 ÷ 12, arrondi |
 | Jours / semaine ouvrée | `5` | |
+
+---
+
+## 1bis. NetImposableCalculator — Calcul du net imposable
+
+### Objectif
+
+Calculer le **salaire net imposable** (revenu après cotisations salariales déductibles, avant CSG non déductible et CRDS) à partir du brut annuel, en appliquant les taux légaux français 2025.
+
+> **Net imposable ≠ Net à payer** : la CSG non déductible (2,40 %) et la CRDS (0,50 %) sont prélevées sur le bulletin mais **ne sont pas déductibles** du revenu imposable. Elles ne rentrent donc pas dans le calcul du net imposable.
+
+### Implémentation
+
+Classe utilitaire pure `NetImposableCalculator` (méthode statique, pas de bean Spring) dans `com.myfinance.service`. Appellable depuis `SalaryContractDto.from()` (méthode statique) et depuis `TaxSimulatorService` (bean Spring).
+
+### Cotisations salariales déductibles prises en compte
+
+| Cotisation | Base de calcul | Taux 2025 |
+|------------|----------------|-----------|
+| Vieillesse plafonnée | `min(brut, PASS)` | 6,90 % |
+| Vieillesse déplafonnée | `brut` | 0,40 % |
+| CSG déductible | `brut × 98,25 %` | 6,80 % |
+| AGIRC-ARRCO Tranche 1 | `min(brut, PASS)` | 3,15 % |
+| CEG Tranche 1 | `min(brut, PASS)` | 0,86 % |
+| AGIRC-ARRCO Tranche 2 | `max(0, min(brut, 8×PASS) − PASS)` | 8,64 % |
+| CEG Tranche 2 | `max(0, min(brut, 8×PASS) − PASS)` | 1,08 % |
+| APEC | `min(brut, 4×PASS)` | 0,024 % — **cadres uniquement** |
+| Prévoyance/mutuelle | `brut` | variable (stocké dans `employeePrevoyanceRate`, nullable) |
+
+### Formule
+
+```
+assietteCsg      = brut × 98,25 %
+vieillessePlaf   = min(brut, PASS) × 6,90 %
+vieillesseDeplaf = brut × 0,40 %
+csgDeductible    = assietteCsg × 6,80 %
+agircArrco       = min(brut, PASS) × 3,15 % + max(0, min(brut, 8×PASS) − PASS) × 8,64 %
+ceg              = min(brut, PASS) × 0,86 % + max(0, min(brut, 8×PASS) − PASS) × 1,08 %
+apec             = si cadre : min(brut, 4×PASS) × 0,024 %   sinon : 0
+prevoyance       = si employeePrevoyanceRate renseigné : brut × taux   sinon : 0
+
+totalDeductible  = vieillessePlaf + vieillesseDeplaf + csgDeductible + agircArrco + ceg + apec + prevoyance
+
+netImposable     = max(0, brut − totalDeductible)
+```
+
+### Configuration externalisée
+
+Tous les taux et le PASS sont externalisés dans `tax-parameters.yml` (même fichier que le barème IRPP), sous la clé `employee-contributions`. Ils peuvent être mis à jour chaque année sans recompilation.
+
+```yaml
+tax:
+  pass: 47100.0
+  employee-contributions:
+    csg-base-rate: 0.9825
+    csg-deductible-rate: 0.0680
+    vieillesse-plafonne-rate: 0.0690
+    vieillesse-de-plafonnee-rate: 0.0040
+    agirc-arrco-t1-rate: 0.0315
+    ceg-t1-rate: 0.0086
+    agirc-arrco-t2-rate: 0.0864
+    ceg-t2-rate: 0.0108
+    apec-rate: 0.00024
+```
 
 ---
 
@@ -212,6 +280,8 @@ classDiagram
         +Float weeklyHours
         +Float mealVoucherAmount
         +Float mealVoucherEmployeeRate
+        +Boolean isCadre
+        +Float employeePrevoyanceRate
     }
     class SalaryProjectionDto {
         <<DTO — calculé, non persisté>>
@@ -347,7 +417,7 @@ classDiagram
 Les données de revenus salariaux et complémentaires alimentent le **Simulateur des impôts** :
 
 - `MonthlyPaySlip.taxableNetSalary` → utilisé si l'option "Bulletins réels" est choisie
-- `SalaryContract.annualGrossSalary × 0,75` → utilisé si l'option "Projection contrat" est choisie
+- `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` → utilisé si l'option "Projection contrat" est choisie
 - `OtherIncome.amount` (filtrés par `isTaxable` et `specificTaxRate`) → revenus complémentaires
 
 La documentation complète du simulateur est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).

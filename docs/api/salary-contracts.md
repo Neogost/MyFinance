@@ -36,14 +36,16 @@ GET /api/salary-contracts
     "weeklyHours": 35.0,
     "mealVoucherAmount": 9.5,
     "mealVoucherEmployeeRate": 50.0,
-    "annualNetSalary": 33750.0,
+    "isCadre": false,
+    "employeePrevoyanceRate": null,
+    "annualNetSalary": 36904.05,
     "monthlyGrossSalary": 3750.0,
-    "monthlyNetSalary": 2812.5,
+    "monthlyNetSalary": 3075.34,
     "annualWorkingHours": 1596.0,
     "hourlyGrossSalary": 28.20,
-    "hourlyNetSalary": 21.15,
+    "hourlyNetSalary": 23.12,
     "dailyGrossSalary": 197.37,
-    "dailyNetSalary": 148.03,
+    "dailyNetSalary": 161.86,
     "employeeMonthlyMealVoucherCost": 90.25,
     "employerMonthlyMealVoucherCost": 90.25
   }
@@ -93,7 +95,9 @@ Content-Type: application/json
   "paidMonthsPerYear": 12,
   "weeklyHours": 35.0,
   "mealVoucherAmount": 9.5,
-  "mealVoucherEmployeeRate": 50.0
+  "mealVoucherEmployeeRate": 50.0,
+  "isCadre": false,
+  "employeePrevoyanceRate": 0.015
 }
 ```
 
@@ -108,6 +112,8 @@ Content-Type: application/json
 | `weeklyHours` | `number` | oui | > 0 | Heures travaillées par semaine |
 | `mealVoucherAmount` | `number` | oui | ≥ 0 | Valeur faciale du ticket restaurant (€) |
 | `mealVoucherEmployeeRate` | `number` | oui | 0–100 | Part salarié du ticket restaurant (%) |
+| `isCadre` | `boolean` | non | | `true` = statut cadre (APEC applicable). `null` traité comme `false` |
+| `employeePrevoyanceRate` | `number` | non | 0,0–1,0 | Taux prévoyance/mutuelle salarié en décimal (ex : `0.015` = 1,5 %) |
 
 #### Réponses
 
@@ -138,7 +144,9 @@ Content-Type: application/json
   "paidMonthsPerYear": 13,
   "weeklyHours": 35.0,
   "mealVoucherAmount": 9.5,
-  "mealVoucherEmployeeRate": 50.0
+  "mealVoucherEmployeeRate": 50.0,
+  "isCadre": false,
+  "employeePrevoyanceRate": null
 }
 ```
 
@@ -572,7 +580,9 @@ DELETE /api/salary-contracts/1/benefits/1
 | `weeklyHours` | `number` | Heures / semaine |
 | `mealVoucherAmount` | `number` | Valeur ticket restaurant (€) |
 | `mealVoucherEmployeeRate` | `number` | Part salarié (%) |
-| `annualNetSalary` | `number` | **Calculé** : brut × 0,75 |
+| `isCadre` | `boolean\|null` | Statut cadre — `true` active le calcul APEC |
+| `employeePrevoyanceRate` | `number\|null` | Taux prévoyance/mutuelle salarié (décimal, ex : `0.015`) |
+| `annualNetSalary` | `number` | **Calculé** : net imposable annuel via `NetImposableCalculator` (cotisations légales 2025) |
 | `monthlyGrossSalary` | `number` | **Calculé** : brut ÷ mois |
 | `monthlyNetSalary` | `number` | **Calculé** : net ÷ mois |
 | `annualWorkingHours` | `number` | **Calculé** : heures × (228 ÷ 5) |
