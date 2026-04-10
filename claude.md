@@ -117,6 +117,14 @@ frontend/src/
 | `PUT` | `/api/salary-contracts/{id}` | Authentifié | Modifier un contrat |
 | `DELETE` | `/api/salary-contracts/{id}` | Authentifié | Supprimer un contrat (cascade bulletins) |
 
+### Révisions salariales
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts/{id}/revisions` | Authentifié | Liste des révisions d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/revisions` | Authentifié | Ajouter une révision salariale |
+| `PUT` | `/api/salary-contracts/{id}/revisions/{revId}` | Authentifié | Modifier une révision |
+| `DELETE` | `/api/salary-contracts/{id}/revisions/{revId}` | Authentifié | Supprimer une révision |
+
 ### Bulletins de paie mensuels
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -231,8 +239,10 @@ npm run dev
 - Documentation API : `docs/api/` | ADR : `docs/architecture/decisions/`
 - **Simulateur des impôts** : profil fiscal utilisateur (parts, abattement), simulation IRPP avec choix de source salariale et sélection des revenus complémentaires — doc : `docs/architecture/tax-simulator.md`
 - **Chaîne fiscale contrat** : `TaxSimulatorService.estimerImpotSurSalaire()` réutilisée par `SalaryContractService` (qui injecte aussi `ContractBenefitRepository`) pour calculer le net d'impôt dans les projections — `SalaryContractDto` expose `annualNetImposable` et `annualNetAfterTax` (+ dérivés mensuel/journalier/horaire, null si profil fiscal incomplet)
+- **Fix `monthlyNetAfterTax`** : diviseur corrigé `/12` → `/paidMonthsPerYear` dans `SalaryContractDto.from()` + tooltip frontend (`estimatedTax / paidMonths`). Bug visible sur contrats 13 mois : net d'impôt mensuel dépassait le net imposable.
 
 **À venir :**
+- **Historique salarial** : `SalaryRevision` — entité documentée, implémentation à faire (entity, repo, service, controller, tests, frontend)
 - Regroupements familiaux (`FamilyGroup`)
 - Gestion du patrimoine (positions, ordres)
 - Scheduler Yahoo Finance

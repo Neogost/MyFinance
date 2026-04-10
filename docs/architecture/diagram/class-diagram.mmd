@@ -56,6 +56,14 @@ classDiagram
         +Float hourlyNetAfterTax
     }
 
+    %% ── Historique salarial ───────────────────────────────────
+    class SalaryRevision {
+        +Long id
+        +LocalDate effectiveDate
+        +Float annualGrossSalary
+        +String label
+    }
+
     %% ── Revenus salariaux — bulletins réels ───────────────────
     class MonthlyPaySlip {
         +Long id
@@ -139,6 +147,7 @@ classDiagram
     %% ── Relations revenus salariaux ───────────────────────────
     User "1" o-- "0..*" SalaryContract : salaryContracts
     SalaryContract ..> SalaryProjectionDto : calcule
+    SalaryContract "1" o-- "0..*" SalaryRevision : revisions
     SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
 
     %% ── Relations revenus non salariés ───────────────────────

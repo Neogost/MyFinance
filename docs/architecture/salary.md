@@ -2,11 +2,12 @@
 
 ## Vue d'ensemble
 
-La gestion des revenus repose sur **quatre niveaux complémentaires** :
+La gestion des revenus repose sur **cinq niveaux complémentaires** :
 
 | Niveau | Entité | Objectif |
 |--------|--------|----------|
 | Vue théorique | `SalaryContract` | Projections à partir du contrat (brut annuel, tickets resto…) |
+| Historique salarial | `SalaryRevision` | Évolutions du salaire au sein d'un même contrat |
 | Réel mensuel | `MonthlyPaySlip` | Bulletins de salaire saisis mois par mois |
 | Primes | `ContractBonus` | Versements exceptionnels ou annuels rattachés à un contrat |
 | Avantages en nature | `ContractBenefit` | Compléments mensuels nets (télétravail, téléphone…) rattachés à un contrat |
@@ -152,6 +153,50 @@ tax:
     ceg-t2-rate: 0.0108
     apec-rate: 0.00024
 ```
+
+---
+
+## 1ter. Historique salarial — `SalaryRevision`
+
+### Objectif
+
+Permettre de **tracer les évolutions de salaire** au sein d'un même contrat, sans avoir à créer un nouveau contrat à chaque revalorisation. Chaque révision enregistre un nouveau salaire brut annuel et sa date d'entrée en vigueur.
+
+### Modèle persisté
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `contract` | `SalaryContract` | Contrat auquel appartient cette révision |
+| `effectiveDate` | `LocalDate` | Date d'entrée en vigueur du nouveau salaire |
+| `annualGrossSalary` | `Float` | Salaire brut annuel révisé (en €) |
+| `label` | `String` | Libellé libre, nullable (ex : "Augmentation annuelle 2025", "Promotion") |
+
+### Contraintes
+
+- La paire (`contract`, `effectiveDate`) est **unique** : deux révisions ne peuvent pas entrer en vigueur le même jour sur le même contrat.
+- `effectiveDate` doit être **≥ `contract.startDate`**.
+
+### Révision active
+
+La **révision active** est celle dont la `effectiveDate` est la plus récente parmi toutes celles dont `effectiveDate ≤ today`.
+
+```
+revisionActive = MAX(effectiveDate) WHERE effectiveDate ≤ today
+```
+
+- Si aucune révision n'existe, ou si toutes les révisions ont une `effectiveDate` dans le futur, les projections utilisent le champ `SalaryContract.annualGrossSalary` comme valeur de repli.
+- Le `SalaryContractDto` expose le champ `activeRevisionId` (`null` si le repli du contrat est utilisé) pour que le frontend puisse identifier quelle révision est active.
+
+### Impact sur les projections
+
+Quand une révision active est détectée, `SalaryContractDto.annualGrossSalary` reflète **le salaire de la révision active** (non le champ stocké sur `SalaryContract`). Toutes les projections dérivées (mensuel, journalier, horaire, net imposable, net d'impôt) sont recalculées à partir de ce salaire révisé.
+
+### Relations
+
+- Une `SalaryRevision` est **rattachée à un `SalaryContract`**
+- Un contrat peut avoir **plusieurs révisions**, mais une seule est active à la fois
+- Les révisions sont supprimées en **cascade** si le contrat est supprimé
 
 ---
 
@@ -395,6 +440,14 @@ classDiagram
 | `PUT` | `/api/salary-contracts/{id}` | Modifier un contrat |
 | `DELETE` | `/api/salary-contracts/{id}` | Supprimer un contrat |
 
+### Révisions salariales
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/salary-contracts/{id}/revisions` | Liste des révisions d'un contrat (ordre chronologique inverse) |
+| `POST` | `/api/salary-contracts/{id}/revisions` | Ajouter une révision |
+| `PUT` | `/api/salary-contracts/{id}/revisions/{revId}` | Modifier une révision |
+| `DELETE` | `/api/salary-contracts/{id}/revisions/{revId}` | Supprimer une révision |
+
 ### Bulletins mensuels
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -434,6 +487,7 @@ classDiagram
 | Action | Rôle requis |
 |--------|------------|
 | Gérer son contrat salarial | USER, ADMIN |
+| Gérer ses révisions salariales | USER, ADMIN |
 | Gérer ses bulletins mensuels | USER, ADMIN |
 | Gérer ses primes | USER, ADMIN |
 | Gérer ses avantages en nature | USER, ADMIN |

@@ -164,7 +164,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           netAfterTax={netAfterTaxMonthly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.monthlyGrossSalary, paidMonths)}
           netImposableTooltip={makeNetImposableTooltip(contract.monthlyNetImposable, bonusPerMonth * 0.75)}
-          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / 12, trMonthly, 1) : null}
+          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / paidMonths, trMonthly, 1) : null}
         />
         <Cell
           label="Journalier"

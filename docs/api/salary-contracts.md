@@ -38,16 +38,21 @@ GET /api/salary-contracts
     "mealVoucherEmployeeRate": 50.0,
     "isCadre": false,
     "employeePrevoyanceRate": null,
-    "annualNetSalary": 36904.05,
+    "annualNetImposable": 36904.05,
     "monthlyGrossSalary": 3750.0,
-    "monthlyNetSalary": 3075.34,
+    "monthlyNetImposable": 3075.34,
     "annualWorkingHours": 1596.0,
     "hourlyGrossSalary": 28.20,
-    "hourlyNetSalary": 23.12,
+    "hourlyNetImposable": 23.12,
     "dailyGrossSalary": 197.37,
-    "dailyNetSalary": 161.86,
+    "dailyNetImposable": 161.86,
     "employeeMonthlyMealVoucherCost": 90.25,
-    "employerMonthlyMealVoucherCost": 90.25
+    "employerMonthlyMealVoucherCost": 90.25,
+    "annualNetAfterTax": 29250.00,
+    "monthlyNetAfterTax": 2437.50,
+    "dailyNetAfterTax": 128.29,
+    "hourlyNetAfterTax": 18.33,
+    "activeRevisionId": null
   }
 ]
 ```
@@ -315,6 +320,137 @@ DELETE /api/salary-contracts/1/pay-slips/1
 
 ---
 
+## Révisions salariales — `/api/salary-contracts/{contractId}/revisions`
+
+Les révisions permettent de **tracer les évolutions de salaire** au sein d'un même contrat, sans créer un nouveau contrat à chaque revalorisation. La révision active est automatiquement déterminée à partir de la date du jour.
+
+---
+
+### GET /api/salary-contracts/{contractId}/revisions
+
+Retourne la liste des révisions du contrat, triées de la plus récente à la plus ancienne.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+GET /api/salary-contracts/1/revisions
+```
+
+#### Réponses
+
+**200 OK**
+
+```json
+[
+  {
+    "id": 2,
+    "effectiveDate": "2025-01-01",
+    "annualGrossSalary": 48000.0,
+    "label": "Augmentation annuelle 2025"
+  },
+  {
+    "id": 1,
+    "effectiveDate": "2024-01-01",
+    "annualGrossSalary": 45000.0,
+    "label": "Entrée de fonction"
+  }
+]
+```
+
+---
+
+### POST /api/salary-contracts/{contractId}/revisions
+
+Ajoute une révision salariale au contrat.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+POST /api/salary-contracts/1/revisions
+Content-Type: application/json
+
+{
+  "effectiveDate": "2025-01-01",
+  "annualGrossSalary": 48000.0,
+  "label": "Augmentation annuelle 2025"
+}
+```
+
+#### Champs
+
+| Champ | Type | Obligatoire | Contraintes | Description |
+|-------|------|-------------|-------------|-------------|
+| `effectiveDate` | `date` | oui | ≥ `contract.startDate` | Date d'entrée en vigueur |
+| `annualGrossSalary` | `number` | oui | > 0 | Nouveau salaire brut annuel (€) |
+| `label` | `string` | non | | Libellé libre (ex : "Promotion mars 2025") |
+
+#### Réponses
+
+**201 Created** — Retourne la révision créée.
+
+**400 Bad Request** — Validation échouée (date antérieure au début du contrat, montant invalide).
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Contrat introuvable.
+
+**409 Conflict** — Une révision existe déjà pour cette date.
+
+```json
+{ "message": "Une révision existe déjà pour la date : 2025-01-01" }
+```
+
+---
+
+### PUT /api/salary-contracts/{contractId}/revisions/{revisionId}
+
+Modifie une révision existante (remplacement complet).
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+PUT /api/salary-contracts/1/revisions/1
+Content-Type: application/json
+
+{
+  "effectiveDate": "2025-01-01",
+  "annualGrossSalary": 49000.0,
+  "label": "Augmentation annuelle 2025 (corrigée)"
+}
+```
+
+#### Réponses
+
+**200 OK** — Retourne la révision mise à jour.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Révision ou contrat introuvable.
+
+**409 Conflict** — La nouvelle date est déjà occupée par une autre révision.
+
+---
+
+### DELETE /api/salary-contracts/{contractId}/revisions/{revisionId}
+
+Supprime une révision salariale.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+DELETE /api/salary-contracts/1/revisions/1
+```
+
+#### Réponses
+
+**204 No Content** — Suppression réussie.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Révision ou contrat introuvable.
+
+---
+
 ## Primes — `/api/salary-contracts/{contractId}/bonuses`
 
 Les primes sont **rattachées à un contrat** et représentent les versements exceptionnels ou annuels (13ème mois, prime de vacances, prime Macron, etc.).
@@ -575,23 +711,37 @@ DELETE /api/salary-contracts/1/benefits/1
 | `id` | `number` | Identifiant |
 | `startDate` | `date` | Date de début |
 | `endDate` | `date\|null` | Date de fin — `null` = contrat actif |
-| `annualGrossSalary` | `number` | Brut annuel saisi (€) |
+| `annualGrossSalary` | `number` | Brut annuel effectif (révision active si présente, sinon valeur du contrat) |
 | `paidMonthsPerYear` | `integer` | Mois de paie par an |
 | `weeklyHours` | `number` | Heures / semaine |
 | `mealVoucherAmount` | `number` | Valeur ticket restaurant (€) |
 | `mealVoucherEmployeeRate` | `number` | Part salarié (%) |
 | `isCadre` | `boolean\|null` | Statut cadre — `true` active le calcul APEC |
 | `employeePrevoyanceRate` | `number\|null` | Taux prévoyance/mutuelle salarié (décimal, ex : `0.015`) |
-| `annualNetSalary` | `number` | **Calculé** : net imposable annuel via `NetImposableCalculator` (cotisations légales 2025) |
+| `annualNetImposable` | `number` | **Calculé** : net imposable annuel via `NetImposableCalculator` (cotisations légales 2025) |
 | `monthlyGrossSalary` | `number` | **Calculé** : brut ÷ mois |
-| `monthlyNetSalary` | `number` | **Calculé** : net ÷ mois |
+| `monthlyNetImposable` | `number` | **Calculé** : net imposable ÷ mois |
 | `annualWorkingHours` | `number` | **Calculé** : heures × (228 ÷ 5) |
 | `hourlyGrossSalary` | `number` | **Calculé** : brut ÷ heures annuelles |
-| `hourlyNetSalary` | `number` | **Calculé** : net ÷ heures annuelles |
+| `hourlyNetImposable` | `number` | **Calculé** : net imposable ÷ heures annuelles |
 | `dailyGrossSalary` | `number` | **Calculé** : brut ÷ 228 |
-| `dailyNetSalary` | `number` | **Calculé** : net ÷ 228 |
+| `dailyNetImposable` | `number` | **Calculé** : net imposable ÷ 228 |
 | `employeeMonthlyMealVoucherCost` | `number` | **Calculé** : coût mensuel salarié (€) |
 | `employerMonthlyMealVoucherCost` | `number` | **Calculé** : coût mensuel employeur (€) |
+| `annualNetAfterTax` | `number\|null` | **Calculé** : net imposable − impôt estimé + avantages en nature annuels. `null` si profil fiscal incomplet |
+| `monthlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ 12` |
+| `dailyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ 228` |
+| `hourlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ annualWorkingHours` |
+| `activeRevisionId` | `number\|null` | ID de la `SalaryRevision` active — `null` si le salaire du contrat est utilisé directement |
+
+### `SalaryRevisionDto`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant |
+| `effectiveDate` | `date` | Date d'entrée en vigueur du nouveau salaire |
+| `annualGrossSalary` | `number` | Salaire brut annuel révisé (€) |
+| `label` | `string\|null` | Libellé libre (ex : "Augmentation annuelle 2025") |
 
 ### `MonthlyPaySlipDto`
 

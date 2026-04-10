@@ -88,7 +88,7 @@ public record SalaryContractDto(
                 c.getMealVoucherAmount() * (1f - employeeRate) * 19f,
                 // net d'impôt
                 annualNetAfterTax,
-                annualNetAfterTax != null ? annualNetAfterTax / 12f : null,
+                annualNetAfterTax != null ? annualNetAfterTax / c.getPaidMonthsPerYear() : null,
                 annualNetAfterTax != null ? annualNetAfterTax / 228f : null,
                 annualNetAfterTax != null ? annualNetAfterTax / workingHours : null
         );
