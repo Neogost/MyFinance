@@ -132,6 +132,10 @@ export default function SalaryContractPage() {
                 <span>Brut annuel : <strong className="text-gray-900">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
                 <span>{selected.paidMonthsPerYear} mois / an</span>
                 <span>{selected.weeklyHours} h / semaine</span>
+                {selected.isCadre
+                  ? <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">Cadre</span>
+                  : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Non-cadre</span>
+                }
                 {annualBonuses.length > 0 && (
                   <span>Primes annuelles : <strong className="text-blue-700">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
                 )}

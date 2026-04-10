@@ -4,6 +4,7 @@ const EMPTY = {
   startDate: '', endDate: '', annualGrossSalary: '',
   paidMonthsPerYear: '12', weeklyHours: '35',
   mealVoucherAmount: '0', mealVoucherEmployeeRate: '50',
+  isCadre: false, employeePrevoyanceRate: '',
 }
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
@@ -18,13 +19,17 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
   useEffect(() => {
     if (contract) {
       setForm({
-        startDate:              contract.startDate        ?? '',
-        endDate:                contract.endDate          ?? '',
-        annualGrossSalary:      contract.annualGrossSalary    ?? '',
-        paidMonthsPerYear:      contract.paidMonthsPerYear    ?? '12',
-        weeklyHours:            contract.weeklyHours          ?? '35',
-        mealVoucherAmount:      contract.mealVoucherAmount    ?? '0',
+        startDate:               contract.startDate             ?? '',
+        endDate:                 contract.endDate               ?? '',
+        annualGrossSalary:       contract.annualGrossSalary     ?? '',
+        paidMonthsPerYear:       contract.paidMonthsPerYear     ?? '12',
+        weeklyHours:             contract.weeklyHours           ?? '35',
+        mealVoucherAmount:       contract.mealVoucherAmount     ?? '0',
         mealVoucherEmployeeRate: contract.mealVoucherEmployeeRate ?? '50',
+        isCadre:                 contract.isCadre               ?? false,
+        employeePrevoyanceRate:  contract.employeePrevoyanceRate != null
+          ? (contract.employeePrevoyanceRate * 100).toFixed(2)
+          : '',
       })
     } else {
       setForm(EMPTY)
@@ -32,7 +37,8 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
   }, [contract])
 
   function handleChange(e) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+    const { name, value, type, checked } = e.target
+    setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }))
   }
 
   async function handleSubmit(e) {
@@ -48,6 +54,10 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
         weeklyHours:             parseFloat(form.weeklyHours),
         mealVoucherAmount:       parseFloat(form.mealVoucherAmount),
         mealVoucherEmployeeRate: parseFloat(form.mealVoucherEmployeeRate),
+        isCadre:                 form.isCadre,
+        employeePrevoyanceRate:  form.employeePrevoyanceRate !== ''
+          ? parseFloat(form.employeePrevoyanceRate) / 100
+          : null,
       })
     } catch (err) {
       const status = err.response?.status
@@ -105,6 +115,37 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Part salarié (%)</label>
               <input name="mealVoucherEmployeeRate" type="number" min="0" max="100" step="1" value={form.mealVoucherEmployeeRate} onChange={handleChange} className={inputCls} />
+            </div>
+          </div>
+
+          {/* ── Statut cadre + prévoyance ─────────────────────── */}
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cotisations salariales</p>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox" name="isCadre"
+                checked={form.isCadre}
+                onChange={handleChange}
+                className="accent-indigo-600 w-4 h-4"
+              />
+              <span className="text-sm text-gray-700">Statut cadre <span className="text-gray-400 font-normal">(APEC applicable)</span></span>
+            </label>
+
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>
+                Prévoyance / mutuelle salarié (%)
+                <span className="text-gray-400 font-normal ml-1">— optionnel</span>
+              </label>
+              <input
+                name="employeePrevoyanceRate" type="number"
+                min="0" max="10" step="0.01"
+                value={form.employeePrevoyanceRate}
+                onChange={handleChange}
+                placeholder="1.50"
+                className={inputCls}
+              />
+              <p className="text-xs text-gray-400">Taux en % (ex : 1.5 = 1,5% du brut). Varie selon votre convention collective.</p>
             </div>
           </div>
 

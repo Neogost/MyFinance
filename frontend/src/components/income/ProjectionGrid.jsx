@@ -10,7 +10,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
   const Tooltip = ({ content }) => (
     <span className="group relative cursor-help">
       <span className="text-gray-400 text-xs">ⓘ</span>
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-60 text-xs bg-gray-800 text-white rounded-md px-2 py-1.5 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-72 text-xs bg-gray-800 text-white rounded-md px-2 py-1.5 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
         {content}
       </div>
     </span>
@@ -29,7 +29,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
         </div>
         <div>
           <div className="flex items-center gap-1 mb-0.5 h-4 leading-4">
-            <p className="text-xs text-gray-400">Net estimé</p>
+            <p className="text-xs text-gray-400">Net imposable</p>
             {netTooltip && <Tooltip content={netTooltip} />}
           </div>
           <p className="text-base font-bold text-indigo-600">{fmt(net)}</p>
@@ -82,7 +82,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
   const makeNetTooltip = (baseNet, trAmount, benefitMultiplier, extraLabel) => (
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
-        <span className="text-gray-300">Net estimé (75% brut)</span>
+        <span className="text-gray-300">Net imposable estimé</span>
         <span className="font-semibold">{fmt(baseNet)}</span>
       </div>
       {trAmount > 0 && (
@@ -177,7 +177,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       )}
 
       <p className="text-xs text-gray-400 mt-3">
-        * Le salaire net est estimé à 75 % du brut (estimation forfaitaire des cotisations salariales françaises).
+        * Le net imposable est calculé à partir des taux de cotisations salariales légaux 2025 (vieillesse, CSG déductible, AGIRC-ARRCO, CEG, APEC). Le net des primes est estimé à 75 % du brut (approximation).
       </p>
     </div>
   )
