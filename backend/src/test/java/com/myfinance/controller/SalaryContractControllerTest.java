@@ -47,9 +47,12 @@ class SalaryContractControllerTest {
                 LocalDate.of(2023, 1, 1), null,
                 45000f, 12, 35f, 9.5f, 50f,
                 false, null,
+                // net imposable
                 36904.05f, 3750f, 3075.34f, 1596f,
                 28.20f, 23.12f, 197.37f, 161.86f,
-                90.25f, 90.25f
+                90.25f, 90.25f,
+                // net d'impôt (null : profil fiscal non renseigné)
+                null, null, null, null
         );
     }
 
@@ -65,7 +68,7 @@ class SalaryContractControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].annualGrossSalary").value(45000.0))
-                .andExpect(jsonPath("$[0].annualNetSalary").value(36904.05));
+                .andExpect(jsonPath("$[0].annualNetImposable").value(36904.05));
     }
 
     @Test
@@ -84,7 +87,7 @@ class SalaryContractControllerTest {
         mockMvc.perform(get("/api/salary-contracts/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.monthlyGrossSalary").value(3750.0))
-                .andExpect(jsonPath("$.monthlyNetSalary").value(3075.34));
+                .andExpect(jsonPath("$.monthlyNetImposable").value(3075.34));
     }
 
     @Test
@@ -162,7 +165,8 @@ class SalaryContractControllerTest {
         SalaryContractDto updated = new SalaryContractDto(
                 1L, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
                 48000f, 13, 35f, 9.5f, 50f, false, null,
-                39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f);
+                39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f,
+                null, null, null, null);
 
         when(salaryContractService.update(eq(1L), any(), any())).thenReturn(updated);
 

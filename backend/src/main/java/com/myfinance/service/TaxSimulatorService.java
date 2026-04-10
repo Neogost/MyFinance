@@ -174,6 +174,41 @@ public class TaxSimulatorService {
                 .toList();
     }
 
+    // ── Estimation de l'impôt sur le seul salaire d'un contrat ─
+
+    /**
+     * Estime l'impôt annuel applicable au seul salaire d'un contrat,
+     * sans revenus complémentaires.
+     *
+     * Utilisé par SalaryContractService pour calculer le "net d'impôt" des projections.
+     *
+     * @param netImposable  Salaire net imposable annuel (brut − cotisations déductibles)
+     * @param user          Propriétaire du contrat (profil fiscal : parts, abattement)
+     * @return              Impôt estimé en €, ou null si le profil fiscal est incomplet
+     */
+    public Float estimerImpotSurSalaire(float netImposable, User user) {
+        if (user.getFiscalParts() == null || user.getFiscalParts() <= 0f) return null;
+        if (taxParameters.getBrackets() == null || taxParameters.getBrackets().isEmpty()) return null;
+
+        TaxParameters.FlatRateDeduction flatRate = taxParameters.getFlatRateDeduction();
+        boolean useFlatRate = user.getUseFlatRateDeduction() == null || user.getUseFlatRateDeduction();
+
+        float abattement;
+        if (useFlatRate) {
+            float computed = netImposable * flatRate.getRate();
+            abattement = Math.min(Math.max(computed, flatRate.getMin()), flatRate.getMax());
+        } else {
+            abattement = user.getCustomProfessionalDeduction() != null
+                    ? user.getCustomProfessionalDeduction()
+                    : 0f;
+        }
+
+        float revenuNetImposable = Math.max(0f, netImposable - abattement);
+        float parts = user.getFiscalParts();
+        float impotSurUnePart = calculerImpotSurUnePart(revenuNetImposable / parts);
+        return impotSurUnePart * parts;
+    }
+
     // ── Calcul de l'impôt sur une part (barème progressif) ─────
 
     private float calculerImpotSurUnePart(float revenuParPart) {

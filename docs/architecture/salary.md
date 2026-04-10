@@ -41,20 +41,44 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 
 ### Projections calculées — `SalaryProjectionDto` (non persisté)
 
+Les projections distinguent trois niveaux de rémunération :
+
+```
+Brut  →  Net imposable  →  Net d'impôt
+```
+
+- **Net imposable** : base de revenu après cotisations salariales déductibles, avant impôt. C'est la valeur transmise au Simulateur des impôts.
+- **Net d'impôt** : montant réellement perçu après impôt estimé, en ajoutant les avantages en nature (qui ne sont pas dans l'assiette fiscale salariale).
+
+#### Champs bruts et net imposable
+
 | Champ | Formule |
 |-------|---------|
-| `annualNetSalary` | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` |
+| `annualNetImposable` | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` |
 | `monthlyGrossSalary` | `annualGrossSalary ÷ paidMonthsPerYear` |
-| `monthlyNetSalary` | `annualNetSalary ÷ paidMonthsPerYear` |
+| `monthlyNetImposable` | `annualNetImposable ÷ paidMonthsPerYear` |
 | `annualWorkingHours` | `weeklyHours × (228 ÷ 5)` |
 | `hourlyGrossSalary` | `annualGrossSalary ÷ annualWorkingHours` |
-| `hourlyNetSalary` | `annualNetSalary ÷ annualWorkingHours` |
+| `hourlyNetImposable` | `annualNetImposable ÷ annualWorkingHours` |
 | `dailyGrossSalary` | `annualGrossSalary ÷ 228` |
-| `dailyNetSalary` | `annualNetSalary ÷ 228` |
+| `dailyNetImposable` | `annualNetImposable ÷ 228` |
 | `employeeMonthlyMealVoucherCost` | `mealVoucherAmount × (employeeRate ÷ 100) × 19` |
 | `employerMonthlyMealVoucherCost` | `mealVoucherAmount × ((100 − employeeRate) ÷ 100) × 19` |
 
-> `annualNetSalary` représente le **net imposable annuel**, calculé à partir des taux de cotisations salariales réels (voir section [NetImposableCalculator](#nettoimposablecalculator--calcul-du-net-imposable) ci-dessous).
+#### Champs net d'impôt
+
+| Champ | Formule |
+|-------|---------|
+| `annualNetAfterTax` | `annualNetImposable − estimatedTax + Σ(ContractBenefit.monthlyAmount × 12)` |
+| `monthlyNetAfterTax` | `annualNetAfterTax ÷ 12` |
+| `dailyNetAfterTax` | `annualNetAfterTax ÷ 228` |
+| `hourlyNetAfterTax` | `annualNetAfterTax ÷ annualWorkingHours` |
+
+> **`estimatedTax`** est calculé à partir du net imposable du contrat uniquement (sans autres revenus), en appliquant le profil fiscal de l'utilisateur (`fiscalParts`, `useFlatRateDeduction`, `customProfessionalDeduction`). La logique est identique aux étapes 3 à 7 du [Simulateur des impôts](tax-simulator.md).
+
+> **Les avantages en nature** (`ContractBenefit`) sont ajoutés **après** la déduction fiscale, car ils représentent des compléments nets versés par l'employeur en dehors de l'assiette des cotisations salariales.
+
+> Les champs `annualNetAfterTax` (et dérivés) sont `null` si l'utilisateur n'a pas renseigné son profil fiscal (`fiscalParts` manquant).
 
 ### Constantes utilisées
 
@@ -215,7 +239,7 @@ Enregistrer les **compléments de rémunération mensuels** versés par l'employ
 
 ### Intégration dans les projections (frontend)
 
-Les montants mensuels sont ramenés aux différentes périodes selon les mêmes constantes que le reste des projections :
+Les avantages en nature sont traités comme des **compléments nets exonérés** : ils ne font pas partie de l'assiette des cotisations salariales ni de la base fiscale. Ils s'ajoutent au **net d'impôt** (et non au net imposable) pour obtenir le revenu final perçu.
 
 | Période | Calcul |
 |---------|--------|
@@ -224,7 +248,9 @@ Les montants mensuels sont ramenés aux différentes périodes selon les mêmes 
 | Journalier | `monthlyAmount × 12 ÷ 228` |
 | Horaire | `monthlyAmount × 12 ÷ 228 ÷ hoursPerDay` |
 
-Chaque ligne d'avantage apparaît dans le tooltip du "Net estimé" correspondant.
+Chaque ligne d'avantage apparaît dans le tooltip du **"Net d'impôt"** correspondant.
+
+> **Hypothèse simplificatrice :** tous les `ContractBenefit` sont considérés exonérés d'impôt (modèle adapté aux avantages courants type frais de télétravail, forfait téléphone). Les avantages réellement imposables (voiture de fonction, logement…) ne sont pas gérés dans ce modèle.
 
 ### Relations
 
@@ -285,16 +311,20 @@ classDiagram
     }
     class SalaryProjectionDto {
         <<DTO — calculé, non persisté>>
-        +Float annualNetSalary
+        +Float annualNetImposable
         +Float monthlyGrossSalary
-        +Float monthlyNetSalary
+        +Float monthlyNetImposable
         +Float annualWorkingHours
         +Float hourlyGrossSalary
-        +Float hourlyNetSalary
+        +Float hourlyNetImposable
         +Float dailyGrossSalary
-        +Float dailyNetSalary
+        +Float dailyNetImposable
         +Float employeeMonthlyMealVoucherCost
         +Float employerMonthlyMealVoucherCost
+        +Float annualNetAfterTax
+        +Float monthlyNetAfterTax
+        +Float dailyNetAfterTax
+        +Float hourlyNetAfterTax
     }
     class MonthlyPaySlip {
         +Long id
@@ -421,3 +451,20 @@ Les données de revenus salariaux et complémentaires alimentent le **Simulateur
 - `OtherIncome.amount` (filtrés par `isTaxable` et `specificTaxRate`) → revenus complémentaires
 
 La documentation complète du simulateur est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).
+
+### Calcul du net d'impôt dans les projections contrat
+
+Le champ `annualNetAfterTax` (et ses dérivés mensuel/journalier/horaire) utilise la même logique que le simulateur, mais appliquée **uniquement au salaire du contrat**, sans autres revenus :
+
+```
+// Identique aux étapes 3–7 du simulateur (source : PROJECTION_CONTRAT, aucun revenu complémentaire)
+netImposable         = NetImposableCalculator.calculer(annualGrossSalary, ...)
+abattement           = calculer selon useFlatRateDeduction (min/max sur salaire uniquement)
+revenuNetImposable   = netImposable − abattement
+impôtEstimé          = barème(revenuNetImposable / fiscalParts) × fiscalParts
+benefitsAnnual       = Σ(ContractBenefit.monthlyAmount) × 12
+
+annualNetAfterTax    = netImposable − impôtEstimé + benefitsAnnual
+```
+
+> Si le profil fiscal de l'utilisateur est incomplet (`fiscalParts` non renseigné), `annualNetAfterTax` et ses dérivés sont `null`.

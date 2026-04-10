@@ -51,7 +51,7 @@ L'utilisateur choisit explicitement la source à utiliser pour les revenus salar
 
 | Option | Données utilisées | Disponibilité |
 |--------|-------------------|---------------|
-| **Projection contrat** | `annualGrossSalary × 0,75` du contrat actif | Toujours disponible si un contrat existe |
+| **Projection contrat** | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` du contrat actif | Toujours disponible si un contrat existe |
 | **Bulletins réels** | Somme des `taxableNetSalary` des bulletins saisis pour l'année | Disponible uniquement si des bulletins existent pour l'année sélectionnée |
 
 > **Cas typique :** en cours d'année, les bulletins sont incomplets. L'utilisateur peut simuler avec la projection (vision annuelle théorique) ou avec les bulletins réels déjà saisis (vision partielle de l'année).
@@ -94,7 +94,8 @@ Deux nouveaux champs sont ajoutés à l'entité `OtherIncome` :
 
 ```
 // Étape 1 — Revenus salariaux (selon choix de la source)
-revenusSalariaux = annualGrossSalary × 0,75              // option "Projection contrat"
+revenusSalariaux = NetImposableCalculator.calculer(annualGrossSalary, isCadre, prevoyanceRate, taxParams)
+                                                         // option "Projection contrat"
                    OU Σ taxableNetSalary (bulletins)      // option "Bulletins réels"
 
 // Étape 2 — Revenus complémentaires sélectionnés

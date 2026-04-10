@@ -7,6 +7,7 @@ import com.myfinance.domain.User;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
+import com.myfinance.repository.ContractBenefitRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,13 +25,16 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SalaryContractServiceTest {
 
     @Mock SalaryContractRepository salaryContractRepository;
+    @Mock ContractBenefitRepository contractBenefitRepository;
     @Mock TaxParameters taxParameters;
+    @Mock TaxSimulatorService taxSimulatorService;
     @InjectMocks SalaryContractService salaryContractService;
 
     User owner;
@@ -72,6 +76,10 @@ class SalaryContractServiceTest {
         // lenient : certains tests lèvent une exception avant d'atteindre le calcul de projection
         Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
         Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(ec);
+        // Pas de fiscalParts sur les users de test → estimerImpotSurSalaire retourne null
+        Mockito.lenient().when(taxSimulatorService.estimerImpotSurSalaire(anyFloat(), any())).thenReturn(null);
+        // Aucun avantage en nature par défaut
+        Mockito.lenient().when(contractBenefitRepository.findByContractOrderByLabelAsc(any())).thenReturn(List.of());
     }
 
     // ── findAllByUser ──────────────────────────────────────────
@@ -106,7 +114,7 @@ class SalaryContractServiceTest {
 
         assertThat(result.id()).isEqualTo(1L);
         // net imposable 45 000 brut non-cadre ≈ 36 904 €
-        assertThat(result.annualNetSalary()).isCloseTo(36904.05f, offset(1f));
+        assertThat(result.annualNetImposable()).isCloseTo(36904.05f, offset(1f));
         assertThat(result.monthlyGrossSalary()).isCloseTo(3750f, offset(0.01f));
     }
 
@@ -164,7 +172,7 @@ class SalaryContractServiceTest {
 
         // net imposable 50 000 brut non-cadre ≈ 41 039 €
         assertThat(result.annualGrossSalary()).isEqualTo(50000f);
-        assertThat(result.annualNetSalary()).isCloseTo(41039.01f, offset(1f));
+        assertThat(result.annualNetImposable()).isCloseTo(41039.01f, offset(1f));
         verify(salaryContractRepository).save(any(SalaryContract.class));
     }
 

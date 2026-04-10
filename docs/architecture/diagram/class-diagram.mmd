@@ -40,16 +40,20 @@ classDiagram
 
     class SalaryProjectionDto {
         <<DTO — calculé, non persisté>>
-        +Float annualNetSalary
+        +Float annualNetImposable
         +Float monthlyGrossSalary
-        +Float monthlyNetSalary
+        +Float monthlyNetImposable
         +Float annualWorkingHours
         +Float hourlyGrossSalary
-        +Float hourlyNetSalary
+        +Float hourlyNetImposable
         +Float dailyGrossSalary
-        +Float dailyNetSalary
+        +Float dailyNetImposable
         +Float employeeMonthlyMealVoucherCost
         +Float employerMonthlyMealVoucherCost
+        +Float annualNetAfterTax
+        +Float monthlyNetAfterTax
+        +Float dailyNetAfterTax
+        +Float hourlyNetAfterTax
     }
 
     %% ── Revenus salariaux — bulletins réels ───────────────────

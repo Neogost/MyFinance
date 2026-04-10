@@ -7,6 +7,7 @@ import com.myfinance.domain.User;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
+import com.myfinance.repository.ContractBenefitRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,19 +21,23 @@ import java.util.List;
 public class SalaryContractService {
 
     private final SalaryContractRepository salaryContractRepository;
+    private final ContractBenefitRepository contractBenefitRepository;
     private final TaxParameters taxParameters;
+    private final TaxSimulatorService taxSimulatorService;
 
     // ── Lecture ────────────────────────────────────────────────
 
     public List<SalaryContractDto> findAllByUser(User user) {
         return salaryContractRepository.findByUserOrderByStartDateDesc(user)
                 .stream()
-                .map(c -> SalaryContractDto.from(c, taxParameters))
+                .map(c -> toDto(c, user))
                 .toList();
     }
 
     public SalaryContractDto findById(Long id, User currentUser) {
-        return SalaryContractDto.from(getContractWithOwnershipCheck(id, currentUser), taxParameters);
+        SalaryContract contract = getContractWithOwnershipCheck(id, currentUser);
+        // On utilise le propriétaire réel du contrat pour le calcul fiscal
+        return toDto(contract, contract.getUser());
     }
 
     // ── Création ───────────────────────────────────────────────
@@ -58,7 +63,7 @@ public class SalaryContractService {
                 .employeePrevoyanceRate(request.employeePrevoyanceRate())
                 .build();
 
-        return SalaryContractDto.from(salaryContractRepository.save(contract), taxParameters);
+        return toDto(salaryContractRepository.save(contract), user);
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -84,7 +89,7 @@ public class SalaryContractService {
         contract.setIsCadre(request.isCadre());
         contract.setEmployeePrevoyanceRate(request.employeePrevoyanceRate());
 
-        return SalaryContractDto.from(salaryContractRepository.save(contract), taxParameters);
+        return toDto(salaryContractRepository.save(contract), contract.getUser());
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -109,5 +114,17 @@ public class SalaryContractService {
                     "Accès non autorisé à ce contrat");
         }
         return contract;
+    }
+
+    // ── Construction du DTO avec projections ───────────────────
+
+    private SalaryContractDto toDto(SalaryContract contract, User contractOwner) {
+        float annualBenefits = (float) contractBenefitRepository
+                .findByContractOrderByLabelAsc(contract)
+                .stream()
+                .mapToDouble(b -> b.getMonthlyAmount() != null ? b.getMonthlyAmount() : 0.0)
+                .sum() * 12f;
+
+        return SalaryContractDto.from(contract, taxParameters, contractOwner, taxSimulatorService, annualBenefits);
     }
 }

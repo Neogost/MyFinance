@@ -1,11 +1,13 @@
 /**
  * Affiche les projections calculées d'un contrat salarial sous forme de grille.
+ *
+ * Trois niveaux de rémunération :
+ *   Brut  →  Net imposable (base fiscale)  →  Net d'impôt (après impôt estimé + avantages en nature)
  */
 export default function ProjectionGrid({ contract, annualBonuses = [], benefits = [] }) {
 
   const fmt = (val) =>
     val != null ? val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €' : '—'
-
 
   const Tooltip = ({ content }) => (
     <span className="group relative cursor-help">
@@ -16,13 +18,13 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     </span>
   )
 
-  const Cell = ({ label, gross, net, grossTooltip, netTooltip }) => (
+  const Cell = ({ label, gross, netImposable, netAfterTax, grossTooltip, netImposableTooltip, netAfterTaxTooltip }) => (
     <div className="bg-gray-50 rounded-lg p-4">
       <div className="flex items-center gap-1 mb-3">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
         {grossTooltip && <Tooltip content={grossTooltip} />}
       </div>
-      <div className="flex gap-4 items-end">
+      <div className="flex gap-4 items-end flex-wrap">
         <div>
           <p className="text-xs text-gray-400 mb-0.5 h-4 leading-4">Brut</p>
           <p className="text-base font-bold text-gray-800">{fmt(gross)}</p>
@@ -30,9 +32,18 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
         <div>
           <div className="flex items-center gap-1 mb-0.5 h-4 leading-4">
             <p className="text-xs text-gray-400">Net imposable</p>
-            {netTooltip && <Tooltip content={netTooltip} />}
+            {netImposableTooltip && <Tooltip content={netImposableTooltip} />}
           </div>
-          <p className="text-base font-bold text-indigo-600">{fmt(net)}</p>
+          <p className="text-base font-bold text-indigo-600">{fmt(netImposable)}</p>
+        </div>
+        <div>
+          <div className="flex items-center gap-1 mb-0.5 h-4 leading-4">
+            <p className="text-xs text-gray-400">Net d'impôt</p>
+            {netAfterTaxTooltip && <Tooltip content={netAfterTaxTooltip} />}
+          </div>
+          <p className={`text-base font-bold ${netAfterTax != null ? 'text-green-600' : 'text-gray-400'}`}>
+            {netAfterTax != null ? fmt(netAfterTax) : 'Non calculé'}
+          </p>
         </div>
       </div>
     </div>
@@ -54,11 +65,25 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
   const trDaily   = trAnnual / workingDays
   const trHourly  = trDaily / hoursPerDay
 
-  // Avantages en nature : montants mensuels, ramenés aux autres périodes
-  const totalBenefitsMonthly = benefits.reduce((s, b) => s + b.monthlyAmount, 0)
-  const totalBenefitsAnnual  = totalBenefitsMonthly * 12
-  const totalBenefitsDaily   = totalBenefitsAnnual / workingDays
-  const totalBenefitsHourly  = totalBenefitsDaily / hoursPerDay
+  // Impôt estimé annuel (dérivé des valeurs backend)
+  const totalBenefitsAnnual = benefits.reduce((s, b) => s + b.monthlyAmount, 0) * 12
+  const estimatedTax = contract.annualNetAfterTax != null
+    ? (contract.annualNetImposable ?? 0) - contract.annualNetAfterTax + totalBenefitsAnnual
+    : null
+
+  // Net d'impôt : valeurs calculées par le backend (null si profil fiscal incomplet)
+  const netAfterTaxAnnual  = contract.annualNetAfterTax != null
+    ? contract.annualNetAfterTax + totalAnnualBonuses * 0.75 + trAnnual
+    : null
+  const netAfterTaxMonthly = contract.monthlyNetAfterTax != null
+    ? contract.monthlyNetAfterTax + bonusPerMonth * 0.75 + trMonthly
+    : null
+  const netAfterTaxDaily   = contract.dailyNetAfterTax != null
+    ? contract.dailyNetAfterTax + bonusPerDay * 0.75 + trDaily
+    : null
+  const netAfterTaxHourly  = contract.hourlyNetAfterTax != null
+    ? contract.hourlyNetAfterTax + bonusPerHour * 0.75 + trHourly
+    : null
 
   const makeGrossTooltip = (baseLabel, baseValue, bonusDivisor) => {
     if (annualBonuses.length === 0) return null
@@ -78,12 +103,30 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     )
   }
 
-  // benefitMultiplier : facteur pour ramener le montant mensuel à la période affichée
-  const makeNetTooltip = (baseNet, trAmount, benefitMultiplier, extraLabel) => (
+  const makeNetImposableTooltip = (baseNet, bonusNet) => (
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Net imposable estimé</span>
         <span className="font-semibold">{fmt(baseNet)}</span>
+      </div>
+      {bonusNet > 0 && (
+        <div className="flex justify-between gap-4">
+          <span className="text-gray-300">Primes (≈75%)</span>
+          <span className="font-semibold text-blue-300">+{fmt(bonusNet)}</span>
+        </div>
+      )}
+    </div>
+  )
+
+  const makeNetAfterTaxTooltip = (netImposable, taxAmount, trAmount, benefitMultiplier) => (
+    <div className="space-y-1">
+      <div className="flex justify-between gap-4">
+        <span className="text-gray-300">Net imposable</span>
+        <span className="font-semibold">{fmt(netImposable)}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-gray-300">Impôt estimé</span>
+        <span className="font-semibold text-red-300">−{fmt(taxAmount)}</span>
       </div>
       {trAmount > 0 && (
         <div className="flex justify-between gap-4">
@@ -97,9 +140,6 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           <span className="font-semibold text-green-300">+{fmt(b.monthlyAmount * benefitMultiplier)}</span>
         </div>
       ))}
-      {extraLabel && (
-        <p className="text-gray-400 mt-1 pt-1 border-t border-gray-600">{extraLabel}</p>
-      )}
     </div>
   )
 
@@ -107,36 +147,51 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     <div className="mt-6">
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Projections calculées</h3>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Cell
           label="Annuel"
           gross={(contract.annualGrossSalary ?? 0) + totalAnnualBonuses}
-          net={(contract.annualNetSalary ?? 0) + totalAnnualBonuses * 0.75 + trAnnual + totalBenefitsAnnual}
+          netImposable={(contract.annualNetImposable ?? 0) + totalAnnualBonuses * 0.75}
+          netAfterTax={netAfterTaxAnnual}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.annualGrossSalary, 1)}
-          netTooltip={makeNetTooltip((contract.annualNetSalary ?? 0) + totalAnnualBonuses * 0.75, trAnnual, 12)}
+          netImposableTooltip={makeNetImposableTooltip(contract.annualNetImposable, totalAnnualBonuses * 0.75)}
+          netAfterTaxTooltip={netAfterTaxAnnual != null ? makeNetAfterTaxTooltip(contract.annualNetImposable, estimatedTax, trAnnual, 12) : null}
         />
         <Cell
           label="Mensuel"
           gross={(contract.monthlyGrossSalary ?? 0) + bonusPerMonth}
-          net={(contract.monthlyNetSalary ?? 0) + bonusPerMonth * 0.75 + trMonthly + totalBenefitsMonthly}
+          netImposable={(contract.monthlyNetImposable ?? 0) + bonusPerMonth * 0.75}
+          netAfterTax={netAfterTaxMonthly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.monthlyGrossSalary, paidMonths)}
-          netTooltip={makeNetTooltip((contract.monthlyNetSalary ?? 0) + bonusPerMonth * 0.75, trMonthly, 1)}
+          netImposableTooltip={makeNetImposableTooltip(contract.monthlyNetImposable, bonusPerMonth * 0.75)}
+          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / 12, trMonthly, 1) : null}
         />
         <Cell
           label="Journalier"
           gross={(contract.dailyGrossSalary ?? 0) + bonusPerDay}
-          net={(contract.dailyNetSalary ?? 0) + bonusPerDay * 0.75 + trDaily + totalBenefitsDaily}
+          netImposable={(contract.dailyNetImposable ?? 0) + bonusPerDay * 0.75}
+          netAfterTax={netAfterTaxDaily}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.dailyGrossSalary, workingDays) ?? undefined}
-          netTooltip={makeNetTooltip((contract.dailyNetSalary ?? 0) + bonusPerDay * 0.75, trDaily, 12 / workingDays, 'Base : 228 jours travaillés / an')}
+          netImposableTooltip={makeNetImposableTooltip(contract.dailyNetImposable, bonusPerDay * 0.75)}
+          netAfterTaxTooltip={netAfterTaxDaily != null ? makeNetAfterTaxTooltip(contract.dailyNetImposable, estimatedTax / workingDays, trDaily, 12 / workingDays) : null}
         />
         <Cell
           label="Horaire"
           gross={(contract.hourlyGrossSalary ?? 0) + bonusPerHour}
-          net={(contract.hourlyNetSalary ?? 0) + bonusPerHour * 0.75 + trHourly + totalBenefitsHourly}
+          netImposable={(contract.hourlyNetImposable ?? 0) + bonusPerHour * 0.75}
+          netAfterTax={netAfterTaxHourly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.hourlyGrossSalary, workingDays * hoursPerDay)}
-          netTooltip={makeNetTooltip((contract.hourlyNetSalary ?? 0) + bonusPerHour * 0.75, trHourly, 12 / workingDays / hoursPerDay)}
+          netImposableTooltip={makeNetImposableTooltip(contract.hourlyNetImposable, bonusPerHour * 0.75)}
+          netAfterTaxTooltip={netAfterTaxHourly != null ? makeNetAfterTaxTooltip(contract.hourlyNetImposable, estimatedTax / (workingDays * hoursPerDay), trHourly, 12 / workingDays / hoursPerDay) : null}
         />
       </div>
+
+      {contract.annualNetAfterTax == null && (
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-xs text-amber-700">
+          Le net d'impôt n'est pas calculé car votre profil fiscal (quotient familial) n'est pas renseigné.
+          Complétez-le dans <span className="font-semibold">Profil &gt; Profil fiscal</span>.
+        </div>
+      )}
 
       {contract.mealVoucherAmount > 0 && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -163,7 +218,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       {benefits.length > 0 && (
         <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
-            Avantages en nature
+            Avantages en nature <span className="font-normal normal-case">(inclus dans le net d'impôt)</span>
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             {benefits.map(b => (
@@ -177,7 +232,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       )}
 
       <p className="text-xs text-gray-400 mt-3">
-        * Le net imposable est calculé à partir des taux de cotisations salariales légaux 2025 (vieillesse, CSG déductible, AGIRC-ARRCO, CEG, APEC). Le net des primes est estimé à 75 % du brut (approximation).
+        * Le net imposable est calculé à partir des taux de cotisations salariales légaux 2025 (vieillesse, CSG déductible, AGIRC-ARRCO, CEG, APEC). Le net d'impôt est estimé à partir de votre profil fiscal. Le net des primes est estimé à 75 % du brut (approximation).
       </p>
     </div>
   )

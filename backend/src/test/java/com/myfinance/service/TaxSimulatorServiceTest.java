@@ -344,4 +344,55 @@ class TaxSimulatorServiceTest {
         assertThat(result.effectiveTaxRate()).isEqualTo(0f);
         assertThat(result.totalEstimatedTax()).isEqualTo(0f);
     }
+
+    // ── estimerImpotSurSalaire ─────────────────────────────────
+
+    @Test
+    void estimerImpotSurSalaire_retourneNul_siProfilFiscalIncomplet() {
+        User sansParts = User.builder().id(2L).role(RoleEnum.USER).build(); // fiscalParts = null
+
+        assertThat(taxSimulatorService.estimerImpotSurSalaire(32803f, sansParts)).isNull();
+    }
+
+    @Test
+    void estimerImpotSurSalaire_calculeLImpotCorrectement() {
+        // net imposable ≈ 32 803,60, abattement 10% ≈ 3 280,36, netTaxable ≈ 29 523,24
+        // impôt (barème simplifié) = (29 523,24 − 10 000) × 10% ≈ 1 952,32
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(32803.6f, user);
+
+        assertThat(impot).isNotNull();
+        assertThat(impot).isCloseTo(1952.32f, org.assertj.core.data.Offset.offset(1f));
+    }
+
+    @Test
+    void estimerImpotSurSalaire_avecFraisReels() {
+        User avecFraisReels = User.builder().id(3L).role(RoleEnum.USER)
+                .fiscalParts(1.0f)
+                .useFlatRateDeduction(false)
+                .customProfessionalDeduction(8000f)
+                .build();
+
+        // net imposable ≈ 32 803,60 − 8 000 = 24 803,60
+        // impôt = (24 803,60 − 10 000) × 10% ≈ 1 480,36
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(32803.6f, avecFraisReels);
+
+        assertThat(impot).isNotNull();
+        assertThat(impot).isCloseTo(1480.36f, org.assertj.core.data.Offset.offset(1f));
+    }
+
+    @Test
+    void estimerImpotSurSalaire_avecDeuxParts() {
+        User deuxParts = User.builder().id(4L).role(RoleEnum.USER)
+                .fiscalParts(2.0f)
+                .useFlatRateDeduction(true)
+                .build();
+
+        // net imposable ≈ 32 803,60 → abattement ≈ 3 280,36 → netTaxable ≈ 29 523,24
+        // par part = 14 761,62 → impôt/part = (14 761,62 − 10 000) × 10% = 476,16
+        // impôt total = 476,16 × 2 = 952,32
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(32803.6f, deuxParts);
+
+        assertThat(impot).isNotNull();
+        assertThat(impot).isCloseTo(952.32f, org.assertj.core.data.Offset.offset(1f));
+    }
 }

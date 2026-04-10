@@ -2,12 +2,17 @@ package com.myfinance.dto;
 
 import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.SalaryContract;
+import com.myfinance.domain.User;
 import com.myfinance.service.NetImposableCalculator;
+import com.myfinance.service.TaxSimulatorService;
 
 import java.time.LocalDate;
 
 /**
  * DTO retourné par l'API — inclut les projections calculées à la volée (non persistées).
+ *
+ * Trois niveaux de rémunération sont exposés :
+ *   Brut  →  Net imposable (base fiscale)  →  Net d'impôt (après impôt estimé + avantages en nature)
  */
 public record SalaryContractDto(
         Long id,
@@ -20,24 +25,44 @@ public record SalaryContractDto(
         Float mealVoucherEmployeeRate,
         Boolean isCadre,
         Float employeePrevoyanceRate,
-        // ── Projections calculées ──────────────────────────────
-        Float annualNetSalary,
+        // ── Net imposable (base fiscale) ───────────────────────
+        Float annualNetImposable,
         Float monthlyGrossSalary,
-        Float monthlyNetSalary,
+        Float monthlyNetImposable,
         Float annualWorkingHours,
         Float hourlyGrossSalary,
-        Float hourlyNetSalary,
+        Float hourlyNetImposable,
         Float dailyGrossSalary,
-        Float dailyNetSalary,
+        Float dailyNetImposable,
         Float employeeMonthlyMealVoucherCost,
-        Float employerMonthlyMealVoucherCost
+        Float employerMonthlyMealVoucherCost,
+        // ── Net d'impôt (après impôt estimé + avantages en nature exonérés) ──
+        Float annualNetAfterTax,
+        Float monthlyNetAfterTax,
+        Float dailyNetAfterTax,
+        Float hourlyNetAfterTax
 ) {
-    public static SalaryContractDto from(SalaryContract c, TaxParameters taxParams) {
-        boolean isCadre    = Boolean.TRUE.equals(c.getIsCadre());
-        float annualNet    = NetImposableCalculator.calculer(
+    /**
+     * @param c               Entité contrat
+     * @param taxParams       Paramètres fiscaux (cotisations, barème, abattement)
+     * @param user            Propriétaire du contrat (profil fiscal pour l'estimation d'impôt)
+     * @param taxSimulator    Service simulateur (calcul de l'impôt estimé)
+     * @param annualBenefits  Somme annuelle des avantages en nature exonérés (Σ monthlyAmount × 12)
+     */
+    public static SalaryContractDto from(SalaryContract c, TaxParameters taxParams,
+                                         User user, TaxSimulatorService taxSimulator,
+                                         float annualBenefits) {
+        boolean isCadre        = Boolean.TRUE.equals(c.getIsCadre());
+        float annualNetImp     = NetImposableCalculator.calculer(
                 c.getAnnualGrossSalary(), isCadre, c.getEmployeePrevoyanceRate(), taxParams);
-        float workingHours = c.getWeeklyHours() * (228f / 5f);
-        float employeeRate = c.getMealVoucherEmployeeRate() / 100f;
+        float workingHours     = c.getWeeklyHours() * (228f / 5f);
+        float employeeRate     = c.getMealVoucherEmployeeRate() / 100f;
+
+        // Net d'impôt — null si profil fiscal incomplet ou barème absent
+        Float estimatedTax     = taxSimulator.estimerImpotSurSalaire(annualNetImp, user);
+        Float annualNetAfterTax = estimatedTax != null
+                ? annualNetImp - estimatedTax + annualBenefits
+                : null;
 
         return new SalaryContractDto(
                 c.getId(),
@@ -50,17 +75,22 @@ public record SalaryContractDto(
                 c.getMealVoucherEmployeeRate(),
                 c.getIsCadre(),
                 c.getEmployeePrevoyanceRate(),
-                // projections
-                annualNet,
+                // net imposable
+                annualNetImp,
                 c.getAnnualGrossSalary() / c.getPaidMonthsPerYear(),
-                annualNet / c.getPaidMonthsPerYear(),
+                annualNetImp / c.getPaidMonthsPerYear(),
                 workingHours,
                 c.getAnnualGrossSalary() / workingHours,
-                annualNet / workingHours,
+                annualNetImp / workingHours,
                 c.getAnnualGrossSalary() / 228f,
-                annualNet / 228f,
+                annualNetImp / 228f,
                 c.getMealVoucherAmount() * employeeRate * 19f,
-                c.getMealVoucherAmount() * (1f - employeeRate) * 19f
+                c.getMealVoucherAmount() * (1f - employeeRate) * 19f,
+                // net d'impôt
+                annualNetAfterTax,
+                annualNetAfterTax != null ? annualNetAfterTax / 12f : null,
+                annualNetAfterTax != null ? annualNetAfterTax / 228f : null,
+                annualNetAfterTax != null ? annualNetAfterTax / workingHours : null
         );
     }
 }

@@ -222,13 +222,15 @@ npm run dev
 **Implémenté :**
 - Authentification (session cookie, BCrypt, login/logout/me)
 - Gestion des utilisateurs CRUD (admin) + changement de mot de passe self-service
-- Gestion des revenus salariaux : contrats, projections (net/mensuel/journalier/horaire), bulletins de paie réels
+- Gestion des revenus salariaux : contrats, projections **Brut / Net imposable / Net d'impôt** (annuel, mensuel, journalier, horaire), bulletins de paie réels
 - Primes sur contrat (EXCEPTIONNELLE avec date de versement, ANNUELLE avec mois de versement)
+- Avantages en nature (`ContractBenefit`) intégrés dans le **net d'impôt** (modèle exonéré — hors assiette fiscale)
 - Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) avec totaux par catégorie
 - Frontend : navigation avec menu Revenus, pages Salariat et Complémentaires, formulaires modaux
 - Tests unitaires : (UserService, UserController, SalaryContractService, SalaryContractController, MonthlyPaySlipService, MonthlyPaySlipController, ContractBonusService, ContractBonusController, ContractBenefitService, ContractBenefitController, OtherIncomeService, OtherIncomeController, SalaryContractDto, TaxSimulatorService, TaxSimulatorController)
 - Documentation API : `docs/api/` | ADR : `docs/architecture/decisions/`
 - **Simulateur des impôts** : profil fiscal utilisateur (parts, abattement), simulation IRPP avec choix de source salariale et sélection des revenus complémentaires — doc : `docs/architecture/tax-simulator.md`
+- **Chaîne fiscale contrat** : `TaxSimulatorService.estimerImpotSurSalaire()` réutilisée par `SalaryContractService` (qui injecte aussi `ContractBenefitRepository`) pour calculer le net d'impôt dans les projections — `SalaryContractDto` expose `annualNetImposable` et `annualNetAfterTax` (+ dérivés mensuel/journalier/horaire, null si profil fiscal incomplet)
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
