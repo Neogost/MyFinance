@@ -152,9 +152,11 @@ public class TaxSimulatorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Aucun contrat salarial actif. Saisissez un contrat ou utilisez les bulletins réels."));
 
-        return contract.getAnnualGrossSalary() != null
-                ? contract.getAnnualGrossSalary() * 0.75f
-                : 0f;
+        if (contract.getAnnualGrossSalary() == null) return 0f;
+
+        boolean isCadre = Boolean.TRUE.equals(contract.getIsCadre());
+        return NetImposableCalculator.calculer(
+                contract.getAnnualGrossSalary(), isCadre, contract.getEmployeePrevoyanceRate(), taxParameters);
     }
 
     // ── Filtrage des revenus complémentaires ───────────────────

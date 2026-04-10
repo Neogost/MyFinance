@@ -1,6 +1,8 @@
 package com.myfinance.dto;
 
+import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.SalaryContract;
+import com.myfinance.service.NetImposableCalculator;
 
 import java.time.LocalDate;
 
@@ -16,6 +18,8 @@ public record SalaryContractDto(
         Float weeklyHours,
         Float mealVoucherAmount,
         Float mealVoucherEmployeeRate,
+        Boolean isCadre,
+        Float employeePrevoyanceRate,
         // ── Projections calculées ──────────────────────────────
         Float annualNetSalary,
         Float monthlyGrossSalary,
@@ -28,10 +32,12 @@ public record SalaryContractDto(
         Float employeeMonthlyMealVoucherCost,
         Float employerMonthlyMealVoucherCost
 ) {
-    public static SalaryContractDto from(SalaryContract c) {
-        float annualNet      = c.getAnnualGrossSalary() * 0.75f;
-        float workingHours   = c.getWeeklyHours() * (228f / 5f);
-        float employeeRate   = c.getMealVoucherEmployeeRate() / 100f;
+    public static SalaryContractDto from(SalaryContract c, TaxParameters taxParams) {
+        boolean isCadre    = Boolean.TRUE.equals(c.getIsCadre());
+        float annualNet    = NetImposableCalculator.calculer(
+                c.getAnnualGrossSalary(), isCadre, c.getEmployeePrevoyanceRate(), taxParams);
+        float workingHours = c.getWeeklyHours() * (228f / 5f);
+        float employeeRate = c.getMealVoucherEmployeeRate() / 100f;
 
         return new SalaryContractDto(
                 c.getId(),
@@ -42,6 +48,8 @@ public record SalaryContractDto(
                 c.getWeeklyHours(),
                 c.getMealVoucherAmount(),
                 c.getMealVoucherEmployeeRate(),
+                c.getIsCadre(),
+                c.getEmployeePrevoyanceRate(),
                 // projections
                 annualNet,
                 c.getAnnualGrossSalary() / c.getPaidMonthsPerYear(),

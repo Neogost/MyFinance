@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,6 +30,7 @@ import static org.mockito.Mockito.*;
 class SalaryContractServiceTest {
 
     @Mock SalaryContractRepository salaryContractRepository;
+    @Mock TaxParameters taxParameters;
     @InjectMocks SalaryContractService salaryContractService;
 
     User owner;
@@ -51,7 +54,24 @@ class SalaryContractServiceTest {
                 .weeklyHours(35f)
                 .mealVoucherAmount(9.5f)
                 .mealVoucherEmployeeRate(50f)
+                .isCadre(false)
                 .build();
+
+        // Paramètres fiscaux 2025 pour les projections de net imposable
+        TaxParameters.EmployeeContributions ec = new TaxParameters.EmployeeContributions();
+        ec.setCsgBaseRate(0.9825f);
+        ec.setCsgDeductibleRate(0.0680f);
+        ec.setVieillessePlafonneRate(0.0690f);
+        ec.setVieillesseDePlafonneeRate(0.0040f);
+        ec.setAgircArrcoT1Rate(0.0315f);
+        ec.setCegT1Rate(0.0086f);
+        ec.setAgircArrcoT2Rate(0.0864f);
+        ec.setCegT2Rate(0.0108f);
+        ec.setApecRate(0.00024f);
+
+        // lenient : certains tests lèvent une exception avant d'atteindre le calcul de projection
+        Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
+        Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(ec);
     }
 
     // ── findAllByUser ──────────────────────────────────────────
@@ -85,8 +105,8 @@ class SalaryContractServiceTest {
         SalaryContractDto result = salaryContractService.findById(1L, owner);
 
         assertThat(result.id()).isEqualTo(1L);
-        // Vérifie que les projections sont calculées
-        assertThat(result.annualNetSalary()).isCloseTo(33750f, offset(0.01f));
+        // net imposable 45 000 brut non-cadre ≈ 36 904 €
+        assertThat(result.annualNetSalary()).isCloseTo(36904.05f, offset(1f));
         assertThat(result.monthlyGrossSalary()).isCloseTo(3750f, offset(0.01f));
     }
 
@@ -122,12 +142,12 @@ class SalaryContractServiceTest {
     @Test
     void create_creeLeContratEtRetourneLeDtoAvecProjections() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f);
+                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(false);
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> {
             SalaryContract c = inv.getArgument(0);
-            c = SalaryContract.builder()
+            return SalaryContract.builder()
                     .id(2L).user(owner)
                     .startDate(c.getStartDate()).endDate(c.getEndDate())
                     .annualGrossSalary(c.getAnnualGrossSalary())
@@ -135,21 +155,23 @@ class SalaryContractServiceTest {
                     .weeklyHours(c.getWeeklyHours())
                     .mealVoucherAmount(c.getMealVoucherAmount())
                     .mealVoucherEmployeeRate(c.getMealVoucherEmployeeRate())
+                    .isCadre(c.getIsCadre())
+                    .employeePrevoyanceRate(c.getEmployeePrevoyanceRate())
                     .build();
-            return c;
         });
 
         SalaryContractDto result = salaryContractService.create(request, owner);
 
+        // net imposable 50 000 brut non-cadre ≈ 41 039 €
         assertThat(result.annualGrossSalary()).isEqualTo(50000f);
-        assertThat(result.annualNetSalary()).isCloseTo(37500f, offset(0.01f));
+        assertThat(result.annualNetSalary()).isCloseTo(41039.01f, offset(1f));
         verify(salaryContractRepository).save(any(SalaryContract.class));
     }
 
     @Test
     void create_leve409_siContratActifExisteDeja() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f);
+                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);
 
@@ -163,9 +185,8 @@ class SalaryContractServiceTest {
 
     @Test
     void create_accepteContratCloture_memeSiUnAutreEstActif() {
-        // endDate non null → pas de vérification du contrat actif
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 40000f, 12, 35f, 0f, 0f);
+                LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 40000f, 12, 35f, 0f, 0f, false, null);
 
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -178,7 +199,7 @@ class SalaryContractServiceTest {
     @Test
     void update_modifieLeContrat() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 60f);
+                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 60f, false, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -192,7 +213,7 @@ class SalaryContractServiceTest {
     @Test
     void update_leve403_siPasLeProprietaire() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), null, 48000f, 12, 35f, 9.5f, 50f);
+                LocalDate.of(2023, 1, 1), null, 48000f, 12, 35f, 9.5f, 50f, false, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
 
@@ -204,16 +225,16 @@ class SalaryContractServiceTest {
 
     @Test
     void update_leve409_siReactivationConflitAvecContratActif() {
-        // Contrat actuellement clôturé que l'on veut remettre actif
         SalaryContract closedContract = SalaryContract.builder()
                 .id(2L).user(owner)
                 .startDate(LocalDate.of(2022, 1, 1))
                 .endDate(LocalDate.of(2022, 12, 31))
                 .annualGrossSalary(40000f).paidMonthsPerYear(12)
                 .weeklyHours(35f).mealVoucherAmount(0f).mealVoucherEmployeeRate(0f)
+                .isCadre(false)
                 .build();
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2022, 1, 1), null, 40000f, 12, 35f, 0f, 0f);
+                LocalDate.of(2022, 1, 1), null, 40000f, 12, 35f, 0f, 0f, false, null);
 
         when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(closedContract));
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);

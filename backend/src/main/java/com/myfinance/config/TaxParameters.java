@@ -17,8 +17,23 @@ public class TaxParameters {
 
     private int year;
     private String incomePeriod;
+    private float pass = 47100.0f;
+    private EmployeeContributions employeeContributions = new EmployeeContributions();
     private FlatRateDeduction flatRateDeduction = new FlatRateDeduction();
     private List<TaxBracket> brackets;
+
+    @Data
+    public static class EmployeeContributions {
+        private float csgBaseRate           = 0.9825f;
+        private float csgDeductibleRate     = 0.0680f;
+        private float vieillessePlafonneRate    = 0.0690f;
+        private float vieillesseDePlafonneeRate = 0.0040f;
+        private float agircArrcoT1Rate      = 0.0315f;
+        private float cegT1Rate             = 0.0086f;
+        private float agircArrcoT2Rate      = 0.0864f;
+        private float cegT2Rate             = 0.0108f;
+        private float apecRate              = 0.00024f; // cadres, jusqu'à 4 PASS
+    }
 
     @Data
     public static class FlatRateDeduction {

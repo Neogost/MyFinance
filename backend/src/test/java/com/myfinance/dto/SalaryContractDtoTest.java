@@ -1,11 +1,14 @@
 package com.myfinance.dto;
 
+import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.offset;
@@ -14,6 +17,28 @@ import static org.assertj.core.api.Assertions.offset;
  * Vérifie que les formules de projection de SalaryContractDto::from sont correctes.
  */
 class SalaryContractDtoTest {
+
+    TaxParameters taxParams;
+
+    @BeforeEach
+    void setUp() {
+        // Paramètres fiscaux réels 2025 pour les tests
+        TaxParameters.EmployeeContributions ec = new TaxParameters.EmployeeContributions();
+        ec.setCsgBaseRate(0.9825f);
+        ec.setCsgDeductibleRate(0.0680f);
+        ec.setVieillessePlafonneRate(0.0690f);
+        ec.setVieillesseDePlafonneeRate(0.0040f);
+        ec.setAgircArrcoT1Rate(0.0315f);
+        ec.setCegT1Rate(0.0086f);
+        ec.setAgircArrcoT2Rate(0.0864f);
+        ec.setCegT2Rate(0.0108f);
+        ec.setApecRate(0.00024f);
+
+        taxParams = new TaxParameters();
+        taxParams.setPass(47100f);
+        taxParams.setEmployeeContributions(ec);
+        // flat-rate-deduction et brackets non utilisés dans SalaryContractDto
+    }
 
     private SalaryContract buildContract(float annualGross, int paidMonths, float weeklyHours,
                                           float voucherAmount, float employeeRate) {
@@ -26,40 +51,42 @@ class SalaryContractDtoTest {
                 .weeklyHours(weeklyHours)
                 .mealVoucherAmount(voucherAmount)
                 .mealVoucherEmployeeRate(employeeRate)
+                .isCadre(false)
                 .build();
     }
 
-    // ── Salaire net annuel ─────────────────────────────────────
+    // ── Salaire net imposable annuel ───────────────────────────
 
     @Test
-    void annualNetSalary_estEgalA75PourcentDuBrut() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(40000f, 12, 35f, 0f, 0f));
+    void annualNetSalary_calculeLeNetImposableReel() {
+        // 40 000 brut, non-cadre, sans prévoyance → net imposable ≈ 32 803,60
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(40000f, 12, 35f, 0f, 0f), taxParams);
 
-        assertThat(dto.annualNetSalary()).isCloseTo(30000f, offset(0.01f));
+        assertThat(dto.annualNetSalary()).isCloseTo(32803.6f, offset(1f));
     }
 
     // ── Salaires mensuels ──────────────────────────────────────
 
     @Test
     void monthlyGrossSalary_estEgalBrutAnnuelDivisePairNbMois() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(48000f, 12, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(48000f, 12, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.monthlyGrossSalary()).isCloseTo(4000f, offset(0.01f));
     }
 
     @Test
     void monthlyGrossSalary_avec13Mois() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(52000f, 13, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(52000f, 13, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.monthlyGrossSalary()).isCloseTo(4000f, offset(0.01f));
     }
 
     @Test
     void monthlyNetSalary_estEgalNetAnnuelDivisePairNbMois() {
-        // 48000 × 0.75 = 36000 / 12 = 3000
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(48000f, 12, 35f, 0f, 0f));
+        // 48 000 brut → net imposable ≈ 39 375,03 / 12 ≈ 3 281,25
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(48000f, 12, 35f, 0f, 0f), taxParams);
 
-        assertThat(dto.monthlyNetSalary()).isCloseTo(3000f, offset(0.01f));
+        assertThat(dto.monthlyNetSalary()).isCloseTo(39375.03f / 12f, offset(1f));
     }
 
     // ── Heures annuelles ───────────────────────────────────────
@@ -67,7 +94,7 @@ class SalaryContractDtoTest {
     @Test
     void annualWorkingHours_baseSur228JoursDivise5() {
         // 35h × (228 / 5) = 35 × 45.6 = 1596h
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.annualWorkingHours()).isCloseTo(1596f, offset(0.1f));
     }
@@ -75,7 +102,7 @@ class SalaryContractDtoTest {
     @Test
     void annualWorkingHours_avec39h() {
         // 39 × (228 / 5) = 39 × 45.6 = 1778.4h
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 39f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 39f, 0f, 0f), taxParams);
 
         assertThat(dto.annualWorkingHours()).isCloseTo(1778.4f, offset(0.1f));
     }
@@ -85,33 +112,34 @@ class SalaryContractDtoTest {
     @Test
     void hourlyGrossSalary_estBrutAnnuelDiviseParHeuresAnnuelles() {
         // 45000 / 1596 ≈ 28.20
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.hourlyGrossSalary()).isCloseTo(45000f / 1596f, offset(0.01f));
     }
 
     @Test
     void hourlyNetSalary_estNetAnnuelDiviseParHeuresAnnuelles() {
-        // 33750 / 1596 ≈ 21.15
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        // net ≈ 36 904,05 / 1596 ≈ 23.12
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
-        assertThat(dto.hourlyNetSalary()).isCloseTo(33750f / 1596f, offset(0.01f));
+        assertThat(dto.hourlyNetSalary()).isCloseTo(36904.05f / 1596f, offset(0.1f));
     }
 
     // ── Salaires journaliers ───────────────────────────────────
 
     @Test
     void dailyGrossSalary_estBrutAnnuelDivisePar228() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.dailyGrossSalary()).isCloseTo(45000f / 228f, offset(0.01f));
     }
 
     @Test
     void dailyNetSalary_estNetAnnuelDivisePar228() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        // net ≈ 36 904,05 / 228 ≈ 161.86
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
-        assertThat(dto.dailyNetSalary()).isCloseTo(33750f / 228f, offset(0.01f));
+        assertThat(dto.dailyNetSalary()).isCloseTo(36904.05f / 228f, offset(0.1f));
     }
 
     // ── Tickets restaurant ─────────────────────────────────────
@@ -119,7 +147,7 @@ class SalaryContractDtoTest {
     @Test
     void employeeMonthlyMealVoucherCost_base19JoursMois() {
         // 10€ × 50% × 19 = 95€
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 10f, 50f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 10f, 50f), taxParams);
 
         assertThat(dto.employeeMonthlyMealVoucherCost()).isCloseTo(95f, offset(0.01f));
     }
@@ -127,7 +155,7 @@ class SalaryContractDtoTest {
     @Test
     void employerMonthlyMealVoucherCost_estComplementAiresAuSalarie() {
         // 10€ × 50% × 19 = 95€ (employeur = 100% - 50%)
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 10f, 50f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 10f, 50f), taxParams);
 
         assertThat(dto.employerMonthlyMealVoucherCost()).isCloseTo(95f, offset(0.01f));
     }
@@ -135,7 +163,7 @@ class SalaryContractDtoTest {
     @Test
     void mealVoucherCosts_avecRepartitionAsymetrique() {
         // 9.5€, salarié 60% → salarié = 9.5 × 0.6 × 19 = 108.3 / employeur = 9.5 × 0.4 × 19 = 72.2
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 9.5f, 60f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 9.5f, 60f), taxParams);
 
         assertThat(dto.employeeMonthlyMealVoucherCost()).isCloseTo(108.3f, offset(0.1f));
         assertThat(dto.employerMonthlyMealVoucherCost()).isCloseTo(72.2f, offset(0.1f));
@@ -143,9 +171,30 @@ class SalaryContractDtoTest {
 
     @Test
     void mealVoucherCosts_sontZero_siAucunTicket() {
-        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f));
+        SalaryContractDto dto = SalaryContractDto.from(buildContract(45000f, 12, 35f, 0f, 0f), taxParams);
 
         assertThat(dto.employeeMonthlyMealVoucherCost()).isZero();
         assertThat(dto.employerMonthlyMealVoucherCost()).isZero();
+    }
+
+    // ── Nouveaux champs ────────────────────────────────────────
+
+    @Test
+    void isCadreEtPrevoyance_sontRestituesDansLeDto() {
+        User user = User.builder().id(1L).role(RoleEnum.USER).build();
+        SalaryContract contract = SalaryContract.builder()
+                .id(1L).user(user)
+                .startDate(LocalDate.of(2023, 1, 1)).endDate(null)
+                .annualGrossSalary(50000f).paidMonthsPerYear(12)
+                .weeklyHours(35f).mealVoucherAmount(0f).mealVoucherEmployeeRate(0f)
+                .isCadre(true).employeePrevoyanceRate(0.015f)
+                .build();
+
+        SalaryContractDto dto = SalaryContractDto.from(contract, taxParams);
+
+        assertThat(dto.isCadre()).isTrue();
+        assertThat(dto.employeePrevoyanceRate()).isEqualTo(0.015f);
+        // Net avec prévoyance 1,5% doit être inférieur à celui sans
+        assertThat(dto.annualNetSalary()).isLessThan(41039.01f);
     }
 }

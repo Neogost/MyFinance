@@ -46,8 +46,9 @@ class SalaryContractControllerTest {
                 1L,
                 LocalDate.of(2023, 1, 1), null,
                 45000f, 12, 35f, 9.5f, 50f,
-                33750f, 3750f, 2812.5f, 1596f,
-                28.20f, 21.15f, 197.37f, 148.03f,
+                false, null,
+                36904.05f, 3750f, 3075.34f, 1596f,
+                28.20f, 23.12f, 197.37f, 161.86f,
                 90.25f, 90.25f
         );
     }
@@ -64,7 +65,7 @@ class SalaryContractControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].annualGrossSalary").value(45000.0))
-                .andExpect(jsonPath("$[0].annualNetSalary").value(33750.0));
+                .andExpect(jsonPath("$[0].annualNetSalary").value(36904.05));
     }
 
     @Test
@@ -83,7 +84,7 @@ class SalaryContractControllerTest {
         mockMvc.perform(get("/api/salary-contracts/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.monthlyGrossSalary").value(3750.0))
-                .andExpect(jsonPath("$.monthlyNetSalary").value(2812.5));
+                .andExpect(jsonPath("$.monthlyNetSalary").value(3075.34));
     }
 
     @Test
@@ -112,7 +113,7 @@ class SalaryContractControllerTest {
     @WithMockCustomUser
     void create_avecCorpsValide_retourne201() throws Exception {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), null, 45000f, 12, 35f, 9.5f, 50f);
+                LocalDate.of(2023, 1, 1), null, 45000f, 12, 35f, 9.5f, 50f, false, null);
 
         when(salaryContractService.create(any(), any())).thenReturn(contractDto);
 
@@ -128,7 +129,7 @@ class SalaryContractControllerTest {
     void create_avecCorpsInvalide_retourne400() throws Exception {
         // annualGrossSalary = -1 → violation @Positive
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), null, -1f, 12, 35f, 9.5f, 50f);
+                LocalDate.of(2023, 1, 1), null, -1f, 12, 35f, 9.5f, 50f, false, null);
 
         mockMvc.perform(post("/api/salary-contracts")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -140,7 +141,7 @@ class SalaryContractControllerTest {
     @WithMockCustomUser
     void create_retourne409_siContratActifExisteDeja() throws Exception {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), null, 45000f, 12, 35f, 9.5f, 50f);
+                LocalDate.of(2023, 1, 1), null, 45000f, 12, 35f, 9.5f, 50f, false, null);
 
         when(salaryContractService.create(any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));
@@ -157,11 +158,11 @@ class SalaryContractControllerTest {
     @WithMockCustomUser
     void update_avecCorpsValide_retourne200() throws Exception {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 50f);
+                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 50f, false, null);
         SalaryContractDto updated = new SalaryContractDto(
                 1L, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
-                48000f, 13, 35f, 9.5f, 50f,
-                36000f, 3692.3f, 2769.2f, 1596f, 30.07f, 22.55f, 210.52f, 157.89f, 90.25f, 90.25f);
+                48000f, 13, 35f, 9.5f, 50f, false, null,
+                39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f);
 
         when(salaryContractService.update(eq(1L), any(), any())).thenReturn(updated);
 

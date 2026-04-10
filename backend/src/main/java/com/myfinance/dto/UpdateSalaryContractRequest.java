@@ -11,5 +11,7 @@ public record UpdateSalaryContractRequest(
         @NotNull @Min(1) @Max(13) Integer paidMonthsPerYear,
         @NotNull @Positive Float weeklyHours,
         @NotNull @PositiveOrZero Float mealVoucherAmount,
-        @NotNull @DecimalMin("0.0") @DecimalMax("100.0") Float mealVoucherEmployeeRate
+        @NotNull @DecimalMin("0.0") @DecimalMax("100.0") Float mealVoucherEmployeeRate,
+        Boolean isCadre,
+        @DecimalMin("0.0") @DecimalMax("1.0") Float employeePrevoyanceRate
 ) {}

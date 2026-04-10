@@ -41,7 +41,18 @@ class TaxSimulatorServiceTest {
 
     User user;
     TaxParameters.FlatRateDeduction flatRate;
+    TaxParameters.EmployeeContributions employeeContributions;
     List<TaxParameters.TaxBracket> brackets;
+
+    /*
+     * Valeurs de référence pour les tests de simulation (barème simplifié) :
+     *   40 000 € brut, non-cadre, sans prévoyance :
+     *     → net imposable ≈ 32 803,60 €
+     *     → abattement 10% = 3 280,36 €
+     *     → net taxable  = 29 523,24 €
+     *     → impôt (barème simplifié 0%/10%) = 1 952,32 €
+     *     → taux effectif ≈ 5,95 %
+     */
 
     @BeforeEach
     void setUp() {
@@ -55,25 +66,32 @@ class TaxSimulatorServiceTest {
 
         // Barème simplifié pour les tests : 0% jusqu'à 10 000, 10% au-delà
         TaxParameters.TaxBracket tranche0 = new TaxParameters.TaxBracket();
-        tranche0.setFrom(0f);
-        tranche0.setTo(10000f);
-        tranche0.setRate(0f);
+        tranche0.setFrom(0f); tranche0.setTo(10000f); tranche0.setRate(0f);
 
         TaxParameters.TaxBracket tranche10 = new TaxParameters.TaxBracket();
-        tranche10.setFrom(10000f);
-        tranche10.setTo(null);
-        tranche10.setRate(0.10f);
+        tranche10.setFrom(10000f); tranche10.setTo(null); tranche10.setRate(0.10f);
 
         brackets = List.of(tranche0, tranche10);
 
         flatRate = new TaxParameters.FlatRateDeduction();
-        flatRate.setRate(0.10f);
-        flatRate.setMin(504f);
-        flatRate.setMax(13522f);
+        flatRate.setRate(0.10f); flatRate.setMin(504f); flatRate.setMax(13522f);
 
-        // lenient : certains tests lèvent une exception avant d'atteindre le calcul fiscal
+        employeeContributions = new TaxParameters.EmployeeContributions();
+        employeeContributions.setCsgBaseRate(0.9825f);
+        employeeContributions.setCsgDeductibleRate(0.0680f);
+        employeeContributions.setVieillessePlafonneRate(0.0690f);
+        employeeContributions.setVieillesseDePlafonneeRate(0.0040f);
+        employeeContributions.setAgircArrcoT1Rate(0.0315f);
+        employeeContributions.setCegT1Rate(0.0086f);
+        employeeContributions.setAgircArrcoT2Rate(0.0864f);
+        employeeContributions.setCegT2Rate(0.0108f);
+        employeeContributions.setApecRate(0.00024f);
+
+        // lenient : certains tests lèvent avant d'atteindre le calcul fiscal
         Mockito.lenient().when(taxParameters.getBrackets()).thenReturn(brackets);
         Mockito.lenient().when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
+        Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
+        Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(employeeContributions);
     }
 
     // ── Source : projection du contrat ────────────────────────
@@ -81,28 +99,26 @@ class TaxSimulatorServiceTest {
     @Test
     void simulate_avecContrat_calculeLImpotCorrectement() {
         SalaryContract contract = SalaryContract.builder()
-                .annualGrossSalary(40000f)
-                .build();
+                .annualGrossSalary(40000f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
-        // salaire net = 40000 * 0.75 = 30000
-        // abattement 10% = 3000 (dans min/max)
-        // revenu net imposable = 27000
-        // impôt sur une part : 0% sur [0-10000] + 10% sur [10000-27000] = 1700
+        // net imposable 40 000 non-cadre ≈ 32 803,60
+        // abattement 10% = 3 280,36  →  net taxable ≈ 29 523,24
+        // impôt (barème simplifié) = (29 523,24 − 10 000) × 10% ≈ 1 952,32
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
         assertThat(result.year()).isEqualTo(2025);
         assertThat(result.salaryIncomeSource()).isEqualTo(TaxSimulatorService.SOURCE_PROJECTION);
-        assertThat(result.salaryIncome()).isEqualTo(30000f);
+        assertThat(result.salaryIncome()).isCloseTo(32803.6f, org.assertj.core.data.Offset.offset(1f));
         assertThat(result.deductionType()).isEqualTo("FORFAITAIRE_10_POURCENT");
-        assertThat(result.professionalDeduction()).isEqualTo(3000f);
-        assertThat(result.netTaxableIncome()).isEqualTo(27000f);
-        assertThat(result.baremeEstimatedTax()).isEqualTo(1700f);
-        assertThat(result.totalEstimatedTax()).isEqualTo(1700f);
+        assertThat(result.professionalDeduction()).isCloseTo(3280.36f, org.assertj.core.data.Offset.offset(1f));
+        assertThat(result.netTaxableIncome()).isCloseTo(29523.24f, org.assertj.core.data.Offset.offset(1f));
+        assertThat(result.baremeEstimatedTax()).isCloseTo(1952.32f, org.assertj.core.data.Offset.offset(1f));
+        assertThat(result.totalEstimatedTax()).isCloseTo(1952.32f, org.assertj.core.data.Offset.offset(1f));
     }
 
     @Test
@@ -132,7 +148,7 @@ class TaxSimulatorServiceTest {
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_BULLETINS, null);
 
         assertThat(result.salaryIncomeSource()).isEqualTo(TaxSimulatorService.SOURCE_BULLETINS);
-        assertThat(result.salaryIncome()).isEqualTo(4000f); // 2000 + 2000
+        assertThat(result.salaryIncome()).isEqualTo(4000f);
     }
 
     @Test
@@ -151,21 +167,18 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_inclutRevenusImposablesAuBareme() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
         OtherIncome locatif = OtherIncome.builder()
                 .id(1L).type(OtherIncomeTypeEnum.LOCATIF)
-                .amount(5000f).isTaxable(true)
-                .build();
+                .amount(5000f).isTaxable(true).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(locatif));
 
-        // salaire = 0, abattement = 504 (min), mais netTaxable >= 0
-        // otherIncomeInBareme = 5000
-        // netTaxableIncome = (0 - 504) + 5000 → max(0, -504 + 5000) = 4496
+        // salaire = 0, abattement min = 504 → netTaxable = max(0, 0-504+5000) = 4496
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(1L));
 
         assertThat(result.otherIncomeInBareme()).isEqualTo(5000f);
@@ -175,12 +188,11 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_calculeImpotSeparePourRevenuAuxTauxSpecifique() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
         OtherIncome dividende = OtherIncome.builder()
                 .id(2L).type(OtherIncomeTypeEnum.DIVIDENDE)
-                .amount(10000f).isTaxable(true).specificTaxRate(12.8f)
-                .build();
+                .amount(10000f).isTaxable(true).specificTaxRate(12.8f).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
@@ -195,12 +207,11 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_exclutRevenusNonImposables() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
         OtherIncome nonImposable = OtherIncome.builder()
                 .id(3L).type(OtherIncomeTypeEnum.AIDE_SOCIALE)
-                .amount(2000f).isTaxable(false)
-                .build();
+                .amount(2000f).isTaxable(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
@@ -217,7 +228,7 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_filtreSurLesIdsInclus() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
         OtherIncome income1 = OtherIncome.builder().id(1L).type(OtherIncomeTypeEnum.LOCATIF)
                 .amount(3000f).isTaxable(true).build();
@@ -229,7 +240,6 @@ class TaxSimulatorServiceTest {
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(income1, income2));
 
-        // Inclure uniquement income1
         TaxSimulationDto result = taxSimulatorService.simulate(
                 user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(1L));
 
@@ -240,8 +250,9 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_appliqueLeMinimumDAbattement() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(1000f).build();
-        // net = 750, abattement 10% = 75 < min 504 → abattement = 504
+        // brut = 1 000 → net imposable ≈ 820,09 → abattement 10% = 82 < min 504 → 504
+        // netTaxable = max(0, 820,09 - 504) = 316,09
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(1000f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
@@ -251,7 +262,7 @@ class TaxSimulatorServiceTest {
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
         assertThat(result.professionalDeduction()).isEqualTo(504f);
-        assertThat(result.netTaxableIncome()).isEqualTo(246f); // max(0, 750 - 504) = 246
+        assertThat(result.netTaxableIncome()).isCloseTo(316.09f, org.assertj.core.data.Offset.offset(1f));
     }
 
     @Test
@@ -262,19 +273,19 @@ class TaxSimulatorServiceTest {
                 .customProfessionalDeduction(8000f)
                 .build();
 
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
-        // salaire net = 30000, déduction = 8000 (frais réels)
+        // net imposable ≈ 32 803,60 − 8 000 = 24 803,60
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
         assertThat(result.deductionType()).isEqualTo("FRAIS_REELS");
         assertThat(result.professionalDeduction()).isEqualTo(8000f);
-        assertThat(result.netTaxableIncome()).isEqualTo(22000f);
+        assertThat(result.netTaxableIncome()).isCloseTo(24803.6f, org.assertj.core.data.Offset.offset(1f));
     }
 
     // ── Quotient familial ──────────────────────────────────────
@@ -286,42 +297,42 @@ class TaxSimulatorServiceTest {
                 .useFlatRateDeduction(true)
                 .build();
 
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
-        // net = 30000, abattement = 3000, netTaxable = 27000
-        // par part = 13500 → impôt par part = 0% sur [0-10000] + 10% sur [10000-13500] = 350
-        // impôt total barème = 350 * 2 = 700
+        // net imposable ≈ 32 803,60 → abattement ≈ 3 280,36 → netTaxable ≈ 29 523,24
+        // par part = 14 761,62 → impôt/part = (14 761,62 − 10 000) × 10% = 476,16
+        // impôt total = 476,16 × 2 = 952,32
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
         assertThat(result.fiscalParts()).isEqualTo(2.0f);
-        assertThat(result.baremeEstimatedTax()).isEqualTo(700f);
+        assertThat(result.baremeEstimatedTax()).isCloseTo(952.32f, org.assertj.core.data.Offset.offset(1f));
     }
 
     // ── Taux effectif ──────────────────────────────────────────
 
     @Test
     void simulate_calculeLeTauxEffectif() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
+        // grossTaxable ≈ 32 803,60, totalTax ≈ 1 952,32 → taux ≈ 5,95 %
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
 
-        // grossTaxable = 30000, totalTax = 1700 → taux = 1700/30000 * 100 = 5.67%
-        assertThat(result.effectiveTaxRate()).isCloseTo(5.67f, org.assertj.core.data.Offset.offset(0.01f));
+        assertThat(result.effectiveTaxRate()).isCloseTo(5.95f, org.assertj.core.data.Offset.offset(0.1f));
     }
 
     @Test
     void simulate_tauxEffectifZero_siAucunRevenu() {
-        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).build();
+        SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
         when(salaryContractRepository.findByUserAndEndDateIsNull(user))
                 .thenReturn(Optional.of(contract));

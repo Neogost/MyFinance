@@ -5,6 +5,20 @@
 tax:
   year: 2025
   income-period: "2024"
+  # Plafond Annuel de la Sécurité Sociale — mis à jour chaque année
+  pass: 47100.0
+  # Taux des cotisations salariales légales — mis à jour chaque année
+  employee-contributions:
+    csg-base-rate: 0.9825            # assiette CSG/CRDS = brut × 98,25%
+    csg-deductible-rate: 0.0680      # CSG déductible du revenu imposable
+    # CSG non déductible (2,40%) et CRDS (0,50%) prélevées mais hors calcul net imposable
+    vieillesse-plafonnee-rate: 0.0690   # dans la limite du PASS
+    vieillesse-deplafonnee-rate: 0.0040 # sur totalité du brut
+    agirc-arrco-t1-rate: 0.0315         # tranche 1 : 0 → 1 PASS
+    ceg-t1-rate: 0.0086                 # contribution d'équilibre général T1
+    agirc-arrco-t2-rate: 0.0864         # tranche 2 : 1 → 8 PASS
+    ceg-t2-rate: 0.0108                 # contribution d'équilibre général T2
+    apec-rate: 0.00024                  # cadres uniquement, jusqu'à 4 PASS
   flat-rate-deduction:
     rate: 0.10      # Taux abattement forfaitaire frais professionnels (10%)
     min: 504.0      # Plancher de l'abattement en €

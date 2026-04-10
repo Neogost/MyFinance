@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
@@ -19,18 +20,19 @@ import java.util.List;
 public class SalaryContractService {
 
     private final SalaryContractRepository salaryContractRepository;
+    private final TaxParameters taxParameters;
 
     // ── Lecture ────────────────────────────────────────────────
 
     public List<SalaryContractDto> findAllByUser(User user) {
         return salaryContractRepository.findByUserOrderByStartDateDesc(user)
                 .stream()
-                .map(SalaryContractDto::from)
+                .map(c -> SalaryContractDto.from(c, taxParameters))
                 .toList();
     }
 
     public SalaryContractDto findById(Long id, User currentUser) {
-        return SalaryContractDto.from(getContractWithOwnershipCheck(id, currentUser));
+        return SalaryContractDto.from(getContractWithOwnershipCheck(id, currentUser), taxParameters);
     }
 
     // ── Création ───────────────────────────────────────────────
@@ -52,9 +54,11 @@ public class SalaryContractService {
                 .weeklyHours(request.weeklyHours())
                 .mealVoucherAmount(request.mealVoucherAmount())
                 .mealVoucherEmployeeRate(request.mealVoucherEmployeeRate())
+                .isCadre(request.isCadre())
+                .employeePrevoyanceRate(request.employeePrevoyanceRate())
                 .build();
 
-        return SalaryContractDto.from(salaryContractRepository.save(contract));
+        return SalaryContractDto.from(salaryContractRepository.save(contract), taxParameters);
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -77,8 +81,10 @@ public class SalaryContractService {
         contract.setWeeklyHours(request.weeklyHours());
         contract.setMealVoucherAmount(request.mealVoucherAmount());
         contract.setMealVoucherEmployeeRate(request.mealVoucherEmployeeRate());
+        contract.setIsCadre(request.isCadre());
+        contract.setEmployeePrevoyanceRate(request.employeePrevoyanceRate());
 
-        return SalaryContractDto.from(salaryContractRepository.save(contract));
+        return SalaryContractDto.from(salaryContractRepository.save(contract), taxParameters);
     }
 
     // ── Suppression ────────────────────────────────────────────

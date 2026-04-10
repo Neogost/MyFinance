@@ -47,6 +47,12 @@ public class SalaryContract {
     @Column(nullable = false)
     private Float mealVoucherEmployeeRate;
 
+    // null = non renseigné (traité comme false dans les calculs)
+    private Boolean isCadre;
+
+    // Taux de prévoyance/mutuelle salarié en % décimal (ex : 0.015 = 1,5%) — nullable
+    private Float employeePrevoyanceRate;
+
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<MonthlyPaySlip> paySlips = new ArrayList<>();
