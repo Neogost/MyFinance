@@ -48,6 +48,7 @@ class SalaryContractDtoTest {
 
         taxParams = new TaxParameters();
         taxParams.setPass(47100f);
+        taxParams.setEmployerFlatRate(0.45f);
         taxParams.setEmployeeContributions(ec);
 
         // Utilisateur sans profil fiscal → estimerImpotSurSalaire retourne null
@@ -218,6 +219,47 @@ class SalaryContractDtoTest {
     }
 
     // ── Net d'impôt ────────────────────────────────────────────
+
+    // ── Super brut ─────────────────────────────────────────────
+
+    @Test
+    void annualSuperGross_estBrutMultiplieParUnPlusTauxPatronal() {
+        // 45 000 × 1.45 = 65 250
+        SalaryContractDto dto = from(buildContract(45000f, 12, 35f, 0f, 0f));
+
+        assertThat(dto.annualSuperGross()).isCloseTo(65250f, offset(0.01f));
+    }
+
+    @Test
+    void monthlySuperGross_estAnnuelDivisePairNbMois() {
+        // 65 250 / 12 = 5 437.50
+        SalaryContractDto dto = from(buildContract(45000f, 12, 35f, 0f, 0f));
+
+        assertThat(dto.monthlySuperGross()).isCloseTo(65250f / 12f, offset(0.01f));
+    }
+
+    @Test
+    void monthlySuperGross_avec13Mois() {
+        // 52 000 × 1.45 / 13 = 5 800
+        SalaryContractDto dto = from(buildContract(52000f, 13, 35f, 0f, 0f));
+
+        assertThat(dto.monthlySuperGross()).isCloseTo(52000f * 1.45f / 13f, offset(0.01f));
+    }
+
+    @Test
+    void dailySuperGross_estAnnuelDivisePar228() {
+        SalaryContractDto dto = from(buildContract(45000f, 12, 35f, 0f, 0f));
+
+        assertThat(dto.dailySuperGross()).isCloseTo(65250f / 228f, offset(0.01f));
+    }
+
+    @Test
+    void hourlySuperGross_estAnnuelDiviseParHeuresAnnuelles() {
+        // heures = 35 × (228/5) = 1596
+        SalaryContractDto dto = from(buildContract(45000f, 12, 35f, 0f, 0f));
+
+        assertThat(dto.hourlySuperGross()).isCloseTo(65250f / 1596f, offset(0.01f));
+    }
 
     @Test
     void annualNetAfterTax_estNul_siProfilFiscalIncomplet() {

@@ -43,14 +43,36 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 
 ### Projections calculées — `SalaryProjectionDto` (non persisté)
 
-Les projections distinguent trois niveaux de rémunération :
+Les projections distinguent quatre niveaux de rémunération :
 
 ```
-Brut  →  Net imposable  →  Net d'impôt
+Super brut (coût employeur)  →  Brut  →  Net imposable  →  Net d'impôt
 ```
 
 - **Net imposable** : base de revenu après cotisations salariales déductibles, avant impôt. C'est la valeur transmise au Simulateur des impôts.
 - **Net d'impôt** : montant réellement perçu après impôt estimé, en ajoutant les avantages en nature (qui ne sont pas dans l'assiette fiscale salariale).
+
+#### Champs super brut (coût employeur)
+
+Le **super brut** est une estimation du coût total employeur, calculée par application d'un taux forfaitaire de cotisations patronales sur le brut annuel.
+
+> Il s'agit d'une **approximation indicative** — les cotisations patronales réelles dépendent de la taille de l'entreprise, de la convention collective, du niveau de salaire (passage du PASS) et du taux de prévoyance patronale. Un calcul détaillé pourrait être ajouté ultérieurement.
+
+| Champ | Formule |
+|-------|---------|
+| `annualSuperGross` | `annualGrossSalary × (1 + EMPLOYER_FLAT_RATE)` |
+| `monthlySuperGross` | `annualSuperGross ÷ paidMonthsPerYear` |
+| `dailySuperGross` | `annualSuperGross ÷ 228` |
+| `hourlySuperGross` | `annualSuperGross ÷ annualWorkingHours` |
+
+**Constante** : `EMPLOYER_FLAT_RATE = 0.45` (45 % du brut) — externalisée dans `tax-parameters.yml` sous la clé `employer-flat-rate` pour permettre une mise à jour sans recompilation.
+
+```yaml
+tax:
+  employer-flat-rate: 0.45
+```
+
+> **Exemple** : 45 000 € brut → super brut estimé ≈ 65 250 €
 
 #### Champs bruts et net imposable
 

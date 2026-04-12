@@ -18,6 +18,7 @@ public class TaxParameters {
     private int year;
     private String incomePeriod;
     private float pass = 47100.0f;
+    private float employerFlatRate = 0.45f;
     private EmployeeContributions employeeContributions = new EmployeeContributions();
     private FlatRateDeduction flatRateDeduction = new FlatRateDeduction();
     private List<TaxBracket> brackets;

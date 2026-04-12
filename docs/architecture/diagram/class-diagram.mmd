@@ -27,6 +27,7 @@ classDiagram
     %% ── Revenus salariaux — vue théorique ─────────────────────
     class SalaryContract {
         +Long id
+        +String companyName
         +LocalDate startDate
         +LocalDate endDate
         +Float annualGrossSalary
@@ -40,6 +41,10 @@ classDiagram
 
     class SalaryProjectionDto {
         <<DTO — calculé, non persisté>>
+        +Float annualSuperGross
+        +Float monthlySuperGross
+        +Float dailySuperGross
+        +Float hourlySuperGross
         +Float annualNetImposable
         +Float monthlyGrossSalary
         +Float monthlyNetImposable

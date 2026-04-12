@@ -77,6 +77,7 @@ class SalaryContractServiceTest {
 
         // lenient : certains tests lèvent une exception avant d'atteindre le calcul de projection
         Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
+        Mockito.lenient().when(taxParameters.getEmployerFlatRate()).thenReturn(0.45f);
         Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(ec);
         // Pas de fiscalParts sur les users de test → estimerImpotSurSalaire retourne null
         Mockito.lenient().when(taxSimulatorService.estimerImpotSurSalaire(anyFloat(), any())).thenReturn(null);

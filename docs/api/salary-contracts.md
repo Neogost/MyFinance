@@ -53,7 +53,11 @@ GET /api/salary-contracts
     "monthlyNetAfterTax": 2437.50,
     "dailyNetAfterTax": 128.29,
     "hourlyNetAfterTax": 18.33,
-    "activeRevisionId": null
+    "activeRevisionId": null,
+    "annualSuperGross": 65250.00,
+    "monthlySuperGross": 5437.50,
+    "dailySuperGross": 286.18,
+    "hourlySuperGross": 40.88
   }
 ]
 ```
@@ -714,6 +718,10 @@ DELETE /api/salary-contracts/1/benefits/1
 |-------|------|-------------|
 | `id` | `number` | Identifiant |
 | `companyName` | `string\|null` | Nom de l'entreprise — `null` si non renseigné |
+| `annualSuperGross` | `number` | **Calculé** : coût employeur estimé = `annualGrossSalary × 1.45` |
+| `monthlySuperGross` | `number` | **Calculé** : `annualSuperGross ÷ paidMonthsPerYear` |
+| `dailySuperGross` | `number` | **Calculé** : `annualSuperGross ÷ 228` |
+| `hourlySuperGross` | `number` | **Calculé** : `annualSuperGross ÷ annualWorkingHours` |
 | `startDate` | `date` | Date de début |
 | `endDate` | `date\|null` | Date de fin — `null` = contrat actif |
 | `annualGrossSalary` | `number` | Brut annuel effectif (révision active si présente, sinon valeur du contrat) |

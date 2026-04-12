@@ -19,6 +19,8 @@ tax:
     agirc-arrco-t2-rate: 0.0864         # tranche 2 : 1 → 8 PASS
     ceg-t2-rate: 0.0108                 # contribution d'équilibre général T2
     apec-rate: 0.00024                  # cadres uniquement, jusqu'à 4 PASS
+  # Taux forfaitaire cotisations patronales — estimation indicative du super brut (coût employeur)
+  employer-flat-rate: 0.45
   flat-rate-deduction:
     rate: 0.10      # Taux abattement forfaitaire frais professionnels (10%)
     min: 504.0      # Plancher de l'abattement en €

@@ -230,7 +230,7 @@ npm run dev
 **Implémenté :**
 - Authentification (session cookie, BCrypt, login/logout/me)
 - Gestion des utilisateurs CRUD (admin) + changement de mot de passe self-service
-- Gestion des revenus salariaux : contrats, projections **Brut / Net imposable / Net d'impôt** (annuel, mensuel, journalier, horaire), bulletins de paie réels
+- Gestion des revenus salariaux : contrats (avec nom d'entreprise), projections **Super brut / Brut / Net imposable / Net d'impôt** (annuel, mensuel, journalier, horaire), bulletins de paie réels
 - Primes sur contrat (EXCEPTIONNELLE avec date de versement, ANNUELLE avec mois de versement)
 - Avantages en nature (`ContractBenefit`) intégrés dans le **net d'impôt** (modèle exonéré — hors assiette fiscale)
 - Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) avec totaux par catégorie
@@ -240,9 +240,12 @@ npm run dev
 - **Simulateur des impôts** : profil fiscal utilisateur (parts, abattement), simulation IRPP avec choix de source salariale et sélection des revenus complémentaires. En mode "Projection contrat", utilise la révision salariale active si elle existe — doc : `docs/architecture/tax-simulator.md`
 - **Chaîne fiscale contrat** : `TaxSimulatorService.estimerImpotSurSalaire()` réutilisée par `SalaryContractService` (qui injecte aussi `ContractBenefitRepository`) pour calculer le net d'impôt dans les projections — `SalaryContractDto` expose `annualNetImposable` et `annualNetAfterTax` (+ dérivés mensuel/journalier/horaire, null si profil fiscal incomplet)
 - **Fix `monthlyNetAfterTax`** : diviseur corrigé `/12` → `/paidMonthsPerYear` dans `SalaryContractDto.from()` + tooltip frontend (`estimatedTax / paidMonths`). Bug visible sur contrats 13 mois : net d'impôt mensuel dépassait le net imposable.
+- **Historique salarial** (`SalaryRevision`) : entity, repo, service, controller, tests, frontend (`RevisionPanel`, `RevisionForm`). Révision active = MAX(effectiveDate ≤ today), utilisée dans les projections contrat et le simulateur d'impôts.
+- **Nom d'entreprise** (`companyName`) sur `SalaryContract` : champ nullable, affiché dans les onglets et l'en-tête du contrat.
+- **Super brut** : coût employeur estimé (taux forfaitaire 45 %) calculé dans `SalaryContractDto`, affiché dans le tooltip "Brut" de la grille de projections. Taux externalisé dans `tax-parameters.yml`.
+- Tests unitaires : (SalaryRevisionService, SalaryRevisionController ajoutés — total 199 tests)
 
 **À venir :**
-- **Historique salarial** : `SalaryRevision` — entité documentée, implémentation à faire (entity, repo, service, controller, tests, frontend)
 - Regroupements familiaux (`FamilyGroup`)
 - Gestion du patrimoine (positions, ordres)
 - Scheduler Yahoo Finance

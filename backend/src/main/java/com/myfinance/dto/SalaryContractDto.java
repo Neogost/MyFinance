@@ -42,7 +42,12 @@ public record SalaryContractDto(
         Float annualNetAfterTax,
         Float monthlyNetAfterTax,
         Float dailyNetAfterTax,
-        Float hourlyNetAfterTax
+        Float hourlyNetAfterTax,
+        // ── Super brut (coût employeur estimé — taux forfaitaire) ─────────
+        Float annualSuperGross,
+        Float monthlySuperGross,
+        Float dailySuperGross,
+        Float hourlySuperGross
 ) {
     /**
      * @param c               Entité contrat
@@ -71,6 +76,9 @@ public record SalaryContractDto(
                 ? annualNetImp - estimatedTax + annualBenefits
                 : null;
 
+        // Super brut — coût employeur estimé (taux forfaitaire)
+        float annualSuperGross = effectiveSalary * (1f + taxParams.getEmployerFlatRate());
+
         return new SalaryContractDto(
                 c.getId(),
                 c.getCompanyName(),
@@ -86,12 +94,12 @@ public record SalaryContractDto(
                 c.getEmployeePrevoyanceRate(),
                 // net imposable
                 annualNetImp,
-                c.getAnnualGrossSalary() / c.getPaidMonthsPerYear(),
+                effectiveSalary / c.getPaidMonthsPerYear(),
                 annualNetImp / c.getPaidMonthsPerYear(),
                 workingHours,
-                c.getAnnualGrossSalary() / workingHours,
+                effectiveSalary / workingHours,
                 annualNetImp / workingHours,
-                c.getAnnualGrossSalary() / 228f,
+                effectiveSalary / 228f,
                 annualNetImp / 228f,
                 c.getMealVoucherAmount() * employeeRate * 19f,
                 c.getMealVoucherAmount() * (1f - employeeRate) * 19f,
@@ -99,7 +107,12 @@ public record SalaryContractDto(
                 annualNetAfterTax,
                 annualNetAfterTax != null ? annualNetAfterTax / c.getPaidMonthsPerYear() : null,
                 annualNetAfterTax != null ? annualNetAfterTax / 228f : null,
-                annualNetAfterTax != null ? annualNetAfterTax / workingHours : null
+                annualNetAfterTax != null ? annualNetAfterTax / workingHours : null,
+                // super brut
+                annualSuperGross,
+                annualSuperGross / c.getPaidMonthsPerYear(),
+                annualSuperGross / 228f,
+                annualSuperGross / workingHours
         );
     }
 }
