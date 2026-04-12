@@ -69,7 +69,7 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
             <p className="text-xs text-gray-400">Sélectionnez le mois concerné</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 items-end">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Brut (€) *</label>
               <input name="grossSalary" type="number" min="0" step="0.01" value={form.grossSalary} onChange={handleChange} required placeholder="3750.00" className={inputCls} />
@@ -80,7 +80,7 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 items-end">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Net versé (€) *</label>
               <input name="netSalary" type="number" min="0" step="0.01" value={form.netSalary} onChange={handleChange} required placeholder="2680.00" className={inputCls} />
