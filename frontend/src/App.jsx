@@ -6,6 +6,7 @@ import ChangePasswordForm from './components/users/ChangePasswordForm'
 import SalaryContractPage from './components/income/SalaryContractPage'
 import OtherIncomePage from './components/income/OtherIncomePage'
 import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
+import DashboardPage from './components/dashboard/DashboardPage'
 import { logout } from './api/auth'
 
 export default function App() {
@@ -37,14 +38,7 @@ export default function App() {
       />
 
       <main className="p-8">
-        {currentPage === 'dashboard' && (
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Tableau de bord</h2>
-            <p className="text-gray-600">
-              Bienvenue, <strong>{user.firstName}</strong> ! Le tableau de bord arrive bientôt.
-            </p>
-          </div>
-        )}
+        {currentPage === 'dashboard' && <DashboardPage user={user} />}
 
         {currentPage === 'salary' && <SalaryContractPage />}
 

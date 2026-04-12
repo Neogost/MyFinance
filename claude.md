@@ -83,7 +83,9 @@ frontend/src/
 - Simulateur des impôts (algorithme, barème, config) : `docs/architecture/tax-simulator.md`
 - Modèle de données (diagramme de classes) : `docs/architecture/diagram/class-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
+- Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
 - API authentification : `docs/api/authentication.md`
+- API tableau de bord : `docs/api/dashboard.md`
 - API utilisateurs : `docs/api/users.md`
 - API contrats salariaux et bulletins : `docs/api/salary-contracts.md`
 - API revenus complémentaires : `docs/api/other-incomes.md`
@@ -249,4 +251,6 @@ npm run dev
 - Regroupements familiaux (`FamilyGroup`)
 - Gestion du patrimoine (positions, ordres)
 - Scheduler Yahoo Finance
-- Tableau de bord avec graphiques (Recharts)
+- **Tableau de bord** :
+  - Graphique d'évolution salariale (`SalaryEvolutionChart`) — 4 courbes (brut, net fiscal, net versé, PAS) basées sur `MonthlyPaySlip` — doc : `docs/architecture/dashboard.md`, API : `docs/api/dashboard.md`
+  - Graphiques patrimoine, plus-values, diversification (à définir)

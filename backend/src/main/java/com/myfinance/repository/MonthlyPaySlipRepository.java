@@ -17,4 +17,7 @@ public interface MonthlyPaySlipRepository extends JpaRepository<MonthlyPaySlip, 
 
     // Bulletins de tous les contrats d'un utilisateur pour une plage de dates (utilisé par le simulateur)
     List<MonthlyPaySlip> findByContractUserAndPeriodBetween(User user, LocalDate start, LocalDate end);
+
+    // Tous les bulletins d'un utilisateur triés chronologiquement (utilisé par le tableau de bord)
+    List<MonthlyPaySlip> findByContractUserOrderByPeriodAsc(User user);
 }
