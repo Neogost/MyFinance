@@ -26,6 +26,9 @@ public class SalaryContract {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // Nom de l'entreprise — nullable pour compatibilité avec les contrats existants
+    private String companyName;
+
     @Column(nullable = false)
     private LocalDate startDate;
 

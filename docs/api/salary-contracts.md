@@ -29,6 +29,7 @@ GET /api/salary-contracts
 [
   {
     "id": 1,
+    "companyName": "Acme Corp",
     "startDate": "2023-01-01",
     "endDate": null,
     "annualGrossSalary": 45000.0,
@@ -94,6 +95,7 @@ POST /api/salary-contracts
 Content-Type: application/json
 
 {
+  "companyName": "Acme Corp",
   "startDate": "2023-01-01",
   "endDate": null,
   "annualGrossSalary": 45000.0,
@@ -110,6 +112,7 @@ Content-Type: application/json
 
 | Champ | Type | Obligatoire | Contraintes | Description |
 |-------|------|-------------|-------------|-------------|
+| `companyName` | `string` | non | | Nom de l'entreprise — `null` acceptable |
 | `startDate` | `date` | oui | | Date de début du contrat |
 | `endDate` | `date` | non | | Date de fin — `null` = contrat en cours |
 | `annualGrossSalary` | `number` | oui | > 0 | Salaire brut annuel (€) |
@@ -143,6 +146,7 @@ PUT /api/salary-contracts/1
 Content-Type: application/json
 
 {
+  "companyName": "Acme Corp",
   "startDate": "2023-01-01",
   "endDate": "2024-12-31",
   "annualGrossSalary": 48000.0,
@@ -709,6 +713,7 @@ DELETE /api/salary-contracts/1/benefits/1
 | Champ | Type | Description |
 |-------|------|-------------|
 | `id` | `number` | Identifiant |
+| `companyName` | `string\|null` | Nom de l'entreprise — `null` si non renseigné |
 | `startDate` | `date` | Date de début |
 | `endDate` | `date\|null` | Date de fin — `null` = contrat actif |
 | `annualGrossSalary` | `number` | Brut annuel effectif (révision active si présente, sinon valeur du contrat) |
@@ -729,7 +734,7 @@ DELETE /api/salary-contracts/1/benefits/1
 | `employeeMonthlyMealVoucherCost` | `number` | **Calculé** : coût mensuel salarié (€) |
 | `employerMonthlyMealVoucherCost` | `number` | **Calculé** : coût mensuel employeur (€) |
 | `annualNetAfterTax` | `number\|null` | **Calculé** : net imposable − impôt estimé + avantages en nature annuels. `null` si profil fiscal incomplet |
-| `monthlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ 12` |
+| `monthlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ paidMonthsPerYear` |
 | `dailyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ 228` |
 | `hourlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ annualWorkingHours` |
 | `activeRevisionId` | `number\|null` | ID de la `SalaryRevision` active — `null` si le salaire du contrat est utilisé directement |

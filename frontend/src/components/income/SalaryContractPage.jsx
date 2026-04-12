@@ -109,7 +109,7 @@ export default function SalaryContractPage() {
                   : 'bg-white border border-gray-300 text-gray-600 hover:border-indigo-400'
               }`}
             >
-              {c.startDate} {!c.endDate ? '(actif)' : `→ ${c.endDate}`}
+              {c.companyName ? <><strong>{c.companyName}</strong> — </> : ''}{c.startDate} {!c.endDate ? '(actif)' : `→ ${c.endDate}`}
             </button>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default function SalaryContractPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-base font-bold text-gray-900">
-                  Contrat depuis le {selected.startDate}
+                  {selected.companyName ? `${selected.companyName} — ` : ''}Contrat depuis le {selected.startDate}
                 </h3>
                 {!selected.endDate
                   ? <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Actif</span>

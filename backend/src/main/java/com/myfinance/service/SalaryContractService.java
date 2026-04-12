@@ -57,6 +57,7 @@ public class SalaryContractService {
 
         SalaryContract contract = SalaryContract.builder()
                 .user(user)
+                .companyName(request.companyName())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .annualGrossSalary(request.annualGrossSalary())
@@ -84,6 +85,7 @@ public class SalaryContractService {
             }
         }
 
+        contract.setCompanyName(request.companyName());
         contract.setStartDate(request.startDate());
         contract.setEndDate(request.endDate());
         contract.setAnnualGrossSalary(request.annualGrossSalary());

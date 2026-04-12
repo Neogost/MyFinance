@@ -28,6 +28,7 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 | Champ | Type | Description |
 |-------|------|-------------|
 | `id` | `Long` | Identifiant |
+| `companyName` | `String` | Nom de l'entreprise — nullable |
 | `startDate` | `LocalDate` | Date de début du contrat |
 | `endDate` | `LocalDate` | Date de fin — `null` = contrat en cours |
 | `annualGrossSalary` | `Float` | Salaire brut annuel (en €) |
@@ -71,7 +72,7 @@ Brut  →  Net imposable  →  Net d'impôt
 | Champ | Formule |
 |-------|---------|
 | `annualNetAfterTax` | `annualNetImposable − estimatedTax + Σ(ContractBenefit.monthlyAmount × 12)` |
-| `monthlyNetAfterTax` | `annualNetAfterTax ÷ 12` |
+| `monthlyNetAfterTax` | `annualNetAfterTax ÷ paidMonthsPerYear` |
 | `dailyNetAfterTax` | `annualNetAfterTax ÷ 228` |
 | `hourlyNetAfterTax` | `annualNetAfterTax ÷ annualWorkingHours` |
 
@@ -344,6 +345,7 @@ Enregistrer tout revenu hors salariat : revenu locatif, dividendes non liés au 
 classDiagram
     class SalaryContract {
         +Long id
+        +String companyName
         +LocalDate startDate
         +LocalDate endDate
         +Float annualGrossSalary

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 
 public record CreateSalaryContractRequest(
+        String companyName,
         @NotNull LocalDate startDate,
         LocalDate endDate,
         @NotNull @Positive Float annualGrossSalary,

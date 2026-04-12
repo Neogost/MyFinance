@@ -156,7 +156,7 @@ class SalaryContractServiceTest {
     @Test
     void create_creeLeContratEtRetourneLeDtoAvecProjections() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
+                null, LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(false);
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> {
@@ -185,7 +185,7 @@ class SalaryContractServiceTest {
     @Test
     void create_leve409_siContratActifExisteDeja() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
+                null, LocalDate.of(2024, 1, 1), null, 50000f, 12, 35f, 10f, 50f, false, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);
 
@@ -200,7 +200,7 @@ class SalaryContractServiceTest {
     @Test
     void create_accepteContratCloture_memeSiUnAutreEstActif() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 40000f, 12, 35f, 0f, 0f, false, null);
+                null, LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 40000f, 12, 35f, 0f, 0f, false, null);
 
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -213,7 +213,7 @@ class SalaryContractServiceTest {
     @Test
     void update_modifieLeContrat() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 60f, false, null);
+                null, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 60f, false, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -227,7 +227,7 @@ class SalaryContractServiceTest {
     @Test
     void update_leve403_siPasLeProprietaire() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2023, 1, 1), null, 48000f, 12, 35f, 9.5f, 50f, false, null);
+                null, LocalDate.of(2023, 1, 1), null, 48000f, 12, 35f, 9.5f, 50f, false, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
 
@@ -248,7 +248,7 @@ class SalaryContractServiceTest {
                 .isCadre(false)
                 .build();
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                LocalDate.of(2022, 1, 1), null, 40000f, 12, 35f, 0f, 0f, false, null);
+                null, LocalDate.of(2022, 1, 1), null, 40000f, 12, 35f, 0f, 0f, false, null);
 
         when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(closedContract));
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);

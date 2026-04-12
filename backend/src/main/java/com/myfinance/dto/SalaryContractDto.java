@@ -16,6 +16,7 @@ import java.time.LocalDate;
  */
 public record SalaryContractDto(
         Long id,
+        String companyName,
         LocalDate startDate,
         LocalDate endDate,
         Float annualGrossSalary,
@@ -72,6 +73,7 @@ public record SalaryContractDto(
 
         return new SalaryContractDto(
                 c.getId(),
+                c.getCompanyName(),
                 c.getStartDate(),
                 c.getEndDate(),
                 effectiveSalary,

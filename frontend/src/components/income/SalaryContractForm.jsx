@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const EMPTY = {
+  companyName: '',
   startDate: '', endDate: '', annualGrossSalary: '',
   paidMonthsPerYear: '12', weeklyHours: '35',
   mealVoucherAmount: '0', mealVoucherEmployeeRate: '50',
@@ -19,6 +20,7 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
   useEffect(() => {
     if (contract) {
       setForm({
+        companyName:             contract.companyName           ?? '',
         startDate:               contract.startDate             ?? '',
         endDate:                 contract.endDate               ?? '',
         annualGrossSalary:       contract.annualGrossSalary     ?? '',
@@ -47,6 +49,7 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
     setLoading(true)
     try {
       await onSubmit({
+        companyName:             form.companyName || null,
         startDate:               form.startDate   || null,
         endDate:                 form.endDate     || null,
         annualGrossSalary:       parseFloat(form.annualGrossSalary),
@@ -77,6 +80,11 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>Nom de l'entreprise</label>
+            <input name="companyName" type="text" value={form.companyName} onChange={handleChange} placeholder="Ex : Acme Corp" className={inputCls} />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date de début *</label>
