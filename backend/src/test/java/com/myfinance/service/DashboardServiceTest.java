@@ -114,4 +114,32 @@ class DashboardServiceTest {
 
         assertThat(dashboardService.getSalaryEvolution(user)).isEmpty();
     }
+
+    @Test
+    void getSalaryEvolution_aggregeDeuxBulletinsDuMemeMois() {
+        // Deux contrats avec chacun un bulletin sur janvier 2025 (chevauchement)
+        MonthlyPaySlip slipA = MonthlyPaySlip.builder()
+                .id(10L).contract(contratA).period(LocalDate.of(2025, 1, 1))
+                .grossSalary(500f).taxableNetSalary(410f).netSalary(380f).incomeTaxWithholding(30f)
+                .build();
+        MonthlyPaySlip slipB = MonthlyPaySlip.builder()
+                .id(11L).contract(contratB).period(LocalDate.of(2025, 1, 1))
+                .grossSalary(600f).taxableNetSalary(492f).netSalary(456f).incomeTaxWithholding(36f)
+                .build();
+
+        when(monthlyPaySlipRepository.findByContractUserOrderByPeriodAsc(user))
+                .thenReturn(List.of(slipA, slipB));
+
+        List<SalaryEvolutionPointDto> result = dashboardService.getSalaryEvolution(user);
+
+        // Un seul point pour janvier 2025
+        assertThat(result).hasSize(1);
+        SalaryEvolutionPointDto point = result.get(0);
+        assertThat(point.period()).isEqualTo(LocalDate.of(2025, 1, 1));
+        assertThat(point.grossSalary()).isEqualTo(1100f);
+        assertThat(point.taxableNetSalary()).isEqualTo(902f);
+        assertThat(point.netSalary()).isEqualTo(836f);
+        assertThat(point.incomeTaxWithholding()).isEqualTo(66f);
+        assertThat(point.companyName()).contains("Conserto").contains("Milhertech");
+    }
 }
