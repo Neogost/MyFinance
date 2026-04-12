@@ -45,7 +45,7 @@ class SalaryContractControllerTest {
         contractDto = new SalaryContractDto(
                 1L,
                 LocalDate.of(2023, 1, 1), null,
-                45000f, 12, 35f, 9.5f, 50f,
+                45000f, null, 12, 35f, 9.5f, 50f,
                 false, null,
                 // net imposable
                 36904.05f, 3750f, 3075.34f, 1596f,
@@ -164,7 +164,7 @@ class SalaryContractControllerTest {
                 LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 48000f, 13, 35f, 9.5f, 50f, false, null);
         SalaryContractDto updated = new SalaryContractDto(
                 1L, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
-                48000f, 13, 35f, 9.5f, 50f, false, null,
+                48000f, null, 13, 35f, 9.5f, 50f, false, null,
                 39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f,
                 null, null, null, null);
 

@@ -27,6 +27,12 @@ export const createBenefit  = (contractId, data)     => api.post(`/api/salary-co
 export const updateBenefit  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/benefits/${id}`, data).then(r => r.data)
 export const deleteBenefit  = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/benefits/${id}`)
 
+// ── Révisions salariales ───────────────────────────────────────
+export const getRevisions    = (contractId)           => api.get(`/api/salary-contracts/${contractId}/revisions`).then(r => r.data)
+export const createRevision  = (contractId, data)     => api.post(`/api/salary-contracts/${contractId}/revisions`, data).then(r => r.data)
+export const updateRevision  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/revisions/${id}`, data).then(r => r.data)
+export const deleteRevision  = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/revisions/${id}`)
+
 // ── Revenus complémentaires ────────────────────────────────────
 export const getOtherIncomes   = ()          => api.get('/api/other-incomes').then(r => r.data)
 export const createOtherIncome = (data)      => api.post('/api/other-incomes', data).then(r => r.data)

@@ -11,6 +11,7 @@ import com.myfinance.dto.TaxSimulationDto;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.SalaryContractRepository;
+import com.myfinance.repository.SalaryRevisionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,7 @@ class TaxSimulatorServiceTest {
 
     @Mock TaxParameters taxParameters;
     @Mock SalaryContractRepository salaryContractRepository;
+    @Mock SalaryRevisionRepository salaryRevisionRepository;
     @Mock MonthlyPaySlipRepository monthlyPaySlipRepository;
     @Mock OtherIncomeRepository otherIncomeRepository;
     @InjectMocks TaxSimulatorService taxSimulatorService;
@@ -92,6 +94,10 @@ class TaxSimulatorServiceTest {
         Mockito.lenient().when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
         Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
         Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(employeeContributions);
+        // Aucune révision salariale par défaut → salaire du contrat utilisé
+        Mockito.lenient().when(salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))
+                .thenReturn(Optional.empty());
     }
 
     // ── Source : projection du contrat ────────────────────────
@@ -394,5 +400,32 @@ class TaxSimulatorServiceTest {
 
         assertThat(impot).isNotNull();
         assertThat(impot).isCloseTo(952.32f, org.assertj.core.data.Offset.offset(1f));
+    }
+
+    // ── Révision salariale active ──────────────────────────────
+
+    @Test
+    void simulate_avecRevisionActive_utiliseLesSalaireRevise() {
+        SalaryContract contract = SalaryContract.builder()
+                .annualGrossSalary(40000f).isCadre(false).build();
+        com.myfinance.domain.SalaryRevision revision = com.myfinance.domain.SalaryRevision.builder()
+                .id(1L).contract(contract)
+                .effectiveDate(java.time.LocalDate.of(2025, 1, 1))
+                .annualGrossSalary(48000f).label("Augmentation 2025")
+                .build();
+
+        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
+                .thenReturn(Optional.of(contract));
+        when(salaryRevisionRepository.findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
+                eq(contract), any()))
+                .thenReturn(Optional.of(revision));
+        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
+
+        // net imposable 48 000 non-cadre ≈ 39 375,03 (supérieur à celui de 40 000)
+        assertThat(result.salaryIncome()).isGreaterThan(35000f);
+        assertThat(result.salaryIncome()).isCloseTo(39375f, org.assertj.core.data.Offset.offset(10f));
     }
 }

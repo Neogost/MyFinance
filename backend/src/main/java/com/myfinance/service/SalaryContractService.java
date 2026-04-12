@@ -3,18 +3,22 @@ package com.myfinance.service;
 import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
+import com.myfinance.domain.SalaryRevision;
 import com.myfinance.domain.User;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
 import com.myfinance.repository.ContractBenefitRepository;
 import com.myfinance.repository.SalaryContractRepository;
+import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class SalaryContractService {
 
     private final SalaryContractRepository salaryContractRepository;
     private final ContractBenefitRepository contractBenefitRepository;
+    private final SalaryRevisionRepository salaryRevisionRepository;
     private final TaxParameters taxParameters;
     private final TaxSimulatorService taxSimulatorService;
 
@@ -125,6 +130,17 @@ public class SalaryContractService {
                 .mapToDouble(b -> b.getMonthlyAmount() != null ? b.getMonthlyAmount() : 0.0)
                 .sum() * 12f;
 
-        return SalaryContractDto.from(contract, taxParameters, contractOwner, taxSimulatorService, annualBenefits);
+        // Révision active : la plus récente dont effectiveDate <= aujourd'hui
+        Optional<SalaryRevision> activeRevision = salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
+                        contract, LocalDate.now());
+
+        Long activeRevisionId     = activeRevision.map(SalaryRevision::getId).orElse(null);
+        float effectiveSalary     = activeRevision
+                .map(SalaryRevision::getAnnualGrossSalary)
+                .orElse(contract.getAnnualGrossSalary());
+
+        return SalaryContractDto.from(contract, taxParameters, contractOwner, taxSimulatorService,
+                annualBenefits, activeRevisionId, effectiveSalary);
     }
 }

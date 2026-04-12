@@ -51,8 +51,10 @@ L'utilisateur choisit explicitement la source à utiliser pour les revenus salar
 
 | Option | Données utilisées | Disponibilité |
 |--------|-------------------|---------------|
-| **Projection contrat** | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` du contrat actif | Toujours disponible si un contrat existe |
+| **Projection contrat** | `NetImposableCalculator.calculer(effectiveSalary, isCadre, employeePrevoyanceRate, taxParams)` du contrat actif, où `effectiveSalary` = révision active si elle existe, sinon `annualGrossSalary` du contrat | Toujours disponible si un contrat existe |
 | **Bulletins réels** | Somme des `taxableNetSalary` des bulletins saisis pour l'année | Disponible uniquement si des bulletins existent pour l'année sélectionnée |
+
+> **Révision active** : en mode "Projection contrat", le simulateur utilise automatiquement la `SalaryRevision` la plus récente dont la `effectiveDate ≤ today`. Si aucune révision n'est active, le `annualGrossSalary` du contrat sert de repli. Ce comportement est cohérent avec les projections affichées sur la page du contrat.
 
 > **Cas typique :** en cours d'année, les bulletins sont incomplets. L'utilisateur peut simuler avec la projection (vision annuelle théorique) ou avec les bulletins réels déjà saisis (vision partielle de l'année).
 
@@ -94,7 +96,9 @@ Deux nouveaux champs sont ajoutés à l'entité `OtherIncome` :
 
 ```
 // Étape 1 — Revenus salariaux (selon choix de la source)
-revenusSalariaux = NetImposableCalculator.calculer(annualGrossSalary, isCadre, prevoyanceRate, taxParams)
+effectiveSalary  = revisionActive.annualGrossSalary  si revisionActive existe
+                   sinon contract.annualGrossSalary
+revenusSalariaux = NetImposableCalculator.calculer(effectiveSalary, isCadre, prevoyanceRate, taxParams)
                                                          // option "Projection contrat"
                    OU Σ taxableNetSalary (bulletins)      // option "Bulletins réels"
 

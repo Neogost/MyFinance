@@ -19,6 +19,7 @@ public record SalaryContractDto(
         LocalDate startDate,
         LocalDate endDate,
         Float annualGrossSalary,
+        Long activeRevisionId,
         Integer paidMonthsPerYear,
         Float weeklyHours,
         Float mealVoucherAmount,
@@ -49,12 +50,17 @@ public record SalaryContractDto(
      * @param taxSimulator    Service simulateur (calcul de l'impôt estimé)
      * @param annualBenefits  Somme annuelle des avantages en nature exonérés (Σ monthlyAmount × 12)
      */
+    /**
+     * @param activeRevisionId  ID de la révision active (null si aucune — salaire du contrat utilisé)
+     * @param effectiveSalary   Salaire brut annuel effectif (révision active ou contrat.annualGrossSalary)
+     */
     public static SalaryContractDto from(SalaryContract c, TaxParameters taxParams,
                                          User user, TaxSimulatorService taxSimulator,
-                                         float annualBenefits) {
+                                         float annualBenefits,
+                                         Long activeRevisionId, float effectiveSalary) {
         boolean isCadre        = Boolean.TRUE.equals(c.getIsCadre());
         float annualNetImp     = NetImposableCalculator.calculer(
-                c.getAnnualGrossSalary(), isCadre, c.getEmployeePrevoyanceRate(), taxParams);
+                effectiveSalary, isCadre, c.getEmployeePrevoyanceRate(), taxParams);
         float workingHours     = c.getWeeklyHours() * (228f / 5f);
         float employeeRate     = c.getMealVoucherEmployeeRate() / 100f;
 
@@ -68,7 +74,8 @@ public record SalaryContractDto(
                 c.getId(),
                 c.getStartDate(),
                 c.getEndDate(),
-                c.getAnnualGrossSalary(),
+                effectiveSalary,
+                activeRevisionId,
                 c.getPaidMonthsPerYear(),
                 c.getWeeklyHours(),
                 c.getMealVoucherAmount(),

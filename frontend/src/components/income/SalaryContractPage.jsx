@@ -8,6 +8,7 @@ import ProjectionGrid from './ProjectionGrid'
 import PaySlipPanel from './PaySlipPanel'
 import BonusPanel from './BonusPanel'
 import BenefitPanel from './BenefitPanel'
+import RevisionPanel from './RevisionPanel'
 
 export default function SalaryContractPage() {
   const [contracts, setContracts] = useState([])
@@ -18,6 +19,7 @@ export default function SalaryContractPage() {
   const [showSlips, setShowSlips] = useState(false)
   const [showBonuses, setShowBonuses] = useState(false)
   const [showBenefits, setShowBenefits] = useState(false)
+  const [showRevisions, setShowRevisions] = useState(false)
   const [annualBonuses, setAnnualBonuses] = useState([])
   const [benefits, setBenefits] = useState([])
 
@@ -100,7 +102,7 @@ export default function SalaryContractPage() {
           {contracts.map(c => (
             <button
               key={c.id}
-              onClick={() => { setSelected(c); setShowSlips(false); setShowBonuses(false); setShowBenefits(false) }}
+              onClick={() => { setSelected(c); setShowSlips(false); setShowBonuses(false); setShowBenefits(false); setShowRevisions(false) }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 selected?.id === c.id
                   ? 'bg-indigo-600 text-white'
@@ -159,6 +161,23 @@ export default function SalaryContractPage() {
 
           {/* Projections */}
           <ProjectionGrid contract={selected} annualBonuses={annualBonuses} benefits={benefits} />
+
+          {/* Révisions salariales */}
+          <div className="border-t border-gray-100 mt-6 pt-4">
+            <button
+              onClick={() => setShowRevisions(v => !v)}
+              className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition"
+            >
+              {showRevisions ? '▲ Masquer l\'historique salarial' : '▼ Afficher l\'historique salarial'}
+            </button>
+            {showRevisions && (
+              <RevisionPanel
+                contractId={selected.id}
+                activeRevisionId={selected.activeRevisionId}
+                onRevisionChange={fetchContracts}
+              />
+            )}
+          </div>
 
           {/* Séparateur + bouton primes */}
           <div className="border-t border-gray-100 mt-6 pt-4">

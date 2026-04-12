@@ -9,6 +9,7 @@ import com.myfinance.dto.TaxSimulationDto;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.SalaryContractRepository;
+import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class TaxSimulatorService {
 
     private final TaxParameters taxParameters;
     private final SalaryContractRepository salaryContractRepository;
+    private final SalaryRevisionRepository salaryRevisionRepository;
     private final MonthlyPaySlipRepository monthlyPaySlipRepository;
     private final OtherIncomeRepository otherIncomeRepository;
 
@@ -154,9 +156,15 @@ public class TaxSimulatorService {
 
         if (contract.getAnnualGrossSalary() == null) return 0f;
 
+        // Révision active : la plus récente dont effectiveDate <= aujourd'hui
+        float effectiveSalary = salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(contract, LocalDate.now())
+                .map(com.myfinance.domain.SalaryRevision::getAnnualGrossSalary)
+                .orElse(contract.getAnnualGrossSalary());
+
         boolean isCadre = Boolean.TRUE.equals(contract.getIsCadre());
         return NetImposableCalculator.calculer(
-                contract.getAnnualGrossSalary(), isCadre, contract.getEmployeePrevoyanceRate(), taxParameters);
+                effectiveSalary, isCadre, contract.getEmployeePrevoyanceRate(), taxParameters);
     }
 
     // ── Filtrage des revenus complémentaires ───────────────────

@@ -9,6 +9,7 @@ import com.myfinance.dto.CreateContractBenefitRequest;
 import com.myfinance.dto.UpdateContractBenefitRequest;
 import com.myfinance.repository.ContractBenefitRepository;
 import com.myfinance.repository.SalaryContractRepository;
+import com.myfinance.repository.SalaryRevisionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ class ContractBenefitServiceTest {
 
     @Mock ContractBenefitRepository contractBenefitRepository;
     @Mock SalaryContractRepository salaryContractRepository;
+    @Mock SalaryRevisionRepository salaryRevisionRepository;
     @InjectMocks SalaryContractService salaryContractService;
     ContractBenefitService contractBenefitService;
 
