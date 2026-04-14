@@ -267,7 +267,16 @@ npm run dev
 - **Nom d'entreprise** (`companyName`) sur `SalaryContract` : champ nullable, affiché dans les onglets et l'en-tête du contrat.
 - **Super brut** : coût employeur estimé (taux forfaitaire 45 %) calculé dans `SalaryContractDto`, affiché dans le tooltip "Brut" de la grille de projections. Taux externalisé dans `tax-parameters.yml`.
 - Tests unitaires : (SalaryRevisionService, SalaryRevisionController ajoutés — total 199 tests)
-- **Patrimoine — Livrets & Liquidités** : entités `Position` + `PositionOrder`, enums `AssetCategory` / `FiscalEnvelope` / `OrderType` / `PositionStatus`, service + controller + 37 tests (PositionServiceTest, PositionControllerTest). Frontend : `PatrimoinePage`, `PositionForm` (wizard 2 étapes), `OrderPanel`, `BalanceEditModal`. Navigation : bouton "Patrimoine" ajouté. Doc : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`.
+- **Patrimoine — Gestion complète** : 
+  - **Entités JPA** : `Position` + `PositionOrder` + `PortfolioSnapshot` + `PositionSnapshot` + `Instrument`
+  - **Enums** : `AssetCategory`, `AssetSubType`, `FiscalEnvelope`, `OrderType`, `OwnershipType`, `PositionStatus`
+  - **Backend** : `PositionService`, `InstrumentService`, `PortfolioSnapshotService` + 3 controllers
+  - **DTOs** : `PositionDto`, `PositionComputedDto`, `PositionOrderDto`, `InstrumentDto`, `PortfolioSnapshotDto`, `PositionSnapshotDto` + 8 request classes
+  - **Tests** : 50+ tests unitaires (PositionServiceTest, PositionControllerTest, InstrumentServiceTest, PortfolioSnapshotServiceTest)
+  - **Frontend** : `PatrimoinePage`, `PositionForm` (wizard 2 étapes), `OrderPanel` + API layer `patrimoine.js`
+  - **Navigation** : intégration menu Patrimoine + routing App.jsx
+  - **Endpoints API** : `/api/positions`, `/api/instruments`, `/api/portfolio-snapshots` (CRUD complet)
+  - **Documentation** : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
