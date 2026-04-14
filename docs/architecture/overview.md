@@ -291,6 +291,24 @@ classDiagram
 
 Les projections (net mensuel, journalier, horaire) sont calculées à la volée dans `SalaryContractDto` et ne sont jamais persistées en base.
 
+### Gestion du patrimoine
+
+Chaque utilisateur peut suivre l'ensemble de ses actifs financiers, organisés en six catégories : **Bourse**, **Crypto-monnaie**, **Immobilier papier**, **Immobilier physique**, **Livrets** et **Liquidités**.
+
+Le patrimoine repose sur un modèle **Position → Ordres** : chaque position agrège les achats/ventes successifs pour calculer les totaux en temps réel. Un snapshot mensuel automatique historise la valorisation mois par mois.
+
+| Catégorie | Mécanisme de valorisation |
+|-----------|--------------------------|
+| Bourse, Crypto | Quantité × prix marché (scheduler Yahoo Finance / CoinGecko) |
+| Livret, Immo papier | Montant investi + intérêts cumulés |
+| Immo physique | Valeur estimée saisie manuellement |
+| Liquidités | Solde saisi manuellement (pas d'ordres) |
+
+La documentation détaillée (modèle de données, règles de calcul, diagramme de classes) est dans [`docs/architecture/patrimoine.md`](patrimoine.md).
+La documentation API est dans [`docs/api/patrimoine.md`](../api/patrimoine.md).
+
+---
+
 ### Outils
 
 Un menu **Outils** regroupe les fonctionnalités de simulation et d'analyse transverses.

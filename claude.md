@@ -90,6 +90,8 @@ frontend/src/
 - API contrats salariaux et bulletins : `docs/api/salary-contracts.md`
 - API revenus complémentaires : `docs/api/other-incomes.md`
 - API simulateur des impôts : `docs/api/tax-simulator.md`
+- Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
+- API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
 
 ## Endpoints backend existants
 
@@ -164,6 +166,25 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `GET` | `/api/tax-simulator` | Authentifié | Simulation IRPP pour l'utilisateur connecté |
 | `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Simulation IRPP pour un autre utilisateur |
+
+### Patrimoine — Positions
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/positions` | Authentifié | Liste ses positions (filtrable par `category`, `status`) |
+| `GET` | `/api/positions/{id}` | Authentifié | Détail + ordres d'une position |
+| `POST` | `/api/positions` | Authentifié | Créer une position (LIVRET, LIQUIDITE, …) |
+| `PUT` | `/api/positions/{id}` | Authentifié | Modifier une position |
+| `PUT` | `/api/positions/{id}/balance` | Authentifié | Mettre à jour le solde (LIQUIDITE uniquement) |
+| `PUT` | `/api/positions/{id}/close` | Authentifié | Fermer une position |
+| `DELETE` | `/api/positions/{id}` | Authentifié | Supprimer une position (cascade ordres) |
+
+### Patrimoine — Ordres
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/positions/{id}/orders` | Authentifié | Liste des ordres d'une position |
+| `POST` | `/api/positions/{id}/orders` | Authentifié | Ajouter un ordre (interdit sur LIQUIDITE) |
+| `PUT` | `/api/positions/{id}/orders/{orderId}` | Authentifié | Modifier un ordre |
+| `DELETE` | `/api/positions/{id}/orders/{orderId}` | Authentifié | Supprimer un ordre |
 
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
@@ -246,11 +267,12 @@ npm run dev
 - **Nom d'entreprise** (`companyName`) sur `SalaryContract` : champ nullable, affiché dans les onglets et l'en-tête du contrat.
 - **Super brut** : coût employeur estimé (taux forfaitaire 45 %) calculé dans `SalaryContractDto`, affiché dans le tooltip "Brut" de la grille de projections. Taux externalisé dans `tax-parameters.yml`.
 - Tests unitaires : (SalaryRevisionService, SalaryRevisionController ajoutés — total 199 tests)
+- **Patrimoine — Livrets & Liquidités** : entités `Position` + `PositionOrder`, enums `AssetCategory` / `FiscalEnvelope` / `OrderType` / `PositionStatus`, service + controller + 37 tests (PositionServiceTest, PositionControllerTest). Frontend : `PatrimoinePage`, `PositionForm` (wizard 2 étapes), `OrderPanel`, `BalanceEditModal`. Navigation : bouton "Patrimoine" ajouté. Doc : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`.
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
-- Gestion du patrimoine (positions, ordres)
-- Scheduler Yahoo Finance
+- Patrimoine — autres catégories (Bourse, Crypto, Immo Papier, Immo Physique)
+- Scheduler Yahoo Finance / CoinGecko (mise à jour des prix marché)
 - **Tableau de bord** :
   - Graphique d'évolution salariale (`SalaryEvolutionChart`) — 4 courbes (brut, net fiscal, net versé, PAS) basées sur `MonthlyPaySlip` — doc : `docs/architecture/dashboard.md`, API : `docs/api/dashboard.md`
   - Graphiques patrimoine, plus-values, diversification (à définir)
