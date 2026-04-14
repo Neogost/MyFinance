@@ -31,6 +31,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
       <nav className="flex items-center gap-1">
         <NavBtn page="dashboard" label="Tableau de bord" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
+        <NavBtn page="patrimoine" label="Patrimoine" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+
         {/* ── Menu Revenus avec sous-menu ── */}
         <div className="relative">
           <button

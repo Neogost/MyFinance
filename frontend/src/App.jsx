@@ -7,6 +7,7 @@ import SalaryContractPage from './components/income/SalaryContractPage'
 import OtherIncomePage from './components/income/OtherIncomePage'
 import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
+import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import { logout } from './api/auth'
 
 export default function App() {
@@ -39,6 +40,8 @@ export default function App() {
 
       <main className="p-8">
         {currentPage === 'dashboard' && <DashboardPage user={user} />}
+
+        {currentPage === 'patrimoine' && <PatrimoinePage />}
 
         {currentPage === 'salary' && <SalaryContractPage />}
 
