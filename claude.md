@@ -168,6 +168,16 @@ frontend/src/
 | `GET` | `/api/tax-simulator` | Authentifié | Simulation IRPP pour l'utilisateur connecté |
 | `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Simulation IRPP pour un autre utilisateur |
 
+### Patrimoine — Instruments
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/instruments` | Authentifié | Liste les instruments (recherche par ISIN, ticker ou nom) |
+| `GET` | `/api/instruments/{id}` | Authentifié | Détail d'un instrument + dernier prix |
+| `POST` | `/api/instruments` | Authentifié | Créer un instrument manuellement |
+| `PUT` | `/api/instruments/{id}` | Authentifié | Modifier un instrument |
+| `GET` | `/api/instruments/active` | ADMIN | Liste les instruments liés à au moins une position ACTIVE |
+| `PUT` | `/api/instruments/prices` | ADMIN | Mise à jour groupée des cours (lastPrice + lastPriceUpdatedAt) |
+
 ### Patrimoine — Positions
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -272,12 +282,20 @@ npm run dev
   - **Entités JPA** : `Position` + `PositionOrder` + `PortfolioSnapshot` + `PositionSnapshot` + `Instrument`
   - **Enums** : `AssetCategory`, `AssetSubType`, `FiscalEnvelope`, `OrderType`, `OwnershipType`, `PositionStatus`
   - **Backend** : `PositionService`, `InstrumentService`, `PortfolioSnapshotService` + 3 controllers
-  - **DTOs** : `PositionDto`, `PositionComputedDto`, `PositionOrderDto`, `InstrumentDto`, `PortfolioSnapshotDto`, `PositionSnapshotDto` + 8 request classes
-  - **Tests** : 50+ tests unitaires (PositionServiceTest, PositionControllerTest, InstrumentServiceTest, PortfolioSnapshotServiceTest)
+  - **DTOs** : `PositionDto`, `PositionComputedDto`, `PositionOrderDto`, `InstrumentDto`, `PortfolioSnapshotDto`, `PositionSnapshotDto` + 9 request classes
+  - **Tests** : 283 tests (InstrumentServiceTest +5, InstrumentControllerTest créé +8)
   - **Frontend** : `PatrimoinePage`, `PositionForm` (wizard 2 étapes), `OrderPanel` + API layer `patrimoine.js`
   - **Navigation** : intégration menu Patrimoine + routing App.jsx
   - **Endpoints API** : `/api/positions`, `/api/instruments`, `/api/portfolio-snapshots` (CRUD complet)
   - **Documentation** : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`
+- **Patrimoine — Mise à jour manuelle des cours** (ADMIN) :
+  - `GET /api/instruments/active` + `PUT /api/instruments/prices` protégés `ADMIN`
+  - Modal `InstrumentPriceUpdateModal` : tableau de saisie groupée, cours obsolètes (>7 j) en orange
+  - Bouton "Mettre à jour les cours" visible uniquement pour le rôle ADMIN
+  - Documentation : `docs/architecture/instrument-price-update.md`
+- **Patrimoine — Création d'instrument à la volée** :
+  - Dans `PositionForm`, si la recherche BOURSE (ISIN) ou CRYPTO (ticker) ne retourne aucun résultat, proposition de créer l'instrument directement avec nom + devise
+  - L'instrument créé est automatiquement sélectionné dans le formulaire
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
