@@ -8,6 +8,7 @@ import com.myfinance.repository.PositionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -150,9 +151,11 @@ public class PositionService {
 
     // ── Suppression ────────────────────────────────────────────
 
+    @Transactional
     public void delete(Long id, User currentUser) {
-        getPositionWithOwnershipCheck(id, currentUser);
-        positionRepository.deleteById(id);
+        Position position = getPositionWithOwnershipCheck(id, currentUser);
+        positionOrderRepository.deleteByPosition(position);
+        positionRepository.delete(position);
     }
 
     // ── Ordres ─────────────────────────────────────────────────

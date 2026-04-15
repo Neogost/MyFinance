@@ -9,4 +9,6 @@ import java.util.List;
 public interface PositionOrderRepository extends JpaRepository<PositionOrder, Long> {
 
     List<PositionOrder> findByPositionOrderByOrderDateDesc(Position position);
+
+    void deleteByPosition(Position position);
 }

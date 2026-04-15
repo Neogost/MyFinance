@@ -314,12 +314,13 @@ class PositionServiceTest {
     // ── delete ─────────────────────────────────────────────────
 
     @Test
-    void delete_supprimeLaPosition() {
+    void delete_supprimeLesOrdresPuisLaPosition() {
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
 
         positionService.delete(1L, owner);
 
-        verify(positionRepository).deleteById(1L);
+        verify(positionOrderRepository).deleteByPosition(livret);
+        verify(positionRepository).delete(livret);
     }
 
     @Test
@@ -330,7 +331,8 @@ class PositionServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
-        verify(positionRepository, never()).deleteById(any());
+        verify(positionOrderRepository, never()).deleteByPosition(any());
+        verify(positionRepository, never()).delete(any(Position.class));
     }
 
     @Test
@@ -338,7 +340,8 @@ class PositionServiceTest {
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
 
         assertThatNoException().isThrownBy(() -> positionService.delete(1L, admin));
-        verify(positionRepository).deleteById(1L);
+        verify(positionOrderRepository).deleteByPosition(livret);
+        verify(positionRepository).delete(livret);
     }
 
     // ── createOrder ────────────────────────────────────────────

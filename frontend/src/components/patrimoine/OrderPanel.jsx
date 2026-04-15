@@ -196,10 +196,11 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
 // ── Panneau principal ──────────────────────────────────────────
 
 export default function OrderPanel({ position, onClose, onOrdersChanged }) {
-  const [orders, setOrders]         = useState([])
-  const [formTarget, setFormTarget] = useState(undefined)
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
+  const [orders, setOrders]               = useState([])
+  const [formTarget, setFormTarget]       = useState(undefined)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState(null)
 
   useEffect(() => { fetchOrders() }, [position.id])
 
@@ -227,10 +228,13 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   }
 
   async function handleDelete(order) {
-    if (!confirm(`Supprimer ce mouvement de ${parseFloat(order.amountEur).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} € ?`)) return
-    await deleteOrder(position.id, order.id)
-    setOrders(os => os.filter(o => o.id !== order.id))
-    onOrdersChanged?.()
+    try {
+      await deleteOrder(position.id, order.id)
+      setOrders(os => os.filter(o => o.id !== order.id))
+      onOrdersChanged?.()
+    } catch {
+      setError('Impossible de supprimer ce mouvement.')
+    }
   }
 
   const isBourseOrCrypto = position.category === 'BOURSE' || position.category === 'CRYPTO'
@@ -352,10 +356,23 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
                       className="px-2.5 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:border-indigo-500 hover:text-indigo-600 transition">
                       Modifier
                     </button>
-                    <button onClick={() => handleDelete(order)}
-                      className="px-2.5 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:border-red-400 hover:text-red-600 transition">
-                      Suppr.
-                    </button>
+                    {confirmDeleteId === order.id ? (
+                      <>
+                        <button onClick={() => { setConfirmDeleteId(null); handleDelete(order) }}
+                          className="px-2.5 py-1 bg-red-600 text-white rounded-md text-xs font-semibold hover:bg-red-700 transition">
+                          Oui
+                        </button>
+                        <button onClick={() => setConfirmDeleteId(null)}
+                          className="px-2.5 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:border-gray-400 transition">
+                          Non
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => setConfirmDeleteId(order.id)}
+                        className="px-2.5 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:border-red-400 hover:text-red-600 transition">
+                        Suppr.
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

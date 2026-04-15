@@ -113,6 +113,7 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
   const meta   = CATEGORY_META[position.category] ?? {}
   const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c      = position.computed ?? {}
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const isClosed       = position.status === 'CLOSED'
   const isLiquidite    = position.category === 'LIQUIDITE'
@@ -245,10 +246,24 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
             Fermer
           </button>
-          <button onClick={() => onDelete(position)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
-            Supprimer
-          </button>
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-600 font-medium">Supprimer ?</span>
+              <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
+                Confirmer
+              </button>
+              <button onClick={() => setConfirmDelete(false)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
+              Supprimer
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -314,9 +329,12 @@ export default function PatrimoinePage({ currentUser }) {
   }
 
   async function handleDelete(position) {
-    if (!confirm(`Supprimer la position « ${position.label} » et tous ses mouvements ?`)) return
-    await deletePosition(position.id)
-    setPositions(ps => ps.filter(p => p.id !== position.id))
+    try {
+      await deletePosition(position.id)
+      setPositions(ps => ps.filter(p => p.id !== position.id))
+    } catch {
+      setError('Impossible de supprimer la position.')
+    }
   }
 
   async function handleOrdersChanged() {
@@ -344,10 +362,14 @@ export default function PatrimoinePage({ currentUser }) {
     .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
-  if (error)   return <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
 
   return (
     <div>
+      {/* ── Erreur ── */}
+      {error && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>
+      )}
+
       {/* ── En-tête ── */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Patrimoine</h2>
