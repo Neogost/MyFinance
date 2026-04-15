@@ -448,7 +448,8 @@ classDiagram
 | `GET` | `/api/instruments/{id}` | Détail d'un instrument + dernier prix |
 | `POST` | `/api/instruments` | Créer un instrument manuellement |
 | `PUT` | `/api/instruments/{id}` | Modifier un instrument |
-| `POST` | `/api/instruments/{id}/refresh-price` | Forcer la mise à jour du prix marché |
+| `GET` | `/api/instruments/active` | Liste les instruments liés à au moins une position ACTIVE — ADMIN |
+| `PUT` | `/api/instruments/prices` | Mise à jour groupée des cours manuellement — ADMIN |
 
 ### Positions
 
@@ -489,7 +490,8 @@ classDiagram
 |--------|-------------|
 | Gérer ses positions et ordres | USER, ADMIN |
 | Consulter / déclencher ses snapshots | USER, ADMIN |
-| Gérer le référentiel d'instruments | USER, ADMIN |
+| Créer et modifier les instruments du référentiel | USER, ADMIN |
+| Mettre à jour les cours manuellement (`/active`, `/prices`) | ADMIN uniquement |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 
 ---
