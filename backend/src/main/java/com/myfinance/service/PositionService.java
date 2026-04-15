@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.*;
 import com.myfinance.dto.*;
+import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
@@ -12,9 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class PositionService {
     private final PositionRepository positionRepository;
     private final PositionOrderRepository positionOrderRepository;
     private final InstrumentRepository instrumentRepository;
+    private final ExchangeRateRepository exchangeRateRepository;
 
     // ── Lecture : positions ────────────────────────────────────
 
@@ -39,10 +42,12 @@ public class PositionService {
             positions = positionRepository.findByUserOrderByCreatedAtDesc(user);
         }
 
+        Map<String, BigDecimal> exchangeRates = loadExchangeRates();
+
         return positions.stream()
                 .map(p -> {
                     List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(p);
-                    return PositionDto.fromWithoutOrders(p, orders);
+                    return PositionDto.fromWithoutOrders(p, orders, exchangeRates);
                 })
                 .toList();
     }
@@ -50,7 +55,7 @@ public class PositionService {
     public PositionDto findById(Long id, User currentUser) {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(position);
-        return PositionDto.from(position, orders);
+        return PositionDto.from(position, orders, loadExchangeRates());
     }
 
     // ── Création ───────────────────────────────────────────────
@@ -81,7 +86,7 @@ public class PositionService {
                 .build();
 
         Position saved = positionRepository.save(position);
-        return PositionDto.from(saved, List.of());
+        return PositionDto.from(saved, List.of(), loadExchangeRates());
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -105,7 +110,7 @@ public class PositionService {
 
         Position saved = positionRepository.save(position);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);
-        return PositionDto.from(saved, orders);
+        return PositionDto.from(saved, orders, loadExchangeRates());
     }
 
     // ── Mise à jour solde (LIQUIDITE) ──────────────────────────
@@ -120,7 +125,7 @@ public class PositionService {
 
         position.setCurrentBalance(request.currentBalance());
         Position saved = positionRepository.save(position);
-        return PositionDto.from(saved, List.of());
+        return PositionDto.from(saved, List.of(), loadExchangeRates());
     }
 
     // ── Mise à jour valeur estimée (IMMO_PHYSIQUE) ─────────────
@@ -136,7 +141,7 @@ public class PositionService {
         position.setEstimatedCurrentValue(request.estimatedCurrentValue());
         Position saved = positionRepository.save(position);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);
-        return PositionDto.from(saved, orders);
+        return PositionDto.from(saved, orders, loadExchangeRates());
     }
 
     // ── Fermeture ──────────────────────────────────────────────
@@ -146,7 +151,7 @@ public class PositionService {
         position.setStatus(PositionStatus.CLOSED);
         Position saved = positionRepository.save(position);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);
-        return PositionDto.from(saved, orders);
+        return PositionDto.from(saved, orders, loadExchangeRates());
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -184,16 +189,13 @@ public class PositionService {
                     "La quantité et le prix unitaire sont obligatoires pour les positions BOURSE et CRYPTO");
         }
 
-        BigDecimal amountEur = computeAmountEur(request.amount(), request.exchangeRate());
-
         PositionOrder order = PositionOrder.builder()
                 .position(position)
                 .orderType(request.orderType())
                 .quantity(request.quantity())
                 .unitPrice(request.unitPrice())
                 .amount(request.amount())
-                .amountEur(amountEur)
-                .exchangeRate(request.exchangeRate())
+                .amountEur(request.amount())
                 .orderDate(request.orderDate())
                 .notes(request.notes())
                 .build();
@@ -213,14 +215,11 @@ public class PositionService {
                     "La quantité et le prix unitaire sont obligatoires pour les positions BOURSE et CRYPTO");
         }
 
-        BigDecimal amountEur = computeAmountEur(request.amount(), request.exchangeRate());
-
         order.setOrderType(request.orderType());
         order.setQuantity(request.quantity());
         order.setUnitPrice(request.unitPrice());
         order.setAmount(request.amount());
-        order.setAmountEur(amountEur);
-        order.setExchangeRate(request.exchangeRate());
+        order.setAmountEur(request.amount());
         order.setOrderDate(request.orderDate());
         order.setNotes(request.notes());
 
@@ -269,14 +268,9 @@ public class PositionService {
                         "Instrument introuvable : " + instrumentId));
     }
 
-    /**
-     * Calcule le montant en EUR à partir du montant en devise et du taux de change.
-     * Si pas de taux (devise EUR), amountEur = amount.
-     */
-    private BigDecimal computeAmountEur(BigDecimal amount, BigDecimal exchangeRate) {
-        if (exchangeRate == null || exchangeRate.compareTo(BigDecimal.ZERO) == 0) {
-            return amount;
-        }
-        return amount.divide(exchangeRate, 2, RoundingMode.HALF_UP);
+    /** Charge tous les taux de change sous forme de Map devise → taux */
+    private Map<String, BigDecimal> loadExchangeRates() {
+        return exchangeRateRepository.findAll().stream()
+                .collect(Collectors.toMap(ExchangeRate::getCurrency, ExchangeRate::getRate));
     }
 }

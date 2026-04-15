@@ -314,7 +314,7 @@ class PositionControllerTest {
         PositionOrderDto orderDto = new PositionOrderDto(
                 100L, OrderType.DEPOSIT, null, null,
                 new BigDecimal("500"), new BigDecimal("500"),
-                null, LocalDate.of(2026, 4, 1), "Versement");
+                LocalDate.of(2026, 4, 1), "Versement");
 
         when(positionService.findOrdersByPosition(eq(1L), any())).thenReturn(List.of(orderDto));
 
@@ -332,12 +332,12 @@ class PositionControllerTest {
     void createOrder_retourne201() throws Exception {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.DEPOSIT, null, null, new BigDecimal("500.00"),
-                "EUR", null, LocalDate.of(2026, 4, 1), "Versement");
+                LocalDate.of(2026, 4, 1), "Versement");
 
         PositionOrderDto created = new PositionOrderDto(
                 100L, OrderType.DEPOSIT, null, null,
                 new BigDecimal("500"), new BigDecimal("500"),
-                null, LocalDate.of(2026, 4, 1), "Versement");
+                LocalDate.of(2026, 4, 1), "Versement");
 
         when(positionService.createOrder(eq(1L), any(), any())).thenReturn(created);
 
@@ -354,7 +354,7 @@ class PositionControllerTest {
     void createOrder_retourne400_siLiquidite() throws Exception {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.DEPOSIT, null, null, new BigDecimal("100"),
-                "EUR", null, LocalDate.now(), null);
+                LocalDate.now(), null);
 
         when(positionService.createOrder(eq(2L), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));

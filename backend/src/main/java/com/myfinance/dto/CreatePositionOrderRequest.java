@@ -12,8 +12,6 @@ public record CreatePositionOrderRequest(
         BigDecimal quantity,          // obligatoire pour BOURSE et CRYPTO, null pour LIVRET/IMMO_PAPIER
         BigDecimal unitPrice,         // obligatoire pour BOURSE et CRYPTO, null pour LIVRET/IMMO_PAPIER
         @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
-        String currency,              // si différent de la devise de la position
-        BigDecimal exchangeRate,      // null si EUR
         @NotNull LocalDate orderDate,
         String notes
 ) {}

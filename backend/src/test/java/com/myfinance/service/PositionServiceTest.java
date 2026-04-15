@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.*;
 import com.myfinance.dto.*;
+import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
@@ -30,6 +31,7 @@ class PositionServiceTest {
     @Mock PositionRepository positionRepository;
     @Mock PositionOrderRepository positionOrderRepository;
     @Mock InstrumentRepository instrumentRepository;
+    @Mock ExchangeRateRepository exchangeRateRepository;
     @InjectMocks PositionService positionService;
 
     User owner;
@@ -349,8 +351,8 @@ class PositionServiceTest {
     @Test
     void createOrder_sauvegardeEtRetourneLOrdre() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
-                OrderType.DEPOSIT, null, null, new BigDecimal("500.00"), "EUR",
-                null, LocalDate.of(2026, 4, 1), "Versement initial");
+                OrderType.DEPOSIT, null, null, new BigDecimal("500.00"),
+                LocalDate.of(2026, 4, 1), "Versement initial");
 
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
         when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {
@@ -358,7 +360,7 @@ class PositionServiceTest {
             return PositionOrder.builder()
                     .id(100L).position(livret)
                     .orderType(o.getOrderType()).amount(o.getAmount())
-                    .amountEur(o.getAmountEur()).exchangeRate(o.getExchangeRate())
+                    .amountEur(o.getAmountEur())
                     .orderDate(o.getOrderDate()).notes(o.getNotes())
                     .build();
         });
@@ -373,8 +375,8 @@ class PositionServiceTest {
     @Test
     void createOrder_bourse_necessiteQuantiteEtPrix() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
-                OrderType.BUY, null, null, new BigDecimal("884.40"), "EUR",
-                null, LocalDate.now(), null);
+                OrderType.BUY, null, null, new BigDecimal("884.40"),
+                LocalDate.now(), null);
 
         when(positionRepository.findById(3L)).thenReturn(Optional.of(bourse));
 
@@ -388,7 +390,7 @@ class PositionServiceTest {
     void createOrder_bourse_avecQuantiteEtPrix_sauvegarde() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.BUY, new BigDecimal("10"), new BigDecimal("88.44"),
-                new BigDecimal("884.40"), "EUR", null, LocalDate.now(), null);
+                new BigDecimal("884.40"), LocalDate.now(), null);
 
         when(positionRepository.findById(3L)).thenReturn(Optional.of(bourse));
         when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {
@@ -410,8 +412,8 @@ class PositionServiceTest {
     @Test
     void createOrder_leve400_siPositionLiquidite() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
-                OrderType.DEPOSIT, null, null, new BigDecimal("100"), "EUR",
-                null, LocalDate.now(), null);
+                OrderType.DEPOSIT, null, null, new BigDecimal("100"),
+                LocalDate.now(), null);
 
         when(positionRepository.findById(2L)).thenReturn(Optional.of(liquidite));
 
@@ -419,21 +421,6 @@ class PositionServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.BAD_REQUEST));
-    }
-
-    @Test
-    void createOrder_avecDeviseEtrangere_convertitEnEur() {
-        CreatePositionOrderRequest request = new CreatePositionOrderRequest(
-                OrderType.DEPOSIT, null, null, new BigDecimal("1085.00"), "USD",
-                new BigDecimal("1.085"), LocalDate.now(), null);
-
-        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
-        when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        PositionOrderDto result = positionService.createOrder(1L, request, owner);
-
-        // 1085 / 1.085 = 1000 EUR
-        assertThat(result.amountEur()).isEqualByComparingTo("1000.00");
     }
 
     // ── deleteOrder ────────────────────────────────────────────
@@ -495,5 +482,81 @@ class PositionServiceTest {
         assertThat(result.computed().units()).isEqualByComparingTo("15");
         // 15 units × 88.44 EUR = 1326.60
         assertThat(result.computed().currentValueEur()).isEqualByComparingTo("1326.60");
+    }
+
+    @Test
+    void createOrder_crypto_airdrop_sauvegardeAvecQuantiteEtPrix() {
+        Position crypto = Position.builder()
+                .id(5L).user(owner)
+                .category(AssetCategory.CRYPTO)
+                .label("Bitcoin").partner("Ledger")
+                .currency("EUR").fiscalEnvelope(FiscalEnvelope.NONE)
+                .instrument(instrument)
+                .includeInIncomeProjection(false)
+                .status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        CreatePositionOrderRequest request = new CreatePositionOrderRequest(
+                OrderType.AIRDROP, new BigDecimal("50"), new BigDecimal("0.10"),
+                new BigDecimal("5.00"), LocalDate.of(2026, 3, 1), "Airdrop reçu");
+
+        when(positionRepository.findById(5L)).thenReturn(Optional.of(crypto));
+        when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {
+            PositionOrder o = inv.getArgument(0);
+            return PositionOrder.builder()
+                    .id(300L).position(crypto)
+                    .orderType(o.getOrderType()).quantity(o.getQuantity())
+                    .unitPrice(o.getUnitPrice()).amount(o.getAmount())
+                    .amountEur(o.getAmountEur()).orderDate(o.getOrderDate())
+                    .notes(o.getNotes())
+                    .build();
+        });
+
+        PositionOrderDto result = positionService.createOrder(5L, request, owner);
+
+        assertThat(result.orderType()).isEqualTo(OrderType.AIRDROP);
+        assertThat(result.quantity()).isEqualByComparingTo("50");
+        assertThat(result.unitPrice()).isEqualByComparingTo("0.10");
+        assertThat(result.amountEur()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
+    void findById_crypto_airdropCompteDansUnitesMaisPasDansInvesti() {
+        Position crypto = Position.builder()
+                .id(5L).user(owner)
+                .category(AssetCategory.CRYPTO)
+                .label("Uniswap").partner("Metamask")
+                .currency("EUR").fiscalEnvelope(FiscalEnvelope.NONE)
+                .instrument(instrument)
+                .includeInIncomeProjection(false)
+                .status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Achat de 10 tokens à 2€ → investi = 20€
+        PositionOrder achat = PositionOrder.builder()
+                .id(1L).position(crypto).orderType(OrderType.BUY)
+                .quantity(new BigDecimal("10")).unitPrice(new BigDecimal("2.00"))
+                .amount(new BigDecimal("20.00")).amountEur(new BigDecimal("20.00"))
+                .orderDate(LocalDate.of(2025, 1, 1)).build();
+
+        // Airdrop de 5 tokens à 2€ → non comptabilisé dans investi
+        PositionOrder airdrop = PositionOrder.builder()
+                .id(2L).position(crypto).orderType(OrderType.AIRDROP)
+                .quantity(new BigDecimal("5")).unitPrice(new BigDecimal("2.00"))
+                .amount(new BigDecimal("10.00")).amountEur(new BigDecimal("10.00"))
+                .orderDate(LocalDate.of(2025, 6, 1)).build();
+
+        when(positionRepository.findById(5L)).thenReturn(Optional.of(crypto));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(crypto))
+                .thenReturn(List.of(airdrop, achat));
+
+        PositionDto result = positionService.findById(5L, owner);
+
+        // 10 (achat) + 5 (airdrop) = 15 tokens
+        assertThat(result.computed().units()).isEqualByComparingTo("15");
+        // Investi = uniquement l'achat (20€), pas l'airdrop
+        assertThat(result.computed().investedAmountEur()).isEqualByComparingTo("20.00");
     }
 }

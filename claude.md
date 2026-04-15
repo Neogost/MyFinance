@@ -197,6 +197,12 @@ frontend/src/
 | `PUT` | `/api/positions/{id}/orders/{orderId}` | Authentifié | Modifier un ordre |
 | `DELETE` | `/api/positions/{id}/orders/{orderId}` | Authentifié | Supprimer un ordre |
 
+### Patrimoine — Taux de change
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/exchange-rates` | ADMIN | Liste tous les taux de change configurés |
+| `PUT` | `/api/exchange-rates` | ADMIN | Mise à jour groupée des taux (upsert par devise) |
+
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
 - Les controllers ne font que déléguer et retourner le `ResponseEntity` approprié
@@ -296,6 +302,15 @@ npm run dev
 - **Patrimoine — Création d'instrument à la volée** :
   - Dans `PositionForm`, si la recherche BOURSE (ISIN) ou CRYPTO (ticker) ne retourne aucun résultat, proposition de créer l'instrument directement avec nom + devise
   - L'instrument créé est automatiquement sélectionné dans le formulaire
+- **Patrimoine — Gestion des taux de change** (ADMIN) :
+  - Entité `ExchangeRate` (table `exchange_rates`) : devise ISO, taux (nombre d'unités pour 1 EUR), date de mise à jour
+  - `GET /api/exchange-rates` + `PUT /api/exchange-rates` (upsert par devise) protégés `ADMIN`
+  - Convention taux : `amountEur = amountNatif / rate` — cohérent avec `PositionOrder.exchangeRate`
+  - `PositionDto.computeBourseCrypto()` et `PortfolioSnapshotService.computeUnitPriceEur()` appliquent désormais la conversion devise→EUR
+  - Modal `ExchangeRateUpdateModal` : tableau des taux existants + formulaire d'ajout de nouvelle devise, taux obsolètes (>7 j) en orange
+  - Bouton "Taux de change" visible uniquement pour le rôle ADMIN
+  - Documentation : `docs/architecture/exchange-rates.md`, `docs/api/exchange-rates.md`
+  - Tests : 299 tests (ExchangeRateServiceTest +7, ExchangeRateControllerTest +5)
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

@@ -298,7 +298,6 @@ Détail d'une position avec ses ordres et les totaux calculés.
       "unitPrice": 88.44,
       "amount": 0.00,
       "amountEur": 0.00,
-      "exchangeRate": null,
       "orderDate": "2024-03-15",
       "notes": null
     }
@@ -491,7 +490,6 @@ Liste les ordres d'une position, triés par `orderDate` décroissant.
     "unitPrice": 88.44,
     "amount": 42451.20,
     "amountEur": 42451.20,
-    "exchangeRate": null,
     "orderDate": "2024-03-15",
     "notes": null
   }
@@ -514,8 +512,6 @@ Ajouter un ordre sur une position.
   "quantity": 10.000000,
   "unitPrice": 88.44,
   "amount": 884.40,
-  "currency": "EUR",
-  "exchangeRate": null,
   "orderDate": "2026-04-12",
   "notes": "Versement mensuel PEA"
 }
@@ -529,27 +525,9 @@ Ajouter un ordre sur une position.
   "quantity": null,
   "unitPrice": null,
   "amount": 500.00,
-  "currency": "EUR",
-  "exchangeRate": null,
   "orderDate": "2026-04-01"
 }
 ```
-
-**Corps de la requête — avec devise étrangère**
-
-```json
-{
-  "orderType": "BUY",
-  "quantity": 0.05,
-  "unitPrice": 59916.82,
-  "amount": 2995.84,
-  "currency": "USD",
-  "exchangeRate": 1.085,
-  "orderDate": "2026-04-12"
-}
-```
-
-> `amountEur` est calculé côté backend : `amount / exchangeRate`.
 
 **Règles de validation**
 - `orderType` obligatoire
@@ -575,6 +553,17 @@ Modifier un ordre. Mêmes champs que POST.
 Supprimer un ordre.
 
 **Réponse 204**
+
+---
+
+## Taux de change
+
+> Documentation complète : [docs/api/exchange-rates.md](exchange-rates.md)
+
+| Méthode | URL | Rôle | Description |
+|---------|-----|------|-------------|
+| `GET` | `/api/exchange-rates` | ADMIN | Liste tous les taux configurés, triés par devise |
+| `PUT` | `/api/exchange-rates` | ADMIN | Mise à jour groupée (upsert par devise) |
 
 ---
 

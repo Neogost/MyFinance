@@ -13,7 +13,6 @@ public record PositionOrderDto(
         BigDecimal unitPrice,
         BigDecimal amount,
         BigDecimal amountEur,
-        BigDecimal exchangeRate,
         LocalDate orderDate,
         String notes
 ) {
@@ -25,7 +24,6 @@ public record PositionOrderDto(
                 order.getUnitPrice(),
                 order.getAmount(),
                 order.getAmountEur(),
-                order.getExchangeRate(),
                 order.getOrderDate(),
                 order.getNotes()
         );

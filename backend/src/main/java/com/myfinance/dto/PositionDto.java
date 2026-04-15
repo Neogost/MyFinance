@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public record PositionDto(
         Long id,
@@ -36,19 +37,21 @@ public record PositionDto(
         // Totaux calculés
         PositionComputedDto computed
 ) {
-    public static PositionDto from(Position position, List<PositionOrder> orders) {
+    public static PositionDto from(Position position, List<PositionOrder> orders,
+                                   Map<String, BigDecimal> exchangeRates) {
         List<PositionOrderDto> orderDtos = orders.stream()
                 .map(PositionOrderDto::from)
                 .toList();
 
-        PositionComputedDto computed = computeTotals(position, orders);
+        PositionComputedDto computed = computeTotals(position, orders, exchangeRates);
 
         return build(position, orderDtos, computed);
     }
 
     /** Version sans ordres — pour la liste (évite le N+1 query) */
-    public static PositionDto fromWithoutOrders(Position position, List<PositionOrder> orders) {
-        PositionComputedDto computed = computeTotals(position, orders);
+    public static PositionDto fromWithoutOrders(Position position, List<PositionOrder> orders,
+                                                Map<String, BigDecimal> exchangeRates) {
+        PositionComputedDto computed = computeTotals(position, orders, exchangeRates);
         return build(position, null, computed);
     }
 
@@ -81,16 +84,18 @@ public record PositionDto(
     }
 
     /** Point d'entrée public pour le service de snapshot */
-    public static PositionComputedDto computeForSnapshot(Position position, List<PositionOrder> orders) {
-        return computeTotals(position, orders);
+    public static PositionComputedDto computeForSnapshot(Position position, List<PositionOrder> orders,
+                                                         Map<String, BigDecimal> exchangeRates) {
+        return computeTotals(position, orders, exchangeRates);
     }
 
-    private static PositionComputedDto computeTotals(Position position, List<PositionOrder> orders) {
+    private static PositionComputedDto computeTotals(Position position, List<PositionOrder> orders,
+                                                     Map<String, BigDecimal> exchangeRates) {
         return switch (position.getCategory()) {
-            case LIQUIDITE   -> computeLiquidite(position);
+            case LIQUIDITE     -> computeLiquidite(position);
             case IMMO_PHYSIQUE -> computeImmoPhysique(position, orders);
-            case BOURSE, CRYPTO -> computeBourseCrypto(position, orders);
-            default          -> computeDefault(position, orders); // LIVRET, IMMO_PAPIER
+            case BOURSE, CRYPTO -> computeBourseCrypto(position, orders, exchangeRates);
+            default            -> computeDefault(position, orders); // LIVRET, IMMO_PAPIER
         };
     }
 
@@ -112,28 +117,39 @@ public record PositionDto(
         return new PositionComputedDto(invested, currentValue, capitalGain, null, null);
     }
 
-    /** BOURSE / CRYPTO : valeur = units × lastPrice (× exchangeRate si non EUR) */
-    private static PositionComputedDto computeBourseCrypto(Position position, List<PositionOrder> orders) {
+    /**
+     * BOURSE / CRYPTO : valeur = units × lastPrice, convertie en EUR via le taux de change si nécessaire.
+     * Convention : exchangeRates["USD"] = 1.08 signifie 1 EUR = 1.08 USD,
+     *              donc valueEur = valueUSD / 1.08.
+     */
+    private static PositionComputedDto computeBourseCrypto(Position position, List<PositionOrder> orders,
+                                                            Map<String, BigDecimal> exchangeRates) {
         BigDecimal invested = computeInvested(orders);
 
-        // Calcul des unités : Σ BUY.quantity - Σ SELL.quantity
+        // Calcul des unités : Σ (BUY + AIRDROP).quantity - Σ SELL.quantity
         BigDecimal units = orders.stream()
                 .filter(o -> o.getQuantity() != null)
                 .map(o -> switch (o.getOrderType()) {
-                    case BUY  ->  o.getQuantity();
-                    case SELL -> o.getQuantity().negate();
-                    default   -> BigDecimal.ZERO;
+                    case BUY, AIRDROP ->  o.getQuantity();
+                    case SELL         -> o.getQuantity().negate();
+                    default           -> BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Valeur actuelle : units × lastPrice (en EUR si instrument en EUR)
+        // Valeur actuelle en devise native, puis conversion en EUR si nécessaire
         BigDecimal currentValue = BigDecimal.ZERO;
         if (position.getInstrument() != null && position.getInstrument().getLastPrice() != null
                 && units.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal lastPrice = position.getInstrument().getLastPrice();
             currentValue = units.multiply(lastPrice).setScale(2, RoundingMode.HALF_UP);
-            // Si devise != EUR, on aurait besoin du taux de change à la volée (non disponible ici)
-            // On utilise le montant brut en devise native (à améliorer avec le service de taux)
+
+            String currency = position.getInstrument().getCurrency();
+            if (!"EUR".equals(currency) && exchangeRates != null) {
+                BigDecimal rate = exchangeRates.get(currency);
+                if (rate != null && rate.compareTo(BigDecimal.ZERO) > 0) {
+                    currentValue = currentValue.divide(rate, 2, RoundingMode.HALF_UP);
+                }
+            }
         }
 
         BigDecimal capitalGain = currentValue.subtract(invested);

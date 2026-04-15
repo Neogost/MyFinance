@@ -8,11 +8,12 @@ const ORDER_TYPE_LABELS = {
   SELL:       { label: 'Vente',      color: 'bg-orange-100 text-orange-700' },
   INTEREST:   { label: 'Intérêts',   color: 'bg-violet-100 text-violet-700' },
   DIVIDEND:   { label: 'Dividende',  color: 'bg-indigo-100 text-indigo-700' },
+  AIRDROP:    { label: 'Airdrop',    color: 'bg-teal-100 text-teal-700'     },
 }
 
 const ORDER_TYPES_BY_CATEGORY = {
   BOURSE:        ['BUY', 'SELL', 'DIVIDEND', 'INTEREST'],
-  CRYPTO:        ['BUY', 'SELL', 'INTEREST'],
+  CRYPTO:        ['BUY', 'SELL', 'INTEREST', 'AIRDROP'],
   IMMO_PAPIER:   ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
   IMMO_PHYSIQUE: ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
   LIVRET:        ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
@@ -29,7 +30,7 @@ const labelCls = 'text-xs font-semibold text-gray-600'
 
 const EMPTY_ORDER = {
   orderType: 'DEPOSIT', quantity: '', unitPrice: '',
-  amount: '', exchangeRate: '', orderDate: '', notes: '',
+  amount: '', orderDate: '', notes: '',
 }
 
 // ── Formulaire d'ordre ─────────────────────────────────────────
@@ -46,13 +47,12 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
   useEffect(() => {
     setForm(order
       ? {
-          orderType:    order.orderType,
-          quantity:     order.quantity ?? '',
-          unitPrice:    order.unitPrice ?? '',
-          amount:       order.amount,
-          exchangeRate: order.exchangeRate ?? '',
-          orderDate:    order.orderDate,
-          notes:        order.notes ?? '',
+          orderType: order.orderType,
+          quantity:  order.quantity ?? '',
+          unitPrice: order.unitPrice ?? '',
+          amount:    order.amount,
+          orderDate: order.orderDate,
+          notes:     order.notes ?? '',
         }
       : { ...EMPTY_ORDER, orderType: orderTypes[0] })
   }, [order])
@@ -82,13 +82,12 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
     setLoading(true)
     try {
       await onSubmit({
-        orderType:    form.orderType,
-        quantity:     needsQty && form.quantity !== '' ? parseFloat(form.quantity) : null,
-        unitPrice:    needsQty && form.unitPrice !== '' ? parseFloat(form.unitPrice) : null,
-        amount:       parseFloat(form.amount),
-        exchangeRate: form.exchangeRate !== '' ? parseFloat(form.exchangeRate) : null,
-        orderDate:    form.orderDate,
-        notes:        form.notes || null,
+        orderType: form.orderType,
+        quantity:  needsQty && form.quantity !== '' ? parseFloat(form.quantity) : null,
+        unitPrice: needsQty && form.unitPrice !== '' ? parseFloat(form.unitPrice) : null,
+        amount:    parseFloat(form.amount),
+        orderDate: form.orderDate,
+        notes:     form.notes || null,
       })
     } catch {
       setError('Une erreur est survenue.')
@@ -96,8 +95,6 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
       setLoading(false)
     }
   }
-
-  const isForeignCurrency = form.exchangeRate !== ''
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -142,28 +139,13 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
             </div>
           )}
 
-          {/* Montant + Devise */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Montant *</label>
-              <input name="amount" type="number" min="0.01" step="0.01"
-                value={form.amount} onChange={handleChange} required
-                placeholder="ex : 884.40" className={inputCls} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Taux de change</label>
-              <input name="exchangeRate" type="number" min="0" step="any"
-                value={form.exchangeRate} onChange={handleChange}
-                placeholder="Laisser vide si EUR" className={inputCls} />
-            </div>
+          {/* Montant */}
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>Montant *</label>
+            <input name="amount" type="number" min="0.01" step="0.01"
+              value={form.amount} onChange={handleChange} required
+              placeholder="ex : 884.40" className={inputCls} />
           </div>
-
-          {isForeignCurrency && (
-            <p className="text-xs text-indigo-600 -mt-2">
-              Montant EUR estimé :{' '}
-              {(parseFloat(form.amount) / parseFloat(form.exchangeRate)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-            </p>
-          )}
 
           {/* Note */}
           <div className="flex flex-col gap-1.5">
@@ -250,7 +232,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   const totalUnits = isBourseOrCrypto
     ? orders.reduce((s, o) => {
         if (o.quantity == null) return s
-        return o.orderType === 'BUY' ? s + parseFloat(o.quantity)
+        return (o.orderType === 'BUY' || o.orderType === 'AIRDROP') ? s + parseFloat(o.quantity)
              : o.orderType === 'SELL' ? s - parseFloat(o.quantity)
              : s
       }, 0)
@@ -345,11 +327,6 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
                       {isDebit ? '-' : '+'}
                       {parseFloat(order.amountEur).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </span>
-                    {order.exchangeRate && (
-                      <p className="text-xs text-gray-400">
-                        {parseFloat(order.amount).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} (×{order.exchangeRate})
-                      </p>
-                    )}
                   </div>
                   <div className="flex gap-1.5">
                     <button onClick={() => setFormTarget(order)}

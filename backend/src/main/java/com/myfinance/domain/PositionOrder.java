@@ -41,8 +41,6 @@ public class PositionOrder {
     @Column(nullable = false)
     private BigDecimal amountEur; // montant converti en EUR au moment de l'ordre
 
-    private BigDecimal exchangeRate; // null si devise = EUR
-
     @Column(nullable = false)
     private LocalDate orderDate;
 

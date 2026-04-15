@@ -29,6 +29,7 @@ class PortfolioSnapshotServiceTest {
     @Mock PositionSnapshotRepository positionSnapshotRepository;
     @Mock PositionRepository positionRepository;
     @Mock PositionOrderRepository positionOrderRepository;
+    @Mock ExchangeRateRepository exchangeRateRepository;
     @InjectMocks PortfolioSnapshotService portfolioSnapshotService;
 
     User owner;

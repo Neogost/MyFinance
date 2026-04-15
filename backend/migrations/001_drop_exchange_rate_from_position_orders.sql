@@ -1,0 +1,36 @@
+-- Migration 001 : suppression de la colonne exchange_rate dans position_orders
+--
+-- Contexte : le taux de change n'est plus stocké dans l'ordre.
+-- La conversion devise → EUR est désormais gérée par la table exchange_rates
+-- et appliquée dynamiquement dans PositionDto / PortfolioSnapshotService.
+--
+-- SQLite >= 3.35.0 supporte DROP COLUMN directement.
+-- Si votre version SQLite est antérieure, utilisez la procédure de recréation de table
+-- commentée ci-dessous.
+
+-- ── Option A (SQLite >= 3.35.0) ─────────────────────────────────────────────
+ALTER TABLE position_orders DROP COLUMN exchange_rate;
+
+-- ── Option B (SQLite < 3.35.0) — recréation de table ────────────────────────
+-- PRAGMA foreign_keys = OFF;
+--
+-- CREATE TABLE position_orders_new (
+--     id           INTEGER PRIMARY KEY AUTOINCREMENT,
+--     position_id  INTEGER NOT NULL REFERENCES positions(id),
+--     order_type   TEXT    NOT NULL,
+--     quantity     NUMERIC,
+--     unit_price   NUMERIC,
+--     amount       NUMERIC NOT NULL,
+--     amount_eur   NUMERIC NOT NULL,
+--     order_date   TEXT    NOT NULL,
+--     notes        TEXT
+-- );
+--
+-- INSERT INTO position_orders_new
+--     SELECT id, position_id, order_type, quantity, unit_price, amount, amount_eur, order_date, notes
+--     FROM position_orders;
+--
+-- DROP TABLE position_orders;
+-- ALTER TABLE position_orders_new RENAME TO position_orders;
+--
+-- PRAGMA foreign_keys = ON;

@@ -6,5 +6,6 @@ public enum OrderType {
     DEPOSIT,
     WITHDRAWAL,
     INTEREST,
-    DIVIDEND
+    DIVIDEND,
+    AIRDROP
 }

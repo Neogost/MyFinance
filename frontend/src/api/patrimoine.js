@@ -29,6 +29,11 @@ export const createOrder  = (positionId, data)     => api.post(`/api/positions/$
 export const updateOrder  = (positionId, id, data) => api.put(`/api/positions/${positionId}/orders/${id}`, data).then(r => r.data)
 export const deleteOrder  = (positionId, id)       => api.delete(`/api/positions/${positionId}/orders/${id}`)
 
+// ── Taux de change ─────────────────────────────────────────
+
+export const getExchangeRates    = ()        => api.get('/api/exchange-rates').then(r => r.data)
+export const updateExchangeRates = (updates) => api.put('/api/exchange-rates', updates).then(r => r.data)
+
 // ── Snapshots ──────────────────────────────────────────────────
 
 export const getSnapshots       = ()          => api.get('/api/portfolio/snapshots').then(r => r.data)

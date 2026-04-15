@@ -152,10 +152,25 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `quantity` | `BigDecimal` | Quantité de titres ou tokens — nullable (non pertinent pour LIVRET, IMMO_PAPIER) |
 | `unitPrice` | `BigDecimal` | Prix unitaire dans la devise de la position — nullable |
 | `amount` | `BigDecimal` | Montant total dans la devise de la position |
-| `amountEur` | `BigDecimal` | Montant converti en EUR au moment de l'ordre |
-| `exchangeRate` | `BigDecimal` | Taux de change appliqué — `null` si devise = EUR |
+| `amountEur` | `BigDecimal` | Montant en EUR (= `amount` au moment de la saisie) |
 | `orderDate` | `LocalDate` | Date d'exécution de l'ordre |
 | `notes` | `String` | Commentaire libre — nullable |
+
+---
+
+### ExchangeRate *(taux de change des devises étrangères)*
+
+Table : `exchange_rates`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `currency` | `String` | Code ISO 4217 unique (ex : `USD`, `GBP`, `CHF`) |
+| `rate` | `BigDecimal` | Nombre d'unités de la devise pour 1 EUR (ex : 1,08 pour USD) |
+| `lastUpdatedAt` | `LocalDateTime` | Date de la dernière mise à jour — `null` si jamais actualisé |
+
+> **Convention :** `amountEur = amountNatif / rate`.
+> Géré manuellement par l'administrateur depuis la page Patrimoine.
 
 ---
 
@@ -209,7 +224,7 @@ units = Σ(BUY.quantity) - Σ(SELL.quantity)
 
 | Catégorie | Formule |
 |-----------|---------|
-| BOURSE, CRYPTO | `units × instrument.lastPrice × exchangeRateToEur` |
+| BOURSE, CRYPTO | `(units × instrument.lastPrice) / rate` si devise ≠ EUR (taux depuis `exchange_rates`), sinon `units × lastPrice` |
 | LIVRET | `investedAmountEur + Σ(INTEREST.amountEur)` |
 | IMMO_PAPIER | `investedAmountEur + Σ(INTEREST.amountEur)` |
 | IMMO_PHYSIQUE | `position.estimatedCurrentValue` (saisie manuelle) |
@@ -308,7 +323,6 @@ Pour toutes les catégories sauf `LIQUIDITE` et `IMMO_PHYSIQUE` :
 - Quantité (si BOURSE / CRYPTO)
 - Prix unitaire (si BOURSE / CRYPTO)
 - Montant total
-- Devise + taux de change (si non-EUR)
 
 ---
 
@@ -395,7 +409,6 @@ classDiagram
         +BigDecimal unitPrice
         +BigDecimal amount
         +BigDecimal amountEur
-        +BigDecimal exchangeRate
         +LocalDate orderDate
         +String notes
     }
@@ -473,6 +486,13 @@ classDiagram
 | `PUT` | `/api/positions/{id}/orders/{orderId}` | Modifier un ordre |
 | `DELETE` | `/api/positions/{id}/orders/{orderId}` | Supprimer un ordre |
 
+### Taux de change
+
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/exchange-rates` | Liste tous les taux configurés — ADMIN |
+| `PUT` | `/api/exchange-rates` | Mise à jour groupée des taux (upsert par devise) — ADMIN |
+
 ### Snapshots
 
 | Méthode | URL | Description |
@@ -492,6 +512,7 @@ classDiagram
 | Consulter / déclencher ses snapshots | USER, ADMIN |
 | Créer et modifier les instruments du référentiel | USER, ADMIN |
 | Mettre à jour les cours manuellement (`/active`, `/prices`) | ADMIN uniquement |
+| Consulter et modifier les taux de change (`/exchange-rates`) | ADMIN uniquement |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 
 ---

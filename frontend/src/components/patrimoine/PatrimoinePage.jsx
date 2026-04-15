@@ -6,6 +6,7 @@ import {
 import PositionForm from './PositionForm'
 import OrderPanel from './OrderPanel'
 import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
+import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 
 const CATEGORY_META = {
   BOURSE:        { label: 'Bourse / ETF',    color: 'bg-blue-100 text-blue-700',    icon: '📈' },
@@ -278,7 +279,8 @@ export default function PatrimoinePage({ currentUser }) {
   const [balanceTarget, setBalanceTarget]     = useState(null)
   const [estimatedTarget, setEstimatedTarget] = useState(null)
   const [ordersTarget, setOrdersTarget]       = useState(null)
-  const [showPriceUpdate, setShowPriceUpdate] = useState(false)
+  const [showPriceUpdate, setShowPriceUpdate]         = useState(false)
+  const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
   const [loading, setLoading]                 = useState(true)
@@ -374,6 +376,12 @@ export default function PatrimoinePage({ currentUser }) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Patrimoine</h2>
         <div className="flex gap-2">
+          {isAdmin && (
+            <button onClick={() => setShowExchangeRateUpdate(true)}
+              className="px-4 py-2 border border-teal-300 text-teal-700 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
+              Taux de change
+            </button>
+          )}
           {isAdmin && (
             <button onClick={() => setShowPriceUpdate(true)}
               className="px-4 py-2 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
@@ -493,6 +501,13 @@ export default function PatrimoinePage({ currentUser }) {
       {showPriceUpdate && (
         <InstrumentPriceUpdateModal
           onClose={() => setShowPriceUpdate(false)}
+          onSaved={fetchPositions}
+        />
+      )}
+
+      {showExchangeRateUpdate && (
+        <ExchangeRateUpdateModal
+          onClose={() => setShowExchangeRateUpdate(false)}
           onSaved={fetchPositions}
         />
       )}

@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class PortfolioSnapshotService {
     private final PositionSnapshotRepository positionSnapshotRepository;
     private final PositionRepository positionRepository;
     private final PositionOrderRepository positionOrderRepository;
+    private final ExchangeRateRepository exchangeRateRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -70,12 +73,14 @@ public class PortfolioSnapshotService {
         List<Position> positions = positionRepository.findByUserAndStatusOrderByCreatedAtDesc(
                 currentUser, PositionStatus.ACTIVE);
 
+        Map<String, BigDecimal> exchangeRates = loadExchangeRates();
+
         BigDecimal totalInvested = BigDecimal.ZERO;
         BigDecimal totalCurrentValue = BigDecimal.ZERO;
 
         for (Position position : positions) {
             List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(position);
-            PositionComputedDto computed = computePositionTotals(position, orders);
+            PositionComputedDto computed = computePositionTotals(position, orders, exchangeRates);
 
             PositionSnapshot posSnap = PositionSnapshot.builder()
                     .portfolioSnapshot(snapshot)
@@ -84,7 +89,7 @@ public class PortfolioSnapshotService {
                     .currentValueEur(computed.currentValueEur())
                     .capitalGainEur(computed.capitalGainEur())
                     .units(computed.units())
-                    .unitPriceEur(computeUnitPriceEur(position))
+                    .unitPriceEur(computeUnitPriceEur(position, exchangeRates))
                     .build();
 
             snapshot.getPositionSnapshots().add(posSnap);
@@ -126,6 +131,8 @@ public class PortfolioSnapshotService {
         List<Position> positions = positionRepository.findByUserAndStatusOrderByCreatedAtDesc(
                 user, PositionStatus.ACTIVE);
 
+        Map<String, BigDecimal> exchangeRates = loadExchangeRates();
+
         PortfolioSnapshot snapshot = PortfolioSnapshot.builder()
                 .user(user)
                 .snapshotDate(snapshotDate)
@@ -139,7 +146,7 @@ public class PortfolioSnapshotService {
 
         for (Position position : positions) {
             List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(position);
-            PositionComputedDto computed = computePositionTotals(position, orders);
+            PositionComputedDto computed = computePositionTotals(position, orders, exchangeRates);
 
             PositionSnapshot posSnap = PositionSnapshot.builder()
                     .portfolioSnapshot(snapshot)
@@ -148,7 +155,7 @@ public class PortfolioSnapshotService {
                     .currentValueEur(computed.currentValueEur())
                     .capitalGainEur(computed.capitalGainEur())
                     .units(computed.units())
-                    .unitPriceEur(computeUnitPriceEur(position))
+                    .unitPriceEur(computeUnitPriceEur(position, exchangeRates))
                     .build();
 
             snapshot.getPositionSnapshots().add(posSnap);
@@ -164,19 +171,34 @@ public class PortfolioSnapshotService {
     }
 
     /** Délègue à PositionDto la logique de calcul */
-    private PositionComputedDto computePositionTotals(Position position, List<PositionOrder> orders) {
-        // Réutilise la logique définie dans PositionDto
-        return PositionDto.computeForSnapshot(position, orders);
+    private PositionComputedDto computePositionTotals(Position position, List<PositionOrder> orders,
+                                                       Map<String, BigDecimal> exchangeRates) {
+        return PositionDto.computeForSnapshot(position, orders, exchangeRates);
     }
 
-    /** Prix unitaire en EUR au moment du snapshot — pour BOURSE et CRYPTO uniquement */
-    private BigDecimal computeUnitPriceEur(Position position) {
+    /**
+     * Prix unitaire en EUR au moment du snapshot — pour BOURSE et CRYPTO uniquement.
+     * Applique le taux de change si la devise de l'instrument n'est pas EUR.
+     */
+    private BigDecimal computeUnitPriceEur(Position position, Map<String, BigDecimal> exchangeRates) {
         if (position.getInstrument() == null || position.getInstrument().getLastPrice() == null) {
             return null;
         }
-        // Si la devise de l'instrument est EUR, le prix est déjà en EUR
-        // Sinon, idéalement on appliquerait le taux de change (simplifié ici)
-        return position.getInstrument().getLastPrice();
+        BigDecimal lastPrice = position.getInstrument().getLastPrice();
+        String currency = position.getInstrument().getCurrency();
+        if (!"EUR".equals(currency) && exchangeRates != null) {
+            BigDecimal rate = exchangeRates.get(currency);
+            if (rate != null && rate.compareTo(BigDecimal.ZERO) > 0) {
+                return lastPrice.divide(rate, 2, RoundingMode.HALF_UP);
+            }
+        }
+        return lastPrice;
+    }
+
+    /** Charge tous les taux de change sous forme de Map devise → taux */
+    private Map<String, BigDecimal> loadExchangeRates() {
+        return exchangeRateRepository.findAll().stream()
+                .collect(Collectors.toMap(ExchangeRate::getCurrency, ExchangeRate::getRate));
     }
 
     private PortfolioSnapshot getSnapshotWithOwnershipCheck(Long id, User currentUser) {

@@ -12,7 +12,6 @@ public record UpdatePositionOrderRequest(
         BigDecimal quantity,          // obligatoire pour BOURSE et CRYPTO
         BigDecimal unitPrice,         // obligatoire pour BOURSE et CRYPTO
         @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
-        BigDecimal exchangeRate,
         @NotNull LocalDate orderDate,
         String notes
 ) {}
