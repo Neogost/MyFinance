@@ -4,6 +4,7 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.repository.InstrumentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -180,6 +181,73 @@ class InstrumentServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    // ── findActiveInstruments ──────────────────────────────────
+
+    @Test
+    void findActiveInstruments_retourneLesInstrumentsActifs() {
+        when(instrumentRepository.findAllWithActivePositions()).thenReturn(List.of(etf, bitcoin));
+
+        List<InstrumentDto> result = instrumentService.findActiveInstruments();
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).id()).isEqualTo(1L);
+        assertThat(result.get(1).id()).isEqualTo(2L);
+        verify(instrumentRepository).findAllWithActivePositions();
+    }
+
+    @Test
+    void findActiveInstruments_aucunInstrumentActif_retourneListeVide() {
+        when(instrumentRepository.findAllWithActivePositions()).thenReturn(List.of());
+
+        List<InstrumentDto> result = instrumentService.findActiveInstruments();
+
+        assertThat(result).isEmpty();
+    }
+
+    // ── updatePrices ───────────────────────────────────────────
+
+    @Test
+    void updatePrices_metAJourLeCoursEtLaDate() {
+        BigDecimal nouveauCours = new BigDecimal("95.00");
+        UpdateInstrumentPriceRequest req = new UpdateInstrumentPriceRequest(1L, nouveauCours);
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(instrumentRepository.save(any(Instrument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<InstrumentDto> result = instrumentService.updatePrices(List.of(req));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).lastPrice()).isEqualByComparingTo(nouveauCours);
+        assertThat(result.get(0).lastPriceUpdatedAt()).isNotNull();
+        verify(instrumentRepository).save(etf);
+    }
+
+    @Test
+    void updatePrices_instrumentIntrouvable_leve404() {
+        UpdateInstrumentPriceRequest req = new UpdateInstrumentPriceRequest(99L, new BigDecimal("10.00"));
+        when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> instrumentService.updatePrices(List.of(req)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void updatePrices_plusieursInstruments_metAJourTous() {
+        UpdateInstrumentPriceRequest req1 = new UpdateInstrumentPriceRequest(1L, new BigDecimal("95.00"));
+        UpdateInstrumentPriceRequest req2 = new UpdateInstrumentPriceRequest(2L, new BigDecimal("31000.00"));
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(instrumentRepository.findById(2L)).thenReturn(Optional.of(bitcoin));
+        when(instrumentRepository.save(any(Instrument.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<InstrumentDto> result = instrumentService.updatePrices(List.of(req1, req2));
+
+        assertThat(result).hasSize(2);
+        verify(instrumentRepository, times(2)).save(any(Instrument.class));
     }
 
     // ── update ─────────────────────────────────────────────────

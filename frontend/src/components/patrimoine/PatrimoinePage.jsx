@@ -5,6 +5,7 @@ import {
 } from '../../api/patrimoine'
 import PositionForm from './PositionForm'
 import OrderPanel from './OrderPanel'
+import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 
 const CATEGORY_META = {
   BOURSE:        { label: 'Bourse / ETF',    color: 'bg-blue-100 text-blue-700',    icon: '📈' },
@@ -256,16 +257,19 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
 
 // ── Page principale ────────────────────────────────────────────
 
-export default function PatrimoinePage() {
+export default function PatrimoinePage({ currentUser }) {
   const [positions, setPositions]             = useState([])
   const [formTarget, setFormTarget]           = useState(undefined)
   const [balanceTarget, setBalanceTarget]     = useState(null)
   const [estimatedTarget, setEstimatedTarget] = useState(null)
   const [ordersTarget, setOrdersTarget]       = useState(null)
+  const [showPriceUpdate, setShowPriceUpdate] = useState(false)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
   const [loading, setLoading]                 = useState(true)
   const [error, setError]                     = useState(null)
+
+  const isAdmin = currentUser?.role === 'ADMIN'
 
   useEffect(() => { fetchPositions() }, [])
 
@@ -347,10 +351,18 @@ export default function PatrimoinePage() {
       {/* ── En-tête ── */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Patrimoine</h2>
-        <button onClick={() => setFormTarget(null)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
-          + Ajouter une position
-        </button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <button onClick={() => setShowPriceUpdate(true)}
+              className="px-4 py-2 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
+              Mettre à jour les cours
+            </button>
+          )}
+          <button onClick={() => setFormTarget(null)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+            + Ajouter une position
+          </button>
+        </div>
       </div>
 
       {/* ── Synthèse globale ── */}
@@ -453,6 +465,13 @@ export default function PatrimoinePage() {
           position={ordersTarget}
           onClose={() => setOrdersTarget(null)}
           onOrdersChanged={handleOrdersChanged}
+        />
+      )}
+
+      {showPriceUpdate && (
+        <InstrumentPriceUpdateModal
+          onClose={() => setShowPriceUpdate(false)}
+          onSaved={fetchPositions}
         />
       )}
     </div>

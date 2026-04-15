@@ -3,11 +3,13 @@ package com.myfinance.controller;
 import com.myfinance.domain.AssetCategory;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.service.InstrumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -45,5 +47,19 @@ public class InstrumentController {
             @PathVariable Long id,
             @Valid @RequestBody CreateInstrumentRequest request) {
         return instrumentService.update(id, request);
+    }
+
+    /** GET /api/instruments/active — instruments liés à au moins une position ACTIVE */
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<InstrumentDto> listActive() {
+        return instrumentService.findActiveInstruments();
+    }
+
+    /** PUT /api/instruments/prices — mise à jour groupée des cours (ADMIN) */
+    @PutMapping("/prices")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<InstrumentDto> updatePrices(@Valid @RequestBody List<UpdateInstrumentPriceRequest> requests) {
+        return instrumentService.updatePrices(requests);
     }
 }

@@ -41,4 +41,13 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
             ORDER BY i.name ASC
             """)
     List<Instrument> searchByQueryAndCategory(@Param("q") String q, @Param("category") AssetCategory category);
+
+    /** Instruments liés à au moins une position ACTIVE — utilisés pour la mise à jour manuelle des cours */
+    @Query("""
+            SELECT DISTINCT i FROM Instrument i
+            JOIN Position p ON p.instrument = i
+            WHERE p.status = 'ACTIVE'
+            ORDER BY i.category ASC, i.name ASC
+            """)
+    List<Instrument> findAllWithActivePositions();
 }

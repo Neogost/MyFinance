@@ -4,12 +4,14 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.repository.InstrumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -69,6 +71,22 @@ public class InstrumentService {
         instrument.setCurrency(request.currency());
 
         return InstrumentDto.from(instrumentRepository.save(instrument));
+    }
+
+    // ── Cours manuels ──────────────────────────────────────────
+
+    public List<InstrumentDto> findActiveInstruments() {
+        return instrumentRepository.findAllWithActivePositions()
+                .stream().map(InstrumentDto::from).toList();
+    }
+
+    public List<InstrumentDto> updatePrices(List<UpdateInstrumentPriceRequest> requests) {
+        return requests.stream().map(req -> {
+            Instrument instrument = getOrThrow(req.instrumentId());
+            instrument.setLastPrice(req.lastPrice());
+            instrument.setLastPriceUpdatedAt(LocalDateTime.now());
+            return InstrumentDto.from(instrumentRepository.save(instrument));
+        }).toList();
     }
 
     // ── Helpers ────────────────────────────────────────────────

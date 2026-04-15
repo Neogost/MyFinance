@@ -125,6 +125,81 @@ Forcer la mise à jour du prix depuis l'API marché (Yahoo Finance pour BOURSE, 
 
 ---
 
+### GET `/api/instruments/active`
+
+Retourne la liste des instruments liés à au moins une position `ACTIVE`, triés par catégorie puis par nom.
+
+**Rôle requis :** `ADMIN`
+
+**Réponse 200** — liste de `InstrumentDto`
+
+```json
+[
+  {
+    "id": 1,
+    "category": "BOURSE",
+    "isin": "FR0010315770",
+    "ticker": null,
+    "name": "Lyxor PEA Nasdaq-100 UCITS ETF",
+    "currency": "EUR",
+    "lastPrice": 88.44,
+    "lastPriceUpdatedAt": "2026-04-01T08:00:00"
+  },
+  {
+    "id": 2,
+    "category": "CRYPTO",
+    "isin": null,
+    "ticker": "BTC",
+    "name": "Bitcoin",
+    "currency": "USD",
+    "lastPrice": 60000.00,
+    "lastPriceUpdatedAt": "2026-04-08T09:30:00"
+  }
+]
+```
+
+**Erreurs**
+
+| Code | Raison |
+|------|--------|
+| 401 | Non authentifié |
+| 403 | Rôle insuffisant (USER) |
+
+---
+
+### PUT `/api/instruments/prices`
+
+Met à jour le cours de plusieurs instruments en une seule requête. Seuls les instruments présents dans la liste sont modifiés.
+
+**Rôle requis :** `ADMIN`
+
+**Corps de la requête**
+
+```json
+[
+  { "instrumentId": 1, "lastPrice": 95.20 },
+  { "instrumentId": 2, "lastPrice": 62500.00 }
+]
+```
+
+| Champ | Type | Contrainte |
+|-------|------|------------|
+| `instrumentId` | `Long` | Obligatoire |
+| `lastPrice` | `BigDecimal` | Obligatoire, strictement positif |
+
+**Réponse 200** — liste des `InstrumentDto` mis à jour (avec `lastPriceUpdatedAt` actualisé)
+
+**Erreurs**
+
+| Code | Raison |
+|------|--------|
+| 400 | `lastPrice` nul ou ≤ 0 |
+| 401 | Non authentifié |
+| 403 | Rôle insuffisant (USER) |
+| 404 | Un `instrumentId` est introuvable |
+
+---
+
 ## Positions
 
 ### GET `/api/positions`

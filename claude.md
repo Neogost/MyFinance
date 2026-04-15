@@ -91,6 +91,7 @@ frontend/src/
 - API revenus complémentaires : `docs/api/other-incomes.md`
 - API simulateur des impôts : `docs/api/tax-simulator.md`
 - Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
+- Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
 
 ## Endpoints backend existants
