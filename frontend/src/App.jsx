@@ -41,7 +41,7 @@ export default function App() {
       <main className="p-8">
         {currentPage === 'dashboard' && <DashboardPage user={user} />}
 
-        {currentPage === 'patrimoine' && <PatrimoinePage />}
+        {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} />}
 
         {currentPage === 'salary' && <SalaryContractPage />}
 

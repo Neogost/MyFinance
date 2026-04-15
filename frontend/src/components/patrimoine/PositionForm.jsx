@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getInstruments } from '../../api/patrimoine'
+import { getInstruments, createInstrument } from '../../api/patrimoine'
 
 const CATEGORIES = [
   { value: 'BOURSE',        label: 'Bourse / ETF',      icon: '📈' },
@@ -48,11 +48,16 @@ const EMPTY_FORM = {
 // ── Autocomplete instrument ────────────────────────────────────
 
 function InstrumentSearch({ category, value, onChange }) {
-  const [query, setQuery]       = useState(value?.name ?? '')
-  const [results, setResults]   = useState([])
-  const [loading, setLoading]   = useState(false)
-  const [open, setOpen]         = useState(false)
-  const debounceRef             = useRef(null)
+  const [query, setQuery]                 = useState(value?.name ?? '')
+  const [results, setResults]             = useState([])
+  const [loading, setLoading]             = useState(false)
+  const [open, setOpen]                   = useState(false)
+  const [creating, setCreating]           = useState(false)
+  const [newName, setNewName]             = useState('')
+  const [newCurrency, setNewCurrency]     = useState('EUR')
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError]     = useState(null)
+  const debounceRef                       = useRef(null)
 
   useEffect(() => {
     if (value?.name) setQuery(value.name)
@@ -61,6 +66,8 @@ function InstrumentSearch({ category, value, onChange }) {
   function handleInput(e) {
     const q = e.target.value
     setQuery(q)
+    setCreating(false)
+    setCreateError(null)
     if (!q) { onChange(null); setResults([]); setOpen(false); return }
 
     clearTimeout(debounceRef.current)
@@ -81,14 +88,49 @@ function InstrumentSearch({ category, value, onChange }) {
     setQuery(instrument.name)
     setResults([])
     setOpen(false)
+    setCreating(false)
     onChange(instrument)
   }
+
+  function openCreateForm() {
+    setOpen(false)
+    setCreating(true)
+    setNewName('')
+    setNewCurrency('EUR')
+    setCreateError(null)
+  }
+
+  async function handleCreate() {
+    if (!newName.trim()) return
+    setCreateLoading(true)
+    setCreateError(null)
+    try {
+      const payload = {
+        category,
+        isin:     category === 'BOURSE' ? query.trim().toUpperCase() : null,
+        ticker:   category === 'CRYPTO' ? query.trim().toUpperCase() : null,
+        name:     newName.trim(),
+        currency: newCurrency,
+      }
+      const created = await createInstrument(payload)
+      select(created)
+    } catch (err) {
+      const msg = err?.response?.data?.message
+      setCreateError(msg ?? "Erreur lors de la création de l'instrument.")
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  const isBourse          = category === 'BOURSE'
+  const identifierLabel   = isBourse ? 'ISIN' : 'Ticker'
+  const searchPlaceholder = isBourse ? 'Rechercher par ISIN ou nom…' : 'Rechercher par ticker ou nom…'
 
   return (
     <div className="relative">
       <input
         type="text" value={query} onChange={handleInput}
-        placeholder={category === 'BOURSE' ? 'Rechercher par ISIN ou nom…' : 'Rechercher par ticker ou nom…'}
+        placeholder={searchPlaceholder}
         className={inputCls}
         onFocus={() => results.length > 0 && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
@@ -96,6 +138,8 @@ function InstrumentSearch({ category, value, onChange }) {
       {loading && (
         <span className="absolute right-3 top-3 text-xs text-gray-400">Recherche…</span>
       )}
+
+      {/* Résultats */}
       {open && results.length > 0 && (
         <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
           {results.map(inst => (
@@ -105,15 +149,59 @@ function InstrumentSearch({ category, value, onChange }) {
               <span className="font-medium text-sm text-gray-900">{inst.name}</span>
               <span className="ml-2 text-xs text-gray-400">
                 {inst.isin ?? inst.ticker} · {inst.currency}
-                {inst.lastPrice != null && ` · ${parseFloat(inst.lastPrice).toLocaleString('fr-FR', {minimumFractionDigits: 2})} ${inst.currency}`}
+                {inst.lastPrice != null && ` · ${parseFloat(inst.lastPrice).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${inst.currency}`}
               </span>
             </li>
           ))}
         </ul>
       )}
+
+      {/* Aucun résultat → proposition de création */}
       {open && results.length === 0 && query.length >= 2 && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-sm text-gray-400">
-          Aucun instrument trouvé
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow">
+          <p className="px-3 py-2 text-sm text-gray-400">Aucun instrument trouvé.</p>
+          <button
+            type="button"
+            onMouseDown={openCreateForm}
+            className="w-full text-left px-3 py-2 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 border-t border-gray-100 transition">
+            Créer un nouvel instrument « {query.trim().toUpperCase()} » ?
+          </button>
+        </div>
+      )}
+
+      {/* Formulaire de création inline */}
+      {creating && (
+        <div className="mt-2 p-3 border border-indigo-200 bg-indigo-50 rounded-lg flex flex-col gap-3">
+          <p className="text-xs font-semibold text-indigo-700">
+            Nouvel instrument — {identifierLabel} : <span className="font-bold">{query.trim().toUpperCase()}</span>
+          </p>
+          <input
+            type="text"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder={isBourse ? 'Nom complet (ex : Amundi MSCI World)' : 'Nom complet (ex : Bitcoin)'}
+            className={inputCls}
+            autoFocus
+          />
+          <select value={newCurrency} onChange={e => setNewCurrency(e.target.value)} className={inputCls}>
+            {['EUR', 'USD', 'GBP', 'CHF', 'JPY'].map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {createError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">{createError}</p>
+          )}
+          <div className="flex gap-2 justify-end">
+            <button type="button" onClick={() => setCreating(false)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
+              Annuler
+            </button>
+            <button type="button" onClick={handleCreate}
+              disabled={createLoading || !newName.trim()}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
+              {createLoading ? 'Création…' : 'Créer et sélectionner'}
+            </button>
+          </div>
         </div>
       )}
     </div>
