@@ -116,32 +116,115 @@ classDiagram
         AUTRE
     }
 
-    %% ── Ordres / Positions ────────────────────────────────────
-    class Ordre {
-        +Long id
-        +DateTime createdAt
-        +DateTime dateOfExecution
-        +String title
-        +Float value
-        +Float quantity
-    }
-
-    class TypeEnum {
+    %% ── Patrimoine ───────────────────────────────────────────
+    class AssetCategory {
         BOURSE
         CRYPTO
-        AUTRE
+        IMMO_PAPIER
+        IMMO_PHYSIQUE
+        LIVRET
+        LIQUIDITE
     }
 
-    class Isbn {
-        +String id
-        +String name
-        +String title
+    class FiscalEnvelope {
+        CTO
+        PEA
+        AV
+        NONE
     }
 
-    class Token {
-        +String id
+    class AssetSubType {
+        ETF
+        ACTION
+        OBLIGATION
+        FOREX
+        WARRANT
+        FONDS_EUROS
+        TRACKERS
+        SCPI
+    }
+
+    class OwnershipType {
+        PLEINE_PROPRIETE
+        NUE_PROPRIETE
+        USUFRUIT
+    }
+
+    class OrderType {
+        BUY
+        SELL
+        DEPOSIT
+        WITHDRAWAL
+        INTEREST
+        DIVIDEND
+        AIRDROP
+    }
+
+    class Instrument {
+        +Long id
+        +AssetCategory category
+        +String isin
+        +String ticker
         +String name
-        +String trigramme
+        +String currency
+        +BigDecimal lastPrice
+        +LocalDateTime lastPriceUpdatedAt
+    }
+
+    class Position {
+        +Long id
+        +AssetCategory category
+        +String partner
+        +String label
+        +String currency
+        +FiscalEnvelope fiscalEnvelope
+        +AssetSubType assetSubType
+        +OwnershipType ownershipType
+        +String address
+        +BigDecimal estimatedCurrentValue
+        +LocalDate acquisitionDate
+        +BigDecimal annualRate
+        +BigDecimal commissionRate
+        +BigDecimal currentBalance
+        +Boolean includeInIncomeProjection
+        +PositionStatus status
+        +LocalDateTime createdAt
+    }
+
+    class PositionOrder {
+        +Long id
+        +OrderType orderType
+        +BigDecimal quantity
+        +BigDecimal unitPrice
+        +BigDecimal amount
+        +BigDecimal amountEur
+        +LocalDate orderDate
+        +String notes
+    }
+
+    class ExchangeRate {
+        +Long id
+        +String currency
+        +BigDecimal rate
+        +LocalDateTime lastUpdatedAt
+    }
+
+    class PortfolioSnapshot {
+        +Long id
+        +LocalDate snapshotDate
+        +BigDecimal totalInvestedEur
+        +BigDecimal totalCurrentValueEur
+        +BigDecimal totalCapitalGainEur
+        +String exchangeRatesJson
+    }
+
+    class PositionSnapshot {
+        +Long id
+        +BigDecimal investedAmountEur
+        +BigDecimal currentValueEur
+        +BigDecimal capitalGainEur
+        +BigDecimal units
+        +BigDecimal unitPriceEur
     }
 
     %% ── Relations utilisateurs ────────────────────────────────
@@ -162,8 +245,15 @@ classDiagram
     %% ── Relations simulateur des impôts ───────────────────────
     User ..> TaxSimulationDto : simule
 
-    %% ── Relations ordres ──────────────────────────────────────
-    User "1" o-- "0..*" Ordre : orders
-    Ordre --> TypeEnum : type
-    Ordre "0..*" --> "0..1" Isbn : isbn
-    Ordre "0..*" --> "0..1" Token : token
+    %% ── Relations patrimoine ──────────────────────────────────
+    User "1" o-- "0..*" Position : positions
+    User "1" o-- "0..*" PortfolioSnapshot : snapshots
+    Position --> AssetCategory : category
+    Position --> FiscalEnvelope : fiscalEnvelope
+    Position --> AssetSubType : assetSubType
+    Position --> OwnershipType : ownershipType
+    Position "1" o-- "0..*" PositionOrder : orders
+    Position "0..*" --> "0..1" Instrument : instrument
+    PositionOrder --> OrderType : orderType
+    PortfolioSnapshot "1" o-- "0..*" PositionSnapshot : positionSnapshots
+    PositionSnapshot "0..*" --> "1" Position : position

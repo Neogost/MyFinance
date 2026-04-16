@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public record CreatePositionRequest(
         @NotNull AssetCategory category,
@@ -20,6 +21,7 @@ public record CreatePositionRequest(
         OwnershipType ownershipType,
         String address,
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal estimatedCurrentValue,
+        LocalDate acquisitionDate,
         // IMMO_PAPIER
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal commissionRate,
         // LIVRET

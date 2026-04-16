@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   getPositions, createPosition, updatePosition,
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
+  getSnapshots,
 } from '../../api/patrimoine'
 import PositionForm from './PositionForm'
 import OrderPanel from './OrderPanel'
@@ -227,9 +228,14 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
         )}
       </div>
 
-      {/* Adresse (IMMO_PHYSIQUE) */}
+      {/* Adresse + date d'acquisition (IMMO_PHYSIQUE) */}
       {position.address && (
         <p className="text-xs text-gray-400 -mt-2 truncate">{position.address}</p>
+      )}
+      {position.acquisitionDate && (
+        <p className="text-xs text-gray-400 -mt-2">
+          Acquis le {new Date(position.acquisitionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+        </p>
       )}
 
       {/* Actions */}
@@ -286,6 +292,7 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
 
 export default function PatrimoinePage({ currentUser }) {
   const [positions, setPositions]             = useState([])
+  const [snapshots, setSnapshots]             = useState([])
   const [formTarget, setFormTarget]           = useState(undefined)
   const [balanceTarget, setBalanceTarget]     = useState(null)
   const [estimatedTarget, setEstimatedTarget] = useState(null)
@@ -300,7 +307,7 @@ export default function PatrimoinePage({ currentUser }) {
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
-  useEffect(() => { fetchPositions() }, [])
+  useEffect(() => { fetchPositions(); fetchSnapshots() }, [])
 
   async function fetchPositions() {
     try {
@@ -310,6 +317,14 @@ export default function PatrimoinePage({ currentUser }) {
       setError('Impossible de charger le patrimoine.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchSnapshots() {
+    try {
+      setSnapshots(await getSnapshots())
+    } catch {
+      // snapshots non critiques, on ignore l'erreur
     }
   }
 
@@ -395,6 +410,14 @@ export default function PatrimoinePage({ currentUser }) {
   const totalProjection = active
     .filter(p => p.computed?.monthlyIncomeProjectionEur != null)
     .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
+
+  const jan1CurrentYear = `${new Date().getFullYear()}-01-01`
+  const ytdRefSnapshot = snapshots
+    .filter(s => s.snapshotDate < jan1CurrentYear)
+    .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0] ?? null
+  const totalPlusValueYTD = ytdRefSnapshot != null
+    ? totalPlusValue - parseFloat(ytdRefSnapshot.totalCapitalGainEur ?? 0)
+    : null
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
 
@@ -487,6 +510,17 @@ export default function PatrimoinePage({ currentUser }) {
               {fmt(totalPlusValue)}
             </p>
           </div>
+          {totalPlusValueYTD != null && (
+            <div className="bg-white rounded-xl shadow-sm p-3">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+                Plus-value YTD
+                <Tooltip>Variation de la plus-value depuis le 1er janvier {new Date().getFullYear()}, calculée par rapport au dernier relevé de l'année précédente ({ytdRefSnapshot.snapshotDate}).</Tooltip>
+              </p>
+              <p className={`text-lg font-bold ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                {totalPlusValueYTD >= 0 ? '+' : ''}{fmt(totalPlusValueYTD)}
+              </p>
+            </div>
+          )}
           {totalProjection > 0 && (
             <div className="bg-emerald-50 rounded-xl shadow-sm p-3">
               <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1">Revenus / mois</p>

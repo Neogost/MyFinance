@@ -311,6 +311,19 @@ npm run dev
   - Bouton "Taux de change" visible uniquement pour le rôle ADMIN
   - Documentation : `docs/architecture/exchange-rates.md`, `docs/api/exchange-rates.md`
   - Tests : 299 tests (ExchangeRateServiceTest +7, ExchangeRateControllerTest +5)
+- **Patrimoine — Relevés de patrimoine (SnapshotPanel)** :
+  - Modal `SnapshotPanel` accessible depuis le bouton "Relevés de patrimoine" (ADMIN uniquement)
+  - Génération d'un snapshot pour l'utilisateur courant (`POST /api/portfolio/snapshots`) ou pour tous les utilisateurs (`POST /api/portfolio/snapshots/all`)
+  - Historique des snapshots en tableau (date, investi, valeur, plus-value)
+  - Recalcul d'un snapshot existant (`PUT /api/portfolio/snapshots/{id}/recalculate`)
+- **Patrimoine — Date d'acquisition (IMMO_PHYSIQUE)** :
+  - Champ `acquisitionDate` (`LocalDate`, nullable) ajouté sur l'entité `Position`
+  - Propagé dans `CreatePositionRequest`, `UpdatePositionRequest`, `PositionDto`, `PositionService`
+  - Frontend : saisie dans `PositionForm` (wizard étape 2, section IMMO_PHYSIQUE), affichage « Acquis le … » dans la `PositionCard`
+- **Patrimoine — Plus-value YTD** :
+  - Bloc « Plus-value YTD » dans la synthèse globale de `PatrimoinePage`
+  - Calculé en frontend : `totalPlusValue` actuel − `totalCapitalGainEur` du dernier snapshot antérieur au 1er janvier de l'année en cours
+  - Visible uniquement si un snapshot de l'année précédente existe ; tooltip indiquant la date du snapshot de référence
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

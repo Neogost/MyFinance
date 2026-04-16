@@ -4,6 +4,7 @@ import com.myfinance.domain.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ public record PositionDto(
         OwnershipType ownershipType,
         String address,
         BigDecimal estimatedCurrentValue,
+        LocalDate acquisitionDate,
         // IMMO_PAPIER
         BigDecimal commissionRate,
         // LIVRET
@@ -72,6 +74,7 @@ public record PositionDto(
                 position.getOwnershipType(),
                 position.getAddress(),
                 position.getEstimatedCurrentValue(),
+                position.getAcquisitionDate(),
                 position.getCommissionRate(),
                 position.getAnnualRate(),
                 position.getCurrentBalance(),

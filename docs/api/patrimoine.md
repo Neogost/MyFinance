@@ -365,11 +365,12 @@ Créer une position.
 ```json
 {
   "category": "IMMO_PHYSIQUE",
-  "label": "6 Rue edouard Branly 49300 CHOLET",
+  "label": "Appartement Cholet",
   "currency": "EUR",
   "ownershipType": "NUE_PROPRIETE",
-  "address": "6 Rue edouard Branly 49300 CHOLET",
+  "address": "6 Rue Edouard Branly 49300 CHOLET",
   "estimatedCurrentValue": 115000.00,
+  "acquisitionDate": "2019-06-15",
   "includeInIncomeProjection": false
 }
 ```

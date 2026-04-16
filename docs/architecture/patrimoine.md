@@ -131,6 +131,7 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `ownershipType` | `OwnershipType` | IMMO_PHYSIQUE | Type de propriété |
 | `address` | `String` | IMMO_PHYSIQUE | Adresse du bien |
 | `estimatedCurrentValue` | `BigDecimal` | IMMO_PHYSIQUE | Valeur estimée actuelle — saisie manuellement |
+| `acquisitionDate` | `LocalDate` | IMMO_PHYSIQUE | Date d'acquisition du bien — nullable |
 | `annualRate` | `BigDecimal` | LIVRET | Taux d'intérêt annuel en % |
 | `commissionRate` | `BigDecimal` | IMMO_PAPIER | Taux de commission de la plateforme en % |
 | `currentBalance` | `BigDecimal` | LIQUIDITE | Solde actuel — mis à jour manuellement |
@@ -308,6 +309,7 @@ Formulaire adaptatif selon la catégorie :
 | Libellé | ✓ | ✓ | ✓ | — | ✓ | ✓ |
 | Adresse | — | — | — | ✓ | — | — |
 | Type de propriété | — | — | — | ✓ | — | — |
+| Date d'acquisition | — | — | — | ✓ | — | — |
 | Taux annuel | — | — | — | — | ✓ | — |
 | Commission | — | — | ✓ | — | — | — |
 | Devise | ✓ | ✓ | — | — | — | — |
@@ -394,6 +396,7 @@ classDiagram
         +OwnershipType ownershipType
         +String address
         +BigDecimal estimatedCurrentValue
+        +LocalDate acquisitionDate
         +BigDecimal annualRate
         +BigDecimal commissionRate
         +BigDecimal currentBalance

@@ -41,6 +41,7 @@ const EMPTY_FORM = {
   partner: '', label: '', currency: 'EUR',
   fiscalEnvelope: 'NONE', assetSubType: '', instrumentId: null,
   ownershipType: 'PLEINE_PROPRIETE', address: '', estimatedCurrentValue: '',
+  acquisitionDate: '',
   commissionRate: '', annualRate: '', currentBalance: '',
   includeInIncomeProjection: false,
 }
@@ -233,6 +234,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         ownershipType:             position.ownershipType ?? 'PLEINE_PROPRIETE',
         address:                   position.address ?? '',
         estimatedCurrentValue:     position.estimatedCurrentValue ?? '',
+        acquisitionDate:           position.acquisitionDate ?? '',
         commissionRate:            position.commissionRate ?? '',
         annualRate:                position.annualRate ?? '',
         currentBalance:            position.currentBalance ?? '',
@@ -271,6 +273,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         ownershipType:             form.ownershipType || null,
         address:                   form.address || null,
         estimatedCurrentValue:     form.estimatedCurrentValue !== '' ? parseFloat(form.estimatedCurrentValue) : null,
+        acquisitionDate:           form.acquisitionDate || null,
         commissionRate:            form.commissionRate !== '' ? parseFloat(form.commissionRate) : null,
         annualRate:                form.annualRate !== '' ? parseFloat(form.annualRate) : null,
         currentBalance:            form.currentBalance !== '' ? parseFloat(form.currentBalance) : null,
@@ -473,6 +476,12 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                         value={form.estimatedCurrentValue} onChange={handleChange}
                         placeholder="ex : 115000" className={inputCls} />
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelCls}>Date d'acquisition</label>
+                    <input name="acquisitionDate" type="date"
+                      value={form.acquisitionDate} onChange={handleChange}
+                      className={inputCls} />
                   </div>
                 </>
               )}
