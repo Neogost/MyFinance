@@ -8,6 +8,7 @@ import OtherIncomePage from './components/income/OtherIncomePage'
 import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
+import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import { logout } from './api/auth'
 
 export default function App() {
@@ -21,7 +22,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    if (page === 'users' && user?.role !== 'ADMIN') return
+    if ((page === 'users' || page === 'admin-snapshots') && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
 
@@ -50,6 +51,8 @@ export default function App() {
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
+
+        {currentPage === 'admin-snapshots' && user.role === 'ADMIN' && <AdminSnapshotPage />}
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} />}
       </main>

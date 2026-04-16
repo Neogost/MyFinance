@@ -110,6 +110,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
         </div>
 
         {user.role === 'ADMIN' && <NavBtn page="users" label="Utilisateurs" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />}
+        {user.role === 'ADMIN' && <NavBtn page="admin-snapshots" label="Gestion des relevés" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />}
         <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
       </nav>
 

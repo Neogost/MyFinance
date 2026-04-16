@@ -667,3 +667,4 @@ Recalculer un snapshot existant avec les données actuelles (prix marché + ordr
 | Consulter / déclencher ses snapshots | USER, ADMIN |
 | Gérer le référentiel d'instruments | USER, ADMIN |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
+| Créer / modifier / supprimer des snapshots admin | ADMIN uniquement — voir [`docs/api/admin-snapshots.md`](admin-snapshots.md) |

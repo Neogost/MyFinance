@@ -203,6 +203,25 @@ frontend/src/
 | `GET` | `/api/exchange-rates` | ADMIN | Liste tous les taux de change configurés |
 | `PUT` | `/api/exchange-rates` | ADMIN | Mise à jour groupée des taux (upsert par devise) |
 
+### Patrimoine — Snapshots (utilisateur)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/portfolio/snapshots` | Authentifié | Liste ses snapshots (résumé, sans positions) |
+| `GET` | `/api/portfolio/snapshots/{id}` | Authentifié | Détail d'un snapshot (avec positions) |
+| `POST` | `/api/portfolio/snapshots` | Authentifié | Déclencher un snapshot pour la date indiquée |
+| `PUT` | `/api/portfolio/snapshots/{id}/recalculate` | Authentifié | Recalculer un snapshot avec les prix actuels |
+| `POST` | `/api/portfolio/snapshots/all` | ADMIN | Générer un snapshot pour tous les utilisateurs |
+
+### Patrimoine — Snapshots (admin — gestion manuelle)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/admin/snapshots?userId={id}` | ADMIN | Liste les snapshots d'un utilisateur |
+| `GET` | `/api/admin/snapshots/{id}` | ADMIN | Détail complet d'un snapshot admin |
+| `POST` | `/api/admin/snapshots` | ADMIN | Créer manuellement un snapshot pour un utilisateur |
+| `PUT` | `/api/admin/snapshots/{id}` | ADMIN | Modifier un snapshot existant |
+| `DELETE` | `/api/admin/snapshots/{id}` | ADMIN | Supprimer un snapshot |
+| `GET` | `/api/admin/users/{userId}/positions` | ADMIN | Positions actives d'un utilisateur (pour le formulaire) |
+
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
 - Les controllers ne font que déléguer et retourner le `ResponseEntity` approprié
@@ -324,6 +343,14 @@ npm run dev
   - Bloc « Plus-value YTD » dans la synthèse globale de `PatrimoinePage`
   - Calculé en frontend : `totalPlusValue` actuel − `totalCapitalGainEur` du dernier snapshot antérieur au 1er janvier de l'année en cours
   - Visible uniquement si un snapshot de l'année précédente existe ; tooltip indiquant la date du snapshot de référence
+- **Patrimoine — Gestion admin des relevés** (page "Gestion des relevés") :
+  - `AdminSnapshotService` + `AdminSnapshotController` : CRUD complet sur les snapshots de n'importe quel utilisateur
+  - Endpoints : `GET/POST/PUT/DELETE /api/admin/snapshots` + `GET /api/admin/users/{userId}/positions`
+  - Vérification d'appartenance des positions à l'utilisateur cible avant persistance
+  - Frontend : `AdminSnapshotPage` (sélecteur utilisateur + tableau des relevés) + `ManualSnapshotModal` (saisie par position avec totaux temps réel)
+  - Menu "Gestion des relevés" visible uniquement pour le rôle ADMIN
+  - Tests : 318 tests (AdminSnapshotServiceTest +9, AdminSnapshotControllerTest +10)
+  - Documentation : `docs/architecture/admin-snapshot-management.md`, `docs/api/admin-snapshots.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

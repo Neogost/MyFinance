@@ -41,3 +41,12 @@ export const getSnapshot        = (id)        => api.get(`/api/portfolio/snapsho
 export const createSnapshot     = (data)      => api.post('/api/portfolio/snapshots', data).then(r => r.data)
 export const recalculateSnapshot    = (id)    => api.put(`/api/portfolio/snapshots/${id}/recalculate`).then(r => r.data)
 export const createSnapshotForAll   = (data)  => api.post('/api/portfolio/snapshots/all', data).then(r => r.data)
+
+// ── Admin — Snapshots ──────────────────────────────────────────
+
+export const getAdminSnapshots       = (userId)       => api.get('/api/admin/snapshots', { params: { userId } }).then(r => r.data)
+export const getAdminSnapshot        = (id)           => api.get(`/api/admin/snapshots/${id}`).then(r => r.data)
+export const createAdminSnapshot     = (data)         => api.post('/api/admin/snapshots', data).then(r => r.data)
+export const updateAdminSnapshot     = (id, data)     => api.put(`/api/admin/snapshots/${id}`, data).then(r => r.data)
+export const deleteAdminSnapshot     = (id)           => api.delete(`/api/admin/snapshots/${id}`)
+export const getAdminUserPositions   = (userId)       => api.get(`/api/admin/users/${userId}/positions`).then(r => r.data)
