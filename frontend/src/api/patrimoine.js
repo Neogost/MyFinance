@@ -39,4 +39,5 @@ export const updateExchangeRates = (updates) => api.put('/api/exchange-rates', u
 export const getSnapshots       = ()          => api.get('/api/portfolio/snapshots').then(r => r.data)
 export const getSnapshot        = (id)        => api.get(`/api/portfolio/snapshots/${id}`).then(r => r.data)
 export const createSnapshot     = (data)      => api.post('/api/portfolio/snapshots', data).then(r => r.data)
-export const recalculateSnapshot = (id)       => api.put(`/api/portfolio/snapshots/${id}/recalculate`).then(r => r.data)
+export const recalculateSnapshot    = (id)    => api.put(`/api/portfolio/snapshots/${id}/recalculate`).then(r => r.data)
+export const createSnapshotForAll   = (data)  => api.post('/api/portfolio/snapshots/all', data).then(r => r.data)

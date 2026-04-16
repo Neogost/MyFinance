@@ -44,9 +44,6 @@ public class PortfolioSnapshot {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal totalCapitalGainEur;
 
-    /** Taux de change appliqués au moment du snapshot (JSON) — ex : {"USD":1.085,"GBP":0.856} */
-    private String exchangeRatesJson;
-
     @OneToMany(mappedBy = "portfolioSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PositionSnapshot> positionSnapshots = new ArrayList<>();

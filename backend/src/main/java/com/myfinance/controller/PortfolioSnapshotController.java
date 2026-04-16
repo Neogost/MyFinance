@@ -1,6 +1,7 @@
 package com.myfinance.controller;
 
 import com.myfinance.domain.User;
+import com.myfinance.dto.BulkSnapshotResultDto;
 import com.myfinance.dto.CreateSnapshotRequest;
 import com.myfinance.dto.PortfolioSnapshotDto;
 import com.myfinance.service.PortfolioSnapshotService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +43,15 @@ public class PortfolioSnapshotController {
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(portfolioSnapshotService.create(request, currentUser));
+    }
+
+    /** POST /api/portfolio/snapshots/all — ADMIN : génère un relevé pour tous les utilisateurs */
+    @PostMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BulkSnapshotResultDto> createForAllUsers(
+            @Valid @RequestBody CreateSnapshotRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(portfolioSnapshotService.createForAllUsers(request));
     }
 
     /** PUT /api/portfolio/snapshots/{id}/recalculate */

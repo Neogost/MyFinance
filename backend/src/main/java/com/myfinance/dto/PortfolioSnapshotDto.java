@@ -12,7 +12,6 @@ public record PortfolioSnapshotDto(
         BigDecimal totalInvestedEur,
         BigDecimal totalCurrentValueEur,
         BigDecimal totalCapitalGainEur,
-        String exchangeRatesJson,
         List<PositionSnapshotDto> positionSnapshots
 ) {
     /** Version sans détail des positionSnapshots — pour la liste */
@@ -23,7 +22,6 @@ public record PortfolioSnapshotDto(
                 snapshot.getTotalInvestedEur(),
                 snapshot.getTotalCurrentValueEur(),
                 snapshot.getTotalCapitalGainEur(),
-                null,
                 null
         );
     }
@@ -40,7 +38,6 @@ public record PortfolioSnapshotDto(
                 snapshot.getTotalInvestedEur(),
                 snapshot.getTotalCurrentValueEur(),
                 snapshot.getTotalCapitalGainEur(),
-                snapshot.getExchangeRatesJson(),
                 posSnapDtos
         );
     }

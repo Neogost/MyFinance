@@ -4,6 +4,7 @@ import com.myfinance.domain.*;
 import com.myfinance.dto.*;
 import com.myfinance.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PortfolioSnapshotService {
@@ -25,6 +27,7 @@ public class PortfolioSnapshotService {
     private final PositionRepository positionRepository;
     private final PositionOrderRepository positionOrderRepository;
     private final ExchangeRateRepository exchangeRateRepository;
+    private final UserRepository userRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -57,6 +60,35 @@ public class PortfolioSnapshotService {
                 });
 
         return buildAndSaveSnapshot(user, snapshotDate);
+    }
+
+    // ── Création groupée (admin) ───────────────────────────────
+
+    @Transactional
+    public BulkSnapshotResultDto createForAllUsers(CreateSnapshotRequest request) {
+        LocalDate snapshotDate = request.snapshotDate();
+        LocalDate startOfMonth = snapshotDate.withDayOfMonth(1);
+        LocalDate endOfMonth   = startOfMonth.plusMonths(1).minusDays(1);
+
+        int created = 0, skipped = 0, failed = 0;
+
+        for (User user : userRepository.findAll()) {
+            boolean alreadyExists = portfolioSnapshotRepository
+                    .findByUserAndSnapshotDateBetween(user, startOfMonth, endOfMonth)
+                    .isPresent();
+            if (alreadyExists) {
+                skipped++;
+                continue;
+            }
+            try {
+                buildAndSaveSnapshot(user, snapshotDate);
+                created++;
+            } catch (Exception e) {
+                log.error("Échec du relevé pour l'utilisateur {} : {}", user.getId(), e.getMessage());
+                failed++;
+            }
+        }
+        return new BulkSnapshotResultDto(created, skipped, failed);
     }
 
     // ── Recalcul ───────────────────────────────────────────────
