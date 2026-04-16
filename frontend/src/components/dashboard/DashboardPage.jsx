@@ -1,4 +1,5 @@
 import SalaryEvolutionChart from './SalaryEvolutionChart'
+import CapitalGainsByCategoryChart from './CapitalGainsByCategoryChart'
 
 export default function DashboardPage({ user }) {
   return (
@@ -8,6 +9,14 @@ export default function DashboardPage({ user }) {
         <p className="text-gray-500 text-sm mt-1">
           Bienvenue, <strong>{user.firstName}</strong> !
         </p>
+      </div>
+
+      <div className="w-1/4 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-base font-semibold text-gray-800 mb-1">Plus-values par catégorie</h3>
+        <p className="text-xs text-gray-400 mb-6">
+          Répartition des plus-values latentes sur l'ensemble des positions actives du portefeuille.
+        </p>
+        <CapitalGainsByCategoryChart />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

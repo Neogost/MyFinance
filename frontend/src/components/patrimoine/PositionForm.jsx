@@ -1,38 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getInstruments, createInstrument } from '../../api/patrimoine'
-
-const CATEGORIES = [
-  { value: 'BOURSE',        label: 'Bourse',             icon: '📈' },
-  { value: 'CRYPTO',        label: 'Crypto',             icon: '🪙' },
-  { value: 'IMMO_PAPIER',   label: 'Immo. Papier',       icon: '🏗️' },
-  { value: 'IMMO_PHYSIQUE', label: 'Immo. Physique',     icon: '🏠' },
-  { value: 'LIVRET',        label: 'Livret / Épargne',   icon: '🏦' },
-  { value: 'LIQUIDITE',     label: 'Liquidités',         icon: '💵' },
-]
-
-const FISCAL_ENVELOPES = [
-  { value: 'NONE', label: 'Aucune' },
-  { value: 'CTO',  label: 'CTO — Compte Titres Ordinaire' },
-  { value: 'PEA',  label: 'PEA — Plan Épargne Actions' },
-  { value: 'AV',   label: 'AV — Assurance Vie' },
-]
-
-const ASSET_SUB_TYPES = [
-  { value: 'ETF',          label: 'ETF' },
-  { value: 'ACTION',       label: 'Action' },
-  { value: 'OBLIGATION',   label: 'Obligation' },
-  { value: 'FOREX',        label: 'Forex' },
-  { value: 'WARRANT',      label: 'Warrant' },
-  { value: 'FONDS_EUROS',  label: 'Fonds Euros (AV)' },
-  { value: 'TRACKERS',     label: 'Trackers' },
-  { value: 'SCPI',         label: 'SCPI' },
-]
-
-const OWNERSHIP_TYPES = [
-  { value: 'PLEINE_PROPRIETE', label: 'Pleine propriété' },
-  { value: 'NUE_PROPRIETE',    label: 'Nue-propriété' },
-  { value: 'USUFRUIT',         label: 'Usufruit' },
-]
+import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, ASSET_SUB_TYPES, OWNERSHIP_TYPES } from './constants'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 const labelCls = 'text-sm font-semibold text-gray-700'
@@ -329,12 +297,12 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
             <div>
               <p className="text-sm text-gray-500 mb-4">Choisissez le type de position à créer :</p>
               <div className="grid grid-cols-3 gap-3">
-                {CATEGORIES.map(cat => (
-                  <button key={cat.value} onClick={() => selectCategory(cat.value)}
+                {Object.entries(CATEGORY_META).map(([value, { label, icon }]) => (
+                  <button key={value} onClick={() => selectCategory(value)}
                     className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition group">
-                    <span className="text-2xl">{cat.icon}</span>
+                    <span className="text-2xl">{icon}</span>
                     <span className="text-xs font-semibold text-gray-700 group-hover:text-indigo-700 text-center leading-tight">
-                      {cat.label}
+                      {label}
                     </span>
                   </button>
                 ))}
@@ -424,9 +392,12 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Enveloppe fiscale</label>
                   <select name="fiscalEnvelope" value={form.fiscalEnvelope} onChange={handleChange} className={inputCls}>
-                    {FISCAL_ENVELOPES.map(e => (
-                      <option key={e.value} value={e.value}>{e.label}</option>
-                    ))}
+                    <option value="NONE">Aucune</option>
+                    {Object.entries(FISCAL_ENVELOPE_LABELS)
+                      .filter(([, v]) => v !== null)
+                      .map(([value, { formLabel }]) => (
+                        <option key={value} value={value}>{formLabel}</option>
+                      ))}
                   </select>
                 </div>
               )}

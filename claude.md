@@ -358,4 +358,5 @@ npm run dev
 - Scheduler Yahoo Finance / CoinGecko (mise à jour des prix marché)
 - **Tableau de bord** :
   - Graphique d'évolution salariale (`SalaryEvolutionChart`) — 4 courbes (brut, net fiscal, net versé, PAS) basées sur `MonthlyPaySlip` — doc : `docs/architecture/dashboard.md`, API : `docs/api/dashboard.md`
-  - Graphiques patrimoine, plus-values, diversification (à définir)
+  - Graphique plus-values par catégorie (`CapitalGainsByCategoryChart`) — camembert (donut) Recharts, agrège `computed.capitalGainEur` par catégorie depuis `GET /api/positions?status=ACTIVE`, couleurs cohérentes avec `PatrimoinePage`, catégories en perte affichées en opacité réduite — occupes `w-1/4` du dashboard — doc : `docs/architecture/dashboard.md`
+  - Graphiques patrimoine et diversification (à définir)

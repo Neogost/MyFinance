@@ -4,291 +4,15 @@ import {
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
   getSnapshots,
 } from '../../api/patrimoine'
+import { CATEGORY_META } from './constants'
+import { fmt, Tooltip } from './utils'
+import PositionCard from './PositionCard'
+import { BalanceEditModal, EstimatedValueModal } from './ValueEditModals'
 import PositionForm from './PositionForm'
 import OrderPanel from './OrderPanel'
 import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 import SnapshotPanel from './SnapshotPanel'
-
-const CATEGORY_META = {
-  BOURSE:        { label: 'Bourse',           color: 'bg-blue-100 text-blue-700',    icon: '📈' },
-  CRYPTO:        { label: 'Crypto',           color: 'bg-purple-100 text-purple-700', icon: '🪙' },
-  IMMO_PAPIER:   { label: 'Immo. Papier',     color: 'bg-orange-100 text-orange-700', icon: '🏗️' },
-  IMMO_PHYSIQUE: { label: 'Immo. Physique',   color: 'bg-red-100 text-red-700',       icon: '🏠' },
-  LIVRET:        { label: 'Livret / Épargne', color: 'bg-blue-100 text-blue-700',     icon: '🏦' },
-  LIQUIDITE:     { label: 'Liquidités',       color: 'bg-amber-100 text-amber-700',   icon: '💵' },
-}
-
-const FISCAL_ENVELOPE_LABELS = {
-  NONE: null,
-  CTO:  { label: 'CTO',  color: 'bg-gray-100 text-gray-600' },
-  PEA:  { label: 'PEA',  color: 'bg-emerald-100 text-emerald-700' },
-  AV:   { label: 'AV',   color: 'bg-violet-100 text-violet-700' },
-}
-
-function Tooltip({ children }) {
-  return (
-    <span className="relative group inline-flex items-center ml-1 cursor-default">
-      <span className="text-gray-300 text-xs leading-none">ⓘ</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 leading-relaxed normal-case tracking-normal font-normal">
-        {children}
-      </span>
-    </span>
-  )
-}
-
-function fmt(value, currency = 'EUR') {
-  if (value == null) return '—'
-  const symbol = currency === 'EUR' ? ' €' : ` ${currency}`
-  return parseFloat(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + symbol
-}
-
-function fmtUnits(value) {
-  if (value == null) return null
-  const n = parseFloat(value)
-  return n % 1 === 0 ? n.toLocaleString('fr-FR') : n.toLocaleString('fr-FR', { maximumFractionDigits: 6 })
-}
-
-// ── Modal mise à jour solde (LIQUIDITE) ────────────────────────
-
-function BalanceEditModal({ position, onSave, onCancel }) {
-  const [value, setValue] = useState(position.currentBalance ?? '')
-  const [loading, setLoading] = useState(false)
-
-  async function handleSave() {
-    setLoading(true)
-    try { await onSave(parseFloat(value)) }
-    finally { setLoading(false) }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-7 w-full max-w-sm">
-        <h3 className="font-bold text-gray-900 mb-4">Mettre à jour le solde</h3>
-        <p className="text-sm text-gray-500 mb-3">{position.label}</p>
-        <input type="number" min="0" step="0.01" value={value}
-          onChange={e => setValue(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
-          placeholder="Nouveau solde en €" autoFocus />
-        <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition">
-            Annuler
-          </button>
-          <button onClick={handleSave} disabled={loading || value === ''}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
-            {loading ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Modal mise à jour valeur estimée (IMMO_PHYSIQUE) ───────────
-
-function EstimatedValueModal({ position, onSave, onCancel }) {
-  const [value, setValue] = useState(position.estimatedCurrentValue ?? '')
-  const [loading, setLoading] = useState(false)
-
-  async function handleSave() {
-    setLoading(true)
-    try { await onSave(parseFloat(value)) }
-    finally { setLoading(false) }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-7 w-full max-w-sm">
-        <h3 className="font-bold text-gray-900 mb-4">Mettre à jour la valeur estimée</h3>
-        <p className="text-sm text-gray-500 mb-3">{position.label}</p>
-        <input type="number" min="0" step="0.01" value={value}
-          onChange={e => setValue(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
-          placeholder="Valeur estimée en €" autoFocus />
-        <div className="flex justify-end gap-3 mt-5">
-          <button onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition">
-            Annuler
-          </button>
-          <button onClick={handleSave} disabled={loading || value === ''}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
-            {loading ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Carte de position ──────────────────────────────────────────
-
-function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
-  const meta   = CATEGORY_META[position.category] ?? {}
-  const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
-  const c      = position.computed ?? {}
-  const [confirmDelete, setConfirmDelete] = useState(false)
-
-  const isClosed       = position.status === 'CLOSED'
-  const isLiquidite    = position.category === 'LIQUIDITE'
-  const isImmoPhysique = position.category === 'IMMO_PHYSIQUE'
-  const isBourseOrCrypto = position.category === 'BOURSE' || position.category === 'CRYPTO'
-
-  const capitalGainColor = parseFloat(c.capitalGainEur ?? 0) >= 0
-    ? 'text-emerald-700' : 'text-red-600'
-
-  return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4 ${isClosed ? 'opacity-60' : ''}`}>
-
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xl">{meta.icon}</span>
-          <div className="min-w-0">
-            <p className="font-semibold text-gray-900 text-sm truncate">{position.label}</p>
-            {position.partner && <p className="text-xs text-gray-400">{position.partner}</p>}
-            {position.instrument && (
-              <p className="text-xs text-gray-400">{position.instrument.isin ?? position.instrument.ticker}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color}`}>
-            {meta.label}
-          </span>
-          {position.assetSubType && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-              {position.assetSubType}
-            </span>
-          )}
-          {fiscal && (
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${fiscal.color}`}>
-              {fiscal.label}
-            </span>
-          )}
-          {isClosed && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-              Fermé
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Chiffres clés */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-0.5">Valeur actuelle</p>
-          <p className="text-base font-bold text-gray-900">{fmt(c.currentValueEur)}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-0.5">Investi</p>
-          <p className="text-base font-bold text-gray-700">{fmt(c.investedAmountEur)}</p>
-        </div>
-
-        {/* Plus-value (non nul et non LIQUIDITE) */}
-        {!isLiquidite && c.capitalGainEur != null && parseFloat(c.capitalGainEur) !== 0 && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-400 mb-0.5">Plus-value</p>
-            <p className={`text-sm font-semibold ${capitalGainColor}`}>{fmt(c.capitalGainEur)}</p>
-          </div>
-        )}
-
-        {/* Unités (BOURSE / CRYPTO) */}
-        {isBourseOrCrypto && c.units != null && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-400 mb-0.5">Quantité</p>
-            <p className="text-sm font-semibold text-gray-700">{fmtUnits(c.units)}</p>
-          </div>
-        )}
-
-        {/* Prix marché (BOURSE / CRYPTO) */}
-        {isBourseOrCrypto && position.instrument?.lastPrice != null && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-400 mb-0.5">Prix marché</p>
-            <p className="text-sm font-semibold text-gray-700">
-              {fmt(position.instrument.lastPrice, position.instrument.currency)}
-            </p>
-          </div>
-        )}
-
-        {/* Taux annuel (LIVRET) */}
-        {position.annualRate != null && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-400 mb-0.5">Taux annuel</p>
-            <p className="text-sm font-semibold text-gray-700">{position.annualRate} %</p>
-          </div>
-        )}
-
-        {/* Projection mensuelle */}
-        {c.monthlyIncomeProjectionEur != null && (
-          <div className="bg-emerald-50 rounded-lg p-3">
-            <p className="text-xs text-emerald-600 mb-0.5">Projection / mois</p>
-            <p className="text-sm font-semibold text-emerald-700">{fmt(c.monthlyIncomeProjectionEur)}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Adresse + date d'acquisition (IMMO_PHYSIQUE) */}
-      {position.address && (
-        <p className="text-xs text-gray-400 -mt-2 truncate">{position.address}</p>
-      )}
-      {position.acquisitionDate && (
-        <p className="text-xs text-gray-400 -mt-2">
-          Acquis le {new Date(position.acquisitionDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
-      )}
-
-      {/* Actions */}
-      {!isClosed && (
-        <div className="flex gap-1">
-          {isLiquidite ? (
-            <button onClick={() => onUpdateBalance(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Màj solde
-            </button>
-          ) : isImmoPhysique ? (
-            <button onClick={() => onUpdateEstimatedValue(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Màj valeur
-            </button>
-          ) : (
-            <button onClick={() => onViewOrders(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Mouvements
-            </button>
-          )}
-          <button onClick={() => onEdit(position)}
-            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
-            Modifier
-          </button>
-          <button onClick={() => onClose(position)}
-            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
-            Fermer
-          </button>
-          {confirmDelete ? (
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
-                className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
-                Confirmer
-              </button>
-              <button onClick={() => setConfirmDelete(false)}
-                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
-                Annuler
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)}
-              className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
-              Supprimer
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Page principale ────────────────────────────────────────────
 
 export default function PatrimoinePage({ currentUser }) {
   const [positions, setPositions]             = useState([])
@@ -367,30 +91,36 @@ export default function PatrimoinePage({ currentUser }) {
   }
 
   async function handleOrdersChanged() {
-    const refreshed = await getPositions()
-    setPositions(refreshed)
+    setPositions(await getPositions())
   }
 
-  const allCategories = ['ALL', ...Object.keys(CATEGORY_META)]
+  // ── Filtres ──────────────────────────────────────────────────────
+
+  const allCategories  = ['ALL', ...Object.keys(CATEGORY_META)]
   const categoryLabels = { ALL: 'Tous', ...Object.fromEntries(
     Object.entries(CATEGORY_META).map(([k, v]) => [k, v.label])
   )}
-
   const filtered = positions.filter(p => {
     if (!showClosed && p.status === 'CLOSED') return false
     if (filter !== 'ALL' && p.category !== filter) return false
     return true
   })
 
-  const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
+  // ── Synthèse ─────────────────────────────────────────────────────
 
+  const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
   const active = positions.filter(p => p.status === 'ACTIVE')
+
   const patrimoineBrut      = active.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur  ?? 0), 0)
   const patrimoineFinancier = active
     .filter(p => !IMMO_CATEGORIES.has(p.category))
     .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
-  const totalInvesti    = active.reduce((s, p) => s + parseFloat(p.computed?.investedAmountEur ?? 0), 0)
-  const totalPlusValue  = patrimoineBrut - totalInvesti
+  const totalInvesti   = active.reduce((s, p) => s + parseFloat(p.computed?.investedAmountEur ?? 0), 0)
+  const totalPlusValue = patrimoineBrut - totalInvesti
+  const totalProjection = active
+    .filter(p => p.computed?.monthlyIncomeProjectionEur != null)
+    .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
+
   const investiByCategory = Object.entries(
     active
       .filter(p => p.computed?.investedAmountEur != null && parseFloat(p.computed.investedAmountEur) !== 0)
@@ -399,6 +129,7 @@ export default function PatrimoinePage({ currentUser }) {
         return acc
       }, {})
   ).sort(([, a], [, b]) => b - a)
+
   const gainsByCategory = Object.entries(
     active
       .filter(p => p.computed?.capitalGainEur != null && parseFloat(p.computed.capitalGainEur) !== 0)
@@ -407,12 +138,9 @@ export default function PatrimoinePage({ currentUser }) {
         return acc
       }, {})
   ).sort(([, a], [, b]) => b - a)
-  const totalProjection = active
-    .filter(p => p.computed?.monthlyIncomeProjectionEur != null)
-    .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
 
   const jan1CurrentYear = `${new Date().getFullYear()}-01-01`
-  const ytdRefSnapshot = snapshots
+  const ytdRefSnapshot  = snapshots
     .filter(s => s.snapshotDate < jan1CurrentYear)
     .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0] ?? null
   const totalPlusValueYTD = ytdRefSnapshot != null

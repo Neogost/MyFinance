@@ -9,7 +9,7 @@ const CATEGORY_LABELS = {
   CRYPTO:        'Crypto',
   IMMO_PAPIER:   'Immo. Papier',
   IMMO_PHYSIQUE: 'Immo. Physique',
-  LIVRET:        'Livret / Épargne',
+  LIVRET:        'Livret',
   LIQUIDITE:     'Liquidités',
 }
 

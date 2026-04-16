@@ -115,9 +115,78 @@ sequenceDiagram
 
 ---
 
+---
+
+## 2. Graphique des plus-values par catégorie — `CapitalGainsByCategoryChart`
+
+### Objectif
+
+Visualiser la **répartition des plus-values latentes** du portefeuille de l'utilisateur par catégorie d'actif, sous forme de camembert (donut chart).
+
+### Source de données
+
+Le composant appelle directement `GET /api/positions?status=ACTIVE` (endpoint patrimoine existant) et agrège côté frontend le champ `computed.capitalGainEur` par catégorie.
+
+```
+plus-value catégorie = Σ position.computed.capitalGainEur  (pour toutes les positions actives de la catégorie)
+```
+
+Aucun endpoint dashboard dédié n'est nécessaire — les données proviennent du module patrimoine.
+
+### Règles d'affichage
+
+- Seules les catégories ayant une plus-value absolue > 0,01 € apparaissent dans le graphique.
+- Les tranches du camembert représentent la **valeur absolue** de la plus-value (pour permettre l'affichage des catégories en perte).
+- Les catégories en perte sont affichées avec une opacité réduite (0,45) et un label "en perte" dans la légende.
+- La légende affiche la valeur réelle signée (+/−) en vert (`text-emerald-700`) pour les gains, rouge (`text-red-600`) pour les pertes.
+- Un total général est affiché en bas de la légende.
+- Si aucune position active n'existe (ou toutes à zéro), un message d'invitation s'affiche à la place.
+
+### Couleurs par catégorie
+
+Les couleurs sont cohérentes avec les badges de `PatrimoinePage` (même palette Tailwind, valeur hex utilisée pour Recharts) :
+
+| Catégorie | Hex | Tailwind équivalent |
+|---|---|---|
+| `BOURSE` | `#2563eb` | `blue-600` |
+| `CRYPTO` | `#7c3aed` | `violet-700` |
+| `IMMO_PAPIER` | `#ea580c` | `orange-600` |
+| `IMMO_PHYSIQUE` | `#dc2626` | `red-600` |
+| `LIVRET` | `#06b6d4` | `cyan-500` (distinct de BOURSE) |
+| `LIQUIDITE` | `#d97706` | `amber-600` |
+
+> `LIVRET` utilise cyan plutôt que bleu pour le distinguer visuellement de `BOURSE` dans le camembert, les deux partageant `blue-700` dans les badges.
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/CapitalGainsByCategoryChart.jsx`
+
+**Librairie :** Recharts (`PieChart` + `Pie` + `Cell` + `Tooltip`)
+
+**Layout :** camembert (donut, `innerRadius=58`, `outerRadius=96`) à gauche + légende personnalisée à droite, en `flex-col md:flex-row`.
+
+**Largeur sur le dashboard :** `w-1/4` — la carte occupe un quart de la largeur disponible.
+
+### Flux de données
+
+```mermaid
+sequenceDiagram
+    participant F as Frontend (React)
+    participant C as PositionController
+    participant S as PositionService
+
+    F->>C: GET /api/positions?status=ACTIVE
+    C->>S: getPositions(user, ACTIVE)
+    S-->>C: List<PositionDto> (avec computed.capitalGainEur)
+    C-->>F: 200 OK
+    F-->>F: Agréger capitalGainEur par category
+    F-->>F: Recharts PieChart (donut) + légende signée
+```
+
+---
+
 ## À venir
 
 - Graphique patrimoine brut / net
-- Graphique plus-values
 - Graphique diversification sectorielle / géographique
 - Graphique suivi revenus et dépenses
