@@ -7,9 +7,10 @@ import PositionForm from './PositionForm'
 import OrderPanel from './OrderPanel'
 import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
+import SnapshotPanel from './SnapshotPanel'
 
 const CATEGORY_META = {
-  BOURSE:        { label: 'Bourse / ETF',    color: 'bg-blue-100 text-blue-700',    icon: '📈' },
+  BOURSE:        { label: 'Bourse',           color: 'bg-blue-100 text-blue-700',    icon: '📈' },
   CRYPTO:        { label: 'Crypto',           color: 'bg-purple-100 text-purple-700', icon: '🪙' },
   IMMO_PAPIER:   { label: 'Immo. Papier',     color: 'bg-orange-100 text-orange-700', icon: '🏗️' },
   IMMO_PHYSIQUE: { label: 'Immo. Physique',   color: 'bg-red-100 text-red-700',       icon: '🏠' },
@@ -22,6 +23,17 @@ const FISCAL_ENVELOPE_LABELS = {
   CTO:  { label: 'CTO',  color: 'bg-gray-100 text-gray-600' },
   PEA:  { label: 'PEA',  color: 'bg-emerald-100 text-emerald-700' },
   AV:   { label: 'AV',   color: 'bg-violet-100 text-violet-700' },
+}
+
+function Tooltip({ children }) {
+  return (
+    <span className="relative group inline-flex items-center ml-1 cursor-default">
+      <span className="text-gray-300 text-xs leading-none">ⓘ</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 leading-relaxed normal-case tracking-normal font-normal">
+        {children}
+      </span>
+    </span>
+  )
 }
 
 function fmt(value, currency = 'EUR') {
@@ -222,46 +234,45 @@ function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, on
 
       {/* Actions */}
       {!isClosed && (
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1">
           {isLiquidite ? (
             <button onClick={() => onUpdateBalance(position)}
-              className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Mettre à jour le solde
+              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+              Màj solde
             </button>
           ) : isImmoPhysique ? (
             <button onClick={() => onUpdateEstimatedValue(position)}
-              className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Mettre à jour la valeur
+              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+              Màj valeur
             </button>
           ) : (
             <button onClick={() => onViewOrders(position)}
-              className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
               Mouvements
             </button>
           )}
           <button onClick={() => onEdit(position)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
+            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
             Modifier
           </button>
           <button onClick={() => onClose(position)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
+            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
             Fermer
           </button>
           {confirmDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-red-600 font-medium">Supprimer ?</span>
+            <div className="flex items-center gap-1">
               <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
-                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
+                className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
                 Confirmer
               </button>
               <button onClick={() => setConfirmDelete(false)}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
+                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
                 Annuler
               </button>
             </div>
           ) : (
             <button onClick={() => setConfirmDelete(true)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
+              className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
               Supprimer
             </button>
           )}
@@ -279,8 +290,9 @@ export default function PatrimoinePage({ currentUser }) {
   const [balanceTarget, setBalanceTarget]     = useState(null)
   const [estimatedTarget, setEstimatedTarget] = useState(null)
   const [ordersTarget, setOrdersTarget]       = useState(null)
-  const [showPriceUpdate, setShowPriceUpdate]         = useState(false)
+  const [showPriceUpdate, setShowPriceUpdate]               = useState(false)
   const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
+  const [showSnapshots, setShowSnapshots]                   = useState(false)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
   const [loading, setLoading]                 = useState(true)
@@ -355,10 +367,31 @@ export default function PatrimoinePage({ currentUser }) {
     return true
   })
 
+  const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
+
   const active = positions.filter(p => p.status === 'ACTIVE')
-  const totalValeur     = active.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur  ?? 0), 0)
+  const patrimoineBrut      = active.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur  ?? 0), 0)
+  const patrimoineFinancier = active
+    .filter(p => !IMMO_CATEGORIES.has(p.category))
+    .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
   const totalInvesti    = active.reduce((s, p) => s + parseFloat(p.computed?.investedAmountEur ?? 0), 0)
-  const totalPlusValue  = totalValeur - totalInvesti
+  const totalPlusValue  = patrimoineBrut - totalInvesti
+  const investiByCategory = Object.entries(
+    active
+      .filter(p => p.computed?.investedAmountEur != null && parseFloat(p.computed.investedAmountEur) !== 0)
+      .reduce((acc, p) => {
+        acc[p.category] = (acc[p.category] ?? 0) + parseFloat(p.computed.investedAmountEur)
+        return acc
+      }, {})
+  ).sort(([, a], [, b]) => b - a)
+  const gainsByCategory = Object.entries(
+    active
+      .filter(p => p.computed?.capitalGainEur != null && parseFloat(p.computed.capitalGainEur) !== 0)
+      .reduce((acc, p) => {
+        acc[p.category] = (acc[p.category] ?? 0) + parseFloat(p.computed.capitalGainEur)
+        return acc
+      }, {})
+  ).sort(([, a], [, b]) => b - a)
   const totalProjection = active
     .filter(p => p.computed?.monthlyIncomeProjectionEur != null)
     .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
@@ -376,6 +409,12 @@ export default function PatrimoinePage({ currentUser }) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Patrimoine</h2>
         <div className="flex gap-2">
+          {isAdmin && (
+            <button onClick={() => setShowSnapshots(true)}
+              className="px-4 py-2 border border-violet-300 text-violet-700 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">
+              Relevés de patrimoine
+            </button>
+          )}
           {isAdmin && (
             <button onClick={() => setShowExchangeRateUpdate(true)}
               className="px-4 py-2 border border-teal-300 text-teal-700 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
@@ -397,25 +436,61 @@ export default function PatrimoinePage({ currentUser }) {
 
       {/* ── Synthèse globale ── */}
       {positions.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Valeur totale</p>
-            <p className="text-2xl font-bold text-gray-900">{fmt(totalValeur)}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-3">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+              Patrimoine Brut
+              <Tooltip>Somme de l'ensemble des actifs : bourse, crypto, livrets, liquidités, immobilier physique et papier.</Tooltip>
+            </p>
+            <p className="text-lg font-bold text-gray-900">{fmt(patrimoineBrut)}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total investi</p>
-            <p className="text-2xl font-bold text-gray-700">{fmt(totalInvesti)}</p>
+          <div className="bg-white rounded-xl shadow-sm p-3">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+              Patrimoine Financier
+              <Tooltip>Actifs financiers uniquement : bourse, crypto, livrets et liquidités. Hors immobilier physique et papier.</Tooltip>
+            </p>
+            <p className="text-lg font-bold text-gray-700">{fmt(patrimoineFinancier)}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Plus-value</p>
-            <p className={`text-2xl font-bold ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+          <div className="bg-white rounded-xl shadow-sm p-3">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+              Total investi
+              {investiByCategory.length > 0 && (
+                <Tooltip>
+                  <span className="block font-semibold mb-1">Ventilation par catégorie</span>
+                  {investiByCategory.map(([cat, amount]) => (
+                    <span key={cat} className="flex justify-between gap-3">
+                      <span>{CATEGORY_META[cat]?.label ?? cat}</span>
+                      <span>{fmt(amount)}</span>
+                    </span>
+                  ))}
+                </Tooltip>
+              )}
+            </p>
+            <p className="text-lg font-bold text-gray-700">{fmt(totalInvesti)}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-3">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+              Plus-value
+              {gainsByCategory.length > 0 && (
+                <Tooltip>
+                  <span className="block font-semibold mb-1">Ventilation par catégorie</span>
+                  {gainsByCategory.map(([cat, gain]) => (
+                    <span key={cat} className="flex justify-between gap-3">
+                      <span>{CATEGORY_META[cat]?.label ?? cat}</span>
+                      <span className={gain >= 0 ? 'text-emerald-300' : 'text-red-300'}>{fmt(gain)}</span>
+                    </span>
+                  ))}
+                </Tooltip>
+              )}
+            </p>
+            <p className={`text-lg font-bold ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
               {fmt(totalPlusValue)}
             </p>
           </div>
           {totalProjection > 0 && (
-            <div className="bg-emerald-50 rounded-xl shadow-sm p-5">
+            <div className="bg-emerald-50 rounded-xl shadow-sm p-3">
               <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1">Revenus / mois</p>
-              <p className="text-2xl font-bold text-emerald-700">{fmt(totalProjection)}</p>
+              <p className="text-lg font-bold text-emerald-700">{fmt(totalProjection)}</p>
             </div>
           )}
         </div>
@@ -449,7 +524,7 @@ export default function PatrimoinePage({ currentUser }) {
           <p className="text-sm">Cliquez sur « + Ajouter une position » pour commencer.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {filtered.map(position => (
             <PositionCard
               key={position.id}
@@ -510,6 +585,10 @@ export default function PatrimoinePage({ currentUser }) {
           onClose={() => setShowExchangeRateUpdate(false)}
           onSaved={fetchPositions}
         />
+      )}
+
+      {showSnapshots && (
+        <SnapshotPanel onClose={() => setShowSnapshots(false)} />
       )}
     </div>
   )

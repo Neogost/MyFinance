@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { getInstruments, createInstrument } from '../../api/patrimoine'
 
 const CATEGORIES = [
-  { value: 'BOURSE',        label: 'Bourse / ETF',      icon: '📈' },
+  { value: 'BOURSE',        label: 'Bourse',             icon: '📈' },
   { value: 'CRYPTO',        label: 'Crypto',             icon: '🪙' },
   { value: 'IMMO_PAPIER',   label: 'Immo. Papier',       icon: '🏗️' },
   { value: 'IMMO_PHYSIQUE', label: 'Immo. Physique',     icon: '🏠' },
