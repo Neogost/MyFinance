@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import logo from '../assets/logo.png'
 
 function NavBtn({ page, label, currentPage, onNavigate, onClose }) {
   return (
@@ -26,7 +27,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white shadow-sm">
-      <h1 className="text-lg font-bold text-gray-900">MyFinance</h1>
+      <img src={logo} alt="MyFinance" className="h-12 w-auto" />
 
       <nav className="flex items-center gap-1">
         <NavBtn page="dashboard" label="Tableau de bord" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
