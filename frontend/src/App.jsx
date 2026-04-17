@@ -9,6 +9,7 @@ import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
+import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import { logout } from './api/auth'
 
 export default function App() {
@@ -47,6 +48,8 @@ export default function App() {
         {currentPage === 'salary' && <SalaryContractPage />}
 
         {currentPage === 'other-incomes' && <OtherIncomePage />}
+
+        {currentPage === 'expenses' && <RecurringExpensePage />}
 
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 

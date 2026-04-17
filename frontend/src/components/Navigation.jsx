@@ -20,8 +20,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
   const [incomeOpen, setIncomeOpen] = useState(false)
   const [toolsOpen,  setToolsOpen]  = useState(false)
 
-  const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
-  const isToolsPage  = currentPage === 'tax-simulator'
+  const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
+  const isToolsPage   = currentPage === 'tax-simulator'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false) }
 
@@ -76,6 +76,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
             </>
           )}
         </div>
+
+        <NavBtn page="expenses" label="Dépenses" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
         {/* ── Menu Outils avec sous-menu ── */}
         <div className="relative">
