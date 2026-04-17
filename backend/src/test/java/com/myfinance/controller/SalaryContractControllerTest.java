@@ -52,7 +52,7 @@ class SalaryContractControllerTest {
                 28.20f, 23.12f, 197.37f, 161.86f,
                 90.25f, 90.25f,
                 // net d'impôt (null : profil fiscal non renseigné)
-                null, null, null, null,
+                null, null, null, null, null, 0f,
                 // super brut
                 65250f, 5437.50f, 286.18f, 40.88f
         );
@@ -168,7 +168,7 @@ class SalaryContractControllerTest {
                 1L, null, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
                 48000f, null, 13, 35f, 9.5f, 50f, false, null,
                 39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f,
-                null, null, null, null,
+                null, null, null, null, null, 0f,
                 69600f, 5353.85f, 305.26f, 43.61f);
 
         when(salaryContractService.update(eq(1L), any(), any())).thenReturn(updated);

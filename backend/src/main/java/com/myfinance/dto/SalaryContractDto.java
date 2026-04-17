@@ -43,6 +43,8 @@ public record SalaryContractDto(
         Float monthlyNetAfterTax,
         Float dailyNetAfterTax,
         Float hourlyNetAfterTax,
+        Float monthlyEstimatedTax,   // PAS mensuel (null si profil fiscal incomplet)
+        Float monthlyBenefits,       // avantages en nature mensuels (Σ ContractBenefit / paidMonths)
         // ── Super brut (coût employeur estimé — taux forfaitaire) ─────────
         Float annualSuperGross,
         Float monthlySuperGross,
@@ -108,6 +110,8 @@ public record SalaryContractDto(
                 annualNetAfterTax != null ? annualNetAfterTax / c.getPaidMonthsPerYear() : null,
                 annualNetAfterTax != null ? annualNetAfterTax / 228f : null,
                 annualNetAfterTax != null ? annualNetAfterTax / workingHours : null,
+                estimatedTax != null ? estimatedTax / c.getPaidMonthsPerYear() : null,
+                annualBenefits / c.getPaidMonthsPerYear(),
                 // super brut
                 annualSuperGross,
                 annualSuperGross / c.getPaidMonthsPerYear(),

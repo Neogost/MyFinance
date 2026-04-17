@@ -119,6 +119,11 @@ public class RecurringExpenseService {
                 .findFirst()
                 .orElse(null);
 
+        Float breakdownNetImposable = null;
+        Float breakdownEstimatedTax = null;
+        Float breakdownBenefits = null;
+        Float breakdownMealVoucherEmployer = null;
+
         if (active != null) {
             if (active.monthlyNetAfterTax() != null) {
                 monthlyNetIncome = active.monthlyNetAfterTax();
@@ -127,6 +132,13 @@ public class RecurringExpenseService {
                 monthlyNetIncome = active.monthlyNetImposable();
                 incomeSource = "NET_IMPOSABLE";
             }
+            breakdownNetImposable = active.monthlyNetImposable();
+            breakdownEstimatedTax = active.monthlyEstimatedTax();
+            breakdownBenefits = active.monthlyBenefits() != null && active.monthlyBenefits() > 0
+                    ? active.monthlyBenefits() : null;
+            breakdownMealVoucherEmployer = active.employerMonthlyMealVoucherCost() != null
+                    && active.employerMonthlyMealVoucherCost() > 0
+                    ? active.employerMonthlyMealVoucherCost() : null;
         }
 
         float income = monthlyNetIncome != null ? monthlyNetIncome : 0f;
@@ -140,7 +152,11 @@ public class RecurringExpenseService {
                 totalAnnual,
                 savingsCapacity,
                 savingsRate,
-                byCategory
+                byCategory,
+                breakdownNetImposable,
+                breakdownEstimatedTax,
+                breakdownBenefits,
+                breakdownMealVoucherEmployer
         );
     }
 
