@@ -1,17 +1,24 @@
 export const CATEGORY_META = {
   BOURSE:        { label: 'Bourse',          color: 'bg-blue-100 text-blue-700',     chartColor: '#2563eb', icon: '📈' },
-  CRYPTO:        { label: 'Crypto',          color: 'bg-purple-100 text-purple-700', chartColor: '#7c3aed', icon: '🪙' },
-  IMMO_PAPIER:   { label: 'Immo. Papier',    color: 'bg-orange-100 text-orange-700', chartColor: '#ea580c', icon: '🏗️' },
-  IMMO_PHYSIQUE: { label: 'Immo. Physique',  color: 'bg-red-100 text-red-700',       chartColor: '#dc2626', icon: '🏠' },
-  LIVRET:        { label: 'Livret',          color: 'bg-blue-100 text-blue-700',     chartColor: '#06b6d4', icon: '🏦' },
-  LIQUIDITE:     { label: 'Liquidités',      color: 'bg-amber-100 text-amber-700',   chartColor: '#d97706', icon: '💵' },
+  CRYPTO:        { label: 'Crypto',          color: 'bg-yellow-100 text-yellow-600', chartColor: '#eab308', icon: '🪙' },
+  IMMO_PAPIER:   { label: 'Immo. Papier',    color: 'bg-gray-100 text-gray-500',     chartColor: '#9ca3af', icon: '🏗️' },
+  IMMO_PHYSIQUE: { label: 'Immo. Physique',  color: 'bg-gray-100 text-gray-600',     chartColor: '#6b7280', icon: '🏠' },
+  LIVRET:        { label: 'Livret',          color: 'bg-green-100 text-green-700',   chartColor: '#16a34a', icon: '🏦' },
+  LIQUIDITE:     { label: 'Liquidités',      color: 'bg-green-100 text-green-600',   chartColor: '#4ade80', icon: '💵' },
 }
 
 export const FISCAL_ENVELOPE_LABELS = {
-  NONE: null,
-  CTO:  { label: 'CTO', formLabel: 'CTO — Compte Titres Ordinaire', color: 'bg-gray-100 text-gray-600' },
-  PEA:  { label: 'PEA', formLabel: 'PEA — Plan Épargne Actions',    color: 'bg-emerald-100 text-emerald-700' },
-  AV:   { label: 'AV',  formLabel: 'AV — Assurance Vie',            color: 'bg-violet-100 text-violet-700' },
+  NONE:     { label: 'Hors enveloppe', formLabel: 'Hors enveloppe fiscale',        color: 'bg-gray-100 text-gray-500',     chartColor: '#9ca3af' },
+  CTO:      { label: 'CTO',            formLabel: 'CTO — Compte Titres Ordinaire', color: 'bg-gray-100 text-gray-600',     chartColor: '#64748b' },
+  PEA:      { label: 'PEA',            formLabel: 'PEA — Plan Épargne Actions',    color: 'bg-emerald-100 text-emerald-700', chartColor: '#059669' },
+  AV:       { label: 'AV',             formLabel: 'AV — Assurance Vie',            color: 'bg-violet-100 text-violet-700', chartColor: '#7c3aed' },
+  FLAT_TAX: { label: 'Flat taxe',      formLabel: 'Flat taxe (30 % PFU)',          color: 'bg-orange-100 text-orange-700', chartColor: '#ea580c' },
+}
+
+export const FISCAL_ENVELOPES_BY_CATEGORY = {
+  BOURSE:      ['CTO', 'PEA', 'AV'],
+  CRYPTO:      ['FLAT_TAX'],
+  IMMO_PAPIER: ['CTO', 'AV'],
 }
 
 export const ASSET_SUB_TYPES = [

@@ -4,5 +4,6 @@ public enum FiscalEnvelope {
     CTO,
     PEA,
     AV,
+    FLAT_TAX,
     NONE
 }

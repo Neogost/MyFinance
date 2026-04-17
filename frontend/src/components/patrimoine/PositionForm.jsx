@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getInstruments, createInstrument } from '../../api/patrimoine'
-import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, ASSET_SUB_TYPES, OWNERSHIP_TYPES } from './constants'
+import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, FISCAL_ENVELOPES_BY_CATEGORY, ASSET_SUB_TYPES, OWNERSHIP_TYPES } from './constants'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 const labelCls = 'text-sm font-semibold text-gray-700'
@@ -262,7 +262,8 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
   const isLivret       = category === 'LIVRET'
   const isLiquidite    = category === 'LIQUIDITE'
   const hasInstrument  = isBourse || isCrypto
-  const hasFiscal      = isBourse || isLivret || isImmoPapier
+  const hasFiscal      = isBourse || isCrypto || isImmoPapier
+  const availableEnvelopes = FISCAL_ENVELOPES_BY_CATEGORY[category] ?? []
   const hasProjection  = !isLiquidite
   const hasPartner     = !isImmoPhysique
 
@@ -393,11 +394,9 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                   <label className={labelCls}>Enveloppe fiscale</label>
                   <select name="fiscalEnvelope" value={form.fiscalEnvelope} onChange={handleChange} className={inputCls}>
                     <option value="NONE">Aucune</option>
-                    {Object.entries(FISCAL_ENVELOPE_LABELS)
-                      .filter(([, v]) => v !== null)
-                      .map(([value, { formLabel }]) => (
-                        <option key={value} value={value}>{formLabel}</option>
-                      ))}
+                    {availableEnvelopes.map(value => (
+                      <option key={value} value={value}>{FISCAL_ENVELOPE_LABELS[value].formLabel}</option>
+                    ))}
                   </select>
                 </div>
               )}
