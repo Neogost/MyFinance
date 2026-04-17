@@ -6,6 +6,7 @@ import ChangePasswordForm from './components/users/ChangePasswordForm'
 import SalaryContractPage from './components/income/SalaryContractPage'
 import OtherIncomePage from './components/income/OtherIncomePage'
 import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
+import BilanFinancierPage from './components/tools/BilanFinancierPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -55,6 +56,8 @@ export default function App() {
         {currentPage === 'possessions' && <PossessionPage />}
 
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
+
+        {currentPage === 'bilan-financier' && <BilanFinancierPage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 

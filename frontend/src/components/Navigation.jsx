@@ -21,7 +21,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
   const [toolsOpen,  setToolsOpen]  = useState(false)
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
-  const isToolsPage   = currentPage === 'tax-simulator'
+  const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false) }
 
@@ -108,6 +108,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout }) 
                   }`}
                 >
                   Simulateur des impôts
+                </button>
+                <button
+                  onClick={() => { onNavigate('bilan-financier'); setToolsOpen(false) }}
+                  className={`w-full text-left px-4 py-2 text-sm transition ${
+                    currentPage === 'bilan-financier'
+                      ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Bilan financier
                 </button>
               </div>
             </>
