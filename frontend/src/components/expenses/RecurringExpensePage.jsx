@@ -20,44 +20,28 @@ function fmt(n) {
   return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—'
 }
 
-function SavingsCard({ label, value, sub, color, unit = '€', tooltip }) {
-  const [showTooltip, setShowTooltip] = useState(false)
+function SavingsCard({ label, value, sub, color, unit = '€', labelTooltip }) {
 
   return (
     <div
       className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1 relative"
-      onMouseEnter={() => tooltip && setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
     >
-      <p className="text-xs text-gray-400 uppercase tracking-wide flex items-center gap-1">
+      <p className="text-xs text-gray-400 tracking-wide flex items-center gap-1">
         {label}
-        {tooltip && <span className="text-gray-300 text-xs">ⓘ</span>}
+        {labelTooltip && (
+          <span className="relative group inline-flex items-center">
+            <span className="cursor-default text-gray-300 hover:text-gray-500 transition text-xs leading-none">ⓘ</span>
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg bg-gray-800 text-white text-xs p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-normal leading-relaxed">
+              {labelTooltip}
+            </span>
+          </span>
+        )}
       </p>
       <p className={`text-2xl font-bold ${color ?? 'text-gray-900'}`}>
         {value != null ? `${fmt(value)} ${unit}` : '—'}
       </p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
 
-      {showTooltip && tooltip && (
-        <div className="absolute top-full left-0 mt-2 z-30 bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-56">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Par catégorie</p>
-          <div className="flex flex-col gap-1.5">
-            {tooltip.map(({ category, monthlyAmount }) => {
-              const meta = CATEGORY_META[category] ?? CATEGORY_META.AUTRE
-              return (
-                <div key={category} className="flex items-center justify-between gap-3">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${meta.color}`}>
-                    {meta.label}
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                    {fmt(monthlyAmount)} €
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -100,7 +84,7 @@ export default function RecurringExpensePage() {
     await deleteExpense(exp.id)
     setExpenses(es => es.filter(e => e.id !== exp.id))
     // Rafraîchir le résumé
-    try { setSummary(await getExpenseSummary()) } catch {}
+    setSummary(await getExpenseSummary()) 
   }
 
   const filtered = filter === 'ALL' ? expenses : expenses.filter(e => e.category === filter)
@@ -132,64 +116,104 @@ export default function RecurringExpensePage() {
         </button>
       </div>
 
-      {/* ── Résumé capacité d'épargne ── */}
+      {/* ── Résumé + Répartition ── */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <SavingsCard
-            label="Revenus nets mensuels"
-            value={summary.monthlyNetIncome}
-            sub={summary.incomeSource === 'NET_IMPOSABLE' ? '⚠ Net imposable (profil fiscal incomplet)' : summary.incomeSource === 'NONE' ? 'Aucun contrat actif' : null}
-            color={summary.incomeSource === 'NONE' ? 'text-gray-400' : undefined}
-          />
-          <SavingsCard
-            label="Total dépenses / mois"
-            value={summary.totalMonthlyExpenses}
-            sub={summary.totalAnnualExpenses != null ? `${fmt(summary.totalAnnualExpenses)} €/an` : null}
-            tooltip={summary.byCategory?.length > 0 ? summary.byCategory : null}
-          />
-          <SavingsCard
-            label="Capacité d'épargne"
-            value={summary.savingsCapacity}
-            sub={summary.savingsRate != null ? `Taux d'épargne : ${summary.savingsRate.toFixed(1)} %` : null}
-            color={savingsColor}
-          />
-          <SavingsCard
-            label="Taux d'épargne"
-            value={summary.savingsRate != null ? summary.savingsRate.toFixed(1) : null}
-            unit="%"
-            color={summary.savingsRate != null && summary.savingsRate >= 0 ? 'text-green-600' : 'text-red-600'}
-          />
-        </div>
-      )}
-
-      {/* ── Répartition par catégorie (mini barres) ── */}
-      {summary?.byCategory?.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-5 mb-6">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
-          <div className="flex flex-col gap-2">
-            {summary.byCategory.map(cat => {
-              const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
-              const pct = summary.totalMonthlyExpenses > 0
-                ? (cat.monthlyAmount / summary.totalMonthlyExpenses) * 100
-                : 0
-              return (
-                <div key={cat.category} className="flex items-center gap-3">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color} w-36 text-center shrink-0`}>
-                    {meta.label}
-                  </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2">
-                    <div
-                      className={`${meta.dot} h-2 rounded-full`}
-                      style={{ width: `${Math.min(pct, 100).toFixed(1)}%` }}
-                    />
+        <div className="flex gap-4 mb-6 items-stretch">
+          {/* Bloc 2×2 KPIs — moitié gauche */}
+          <div className="grid grid-cols-2 gap-4 w-1/2">
+            <SavingsCard
+              label="Revenus nets mensuels"
+              value={summary.monthlyNetIncome}
+              sub={summary.incomeSource === 'NET_IMPOSABLE' ? '⚠ Net imposable (profil fiscal incomplet)' : summary.incomeSource === 'NONE' ? 'Aucun contrat actif' : null}
+              color={summary.incomeSource === 'NONE' ? 'text-gray-400' : undefined}
+              labelTooltip={
+                summary.incomeSource === 'NONE' ? (
+                  <span>Aucun contrat salarial actif trouvé.</span>
+                ) : (
+                  <div className="space-y-1.5">
+                    {summary.breakdownNetImposable != null && (
+                      <div className="flex justify-between gap-6">
+                        <span>Net imposable</span>
+                        <span className="font-medium">{fmt(summary.breakdownNetImposable)} €</span>
+                      </div>
+                    )}
+                    {summary.breakdownEstimatedTax != null ? (
+                      <div className="flex justify-between gap-6 text-red-300">
+                        <span>− PAS estimé</span>
+                        <span className="font-medium">−{fmt(summary.breakdownEstimatedTax)} €</span>
+                      </div>
+                    ) : (
+                      <div className="text-yellow-300 text-xs">⚠ Profil fiscal incomplet (PAS non déduit)</div>
+                    )}
+                    {summary.breakdownBenefits != null && (
+                      <div className="flex justify-between gap-6 text-green-300">
+                        <span>+ Avantages en nature</span>
+                        <span className="font-medium">+{fmt(summary.breakdownBenefits)} €</span>
+                      </div>
+                    )}
+                    {summary.breakdownMealVoucherEmployer != null && (
+                      <div className="flex justify-between gap-6 text-blue-300">
+                        <span>+ TR part employeur</span>
+                        <span className="font-medium">+{fmt(summary.breakdownMealVoucherEmployer)} €</span>
+                      </div>
+                    )}
+                    <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
+                      <span>= Revenu net mensuel</span>
+                      <span>{fmt(summary.monthlyNetIncome)} €</span>
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-600 w-24 text-right shrink-0">
-                    {fmt(cat.monthlyAmount)} €/mois
-                  </span>
-                </div>
-              )
-            })}
+                )
+              }
+            />
+            <SavingsCard
+              label="Total dépenses / mois"
+              value={summary.totalMonthlyExpenses}
+              sub={summary.totalAnnualExpenses != null ? `${fmt(summary.totalAnnualExpenses)} €/an` : null}
+            />
+            <SavingsCard
+              label="Capacité d'épargne"
+              value={summary.savingsCapacity}
+              sub={summary.savingsRate != null ? `Taux d'épargne : ${summary.savingsRate.toFixed(1)} %` : null}
+              color={savingsColor}
+            />
+            <SavingsCard
+              label="Taux d'épargne"
+              value={summary.savingsRate != null ? summary.savingsRate.toFixed(1) : null}
+              unit="%"
+              color={summary.savingsRate == null ? 'text-gray-900' : summary.savingsRate >= 30 ? 'text-green-600' : summary.savingsRate >= 10 ? 'text-orange-500' : 'text-red-600'}
+            />
           </div>
+
+          {/* Répartition par catégorie — moitié droite */}
+          {summary.byCategory?.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
+              <div className="flex flex-col gap-2">
+                {summary.byCategory.map(cat => {
+                  const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
+                  const pct = summary.totalMonthlyExpenses > 0
+                    ? (cat.monthlyAmount / summary.totalMonthlyExpenses) * 100
+                    : 0
+                  return (
+                    <div key={cat.category} className="flex items-center gap-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color} w-36 text-center shrink-0`}>
+                        {meta.label}
+                      </span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-2">
+                        <div
+                          className={`${meta.dot} h-2 rounded-full`}
+                          style={{ width: `${Math.min(pct, 100).toFixed(1)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-gray-600 w-24 text-right shrink-0">
+                        {fmt(cat.monthlyAmount)} €/mois
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -4,7 +4,7 @@ import {
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
   getSnapshots,
 } from '../../api/patrimoine'
-import { CATEGORY_META } from './constants'
+import { CATEGORY_META, PROJECTION_RATES } from './constants'
 import { fmt, Tooltip } from './utils'
 import PositionCard from './PositionCard'
 import { BalanceEditModal, EstimatedValueModal } from './ValueEditModals'
@@ -147,6 +147,26 @@ export default function PatrimoinePage({ currentUser }) {
       }, {})
   ).sort(([, a], [, b]) => b - a)
 
+  // Projection annuelle : valeur actuelle × taux moyen par catégorie
+  const projectionByCategory = CATEGORY_ORDER
+    .map(cat => {
+      const rate  = PROJECTION_RATES[cat] ?? 0
+      const value = active
+        .filter(p => p.category === cat)
+        .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+      return { cat, rate, value, projected: value * rate }
+    })
+    .filter(({ projected }) => projected > 0)
+
+  const totalProjectionAnnuelle = projectionByCategory.reduce((s, { projected }) => s + projected, 0)
+
+  // Prorata : jours restants dans l'année en cours
+  const today       = new Date()
+  const endOfYear   = new Date(today.getFullYear(), 11, 31)
+  const daysInYear  = today.getFullYear() % 4 === 0 ? 366 : 365
+  const daysLeft    = Math.round((endOfYear - today) / 86_400_000) + 1
+  const projectionProrataYTD = totalProjectionAnnuelle * (daysLeft / daysInYear)
+
   const jan1CurrentYear = `${new Date().getFullYear()}-01-01`
   const ytdRefSnapshot  = snapshots
     .filter(s => s.snapshotDate < jan1CurrentYear)
@@ -195,7 +215,7 @@ export default function PatrimoinePage({ currentUser }) {
 
       {/* ── Synthèse globale ── */}
       {positions.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
               Patrimoine Brut
@@ -261,6 +281,25 @@ export default function PatrimoinePage({ currentUser }) {
             <div className="bg-emerald-50 rounded-xl shadow-sm p-3">
               <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1">Revenus / mois</p>
               <p className="text-lg font-bold text-emerald-700">{fmt(totalProjection)}</p>
+            </div>
+          )}
+          {totalProjectionAnnuelle > 0 && (
+            <div className="bg-amber-50 rounded-xl shadow-sm p-3">
+              <p className="text-xs text-amber-600 uppercase tracking-wide mb-1 flex items-center">
+                Projection {today.getFullYear()}
+                <Tooltip>
+                  <span className="block font-semibold mb-1">Plus-value estimée ({daysLeft} j restants)</span>
+                  {projectionByCategory.map(({ cat, rate, projected }) => (
+                    <span key={cat} className="flex justify-between gap-3">
+                      <span>{CATEGORY_META[cat]?.label ?? cat} ({(rate * 100).toFixed(1)} %)</span>
+                      <span className="text-amber-300">+{fmt(projected)}</span>
+                    </span>
+                  ))}
+                  <span className="block mt-2 text-gray-400 text-xs">Taux annuels × valeur actuelle, proratisé sur {daysLeft} j. Estimation indicative.</span>
+                </Tooltip>
+              </p>
+              <p className="text-lg font-bold text-amber-700">+{fmt(projectionProrataYTD)}</p>
+              <p className="text-xs text-amber-500 mt-0.5">annuel : +{fmt(totalProjectionAnnuelle)}</p>
             </div>
           )}
         </div>

@@ -37,3 +37,14 @@ export const OWNERSHIP_TYPES = [
   { value: 'NUE_PROPRIETE',    label: 'Nue-propriété' },
   { value: 'USUFRUIT',         label: 'Usufruit' },
 ]
+
+// Taux de rendement annuel moyen par catégorie — utilisés pour la projection patrimoniale
+// Sources : rendements historiques long terme (MSCI World, Livret A, SCPI, indices immo)
+export const PROJECTION_RATES = {
+  BOURSE:        0.07,   // Rendement moyen MSCI World long terme
+  CRYPTO:        0.15,   // Estimation conservative — volatilité extrême
+  IMMO_PAPIER:   0.05,   // Rendement moyen SCPI (dividendes + appréciation)
+  IMMO_PHYSIQUE: 0.02,   // Appréciation immobilière française moyenne
+  LIVRET:        0.024,  // Taux Livret A en vigueur
+  LIQUIDITE:     0,      // Pas de rendement attendu
+}
