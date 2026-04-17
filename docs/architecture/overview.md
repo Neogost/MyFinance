@@ -45,6 +45,13 @@ mindmap
         Saisie mensuelle ou annuelle
         Répartition colocation
         Capacité d'épargne
+    Passifs
+        Véhicules
+        Informatique
+        Électroménager
+        Mobilier
+        Collection
+        Loisirs
     Patrimoine
         Bourse
         Crypto-monnaie
@@ -119,7 +126,17 @@ Saisie des charges fixes ou périodiques (loyer, abonnements, assurances…) en 
 
 ---
 
-### 3.5 Patrimoine
+### 3.5 Passifs (Grandes possessions)
+
+Recensement des biens matériels importants (voiture, informatique, mobilier, collection, loisirs…) pour compléter le bilan patrimonial de l'utilisateur. Chaque bien est suivi avec son prix d'achat et une **valeur actuelle estimée** — calculée automatiquement par un modèle de décote exponentielle par catégorie, ou saisie manuellement. Le module distingue la valeur brute d'achat de la valeur actuelle dépréciée, et expose une synthèse globale (décote cumulée, taux de dépréciation).
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/passifs.md`](passifs.md) |
+
+---
+
+### 3.6 Patrimoine
 
 Suivi de l'ensemble des actifs financiers, organisés en six catégories. Repose sur un modèle **Position → Ordres** : chaque position agrège les transactions successives pour calculer la valorisation en temps réel. Un relevé mensuel historise la valeur du patrimoine mois par mois.
 
@@ -137,7 +154,7 @@ Suivi de l'ensemble des actifs financiers, organisés en six catégories. Repose
 
 ---
 
-### 3.6 Outils
+### 3.7 Outils
 
 #### Simulateur d'impôts (IRPP)
 
@@ -150,7 +167,7 @@ Estimation de l'impôt sur le revenu à partir du profil fiscal de l'utilisateur
 
 ---
 
-### 3.7 Fonctionnalités d'administration
+### 3.8 Fonctionnalités d'administration
 
 Accessibles uniquement au rôle `ADMIN`.
 

@@ -237,6 +237,16 @@ frontend/src/
 | `PUT` | `/api/recurring-expenses/{id}` | Authentifié | Modifier une dépense (ownership vérifié) |
 | `DELETE` | `/api/recurring-expenses/{id}` | Authentifié | Supprimer une dépense (ownership vérifié) |
 
+### Passifs (grandes possessions)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/possessions` | Authentifié | Liste ses possessions (avec valeurs calculées) |
+| `GET` | `/api/possessions/{id}` | Authentifié | Détail d'une possession |
+| `GET` | `/api/possessions/summary` | Authentifié | Synthèse : totaux + répartition par catégorie |
+| `POST` | `/api/possessions` | Authentifié | Créer une possession |
+| `PUT` | `/api/possessions/{id}` | Authentifié | Modifier une possession (ownership vérifié) |
+| `DELETE` | `/api/possessions/{id}` | Authentifié | Supprimer une possession (ownership vérifié) |
+
 ### Patrimoine — Snapshots (admin — gestion manuelle)
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -385,6 +395,14 @@ npm run dev
   - Tests : 347 tests (RecurringExpenseServiceTest +16, RecurringExpenseControllerTest +13)
   - Documentation : `docs/architecture/recurring-expenses.md`, `docs/api/recurring-expenses.md`
   - ⚠ Migration SQLite requise sur la base prod (ajout de `ALIMENTATION` à la CHECK constraint de `recurring_expenses.category`)
+- **Passifs (grandes possessions)** :
+  - Entité `Possession` (table `possessions`) avec `PossessionCategoryEnum` (7 catégories : VEHICULE, INFORMATIQUE, ELECTROMENAGER, MOBILIER, COLLECTION, LOISIRS, AUTRE)
+  - Modèle de décote exponentielle par catégorie (taux 0 %–30 %/an) avec valeur résiduelle minimale — calcul dans `PossessionDto.from()` via factory statique
+  - Override manuel : si `estimatedCurrentValue` est renseigné, il prend le pas sur la projection automatique
+  - `GET /api/possessions/summary` : totaux globaux (prix achat, valeur actuelle, décote €/%) + répartition par catégorie
+  - Frontend : `PossessionPage` (4 KPIs, barres de répartition, liste groupée par catégorie avec badge « Manuel »), `PossessionForm` (aperçu projection temps réel, indicateur override), bouton **Passifs** dans la navigation
+  - Tests : 380 tests (PossessionServiceTest +18, PossessionControllerTest +15)
+  - Documentation : `docs/architecture/passifs.md`, `docs/api/possessions.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

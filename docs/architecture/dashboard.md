@@ -325,3 +325,52 @@ Appelle `GET /api/recurring-expenses/summary` (endpoint dépenses existant) qui 
 **Fichier :** `frontend/src/components/dashboard/ExpensesByCategoryChart.jsx`
 
 **Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)
+
+---
+
+## 7. Répartition des passifs par catégorie — `PassifsByCategoryChart`
+
+### Objectif
+
+Visualiser la **valeur actuelle estimée des grandes possessions** (passifs) par catégorie, et rappeler la décote cumulée depuis l'achat.
+
+### Positionnement sur le dashboard
+
+Sur la même ligne que « Détail mensuel par bulletins » (`SalaryEvolutionChart`) : le graphique salarial occupe **2/3** de la largeur, ce chart **1/3** — layout `grid-cols-3`, même principe que la ligne « Évolution salariale annuelle » + « Répartition des dépenses ».
+
+### Source de données
+
+Appelle `GET /api/possessions/summary` (endpoint passifs) qui retourne :
+- `byCategory[]` : liste des catégories avec `totalEffectiveValue`, `totalPurchasePrice`, `totalDepreciation`
+- `totalEffectiveValue` : valeur actuelle totale
+- `totalDepreciation` : décote cumulée totale (€)
+- `globalDepreciationRate` : taux de décote global (%)
+
+### Règles d'affichage
+
+- Seules les catégories avec une `totalEffectiveValue` > 0,01 € apparaissent.
+- Catégories triées par valeur actuelle décroissante.
+- La légende affiche le % (part dans la valeur actuelle totale) et la valeur actuelle par catégorie.
+- En pied : valeur actuelle totale + décote cumulée en rouge (montant et %).
+- La décote n'est affichée que si elle est > 0.
+- Le tooltip détaille pour chaque tranche : valeur actuelle, % et décote cumulée de la catégorie.
+
+### Couleurs par catégorie
+
+| Catégorie | Hex | Note |
+|-----------|-----|------|
+| `VEHICULE` | `#818cf8` | indigo-400 |
+| `INFORMATIQUE` | `#22d3ee` | cyan-400 |
+| `ELECTROMENAGER` | `#fbbf24` | amber-400 |
+| `MOBILIER` | `#84cc16` | lime-400 |
+| `COLLECTION` | `#f472b6` | pink-400 |
+| `LOISIRS` | `#2dd4bf` | teal-400 |
+| `AUTRE` | `#9ca3af` | gray-400 |
+
+> Les couleurs sont cohérentes avec les badges de `PossessionPage` (`CATEGORY_META`).
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/PassifsByCategoryChart.jsx`
+
+**Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)

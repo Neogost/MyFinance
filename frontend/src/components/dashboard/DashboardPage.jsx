@@ -3,6 +3,7 @@ import CapitalGainsByCategoryChart from './CapitalGainsByCategoryChart'
 import PatrimoineByCategoryChart from './PatrimoineByCategoryChart'
 import PatrimoineByEnvelopeChart from './PatrimoineByEnvelopeChart'
 import ExpensesByCategoryChart from './ExpensesByCategoryChart'
+import PassifsByCategoryChart from './PassifsByCategoryChart'
 import SalaryAnnualBarChart from './SalaryAnnualBarChart'
 
 function SectionTitle({ title, subtitle }) {
@@ -49,12 +50,22 @@ export default function DashboardPage({ user }) {
           </div>
         </div>
 
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-800 mb-1">Détail mensuel par bulletins</h3>
-          <p className="text-xs text-gray-400 mb-6">
-            Brut, net fiscal, net versé et prélèvement à la source — données issues des bulletins de paie saisis.
-          </p>
-          <SalaryEvolutionChart />
+        <div className="mt-6 grid grid-cols-3 gap-6">
+          <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">Détail mensuel par bulletins</h3>
+            <p className="text-xs text-gray-400 mb-6">
+              Brut, net fiscal, net versé et prélèvement à la source — données issues des bulletins de paie saisis.
+            </p>
+            <SalaryEvolutionChart />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des passifs</h3>
+            <p className="text-xs text-gray-400 mb-6">
+              Valeur actuelle estimée par catégorie de possession, avec décote cumulée depuis l'achat.
+            </p>
+            <PassifsByCategoryChart />
+          </div>
         </div>
       </div>
 
