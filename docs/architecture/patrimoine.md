@@ -520,6 +520,41 @@ classDiagram
 
 ---
 
+## Projection patrimoniale annuelle
+
+La projection est calculée **entièrement côté frontend**, sans endpoint dédié, à partir des positions actives et de taux de rendement moyens par catégorie définis dans `constants.js`.
+
+### Taux appliqués (`PROJECTION_RATES`)
+
+| Catégorie | Taux annuel | Base de référence |
+|-----------|-------------|-------------------|
+| `BOURSE` | 7,0 % | Rendement long terme MSCI World |
+| `CRYPTO` | 15,0 % | Estimation conservative — volatilité extrême |
+| `IMMO_PAPIER` | 5,0 % | Rendement moyen SCPI (dividendes + appréciation) |
+| `IMMO_PHYSIQUE` | 2,0 % | Appréciation immobilière française moyenne |
+| `LIVRET` | 2,4 % | Taux Livret A en vigueur |
+| `LIQUIDITE` | 0 % | Pas de rendement attendu |
+
+### Calcul
+
+```
+projectionAnnuelle = Σ(position.currentValueEur × PROJECTION_RATES[category])
+                     pour toutes les positions ACTIVE
+
+projectionProrataYTD = projectionAnnuelle × (joursRestantsDansLAnnée / joursInYear)
+```
+
+### Affichage
+
+Un bloc **« Projection [année] »** est affiché dans la synthèse globale si `projectionAnnuelle > 0`. Il indique :
+- Valeur principale : plus-value proratisée sur les jours restants dans l'année en cours
+- Sous-texte : projection annuelle complète (12 mois)
+- Tooltip : détail par catégorie avec le taux appliqué et un avertissement "Estimation indicative"
+
+> Les taux sont indicatifs et ne constituent pas un conseil en investissement.
+
+---
+
 ## Lien avec les Revenus Complémentaires
 
 Si `position.includeInIncomeProjection = true`, la projection mensuelle des intérêts de la position est rendue disponible pour alimenter le module **Revenus Complémentaires** (`OtherIncome`). Ce lien est optionnel et activable par position.

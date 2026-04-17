@@ -115,8 +115,6 @@ sequenceDiagram
 
 ---
 
----
-
 ## 2. Graphique des plus-values par catégorie — `CapitalGainsByCategoryChart`
 
 ### Objectif
@@ -185,8 +183,145 @@ sequenceDiagram
 
 ---
 
-## À venir
+---
 
-- Graphique patrimoine brut / net
-- Graphique diversification sectorielle / géographique
-- Graphique suivi revenus et dépenses
+## 3. Graphique d'évolution salariale annuelle — `SalaryAnnualBarChart`
+
+### Objectif
+
+Visualiser l'évolution du salaire **par année** sous forme de barres empilées, en distinguant les charges sociales, l'impôt estimé et le net d'impôt.
+
+### Source de données
+
+Le composant appelle `GET /api/salary-contracts` puis `GET /api/salary-contracts/{id}/revisions` pour chaque contrat. Le calcul est entièrement **côté frontend**.
+
+### Algorithme de construction
+
+Pour chaque année couverte par au moins un contrat :
+
+1. Sélectionner le contrat actif au 31 décembre de l'année (le plus récent si chevauchement).
+2. Identifier la révision salariale active au 31 décembre (`MAX(effectiveDate ≤ 31/12/année)`).
+3. Appliquer le salaire brut de la révision ; à défaut, celui du contrat de base.
+4. Extrapoler `netImposable` et `netAfterTax` par proportionnalité (les ratios du contrat de base sont appliqués au brut révisé).
+
+### Segments empilés
+
+| Segment | Couleur | Calcul |
+|---------|---------|--------|
+| Net d'impôt (`segBase`) | `#059669` vert | `netAfterTax` |
+| Impôt estimé (`segImpot`) | `#f97316` orange | `netImposable − netAfterTax` |
+| Charges sociales (`segCharges`) | `#d1d5db` gris | `brut − netImposable` |
+
+> Si le profil fiscal de l'utilisateur est incomplet (`netAfterTax = null`), seuls deux niveaux sont affichés : net imposable (violet) et charges sociales (gris).
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/SalaryAnnualBarChart.jsx`
+
+**Librairie :** Recharts (`BarChart`, barres empilées via `stackId`)
+
+**Axes :**
+- X : année (`year`)
+- Y : montant en k€
+
+**Tooltip :** affiche brut, net imposable, net d'impôt + nom de l'entreprise pour l'année survolée.
+
+---
+
+## 4. Répartition du patrimoine par catégorie — `PatrimoineByCategoryChart`
+
+### Objectif
+
+Visualiser la **répartition de la valeur actuelle** du portefeuille par catégorie d'actif. Utilisé en deux variantes sur le dashboard :
+- **Patrimoine brut** : toutes catégories confondues.
+- **Patrimoine financier** (`financierOnly = true`) : hors `IMMO_PHYSIQUE` et `IMMO_PAPIER`.
+
+### Source de données
+
+Appelle `GET /api/positions?status=ACTIVE` et agrège `computed.currentValueEur` par catégorie côté frontend.
+
+### Règles d'affichage
+
+- Seules les catégories avec une valeur > 0,01 € apparaissent.
+- Les couleurs sont celles de `CATEGORY_META.chartColor` défini dans `constants.js`.
+- La légende affiche le pourcentage et le montant pour chaque catégorie + un total en pied.
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/PatrimoineByCategoryChart.jsx`
+
+**Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)
+
+**Props :**
+
+| Prop | Type | Défaut | Description |
+|------|------|--------|-------------|
+| `financierOnly` | `boolean` | `false` | Si `true`, exclut `IMMO_PHYSIQUE` et `IMMO_PAPIER` |
+
+---
+
+## 5. Répartition du patrimoine par enveloppe fiscale — `PatrimoineByEnvelopeChart`
+
+### Objectif
+
+Visualiser la **répartition du patrimoine brut par enveloppe fiscale** (AV, PEA, CTO, Hors enveloppe…).
+
+### Source de données
+
+Appelle `GET /api/positions?status=ACTIVE` et agrège `computed.currentValueEur` par `fiscalEnvelope` côté frontend. Les positions sans enveloppe (`null`) sont comptabilisées sous `NONE`.
+
+### Règles d'affichage
+
+- Seules les enveloppes avec une valeur > 0,01 € apparaissent.
+- Les couleurs proviennent de `FISCAL_ENVELOPE_LABELS.chartColor` défini dans `constants.js`.
+- La légende affiche le pourcentage et le montant + un total en pied.
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/PatrimoineByEnvelopeChart.jsx`
+
+**Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)
+
+---
+
+## 6. Répartition des dépenses par catégorie — `ExpensesByCategoryChart`
+
+### Objectif
+
+Visualiser la **répartition des dépenses mensuelles récurrentes** par catégorie, ainsi que la capacité d'épargne résiduelle.
+
+### Source de données
+
+Appelle `GET /api/recurring-expenses/summary` (endpoint dépenses existant) qui retourne :
+- `byCategory[]` : liste des catégories avec `monthlyAmount`
+- `totalMonthlyExpenses` : total mensuel
+- `savingsCapacity` : capacité d'épargne (net mensuel − dépenses)
+- `savingsRate` : taux d'épargne en %
+
+### Règles d'affichage
+
+- Seules les catégories avec un montant > 0,01 €/mois apparaissent.
+- Catégories triées par montant décroissant.
+- La légende affiche le % et le montant mensuel par catégorie.
+- En pied : total mensuel + capacité d'épargne (vert si ≥ 0, rouge si négatif).
+- La capacité d'épargne n'est affichée que si `savingsRate != null`.
+
+### Couleurs par catégorie
+
+| Catégorie | Hex |
+|-----------|-----|
+| `LOGEMENT` | `#60a5fa` bleu clair |
+| `TRANSPORT` | `#fb923c` orange |
+| `ASSURANCES` | `#f87171` rouge clair |
+| `ABONNEMENTS` | `#a78bfa` violet clair |
+| `SANTE` | `#4ade80` vert |
+| `FAMILLE` | `#f472b6` rose |
+| `ALIMENTATION` | `#facc15` jaune |
+| `EPARGNE` | `#2dd4bf` teal |
+| `AUTRE` | `#9ca3af` gris |
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/ExpensesByCategoryChart.jsx`
+
+**Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)
