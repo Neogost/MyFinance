@@ -1,5 +1,16 @@
 # MyFinance — Contexte projet pour Claude
 
+## ⚡ Lecture obligatoire en début de session
+
+Avant d'implémenter quoi que ce soit, lire ces deux fichiers pour connaître les patterns de code du projet et ne pas avoir à inférer les conventions depuis le code existant :
+
+- **Backend** (entité, service, controller, DTOs, tests) → [`docs/architecture/decisions/PATTERNS-backend.md`](docs/architecture/decisions/PATTERNS-backend.md)
+- **Frontend** (page, formulaire modal, API layer, CSS, navigation) → [`docs/architecture/decisions/PATTERNS-frontend.md`](docs/architecture/decisions/PATTERNS-frontend.md)
+
+Ces fichiers contiennent les squelettes de code à suivre. Tout nouveau module doit respecter ces patterns.
+
+---
+
 ## Description
 Application web personnelle de gestion d'investissements financiers,
 hébergée sur NAS QNAP en réseau local (pas d'accès utilisateur depuis l'extérieur).
