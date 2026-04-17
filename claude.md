@@ -108,6 +108,7 @@ frontend/src/
 - Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
+- Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 
 ## Endpoints backend existants
@@ -403,6 +404,18 @@ npm run dev
   - Frontend : `PossessionPage` (4 KPIs, barres de répartition, liste groupée par catégorie avec badge « Manuel »), `PossessionForm` (aperçu projection temps réel, indicateur override), bouton **Passifs** dans la navigation
   - Tests : 380 tests (PossessionServiceTest +18, PossessionControllerTest +15)
   - Documentation : `docs/architecture/passifs.md`, `docs/api/possessions.md`
+
+- **Bilan financier personnel** (Outils → Bilan financier) :
+  - Vue synthétique calquée sur le compte de résultat d'entreprise
+  - Revenus : salaire actif, revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE), gains mensuels moyens par catégorie d'actif (`capitalGainEur / 12`)
+  - Dépenses : dépenses récurrentes par catégorie + impôt estimé (`totalEstimatedTax / 12`)
+  - Actif / Passif côte à côte : positions actives (hors IMMO_PHYSIQUE) / possessions + IMMO_PHYSIQUE
+  - `IMMO_PHYSIQUE` classé en Passif (résidence principale non locative)
+  - Type `AUTRE` des revenus complémentaires exclu (non récurrent)
+  - Toggle Mensuel / Annuel (× 12) ; TOTAL Actif et Passif toujours alignés en bas (`mt-auto`)
+  - Δ R-D en vert/rouge selon la capacité d'épargne
+  - Aucun endpoint backend nouveau — 6 appels parallèles vers endpoints existants
+  - Documentation : `docs/architecture/bilan-financier.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
