@@ -12,35 +12,35 @@ Accessible depuis **Outils → Bilan financier** dans la navigation.
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                                   [Mensuel] [Annuel]  │
+│                                   [Mensuel] [Annuel] │
 ├──────────────────────────────────────────────────────┤
-│                      REVENUS  (vert)                  │
-│  Salaire — Entreprise X              2 787,25 €      │
-│  Revenus locatifs                       27,49 €      │
+│                      REVENUS  (vert)                 │
+│  Salaire — Entreprise X              0 000,00 €      │
+│  Revenus locatifs                       00,00 €      │
 │  Dividendes                              0,00 €      │
-│  Bourse (gains moy. mensuels)          199,82 €      │
-│  Crypto-monnaie (gains moy. mensuels)   60,62 €      │
-│  Immo papier (gains moy. mensuels)      56,61 €      │
-│                                TOTAL  3 131,79 €      │
+│  Bourse (gains moy. mensuels)          000,00 €      │
+│  Crypto-monnaie (gains moy. mensuels)   00,00 €      │
+│  Immo papier (gains moy. mensuels)      00,00 €      │
+│                                TOTAL  0 000,00 €     │
 ├──────────────────────────────────────────────────────┤
-│                      DÉPENSES  (orange)               │
-│  Logement                              662,83 €      │
-│  Transport                              83,00 €      │
-│  Alimentation                          300,00 €      │
+│                      DÉPENSES  (orange)              │
+│  Logement                              000,00 €      │
+│  Transport                              00,00 €      │
+│  Alimentation                          000,00 €      │
 │  …autres catégories…                                 │
-│  Impôt estimé          [estimé]        233,66 €      │
-│                                TOTAL  1 330,24 €      │
+│  Impôt estimé          [estimé]        000,00 €      │
+│                                TOTAL  0 000,00 €     │
 ├─────────────────────────┬────────────────────────────┤
 │   ACTIF  (vert)         │   PASSIF  (orange)         │
-│  Bourse      68 468 €  │  Immobilier physique        │
-│  Crypto      12 321 €  │               115 000 €     │
-│  Immo papier 10 980 €  │  Collection     7 500 €     │
-│  Livret      10 278 €  │  Véhicule       6 119 €     │
-│  Liquidités   4 215 €  │  …                          │
+│  Bourse      00 000 €  │  Immobilier physique        │
+│  Crypto      00 000 €  │               000 000 €     │
+│  Immo papier 00 000 €  │  Collection     0 000 €     │
+│  Livret      00 000 €  │  Véhicule       0 000 €     │
+│  Liquidités   0 000 €  │  …                          │
 │  ─────────────────────  │  ─────────────────────     │
-│  TOTAL      106 264 €  │  TOTAL        131 156 €     │
+│  TOTAL      000 000 €  │  TOTAL        000 000 €     │
 ├──────────────────────────────────────────────────────┤
-│                    Δ R-D  +1 801,55 €                │
+│                    Δ R-D  +0 000,00 €                │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -56,7 +56,7 @@ Aucun endpoint backend nouveau. Tout provient d'endpoints existants.
 | Revenus | Revenus locatifs | `GET /api/other-incomes` | Type `LOCATIF` — somme des `amount` |
 | Revenus | Dividendes | `GET /api/other-incomes` | Type `DIVIDENDE` — somme des `amount` |
 | Revenus | Aides sociales | `GET /api/other-incomes` | Type `AIDE_SOCIALE` — somme des `amount` |
-| Revenus | Gains par catégorie | `GET /api/positions?status=ACTIVE` | `computed.capitalGainEur / 12` agrégé par catégorie |
+| Revenus | Revenus projetés par catégorie | `GET /api/positions?status=ACTIVE` | `computed.currentValueEur × PROJECTION_RATES[cat] / 12` agrégé par catégorie |
 | Dépenses | Par catégorie | `GET /api/recurring-expenses/summary` | `byCategory[].monthlyAmount` |
 | Dépenses | Impôt estimé | `GET /api/tax-simulator` | `totalEstimatedTax / 12` |
 | Actif | Par catégorie | `GET /api/positions?status=ACTIVE` | `computed.currentValueEur` agrégé par catégorie (hors `IMMO_PHYSIQUE`) |
@@ -83,19 +83,28 @@ Un bandeau d'avertissement jaune s'affiche si le profil fiscal est incomplet.
 
 Seuls les types `LOCATIF`, `DIVIDENDE` et `AIDE_SOCIALE` apparaissent dans le bilan. Le type `AUTRE` est volontairement exclu (revenu non récurrent). Les lignes avec montant = 0 sont masquées.
 
-### Revenus — Gains d'investissement par catégorie
+### Revenus — Revenus projetés par catégorie d'actif
 
 Catégories concernées : `BOURSE`, `CRYPTO`, `IMMO_PAPIER`, `LIVRET`.
 
 ```
-gainMensuel(catégorie) = Σ(position.computed.capitalGainEur) / 12
+revenuMensuel(cat) = Σ(position.computed.currentValueEur) × PROJECTION_RATES[cat] / 12
 ```
 
-Approximation : on ramène le gain total latent à une moyenne sur 12 mois. Les moins-values (gain < 0) sont exclues. Une note de bas de page l'indique.
+Les taux sont définis dans `frontend/src/components/patrimoine/constants.js` (`PROJECTION_RATES`) :
+
+| Catégorie | Taux annuel | Source |
+|-----------|-------------|--------|
+| `BOURSE` | 7 % | Rendement moyen long terme MSCI World |
+| `CRYPTO` | 15 % | Estimation conservative |
+| `IMMO_PAPIER` | 5 % | Rendement moyen SCPI |
+| `LIVRET` | 2,4 % | Taux Livret A en vigueur |
+
+Les positions avec `currentValueEur ≤ 0` ou taux = 0 sont exclues. Le taux est affiché entre parenthèses dans le label de chaque ligne, ex. `Bourse (proj. 7,0 %/an)`.
 
 > `IMMO_PHYSIQUE` est exclu des revenus : une résidence principale ne génère pas de revenu direct. Sa valeur apparaît dans le Passif.
 >
-> `LIQUIDITE` est exclu des revenus (pas de plus-value latente).
+> `LIQUIDITE` est exclu des revenus (`PROJECTION_RATES.LIQUIDITE = 0`).
 
 ### Actif vs Passif — Immobilier physique
 

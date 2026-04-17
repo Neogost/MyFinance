@@ -4,6 +4,7 @@ import { getPositions } from '../../api/patrimoine'
 import { simulateTax } from '../../api/tools'
 import { getExpenseSummary } from '../../api/expenses'
 import { getPossessionsSummary } from '../../api/possessions'
+import { PROJECTION_RATES } from '../patrimoine/constants'
 
 const ASSET_LABELS = {
   BOURSE:        'Bourse',
@@ -14,8 +15,7 @@ const ASSET_LABELS = {
   LIQUIDITE:     'Liquidités',
 }
 
-// Catégories pouvant générer un revenu estimé (gain mensuel moyen)
-// IMMO_PHYSIQUE exclu : une résidence principale ne génère pas de revenu direct
+// Catégories générant un revenu projeté — IMMO_PHYSIQUE et LIQUIDITE exclus
 const INVESTMENT_CATEGORIES = new Set(['BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'LIVRET'])
 
 const EXPENSE_LABELS = {
@@ -135,15 +135,15 @@ export default function BilanFinancierPage() {
     otherIncomeByType[oi.type] = (otherIncomeByType[oi.type] ?? 0) + (oi.amount ?? 0)
   }
 
-  // ── Gains d'investissement par catégorie (capitalGainEur / 12) ──
-  // Estimation : gain total ramené à une moyenne mensuelle sur 12 mois
+  // ── Revenus projetés par catégorie (valeur actuelle × taux annuel / 12) ──
   const investGainByCategory = {}
   for (const pos of positions) {
     const cat = pos.category
     if (!INVESTMENT_CATEGORIES.has(cat)) continue
-    const gain = pos.computed?.capitalGainEur ?? 0
-    if (gain <= 0) continue
-    investGainByCategory[cat] = (investGainByCategory[cat] ?? 0) + gain / 12
+    const value = pos.computed?.currentValueEur ?? 0
+    const rate  = PROJECTION_RATES[cat] ?? 0
+    if (value <= 0 || rate <= 0) continue
+    investGainByCategory[cat] = (investGainByCategory[cat] ?? 0) + (value * rate) / 12
   }
 
   const totalOtherIncome = Object.entries(otherIncomeByType)
@@ -252,7 +252,7 @@ export default function BilanFinancierPage() {
               .map(([cat, monthly]) => (
                 <BilanRow
                   key={cat}
-                  label={`${ASSET_LABELS[cat] ?? cat} (gains moy. mensuels)`}
+                  label={`${ASSET_LABELS[cat] ?? cat} (proj. ${((PROJECTION_RATES[cat] ?? 0) * 100).toFixed(1)} %/an)`}
                   amount={monthly * mult}
                 />
               ))
@@ -406,7 +406,7 @@ export default function BilanFinancierPage() {
 
       {/* Note méthodologique */}
       <p className="text-xs text-gray-400 text-center pb-2">
-        Les gains d'actifs (Bourse, Crypto…) sont calculés comme une moyenne mensuelle des plus-values latentes sur 12 mois.
+        Les revenus d'actifs sont des projections (valeur actuelle × taux annuel / 12) — Bourse 7 %, Crypto 15 %, Immo papier 5 %, Livret 2,4 %.
       </p>
     </div>
   )
