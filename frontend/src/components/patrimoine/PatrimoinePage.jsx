@@ -76,9 +76,12 @@ export default function PatrimoinePage({ currentUser }) {
   }
 
   async function handleClose(position) {
-    if (!confirm(`Fermer la position « ${position.label} » ?`)) return
-    const updated = await closePosition(position.id)
-    setPositions(ps => ps.map(p => p.id === updated.id ? updated : p))
+    try {
+      const updated = await closePosition(position.id)
+      setPositions(ps => ps.map(p => p.id === updated.id ? updated : p))
+    } catch {
+      setError('Impossible de fermer la position.')
+    }
   }
 
   async function handleDelete(position) {
@@ -96,33 +99,38 @@ export default function PatrimoinePage({ currentUser }) {
 
   // ── Filtres ──────────────────────────────────────────────────────
 
-  const allCategories  = ['ALL', ...Object.keys(CATEGORY_META)]
+  const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
+
+  const allCategories  = ['ALL', ...CATEGORY_ORDER]
   const categoryLabels = { ALL: 'Tous', ...Object.fromEntries(
     Object.entries(CATEGORY_META).map(([k, v]) => [k, v.label])
   )}
-  const filtered = positions.filter(p => {
-    if (!showClosed && p.status === 'CLOSED') return false
-    if (filter !== 'ALL' && p.category !== filter) return false
-    return true
-  })
+  const filtered = positions
+    .filter(p => {
+      if (!showClosed && p.status === 'CLOSED') return false
+      if (filter !== 'ALL' && p.category !== filter) return false
+      return true
+    })
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category))
 
   // ── Synthèse ─────────────────────────────────────────────────────
 
   const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
   const active = positions.filter(p => p.status === 'ACTIVE')
+  const allPos = positions
 
   const patrimoineBrut      = active.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur  ?? 0), 0)
   const patrimoineFinancier = active
     .filter(p => !IMMO_CATEGORIES.has(p.category))
     .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
-  const totalInvesti   = active.reduce((s, p) => s + parseFloat(p.computed?.investedAmountEur ?? 0), 0)
-  const totalPlusValue = patrimoineBrut - totalInvesti
+  const totalInvesti   = allPos.reduce((s, p) => s + parseFloat(p.computed?.investedAmountEur ?? 0), 0)
+  const totalPlusValue = allPos.reduce((s, p) => s + parseFloat(p.computed?.capitalGainEur ?? 0), 0)
   const totalProjection = active
     .filter(p => p.computed?.monthlyIncomeProjectionEur != null)
     .reduce((s, p) => s + parseFloat(p.computed.monthlyIncomeProjectionEur), 0)
 
   const investiByCategory = Object.entries(
-    active
+    allPos
       .filter(p => p.computed?.investedAmountEur != null && parseFloat(p.computed.investedAmountEur) !== 0)
       .reduce((acc, p) => {
         acc[p.category] = (acc[p.category] ?? 0) + parseFloat(p.computed.investedAmountEur)
@@ -131,7 +139,7 @@ export default function PatrimoinePage({ currentUser }) {
   ).sort(([, a], [, b]) => b - a)
 
   const gainsByCategory = Object.entries(
-    active
+    allPos
       .filter(p => p.computed?.capitalGainEur != null && parseFloat(p.computed.capitalGainEur) !== 0)
       .reduce((acc, p) => {
         acc[p.category] = (acc[p.category] ?? 0) + parseFloat(p.computed.capitalGainEur)

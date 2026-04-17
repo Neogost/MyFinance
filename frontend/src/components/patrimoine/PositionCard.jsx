@@ -7,6 +7,7 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
   const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c      = position.computed ?? {}
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmClose,  setConfirmClose]  = useState(false)
 
   const isClosed         = position.status === 'CLOSED'
   const isLiquidite      = position.category === 'LIQUIDITE'
@@ -114,33 +115,55 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
 
       {/* Actions */}
       {!isClosed && (
-        <div className="flex gap-1">
-          {isLiquidite ? (
-            <button onClick={() => onUpdateBalance(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Màj solde
-            </button>
-          ) : isImmoPhysique ? (
-            <button onClick={() => onUpdateEstimatedValue(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Màj valeur
-            </button>
-          ) : (
-            <button onClick={() => onViewOrders(position)}
-              className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
-              Mouvements
-            </button>
+        <div className="flex flex-wrap gap-1">
+          {!confirmClose && !confirmDelete && (
+            <>
+              {isLiquidite ? (
+                <button onClick={() => onUpdateBalance(position)}
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  Màj solde
+                </button>
+              ) : isImmoPhysique ? (
+                <button onClick={() => onUpdateEstimatedValue(position)}
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  Màj valeur
+                </button>
+              ) : (
+                <button onClick={() => onViewOrders(position)}
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  Mouvements
+                </button>
+              )}
+              <button onClick={() => onEdit(position)}
+                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
+                Modifier
+              </button>
+              <button onClick={() => setConfirmClose(true)}
+                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
+                Fermer
+              </button>
+              <button onClick={() => setConfirmDelete(true)}
+                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
+                Supprimer
+              </button>
+            </>
           )}
-          <button onClick={() => onEdit(position)}
-            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
-            Modifier
-          </button>
-          <button onClick={() => onClose(position)}
-            className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 transition">
-            Fermer
-          </button>
-          {confirmDelete ? (
-            <div className="flex items-center gap-1">
+          {confirmClose && (
+            <>
+              <span className="px-2 py-1 text-xs text-orange-700">Fermer cette position ?</span>
+              <button onClick={() => { setConfirmClose(false); onClose(position) }}
+                className="px-2 py-1 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600 transition">
+                Confirmer
+              </button>
+              <button onClick={() => setConfirmClose(false)}
+                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
+                Annuler
+              </button>
+            </>
+          )}
+          {confirmDelete && (
+            <>
+              <span className="px-2 py-1 text-xs text-red-700">Supprimer définitivement ?</span>
               <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
                 className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
                 Confirmer
@@ -149,12 +172,7 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
                 className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
                 Annuler
               </button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)}
-              className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition">
-              Supprimer
-            </button>
+            </>
           )}
         </div>
       )}
