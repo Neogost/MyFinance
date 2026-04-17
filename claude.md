@@ -63,9 +63,12 @@ frontend/src/
 │   │   ├── BenefitForm.jsx          Modal création/édition avantage
 │   │   ├── OtherIncomePage.jsx      Page revenus complémentaires (badges fiscaux)
 │   │   └── OtherIncomeForm.jsx      Modal création/édition revenu (+ champs fiscaux)
+│   ├── expenses/
+│   │   ├── RecurringExpensePage.jsx  Page dépenses récurrentes (KPIs, répartition, liste groupée)
+│   │   └── RecurringExpenseForm.jsx  Modal création/édition dépense (aperçu projection, colocation)
 │   └── tools/
 │       └── TaxSimulatorPage.jsx     Simulateur des impôts
-├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | tax-simulator | users | profile)
+├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | expenses | tax-simulator | users | profile)
 ├── App.css           Fichier vide (styles migrés vers Tailwind)
 └── index.css         Point d'entrée CSS — @import "tailwindcss"
 ```
@@ -93,6 +96,8 @@ frontend/src/
 - Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
 - Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
+- Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
+- API dépenses récurrentes : `docs/api/recurring-expenses.md`
 
 ## Endpoints backend existants
 
@@ -211,6 +216,15 @@ frontend/src/
 | `POST` | `/api/portfolio/snapshots` | Authentifié | Déclencher un snapshot pour la date indiquée |
 | `PUT` | `/api/portfolio/snapshots/{id}/recalculate` | Authentifié | Recalculer un snapshot avec les prix actuels |
 | `POST` | `/api/portfolio/snapshots/all` | ADMIN | Générer un snapshot pour tous les utilisateurs |
+
+### Dépenses récurrentes
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/recurring-expenses` | Authentifié | Liste ses dépenses (avec montants projetés) |
+| `GET` | `/api/recurring-expenses/summary` | Authentifié | Synthèse : total par catégorie + capacité d'épargne |
+| `POST` | `/api/recurring-expenses` | Authentifié | Créer une dépense |
+| `PUT` | `/api/recurring-expenses/{id}` | Authentifié | Modifier une dépense (ownership vérifié) |
+| `DELETE` | `/api/recurring-expenses/{id}` | Authentifié | Supprimer une dépense (ownership vérifié) |
 
 ### Patrimoine — Snapshots (admin — gestion manuelle)
 | Méthode | URL | Rôle requis | Description |
@@ -351,6 +365,15 @@ npm run dev
   - Menu "Gestion des relevés" visible uniquement pour le rôle ADMIN
   - Tests : 318 tests (AdminSnapshotServiceTest +9, AdminSnapshotControllerTest +10)
   - Documentation : `docs/architecture/admin-snapshot-management.md`, `docs/api/admin-snapshots.md`
+- **Dépenses récurrentes** :
+  - Entité `RecurringExpense` (table `recurring_expenses`) avec `ExpenseCategoryEnum` (9 catégories) et `FrequencyEnum` (MONTHLY / ANNUAL)
+  - Champ `sharePercentage` pour modéliser la répartition en colocation (ex : 50 % d'un loyer partagé)
+  - `RecurringExpenseDto` calcule `monthlyAmount` et `annualAmount` à la volée (projection inverse selon fréquence)
+  - `GET /api/recurring-expenses/summary` : capacité d'épargne = revenu net mensuel actif − total dépenses actives ; fallback `NET_IMPOSABLE` si profil fiscal incomplet
+  - Frontend : `RecurringExpensePage` (4 KPIs, barres de répartition par catégorie, liste groupée), `RecurringExpenseForm` (aperçu projection temps réel, indicateur colocation), bouton **Dépenses** dans la navigation
+  - Tests : 347 tests (RecurringExpenseServiceTest +16, RecurringExpenseControllerTest +13)
+  - Documentation : `docs/architecture/recurring-expenses.md`, `docs/api/recurring-expenses.md`
+  - ⚠ Migration SQLite requise sur la base prod (ajout de `ALIMENTATION` à la CHECK constraint de `recurring_expenses.category`)
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

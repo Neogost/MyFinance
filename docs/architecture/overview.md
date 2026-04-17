@@ -1,322 +1,184 @@
-# Architecture Investment Tracker
+# Architecture MyFinance
 
-Cette page décrit l’architecture de l’application **MyFinance** et de ses fonctionnalités
-
-## 1. Description générale
-
-- Application web personnelle pour gérer un portefeuille d’investissements.
-- Frontend en **React 19**.
-- Backend en **Spring Boot 3.5 / Java 17**.
-- Base de données **SQLite** locale.
-- Scheduler pour mise à jour automatique des données boursière et crypto-currency
-
-## 2. Diagramme d’architecture
-
-Le diagramme suivant décrit la structure et logique applicative de MyFinance.
-
-```mermaid
-%% Contenu copié depuis docs/architecture/diagram/activity-diagram.mmd
-mindmap
-  root((MyFinance))
-    Gestion des utilisateurs
-        Créer un utilisateur
-        Modifier un utilisateur
-        Supprimer un utilisateur
-        Créer un regroupement famillial
-    Gestion du patrimoine
-        Choisir la consultation personnelle ou de regroupement famillial
-        Actualisation manuelle d'une position
-            Modification d'une position existante
-            Création d'une position
-            Fermeture d'une position
-        Ajouter une source de revenue
-    Gestion des automatisation
-        Saisir une position a suivre
-            Crypto-monnaie
-            Bourse
-        Suivi automatisé
-            Analyse des cours de crypto-monnaie
-            Analyse des cours de bourses
-    Consultation des positions
-        Graphique du patrimoine brut
-        Graphique du patrimoine net
-        Graphique des plus value
-        Graphique de la diversification par secteur de marché
-        Graphique de diversification par secteur géographique
-        Graphique du suivi des revenues
-        Graphique du suivi des dépenses
-    Importation de données
-        Format Json
-    Exportation de données
-        Format Json
-        Format Excel
-````
-
-## Description fonctionnelle
-
-MyFinance à pour objectif de permettre a ses utilisateurs de gérer son patrimoine financier et toutes les actions associées.
-
-### Gestion des utilisateurs
-
-Les droits associés à chaque utilisateurs est décrit dans la section de [gestion des utilisateurs](/docs/architecture/userManagement.md).
-
-### Gestion du patrimoine
-
-Chaque utilisateur à la possibilité de gérer son patrmoine personnelle ou celui de son regroupement familial.
-
-#### Actualisation manuel d'une position
-
-Chaque utilisateurs ont la possibilité de saisir manuellement des ordres et positions pris. Ces positions sont ensuite intégré afin de calculé les impacts sur le patrimoine de l'utilisateur et sa valorisation.
-
-Une Position est un ordre d'achat ou de vente sur une entité financière. Cette ordre peut etre créditeur ou débiteur.
-
-##### Création d'une position
-
-```mermaid
-%% Contenu copié depuis docs/architecture/diagram/activity-asset-management-add-diagram.mmd
-stateDiagram 
-%% state
-    state "Choisi un type de position" as chooseType
-    state "Type de position" as if_typeOfPosition 
-
-    state "Saisie un titre" as chooseTitle
-    state "Saisie une valeur" as chooseValue
-    state "Saisie une quantité" as chooseQuantity
-    state "Liste des ISBN existants" as listOfExistingISBN
-    state "Saisie un nouveau ISBN" as setISBN
-    state "Liste des Token existants" as listOfExistingToken
-    state "Saisie un nouveau Token" as setToken
-    state "Date d'exécution" as chooseDateExecution
-    state "Verification des données saisies" as verifyData
-    state "Sauvegarde de la position" as saveData
-    state "Erreur de saisies" as errorFromUser
-
-
-    [*] --> chooseType
-    chooseType --> if_typeOfPosition
-    if_typeOfPosition --> listOfExistingISBN: type = Bourse
-    listOfExistingISBN --> setISBN : Création d'un ISBN
-    listOfExistingISBN --> chooseTitle : Réutilisation d'un ISBN existant
-    setISBN --> chooseTitle
-
-    if_typeOfPosition --> listOfExistingToken : type = Crypto-monnaie
-    listOfExistingToken --> setToken : Création d'un Token
-    listOfExistingToken --> chooseTitle : Réutilisation d'un Token existant
-    setToken --> chooseTitle
-
-    if_typeOfPosition --> chooseTitle : type = Autresx
-    chooseTitle --> chooseValue
-    chooseValue --> chooseQuantity
-    chooseQuantity --> chooseDateExecution
-    chooseDateExecution --> verifyData
-    verifyData --> saveData : OK
-    verifyData --> errorFromUser : KO
-    
-    
-     saveData--> [*]
-     errorFromUser--> chooseType
-```
-
-
-Structure d'une de position :
-```mermaid
-%% Extrait du contenu copié depuis /docs/architecture/diagram/class-diagram.mmd
-classDiagram
-    class Ordre {
-        +Integer userId
-        +DateTime createdAt
-        +DateTime dateOfExecution
-        +TypeEnum type
-        +String token
-        +String isbn
-        +String title
-        +Float value
-        +float quantity
-
-    }
-
-    class TypeEnum {
-        +String libelle
-    }
-
-    class Isbn {
-        +String id
-        +String name
-        +String title
-    }
-
-    class Token {
-        +String id
-        +String name
-        +String trigramme
-    }
-
-    Ordre *-- Isbn
-    Ordre *-- TypeEnum
-    Ordre *-- Token
-```
-
-##### Modification d'une position
-
-Les utilisateurs peuvent modifier une position prise a n'importe quel moment. Suite a ces modifications et la validation de celle-ci, le système réintegre les éléments calculé a partir de cette mise à jour.
-```mermaid
-%% Contenu copié depuis docs/architecture/diagram/activity-asset-management-edit-diagram.mmd
-stateDiagram
-    direction LR
-    %% state
-    state "Selection d'une position" as selectOrder
-    state "Modifier une information" as modifyOrder
-    state "Verification des données" as verifyModifyOrder
-    state "Erreur de saisies" as errorFromUser
-    state "Sauvegarde de la modification" as saveOrder
-
-    [*] --> selectOrder
-    selectOrder --> modifyOrder
-    modifyOrder --> verifyModifyOrder
-    verifyModifyOrder --> saveOrder : OK
-    verifyModifyOrder --> errorFromUser : KO
-    errorFromUser --> selectOrder
-    saveOrder --> [*]
-```
-
-##### Suppression d'une position
-
-Les utilisateurs peuvent supprimer une position prise à n'importe quel moment. Suite a cette suppression, le systeme recalculs les données.
-
-```mermaid
-%% Contenu copié depuis docs/architecture/diagram/activity-asset-management-delete-diagram.mmd
-stateDiagram
-    direction LR
-    %% state
-    state "Selection d'une position" as selectOrder
-    state "Demande de suppression d'une position" as askDeleteOrder
-    state "Annulation de la suppression" as cancelDeleteAction
-    state "Confirmation de suppression" as validateDeleteOrder
-    state "Suppression de la position" as deleteOrder
-
-
-    [*] --> selectOrder
-    selectOrder --> askDeleteOrder
-    askDeleteOrder --> validateDeleteOrder
-    askDeleteOrder --> cancelDeleteAction
-    cancelDeleteAction --> selectOrder
-    validateDeleteOrder --> deleteOrder
-    deleteOrder --> [*]
-```
-
-#### Gestion des revenus
-
-Chaque utilisateur peut gérer deux types de revenus depuis le menu **Revenus** de l'application. La documentation détaillée (formules, règles métier, endpoints) est dans [`docs/architecture/salary.md`](salary.md).
-
-##### Revenus salariaux
-
-Un contrat salarial (`SalaryContract`) modélise les conditions d'un emploi. À partir du brut annuel, de la durée hebdomadaire et du nombre de mois payés, l'application calcule automatiquement des projections théoriques. Un seul contrat peut être actif à la fois (sans date de fin).
-
-Des bulletins de paie mensuels réels (`MonthlyPaySlip`) peuvent être saisis pour chaque période afin de comparer le réel au théorique.
-
-```mermaid
-stateDiagram-v2
-    state "Saisir un contrat salarial" as contract
-    state "Visualiser les projections" as projections
-    state "Ajouter un bulletin mensuel" as slip
-    state "Comparer réel / théorique" as compare
-
-    [*] --> contract
-    contract --> projections : calcul automatique
-    projections --> slip : optionnel
-    slip --> compare
-    compare --> slip : mois suivant
-```
-
-##### Revenus complémentaires
-
-Les revenus complémentaires (`OtherIncome`) permettent de saisir tout revenu ponctuel ou récurrent hors salaire, classé par type.
-
-| Type | Description |
-|------|-------------|
-| `LOCATIF` | Loyers perçus |
-| `DIVIDENDE` | Dividendes d'actions ou parts sociales |
-| `AIDE_SOCIALE` | CAF, allocations, aides diverses |
-| `AUTRE` | Tout autre revenu |
-
-##### Modèle de données
-
-```mermaid
-classDiagram
-    class User {
-        +Long id
-        +String firstName
-        +String lastName
-        +String login
-        +RoleEnum role
-    }
-
-    class SalaryContract {
-        +Long id
-        +LocalDate startDate
-        +LocalDate endDate
-        +Float annualGrossSalary
-        +Integer paidMonthsPerYear
-        +Float weeklyHours
-    }
-
-    class MonthlyPaySlip {
-        +Long id
-        +String period
-        +Float grossAmount
-        +Float netAmount
-        +Integer mealVoucherCount
-    }
-
-    class OtherIncome {
-        +Long id
-        +OtherIncomeTypeEnum type
-        +String label
-        +Float amount
-        +LocalDate date
-    }
-
-    class OtherIncomeTypeEnum {
-        LOCATIF
-        DIVIDENDE
-        AIDE_SOCIALE
-        AUTRE
-    }
-
-    User "1" o-- "0..*" SalaryContract : contracts
-    SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
-    User "1" o-- "0..*" OtherIncome : otherIncomes
-    OtherIncome --> OtherIncomeTypeEnum : type
-```
-
-Les projections (net mensuel, journalier, horaire) sont calculées à la volée dans `SalaryContractDto` et ne sont jamais persistées en base.
-
-### Gestion du patrimoine
-
-Chaque utilisateur peut suivre l'ensemble de ses actifs financiers, organisés en six catégories : **Bourse**, **Crypto-monnaie**, **Immobilier papier**, **Immobilier physique**, **Livrets** et **Liquidités**.
-
-Le patrimoine repose sur un modèle **Position → Ordres** : chaque position agrège les achats/ventes successifs pour calculer les totaux en temps réel. Un snapshot mensuel automatique historise la valorisation mois par mois.
-
-| Catégorie | Mécanisme de valorisation |
-|-----------|--------------------------|
-| Bourse, Crypto | Quantité × prix marché (scheduler Yahoo Finance / CoinGecko) |
-| Livret, Immo papier | Montant investi + intérêts cumulés |
-| Immo physique | Valeur estimée saisie manuellement |
-| Liquidités | Solde saisi manuellement (pas d'ordres) |
-
-La documentation détaillée (modèle de données, règles de calcul, diagramme de classes) est dans [`docs/architecture/patrimoine.md`](patrimoine.md).
-La documentation API est dans [`docs/api/patrimoine.md`](../api/patrimoine.md).
+Vue d'ensemble de l'application **MyFinance** et index de la documentation.
 
 ---
 
-### Outils
+## 1. Description générale
 
-Un menu **Outils** regroupe les fonctionnalités de simulation et d'analyse transverses.
+Application web personnelle de gestion financière personnelle, hébergée sur NAS QNAP en réseau local.
 
-#### Simulateur des impôts
+| Composant | Technologie |
+|-----------|-------------|
+| Frontend | React 19 + Vite + Tailwind CSS v4 + Recharts |
+| Backend | Spring Boot 3.5 / Java 17 + Spring Security |
+| Base de données | SQLite (fichier local) |
+| Documentation API | Springdoc OpenAPI — Swagger UI : `/swagger-ui.html` |
+| Authentification | Session cookie HTTP (BCrypt, pas de JWT) |
 
-Permet d'estimer l'impôt sur le revenu (IRPP) à partir des données saisies dans l'application. L'utilisateur choisit l'année à simuler, la source des revenus salariaux (projection ou bulletins réels) et peut inclure ou exclure individuellement ses revenus complémentaires.
+---
 
-La documentation détaillée (algorithme, barème, configuration) est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).
-La documentation API est dans [`docs/api/tax-simulator.md`](../api/tax-simulator.md).
+## 2. Carte fonctionnelle
 
+```mermaid
+mindmap
+  root((MyFinance))
+    Authentification
+        Login / Logout
+        Changement de mot de passe
+    Tableau de bord
+        Évolution salariale
+        Répartition du patrimoine
+        Plus-values par catégorie
+    Revenus
+        Contrats salariaux
+            Projections brut / net fiscal / net d'impôt
+            Bulletins de paie réels
+            Révisions salariales
+            Primes
+            Avantages en nature
+        Revenus complémentaires
+            Locatif
+            Dividendes
+            Aides sociales
+    Dépenses récurrentes
+        Saisie mensuelle ou annuelle
+        Répartition colocation
+        Capacité d'épargne
+    Patrimoine
+        Bourse
+        Crypto-monnaie
+        Immobilier papier
+        Immobilier physique
+        Livrets
+        Liquidités
+        Relevés mensuels
+    Outils
+        Simulateur d'impôts IRPP
+    Administration
+        Gestion des utilisateurs
+        Mise à jour des cours instruments
+        Gestion des taux de change
+        Gestion manuelle des relevés
+```
+
+---
+
+## 3. Modules
+
+### 3.1 Authentification & gestion des utilisateurs
+
+Authentification par session cookie. Deux rôles : `USER` (accès à ses propres données) et `ADMIN` (accès global + fonctionnalités d'administration).
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/userManagement.md`](userManagement.md) |
+| API authentification | [`docs/api/authentication.md`](../api/authentication.md) |
+| API utilisateurs | [`docs/api/users.md`](../api/users.md) |
+
+---
+
+### 3.2 Tableau de bord
+
+Page d'accueil après connexion. Synthèse visuelle des finances sous forme de graphiques (Recharts) : évolution salariale sur les bulletins réels, valorisation du patrimoine par enveloppe et par catégorie, plus-values YTD.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/dashboard.md`](dashboard.md) |
+| API | [`docs/api/dashboard.md`](../api/dashboard.md) |
+
+---
+
+### 3.3 Revenus
+
+Deux sous-modules accessibles depuis le menu **Revenus**.
+
+#### Revenus salariaux
+
+Un contrat salarial stocke les conditions d'emploi et génère des **projections automatiques** sur quatre niveaux : super brut → brut → net imposable → net d'impôt. Des bulletins de paie réels permettent de comparer réel et théorique. L'historique salarial est suivi via les révisions de contrat.
+
+#### Revenus complémentaires
+
+Tout revenu hors salaire (locatif, dividendes, aides sociales, autre), utilisé dans le simulateur d'impôts et la capacité d'épargne.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/salary.md`](salary.md) |
+| API contrats & bulletins | [`docs/api/salary-contracts.md`](../api/salary-contracts.md) |
+| API revenus complémentaires | [`docs/api/other-incomes.md`](../api/other-incomes.md) |
+
+---
+
+### 3.4 Dépenses récurrentes
+
+Saisie des charges fixes ou périodiques (loyer, abonnements, assurances…) en fréquence mensuelle ou annuelle. Le système projette automatiquement le montant manquant (mensuel ↔ annuel). Une répartition en pourcentage permet de modéliser les dépenses partagées en colocation. La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/recurring-expenses.md`](recurring-expenses.md) |
+
+---
+
+### 3.5 Patrimoine
+
+Suivi de l'ensemble des actifs financiers, organisés en six catégories. Repose sur un modèle **Position → Ordres** : chaque position agrège les transactions successives pour calculer la valorisation en temps réel. Un relevé mensuel historise la valeur du patrimoine mois par mois.
+
+| Catégorie | Mécanisme de valorisation |
+|-----------|--------------------------|
+| Bourse, Crypto | Quantité × prix marché (Yahoo Finance / CoinGecko) |
+| Livret, Immo papier | Montant investi + intérêts cumulés |
+| Immo physique | Valeur estimée saisie manuellement |
+| Liquidités | Solde saisi manuellement |
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/patrimoine.md`](patrimoine.md) |
+| API | [`docs/api/patrimoine.md`](../api/patrimoine.md) |
+
+---
+
+### 3.6 Outils
+
+#### Simulateur d'impôts (IRPP)
+
+Estimation de l'impôt sur le revenu à partir du profil fiscal de l'utilisateur (parts, abattement). Choix de la source salariale (projection contrat ou bulletins réels) et sélection des revenus complémentaires à inclure.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/tax-simulator.md`](tax-simulator.md) |
+| API | [`docs/api/tax-simulator.md`](../api/tax-simulator.md) |
+
+---
+
+### 3.7 Fonctionnalités d'administration
+
+Accessibles uniquement au rôle `ADMIN`.
+
+#### Mise à jour manuelle des cours
+
+Mécanisme de secours pour mettre à jour le `lastPrice` des instruments actifs lorsque la mise à jour automatique n'est pas disponible ou retourne une valeur incorrecte.
+
+→ [`docs/architecture/instrument-price-update.md`](instrument-price-update.md)
+
+#### Gestion des taux de change
+
+Saisie et maintenance des taux de change (USD, GBP, CHF…) pour convertir correctement en EUR les positions BOURSE et CRYPTO libellées en devise étrangère.
+
+→ [`docs/architecture/exchange-rates.md`](exchange-rates.md) — API : [`docs/api/exchange-rates.md`](../api/exchange-rates.md)
+
+#### Gestion manuelle des relevés
+
+CRUD complet sur les relevés de patrimoine de n'importe quel utilisateur. Utilisé pour corriger des snapshots incorrects ou reconstituer un historique.
+
+→ [`docs/architecture/admin-snapshot-management.md`](admin-snapshot-management.md) — API : [`docs/api/admin-snapshots.md`](../api/admin-snapshots.md)
+
+---
+
+## 4. Décisions d'architecture (ADR)
+
+Les décisions techniques structurantes sont documentées dans [`docs/architecture/decisions/`](decisions/README.md).
+
+| ADR | Sujet |
+|-----|-------|
+| [ADR-001](decisions/ADR-001-architecture-generale.md) | Architecture générale (monorepo, SQLite, session cookie) |
+| [ADR-002](decisions/ADR-002-tailwind-css.md) | Choix de Tailwind CSS v4 |
