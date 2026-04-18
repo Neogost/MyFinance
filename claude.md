@@ -109,6 +109,7 @@ frontend/src/
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
 - Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
+- Simulateur d'intérêts composés (architecture) : `docs/architecture/compound-interest-simulator.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 
 ## Endpoints backend existants
