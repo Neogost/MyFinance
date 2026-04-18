@@ -49,7 +49,7 @@ public class TaxSimulatorService {
             salaryIncome = salaryIncomeFromPaySlips(user, year);
             sourceLabel  = SOURCE_BULLETINS;
         } else {
-            salaryIncome = salaryIncomeFromContract(user);
+            salaryIncome = salaryIncomeFromContract(user, year);
             sourceLabel  = SOURCE_PROJECTION;
         }
 
@@ -149,16 +149,22 @@ public class TaxSimulatorService {
 
     // ── Revenus salariaux via projection du contrat ────────────
 
-    private float salaryIncomeFromContract(User user) {
-        SalaryContract contract = salaryContractRepository.findByUserAndEndDateIsNull(user)
+    private float salaryIncomeFromContract(User user, int year) {
+        // Date de référence : 31/12 de l'année simulée, ou aujourd'hui si c'est l'année courante
+        LocalDate referenceDate = LocalDate.of(year, 12, 31).isBefore(LocalDate.now())
+                ? LocalDate.of(year, 12, 31)
+                : LocalDate.now();
+
+        SalaryContract contract = salaryContractRepository.findContractsActiveAtDate(user, referenceDate)
+                .stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Aucun contrat salarial actif. Saisissez un contrat ou utilisez les bulletins réels."));
+                        "Aucun contrat salarial trouvé pour l'année " + year + ". Saisissez un contrat ou utilisez les bulletins réels."));
 
         if (contract.getAnnualGrossSalary() == null) return 0f;
 
-        // Révision active : la plus récente dont effectiveDate <= aujourd'hui
+        // Révision salariale active à la date de référence
         float effectiveSalary = salaryRevisionRepository
-                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(contract, LocalDate.now())
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(contract, referenceDate)
                 .map(com.myfinance.domain.SalaryRevision::getAnnualGrossSalary)
                 .orElse(contract.getAnnualGrossSalary());
 
