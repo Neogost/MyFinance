@@ -7,6 +7,7 @@ import SalaryContractPage from './components/income/SalaryContractPage'
 import OtherIncomePage from './components/income/OtherIncomePage'
 import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import BilanFinancierPage from './components/tools/BilanFinancierPage'
+import CompoundInterestSimulatorPage from './components/tools/CompoundInterestSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -68,6 +69,8 @@ export default function App() {
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 
         {currentPage === 'bilan-financier' && <BilanFinancierPage />}
+
+        {currentPage === 'compound-interest' && <CompoundInterestSimulatorPage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 

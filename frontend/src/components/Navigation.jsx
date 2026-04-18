@@ -36,7 +36,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const [toolsOpen,  setToolsOpen]  = useState(false)
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
-  const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier'
+  const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier' || currentPage === 'compound-interest'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false) }
 
@@ -133,6 +133,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                   }`}
                 >
                   Bilan financier
+                </button>
+                <button
+                  onClick={() => { onNavigate('compound-interest'); setToolsOpen(false) }}
+                  className={`w-full text-left px-4 py-2 text-sm transition ${
+                    currentPage === 'compound-interest'
+                      ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Intérêts composés
                 </button>
               </div>
             </>
