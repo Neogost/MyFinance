@@ -52,7 +52,7 @@ export default function BenefitPanel({ contractId, onBenefitChange }) {
           {benefits.length} avantage{benefits.length > 1 ? 's' : ''}
           {benefits.length > 0 && (
             <span className="ml-2 font-semibold text-gray-700">
-              — Total mensuel : {total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+              — Total mensuel : <span className="amount">{total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
             </span>
           )}
         </p>
@@ -80,7 +80,7 @@ export default function BenefitPanel({ contractId, onBenefitChange }) {
               {benefits.map(benefit => (
                 <tr key={benefit.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
                   <td className="px-3 py-2.5 font-medium text-gray-800">{benefit.label}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700">
+                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
                     {benefit.monthlyAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
                   <td className="px-3 py-2.5">

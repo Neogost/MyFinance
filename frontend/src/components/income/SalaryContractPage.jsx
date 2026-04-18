@@ -109,7 +109,7 @@ export default function SalaryContractPage() {
                   : 'bg-white border border-gray-300 text-gray-600 hover:border-indigo-400'
               }`}
             >
-              {c.companyName ? <><strong>{c.companyName}</strong> — </> : ''}{c.startDate} {!c.endDate ? '(actif)' : `→ ${c.endDate}`}
+              {c.companyName ? <><strong className='amount'>{c.companyName}</strong> — </> : ''}{c.startDate} {!c.endDate ? '(actif)' : `→ ${c.endDate}`}
             </button>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default function SalaryContractPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-base font-bold text-gray-900">
-                  {selected.companyName ? `${selected.companyName} — ` : ''}Contrat depuis le {selected.startDate}
+                  <span className='amount'>{selected.companyName ? `${selected.companyName} — ` : ''}</span>Contrat depuis le {selected.startDate}
                 </h3>
                 {!selected.endDate
                   ? <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Actif</span>
@@ -131,7 +131,7 @@ export default function SalaryContractPage() {
                 }
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                <span>Brut annuel : <strong className="text-gray-900">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
+                <span>Brut annuel : <strong className="text-gray-900 amount">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
                 <span>{selected.paidMonthsPerYear} mois / an</span>
                 <span>{selected.weeklyHours} h / semaine</span>
                 {selected.isCadre
@@ -139,7 +139,7 @@ export default function SalaryContractPage() {
                   : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Non-cadre</span>
                 }
                 {annualBonuses.length > 0 && (
-                  <span>Primes annuelles : <strong className="text-blue-700">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
+                  <span>Primes annuelles : <strong className="text-blue-700 amount">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
                 )}
               </div>
             </div>

@@ -28,7 +28,7 @@ function KpiCard({ label, value, unit = '€', color, sub }) {
   return (
     <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1">
       <p className="text-xs text-gray-400 tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold ${color ?? 'text-gray-900'}`}>
+      <p className={`text-2xl font-bold amount ${color ?? 'text-gray-900'}`}>
         {value != null ? `${fmt(value)} ${unit}` : '—'}
       </p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
@@ -138,7 +138,7 @@ export default function PossessionPage() {
           {summary.byCategory?.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 ">
                 {summary.byCategory.map(cat => {
                   const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
                   const pct = summary.totalPurchasePrice > 0
@@ -151,11 +151,11 @@ export default function PossessionPage() {
                       </span>
                       <div className="flex-1 bg-gray-100 rounded-full h-2">
                         <div
-                          className={`${meta.dot} h-2 rounded-full`}
+                          className={`${meta.dot} h-2 rounded-full `}
                           style={{ width: `${Math.min(pct, 100).toFixed(1)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 w-28 text-right shrink-0">
+                      <span className="text-xs text-gray-600 w-28 text-right shrink-0 amount">
                         {fmt(cat.totalEffectiveValue)} €
                       </span>
                     </div>
@@ -205,7 +205,7 @@ export default function PossessionPage() {
                     </span>
                     <span className="text-xs text-gray-400">{items.length} bien{items.length > 1 ? 's' : ''}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 amount">
                     {fmt(catTotal)} € actuels
                   </span>
                 </div>
@@ -228,11 +228,11 @@ export default function PossessionPage() {
                           <p className="text-sm font-medium text-gray-800">{p.label}</p>
                           <p className="text-xs text-gray-400">{formatDate(p.purchaseDate)}</p>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600">
+                        <td className="px-4 py-3 text-right text-sm text-gray-600 amount">
                           {fmt(p.purchasePrice)} €
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className={`text-sm font-semibold ${p.isManualOverride ? 'text-green-600' : 'text-gray-800'}`}>
+                          <span className={`text-sm font-semibold amount ${p.isManualOverride ? 'text-green-600' : 'text-gray-800'}`}>
                             {fmt(p.effectiveCurrentValue)} €
                           </span>
                           {p.isManualOverride && (
@@ -240,14 +240,14 @@ export default function PossessionPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-sm text-red-500 font-medium">
+                          <span className="text-sm text-red-500 font-medium amount">
                             −{fmt(p.cumulatedDepreciation)} €
                           </span>
                           <span className="text-xs text-gray-400 ml-1">
                             ({parseFloat(p.depreciationRate).toFixed(1)} %)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-xs text-gray-500">
+                        <td className="px-4 py-3 text-right text-xs text-gray-500 ">
                           {p.yearsOwned < 1
                             ? `${Math.round(p.yearsOwned * 12)} mois`
                             : `${p.yearsOwned.toFixed(1)} ans`}

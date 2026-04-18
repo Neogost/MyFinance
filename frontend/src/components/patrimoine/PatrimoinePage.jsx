@@ -221,14 +221,14 @@ export default function PatrimoinePage({ currentUser }) {
               Patrimoine Brut
               <Tooltip>Somme de l'ensemble des actifs : bourse, crypto, livrets, liquidités, immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-lg font-bold text-gray-900">{fmt(patrimoineBrut)}</p>
+            <p className="text-lg font-bold text-gray-900 amount">{fmt(patrimoineBrut)}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
               Patrimoine Financier
               <Tooltip>Actifs financiers uniquement : bourse, crypto, livrets et liquidités. Hors immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-lg font-bold text-gray-700">{fmt(patrimoineFinancier)}</p>
+            <p className="text-lg font-bold text-gray-700 amount">{fmt(patrimoineFinancier)}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
@@ -239,13 +239,13 @@ export default function PatrimoinePage({ currentUser }) {
                   {investiByCategory.map(([cat, amount]) => (
                     <span key={cat} className="flex justify-between gap-3">
                       <span>{CATEGORY_META[cat]?.label ?? cat}</span>
-                      <span>{fmt(amount)}</span>
+                      <span className="amount">{fmt(amount)}</span>
                     </span>
                   ))}
                 </Tooltip>
               )}
             </p>
-            <p className="text-lg font-bold text-gray-700">{fmt(totalInvesti)}</p>
+            <p className="text-lg font-bold text-gray-700 amount">{fmt(totalInvesti)}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
@@ -256,13 +256,13 @@ export default function PatrimoinePage({ currentUser }) {
                   {gainsByCategory.map(([cat, gain]) => (
                     <span key={cat} className="flex justify-between gap-3">
                       <span>{CATEGORY_META[cat]?.label ?? cat}</span>
-                      <span className={gain >= 0 ? 'text-emerald-300' : 'text-red-300'}>{fmt(gain)}</span>
+                      <span className={`amount ${gain >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>{fmt(gain)}</span>
                     </span>
                   ))}
                 </Tooltip>
               )}
             </p>
-            <p className={`text-lg font-bold ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            <p className={`text-lg font-bold amount ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
               {fmt(totalPlusValue)}
             </p>
           </div>
@@ -272,7 +272,7 @@ export default function PatrimoinePage({ currentUser }) {
                 Plus-value YTD
                 <Tooltip>Variation de la plus-value depuis le 1er janvier {new Date().getFullYear()}, calculée par rapport au dernier relevé de l'année précédente ({ytdRefSnapshot.snapshotDate}).</Tooltip>
               </p>
-              <p className={`text-lg font-bold ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+              <p className={`text-lg font-bold amount ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {totalPlusValueYTD >= 0 ? '+' : ''}{fmt(totalPlusValueYTD)}
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function PatrimoinePage({ currentUser }) {
           {totalProjection > 0 && (
             <div className="bg-emerald-50 rounded-xl shadow-sm p-3">
               <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1">Revenus / mois</p>
-              <p className="text-lg font-bold text-emerald-700">{fmt(totalProjection)}</p>
+              <p className="text-lg font-bold text-emerald-700 amount">{fmt(totalProjection)}</p>
             </div>
           )}
           {totalProjectionAnnuelle > 0 && (
@@ -292,14 +292,14 @@ export default function PatrimoinePage({ currentUser }) {
                   {projectionByCategory.map(({ cat, rate, projected }) => (
                     <span key={cat} className="flex justify-between gap-3">
                       <span>{CATEGORY_META[cat]?.label ?? cat} ({(rate * 100).toFixed(1)} %)</span>
-                      <span className="text-amber-300">+{fmt(projected)}</span>
+                      <span className="text-amber-300 amount">+{fmt(projected)}</span>
                     </span>
                   ))}
                   <span className="block mt-2 text-gray-400 text-xs">Taux annuels × valeur actuelle, proratisé sur {daysLeft} j. Estimation indicative.</span>
                 </Tooltip>
               </p>
-              <p className="text-lg font-bold text-amber-700">+{fmt(projectionProrataYTD)}</p>
-              <p className="text-xs text-amber-500 mt-0.5">annuel : +{fmt(totalProjectionAnnuelle)}</p>
+              <p className="text-lg font-bold text-amber-700 amount">+{fmt(projectionProrataYTD)}</p>
+              <p className="text-xs text-amber-500 mt-0.5 amount">annuel : +{fmt(totalProjectionAnnuelle)}</p>
             </div>
           )}
         </div>

@@ -82,14 +82,14 @@ export default function OtherIncomePage() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           <div className="bg-white rounded-lg p-4 shadow-sm col-span-2 sm:col-span-1">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold text-gray-900 amount">
               {totalAll.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
             </p>
           </div>
           {Object.entries(TYPE_LABELS).map(([type, { label, color }]) => (
             <div key={type} className="bg-white rounded-lg p-4 shadow-sm">
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color} block mb-1 w-fit`}>{label}</span>
-              <p className="text-base font-bold text-gray-800">
+              <p className="text-base font-bold text-gray-800 amount">
                 {totalByType[type].toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
               </p>
             </div>
@@ -152,7 +152,7 @@ export default function OtherIncomePage() {
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Barème</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 amount">
                       {income.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </td>
                     <td className="px-4 py-3">

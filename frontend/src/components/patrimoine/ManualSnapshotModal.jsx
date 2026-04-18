@@ -217,7 +217,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                             type="number" min="0" step="0.01" placeholder="0.00"
                             value={row.investedAmountEur ?? ''}
                             onChange={e => setField(pos.id, 'investedAmountEur', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm text-right outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm text-right outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition amount"
                           />
                         </td>
 
@@ -226,13 +226,13 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                             type="number" min="0" step="0.01" placeholder="0.00"
                             value={row.currentValueEur ?? ''}
                             onChange={e => setField(pos.id, 'currentValueEur', e.target.value)}
-                            className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm text-right outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+                            className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm text-right outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition amount"
                           />
                         </td>
 
                         <td className="px-3 py-3 text-right">
                           {gain != null
-                            ? <span className={`font-semibold text-sm ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            ? <span className={`font-semibold text-sm amount ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                                 {gain >= 0 ? '+' : ''}{gain.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                               </span>
                             : <span className="text-gray-300">—</span>
@@ -268,15 +268,15 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
               <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 flex justify-end gap-8 text-sm">
                 <div className="text-right">
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Total investi</p>
-                  <p className="font-semibold text-gray-900">{fmt(totalInvested)}</p>
+                  <p className="font-semibold text-gray-900 amount">{fmt(totalInvested)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Valeur totale</p>
-                  <p className="font-semibold text-gray-900">{fmt(totalCurrentValue)}</p>
+                  <p className="font-semibold text-gray-900 amount">{fmt(totalCurrentValue)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Plus-value</p>
-                  <p className={`font-semibold ${totalCapitalGain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <p className={`font-semibold amount ${totalCapitalGain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {totalCapitalGain >= 0 ? '+' : ''}{fmt(totalCapitalGain)}
                   </p>
                 </div>

@@ -18,7 +18,7 @@ function ResultRow({ label, value, highlight }) {
   return (
     <tr className={highlight ? 'bg-indigo-50 font-semibold' : 'border-t border-gray-100'}>
       <td className="py-2.5 pr-6 pl-1 text-sm text-gray-600">{label}</td>
-      <td className="py-2.5 pr-1 text-right text-sm text-gray-900">{value}</td>
+      <td className="py-2.5 pr-1 text-right text-sm text-gray-900 amount">{value}</td>
     </tr>
   )
 }
@@ -133,7 +133,7 @@ export default function TaxSimulatorPage() {
                       Taux fixe {income.specificTaxRate}%
                     </span>
                   )}
-                  <span className="text-sm font-medium text-gray-900 tabular-nums">
+                  <span className="text-sm font-medium text-gray-900 tabular-nums amount">
                     {income.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </span>
                 </label>
@@ -168,16 +168,16 @@ export default function TaxSimulatorPage() {
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-indigo-50 rounded-xl p-5 text-center">
               <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1">Impôt annuel</p>
-              <p className="text-2xl font-bold text-indigo-700">{fmt(result.totalEstimatedTax)}</p>
+              <p className="text-2xl font-bold text-indigo-700 amount">{fmt(result.totalEstimatedTax)}</p>
             </div>
             <div className="bg-indigo-100 rounded-xl p-5 text-center">
               <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Impôt mensuel</p>
-              <p className="text-2xl font-bold text-indigo-800">{fmt(result.totalEstimatedTax / 12)}</p>
+              <p className="text-2xl font-bold text-indigo-800 amount">{fmt(result.totalEstimatedTax / 12)}</p>
               <p className="text-xs text-indigo-400 mt-1">÷ 12 mois</p>
             </div>
             <div className="bg-indigo-50 rounded-xl p-5 text-center">
               <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1">Taux effectif</p>
-              <p className="text-2xl font-bold text-indigo-700">{result.effectiveTaxRate?.toFixed(2)} %</p>
+              <p className="text-2xl font-bold text-indigo-700 amount">{result.effectiveTaxRate?.toFixed(2)} %</p>
             </div>
           </div>
 

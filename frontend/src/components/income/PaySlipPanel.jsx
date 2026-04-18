@@ -100,19 +100,19 @@ export default function PaySlipPanel({ contractId, projection }) {
               {slips.map(slip => (
                 <tr key={slip.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
                   <td className="px-3 py-2.5 font-medium text-gray-800">{formatPeriod(slip.period)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700">
+                  <td className="px-3 py-2.5 text-right text-gray-700 amount">
                     {slip.grossSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
-                  <td className="px-3 py-2.5 text-right hidden sm:table-cell">
+                  <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
                     <DiffBadge value={diff(slip.grossSalary, projection?.monthlyGrossSalary)} />
                   </td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700">
+                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
                     {slip.netSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
-                  <td className="px-3 py-2.5 text-right hidden sm:table-cell">
+                  <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
                     <DiffBadge value={diff(slip.netSalary, projection?.monthlyNetSalary)} />
                   </td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 hidden md:table-cell">
+                  <td className="px-3 py-2.5 text-right text-gray-500 hidden md:table-cell amount">
                     {slip.incomeTaxWithholding?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
                   <td className="px-3 py-2.5">

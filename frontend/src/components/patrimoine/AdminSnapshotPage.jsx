@@ -147,14 +147,14 @@ export default function AdminSnapshotPage() {
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {fmtDate(snap.snapshotDate)}
                       </td>
-                      <td className="px-4 py-4 text-right text-gray-700">
+                      <td className="px-4 py-4 text-right text-gray-700 amount">
                         {fmt(snap.totalInvestedEur)}
                       </td>
-                      <td className="px-4 py-4 text-right text-gray-700">
+                      <td className="px-4 py-4 text-right text-gray-700 amount">
                         {fmt(snap.totalCurrentValueEur)}
                       </td>
                       <td className="px-4 py-4 text-right">
-                        <span className={`font-semibold ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        <span className={`font-semibold amount ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                           {gain >= 0 ? '+' : ''}{fmt(snap.totalCapitalGainEur)}
                         </span>
                       </td>

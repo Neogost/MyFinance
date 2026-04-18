@@ -11,7 +11,7 @@ function CustomTooltip({ active, payload }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-gray-800 mb-1">{d.label}</p>
-      <p className={d.realValue >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+      <p className={d.realValue >= 0 ? 'text-emerald-600 amount' : 'text-red-600'}>
         {d.realValue >= 0 ? '+' : ''}{fmtEur.format(d.realValue)}
       </p>
     </div>
@@ -101,7 +101,7 @@ export default function CapitalGainsByCategoryChart() {
                 <span className="text-xs text-red-400 italic shrink-0">en perte</span>
               )}
             </div>
-            <span className={`text-xs font-semibold tabular-nums shrink-0 ${d.realValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            <span className={`text-xs font-semibold tabular-nums shrink-0 amount ${d.realValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
               {d.realValue >= 0 ? '+' : ''}{fmtEur.format(d.realValue)}
             </span>
           </div>
@@ -109,7 +109,7 @@ export default function CapitalGainsByCategoryChart() {
 
         <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
           <span className="text-xs font-semibold text-gray-900">Total</span>
-          <span className={`text-xs font-bold tabular-nums ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+          <span className={`text-xs font-bold tabular-nums amount ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
             {totalGain >= 0 ? '+' : ''}{fmtEur.format(totalGain)}
           </span>
         </div>

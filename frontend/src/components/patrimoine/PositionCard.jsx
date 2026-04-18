@@ -58,17 +58,17 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-0.5">Valeur actuelle</p>
-          <p className="text-base font-bold text-gray-900">{fmt(c.currentValueEur)}</p>
+          <p className="text-base font-bold text-gray-900 amount">{fmt(c.currentValueEur)}</p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-0.5">Investi</p>
-          <p className="text-base font-bold text-gray-700">{fmt(c.investedAmountEur)}</p>
+          <p className="text-base font-bold text-gray-700 amount">{fmt(c.investedAmountEur)}</p>
         </div>
 
         {!isLiquidite && c.capitalGainEur != null && parseFloat(c.capitalGainEur) !== 0 && (
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-400 mb-0.5">Plus-value</p>
-            <p className={`text-sm font-semibold ${capitalGainColor}`}>{fmt(c.capitalGainEur)}</p>
+            <p className={`text-sm font-semibold amount ${capitalGainColor}`}>{fmt(c.capitalGainEur)}</p>
           </div>
         )}
 
@@ -82,7 +82,7 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
         {isBourseOrCrypto && position.instrument?.lastPrice != null && (
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-400 mb-0.5">Prix marché</p>
-            <p className="text-sm font-semibold text-gray-700">
+            <p className="text-sm font-semibold text-gray-700 amount">
               {fmt(position.instrument.lastPrice, position.instrument.currency)}
             </p>
           </div>
@@ -98,7 +98,7 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
         {c.monthlyIncomeProjectionEur != null && (
           <div className="bg-emerald-50 rounded-lg p-3">
             <p className="text-xs text-emerald-600 mb-0.5">Projection / mois</p>
-            <p className="text-sm font-semibold text-emerald-700">{fmt(c.monthlyIncomeProjectionEur)}</p>
+            <p className="text-sm font-semibold text-emerald-700 amount">{fmt(c.monthlyIncomeProjectionEur)}</p>
           </div>
         )}
       </div>

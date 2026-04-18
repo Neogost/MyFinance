@@ -64,7 +64,10 @@ function BilanRow({ label, amount, badge, dimmed = false }) {
         )}
       </td>
       <td className={`px-5 py-2.5 text-sm font-semibold text-right w-36 ${isNeg ? 'text-red-600' : 'text-gray-900'}`}>
-        {amount == null ? <span className="text-gray-400 font-normal text-xs">—</span> : `${fmt(amount)} €`}
+        {amount == null
+          ? <span className="text-gray-400 font-normal text-xs">—</span>
+          : <span className="amount">{fmt(amount)} €</span>
+        }
       </td>
     </tr>
   )
@@ -75,7 +78,7 @@ function TotalRow({ label, amount, color = 'text-gray-900' }) {
     <tr className="border-t-2 border-gray-300 bg-gray-50">
       <td className="px-5 py-2.5 text-sm font-bold text-gray-700 text-right">{label}</td>
       <td className={`px-5 py-2.5 text-sm font-bold text-right w-36 ${color}`}>
-        {fmt(amount)} €
+        <span className="amount">{fmt(amount)} €</span>
       </td>
     </tr>
   )
@@ -330,7 +333,7 @@ export default function BilanFinancierPage() {
                   <tr key={cat} className="border-t border-gray-100 hover:bg-gray-50 transition">
                     <td className="px-4 py-2.5 text-sm text-gray-800">{ASSET_LABELS[cat] ?? cat}</td>
                     <td className="px-4 py-2.5 text-sm font-semibold text-gray-900 text-right">
-                      {fmt(val)} €
+                      <span className="amount">{fmt(val)} €</span>
                     </td>
                   </tr>
                 ))
@@ -339,7 +342,7 @@ export default function BilanFinancierPage() {
           </table>
           <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-4 py-2.5">
             <span className="text-sm font-bold text-green-700">TOTAL</span>
-            <span className="text-sm font-bold text-green-700">{fmt(totalActif)} €</span>
+            <span className="text-sm font-bold text-green-700 amount">{fmt(totalActif)} €</span>
           </div>
         </div>
 
@@ -361,7 +364,7 @@ export default function BilanFinancierPage() {
                 <tr className="border-t border-gray-100 hover:bg-gray-50 transition">
                   <td className="px-4 py-2.5 text-sm text-gray-800">Immobilier physique</td>
                   <td className="px-4 py-2.5 text-sm font-semibold text-gray-900 text-right">
-                    {fmt(immoPhysiqueValue)} €
+                    <span className="amount">{fmt(immoPhysiqueValue)} €</span>
                   </td>
                 </tr>
               )}
@@ -373,7 +376,7 @@ export default function BilanFinancierPage() {
                       {POSSESSION_LABELS[p.category] ?? p.category}
                     </td>
                     <td className="px-4 py-2.5 text-sm font-semibold text-gray-900 text-right">
-                      {fmt(p.totalEffectiveValue)} €
+                      <span className="amount">{fmt(p.totalEffectiveValue)} €</span>
                     </td>
                   </tr>
                 ))
@@ -382,7 +385,7 @@ export default function BilanFinancierPage() {
           </table>
           <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-4 py-2.5">
             <span className="text-sm font-bold text-amber-700">TOTAL</span>
-            <span className="text-sm font-bold text-amber-700">{fmt(totalPassif)} €</span>
+            <span className="text-sm font-bold text-amber-700 amount">{fmt(totalPassif)} €</span>
           </div>
         </div>
       </div>
@@ -398,7 +401,7 @@ export default function BilanFinancierPage() {
               <p className="text-xs text-red-500 mt-0.5">Capacité d'épargne négative</p>
             )}
           </div>
-          <span className={`text-2xl font-bold ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          <span className={`text-2xl font-bold amount ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
             {delta >= 0 ? '+' : ''}{fmt(delta * mult)} €
           </span>
         </div>

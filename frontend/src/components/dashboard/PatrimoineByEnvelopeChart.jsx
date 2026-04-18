@@ -11,7 +11,7 @@ function CustomTooltip({ active, payload }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-md text-xs">
       <p className="font-semibold text-gray-800 mb-1">{d.label}</p>
-      <p className="text-gray-700">{fmtEur.format(d.value)}</p>
+      <p className="text-gray-700 amount">{fmtEur.format(d.value)}</p>
       <p className="text-gray-400">{d.pct} %</p>
     </div>
   )
@@ -99,14 +99,14 @@ export default function PatrimoineByEnvelopeChart() {
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="text-xs text-gray-400 tabular-nums">{d.pct} %</span>
-              <span className="text-xs font-semibold text-gray-800 tabular-nums">{fmtEur.format(d.value)}</span>
+              <span className="text-xs font-semibold text-gray-800 tabular-nums amount">{fmtEur.format(d.value)}</span>
             </div>
           </div>
         ))}
 
         <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
           <span className="text-xs font-semibold text-gray-900">Total</span>
-          <span className="text-xs font-bold text-gray-900 tabular-nums">{fmtEur.format(total)}</span>
+          <span className="text-xs font-bold text-gray-900 tabular-nums amount">{fmtEur.format(total)}</span>
         </div>
       </div>
     </div>

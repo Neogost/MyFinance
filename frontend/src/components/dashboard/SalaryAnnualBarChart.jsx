@@ -18,19 +18,19 @@ function CustomTooltip({ active, payload, label }) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
       <p className="font-semibold text-gray-800 mb-1">{label}</p>
-      {d.companyName && <p className="text-gray-400 mb-2">{d.companyName}</p>}
+      {d.companyName && <p className="text-gray-400 mb-2 amount">{d.companyName}</p>}
       <div className="flex justify-between gap-4">
         <span className="text-gray-500">Brut</span>
-        <span className="font-medium text-gray-700">{fmtEur(d.brut)}</span>
+        <span className="font-medium text-gray-700 amount">{fmtEur(d.brut)}</span>
       </div>
       <div className="flex justify-between gap-4">
         <span style={{ color: '#7c3aed' }}>Net imposable</span>
-        <span className="font-medium text-gray-700">{fmtEur(d.netImposable)}</span>
+        <span className="font-medium text-gray-700 amount">{fmtEur(d.netImposable)}</span>
       </div>
       {d.netAfterTax != null && (
         <div className="flex justify-between gap-4">
           <span style={{ color: '#059669' }}>Net d'impôt</span>
-          <span className="font-medium text-gray-700">{fmtEur(d.netAfterTax)}</span>
+          <span className="font-medium text-gray-700 amount">{fmtEur(d.netAfterTax)}</span>
         </div>
       )}
     </div>
@@ -144,7 +144,7 @@ export default function SalaryAnnualBarChart() {
       <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }} barCategoryGap="35%">
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
         <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6b7280' }} />
-        <YAxis
+        <YAxis 
           tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
           tick={{ fontSize: 11, fill: '#6b7280' }}
           width={45}
@@ -161,7 +161,7 @@ export default function SalaryAnnualBarChart() {
           <Bar dataKey="segImpot" name="Impôt estimé" stackId="s" fill="#f97316" />
         )}
         {/* Segment haut : charges sociales (brut - net imposable) */}
-        <Bar
+        <Bar 
           dataKey="segCharges"
           name="Brut"
           stackId="s"

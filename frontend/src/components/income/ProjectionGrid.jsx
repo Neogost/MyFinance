@@ -29,21 +29,21 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
             <p className="text-xs text-gray-400">Brut</p>
             {grossTooltip && <Tooltip content={grossTooltip} />}
           </div>
-          <p className="text-base font-bold text-gray-800">{fmt(gross)}</p>
+          <p className="text-base font-bold text-gray-800 amount">{fmt(gross)}</p>
         </div>
         <div>
           <div className="flex items-center gap-1 mb-0.5 h-4 leading-4">
             <p className="text-xs text-gray-400">Net imposable</p>
             {netImposableTooltip && <Tooltip content={netImposableTooltip} />}
           </div>
-          <p className="text-base font-bold text-indigo-600">{fmt(netImposable)}</p>
+          <p className="text-base font-bold text-indigo-600 amount">{fmt(netImposable)}</p>
         </div>
         <div>
           <div className="flex items-center gap-1 mb-0.5 h-4 leading-4">
             <p className="text-xs text-gray-400">Net d'impôt</p>
             {netAfterTaxTooltip && <Tooltip content={netAfterTaxTooltip} />}
           </div>
-          <p className={`text-base font-bold ${netAfterTax != null ? 'text-green-600' : 'text-gray-400'}`}>
+          <p className={`text-base font-bold amount ${netAfterTax != null ? 'text-green-600' : 'text-gray-400'}`}>
             {netAfterTax != null ? fmt(netAfterTax) : 'Non calculé'}
           </p>
         </div>
@@ -94,12 +94,12 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       <div className="space-y-1">
         <div className="flex justify-between gap-4">
           <span className="text-gray-300">{baseLabel}</span>
-          <span className="font-semibold">{fmt(baseValue)}</span>
+          <span className="font-semibold amount">{fmt(baseValue)}</span>
         </div>
         {annualBonuses.map(b => (
           <div key={b.id} className="flex justify-between gap-4">
             <span className="text-gray-300">{b.label}</span>
-            <span className="font-semibold text-blue-300">+{fmt(b.grossAmount / bonusDivisor)}</span>
+            <span className="font-semibold text-blue-300 amount">+{fmt(b.grossAmount / bonusDivisor)}</span>
           </div>
         ))}
         {superGross != null && (
@@ -107,7 +107,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
             <div className="border-t border-gray-600 my-1" />
             <div className="flex justify-between gap-4">
               <span className="text-gray-300">Coût employeur estimé</span>
-              <span className="font-semibold text-orange-300">{fmt(superGross)}</span>
+              <span className="font-semibold text-orange-300 amount">{fmt(superGross)}</span>
             </div>
             <div className="text-gray-500 text-xs">dont cotisations patronales ≈ 45 %</div>
           </>
@@ -120,12 +120,12 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Net imposable estimé</span>
-        <span className="font-semibold">{fmt(baseNet)}</span>
+        <span className="font-semibold amount">{fmt(baseNet)}</span>
       </div>
       {bonusNet > 0 && (
         <div className="flex justify-between gap-4">
           <span className="text-gray-300">Primes (≈75%)</span>
-          <span className="font-semibold text-blue-300">+{fmt(bonusNet)}</span>
+          <span className="font-semibold text-blue-300 amount">+{fmt(bonusNet)}</span>
         </div>
       )}
     </div>
@@ -135,22 +135,22 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Net imposable</span>
-        <span className="font-semibold">{fmt(netImposable)}</span>
+        <span className="font-semibold amount">{fmt(netImposable)}</span>
       </div>
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Impôt estimé</span>
-        <span className="font-semibold text-red-300">−{fmt(taxAmount)}</span>
+        <span className="font-semibold text-red-300 amount">−{fmt(taxAmount)}</span>
       </div>
       {trAmount > 0 && (
         <div className="flex justify-between gap-4">
           <span className="text-gray-300">TR part employeur</span>
-          <span className="font-semibold text-green-300">+{fmt(trAmount)}</span>
+          <span className="font-semibold text-green-300 amount">+{fmt(trAmount)}</span>
         </div>
       )}
       {benefits.map(b => (
         <div key={b.id} className="flex justify-between gap-4">
           <span className="text-gray-300">{b.label}</span>
-          <span className="font-semibold text-green-300">+{fmt(b.monthlyAmount * benefitMultiplier)}</span>
+          <span className="font-semibold text-green-300 amount">+{fmt(b.monthlyAmount * benefitMultiplier)}</span>
         </div>
       ))}
     </div>
@@ -214,15 +214,15 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           <div className="flex gap-6 text-sm">
             <div>
               <span className="text-gray-500">Valeur faciale : </span>
-              <span className="font-semibold text-gray-800">{contract.mealVoucherAmount?.toFixed(2)} €</span>
+              <span className="font-semibold text-gray-800 amount">{contract.mealVoucherAmount?.toFixed(2)} €</span>
             </div>
             <div>
               <span className="text-gray-500">Votre part ({contract.mealVoucherEmployeeRate}%) : </span>
-              <span className="font-semibold text-red-600">−{fmt(contract.employeeMonthlyMealVoucherCost)}</span>
+              <span className="font-semibold text-red-600 amount">−{fmt(contract.employeeMonthlyMealVoucherCost)}</span>
             </div>
             <div>
               <span className="text-gray-500">Part employeur : </span>
-              <span className="font-semibold text-green-600">+{fmt(contract.employerMonthlyMealVoucherCost)}</span>
+              <span className="font-semibold text-green-600 amount">+{fmt(contract.employerMonthlyMealVoucherCost)}</span>
             </div>
           </div>
         </div>
@@ -237,7 +237,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
             {benefits.map(b => (
               <div key={b.id}>
                 <span className="text-gray-500">{b.label} : </span>
-                <span className="font-semibold text-green-700">+{fmt(b.monthlyAmount)} / mois</span>
+                <span className="font-semibold text-green-700 amount">+{fmt(b.monthlyAmount)} / mois</span>
               </div>
             ))}
           </div>

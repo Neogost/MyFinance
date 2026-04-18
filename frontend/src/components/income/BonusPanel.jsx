@@ -59,7 +59,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
           {bonuses.length} prime{bonuses.length > 1 ? 's' : ''}
           {bonuses.length > 0 && (
             <span className="ml-2 font-semibold text-gray-700">
-              — Total brut : {total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+              — Total brut : <span className="amount">{total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
             </span>
           )}
         </p>
@@ -101,7 +101,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
                       : formatPaymentDate(bonus.paymentDate)
                     }
                   </td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700">
+                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
                     {bonus.grossAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
                   <td className="px-3 py-2.5">

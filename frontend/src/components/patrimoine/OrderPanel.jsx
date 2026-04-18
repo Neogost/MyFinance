@@ -269,13 +269,13 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
           <div className={`grid gap-3 px-6 py-3 bg-gray-50 ${isBourseOrCrypto ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div>
               <p className="text-xs text-gray-400">Total investi</p>
-              <p className="text-sm font-bold text-green-700">
+              <p className="text-sm font-bold text-green-700 amount">
                 +{totalAchete.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-400">Total retiré</p>
-              <p className="text-sm font-bold text-red-600">
+              <p className="text-sm font-bold text-red-600 amount">
                 -{totalVendu.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
               </p>
             </div>
@@ -323,7 +323,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="text-right">
-                    <span className={`text-sm font-bold ${isDebit ? 'text-red-600' : 'text-green-700'}`}>
+                    <span className={`text-sm font-bold amount ${isDebit ? 'text-red-600' : 'text-green-700'}`}>
                       {isDebit ? '-' : '+'}
                       {parseFloat(order.amountEur).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </span>

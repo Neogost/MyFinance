@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* ── Mode masquage des valeurs ── */
+.hide-values .amount {
+  filter: blur(6px);
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+.hide-values .amount:hover {
+  filter: blur(0);
+}

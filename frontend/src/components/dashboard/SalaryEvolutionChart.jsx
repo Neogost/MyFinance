@@ -25,12 +25,12 @@ function CustomTooltip({ active, payload, label }) {
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold text-gray-800 mb-1">{label}</p>
       {companyName && (
-        <p className="text-gray-500 text-xs mb-2">{companyName}</p>
+        <p className="text-gray-500 text-xs mb-2 amount">{companyName}</p>
       )}
       {payload.map(entry => (
         <div key={entry.dataKey} className="flex justify-between gap-4">
           <span style={{ color: entry.color }}>{entry.name}</span>
-          <span className="font-medium text-gray-700">{formatEuros(entry.value)}</span>
+          <span className="font-medium text-gray-700 amount">{formatEuros(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -89,7 +89,7 @@ export default function SalaryEvolutionChart() {
           interval="preserveStartEnd"
         />
         <YAxis
-          tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
+          tickFormatter={v => `${(v / 1000).toFixed(0)}k `}
           tick={{ fontSize: 11, fill: '#6b7280' }}
           width={45}
         />

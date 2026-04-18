@@ -82,7 +82,7 @@ export default function RevisionPanel({ contractId, activeRevisionId, onRevision
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{r.label ?? '—'}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700">{fmt(r.annualGrossSalary)}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">{fmt(r.annualGrossSalary)}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1 justify-end">
                       <button onClick={() => setFormTarget(r)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">

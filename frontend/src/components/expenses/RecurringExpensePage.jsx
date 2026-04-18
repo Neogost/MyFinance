@@ -37,7 +37,7 @@ function SavingsCard({ label, value, sub, color, unit = '€', labelTooltip }) {
           </span>
         )}
       </p>
-      <p className={`text-2xl font-bold ${color ?? 'text-gray-900'}`}>
+      <p className={`text-2xl amount font-bold ${color ?? 'text-gray-900'}`}>
         {value != null ? `${fmt(value)} ${unit}` : '—'}
       </p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
@@ -140,7 +140,7 @@ export default function RecurringExpensePage() {
                     {summary.breakdownEstimatedTax != null ? (
                       <div className="flex justify-between gap-6 text-red-300">
                         <span>− PAS estimé</span>
-                        <span className="font-medium">−{fmt(summary.breakdownEstimatedTax)} €</span>
+                        <span className="font-medium amount">−{fmt(summary.breakdownEstimatedTax)} €</span>
                       </div>
                     ) : (
                       <div className="text-yellow-300 text-xs">⚠ Profil fiscal incomplet (PAS non déduit)</div>
@@ -148,18 +148,18 @@ export default function RecurringExpensePage() {
                     {summary.breakdownBenefits != null && (
                       <div className="flex justify-between gap-6 text-green-300">
                         <span>+ Avantages en nature</span>
-                        <span className="font-medium">+{fmt(summary.breakdownBenefits)} €</span>
+                        <span className="font-medium amount">+{fmt(summary.breakdownBenefits)} €</span>
                       </div>
                     )}
                     {summary.breakdownMealVoucherEmployer != null && (
                       <div className="flex justify-between gap-6 text-blue-300">
                         <span>+ TR part employeur</span>
-                        <span className="font-medium">+{fmt(summary.breakdownMealVoucherEmployer)} €</span>
+                        <span className="font-medium amount">+{fmt(summary.breakdownMealVoucherEmployer)} €</span>
                       </div>
                     )}
                     <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
                       <span>= Revenu net mensuel</span>
-                      <span>{fmt(summary.monthlyNetIncome)} €</span>
+                      <span className="amount">{fmt(summary.monthlyNetIncome)} €</span>
                     </div>
                   </div>
                 )
@@ -188,7 +188,7 @@ export default function RecurringExpensePage() {
           {summary.byCategory?.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 ">
                 {summary.byCategory.map(cat => {
                   const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
                   const pct = summary.totalMonthlyExpenses > 0
@@ -205,7 +205,7 @@ export default function RecurringExpensePage() {
                           style={{ width: `${Math.min(pct, 100).toFixed(1)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 w-24 text-right shrink-0">
+                      <span className="text-xs text-gray-600 w-24 text-right shrink-0 amount">
                         {fmt(cat.monthlyAmount)} €/mois
                       </span>
                     </div>
@@ -252,7 +252,7 @@ export default function RecurringExpensePage() {
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color}`}>
                     {meta.label}
                   </span>
-                  <span className="text-sm font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700 amount">
                     {fmt(catMonthly)} €/mois
                   </span>
                 </div>
@@ -261,15 +261,15 @@ export default function RecurringExpensePage() {
                     {items.map(exp => (
                       <tr key={exp.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
                         <td className="px-4 py-3 text-sm text-gray-800 font-medium">{exp.label}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">
+                        <td className="px-4 py-3 text-xs text-gray-500 amount">
                           {fmt(exp.amount)} € {FREQ_LABEL[exp.frequency]}
                           {exp.sharePercentage < 100 && (
                             <span className="ml-1 text-indigo-500">({exp.sharePercentage} %)</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-sm font-semibold text-gray-900">{fmt(exp.monthlyAmount)} €/mois</span>
-                          <span className="text-xs text-gray-400 ml-2">{fmt(exp.annualAmount)} €/an</span>
+                          <span className="text-sm font-semibold text-gray-900 amount">{fmt(exp.monthlyAmount)} €/mois</span>
+                          <span className="text-xs text-gray-400 ml-2 amount">{fmt(exp.annualAmount)} €/an</span>
                         </td>
                         {exp.endDate && (
                           <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
@@ -308,12 +308,12 @@ export default function RecurringExpensePage() {
         <div className="mt-4 flex justify-end gap-8 text-sm text-gray-600 bg-white rounded-xl shadow-sm px-6 py-4">
           <span>
             Total affiché :
-            <strong className="ml-2 text-gray-900">
+            <strong className="ml-2 text-gray-900 amount">
               {fmt(filtered.reduce((s, e) => s + e.monthlyAmount, 0))} €/mois
             </strong>
           </span>
           <span>
-            <strong className="text-gray-900">
+            <strong className="text-gray-900 amount">
               {fmt(filtered.reduce((s, e) => s + e.annualAmount, 0))} €/an
             </strong>
           </span>

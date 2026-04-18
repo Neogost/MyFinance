@@ -17,6 +17,14 @@ import { logout } from './api/auth'
 export default function App() {
   const [user, setUser]               = useState(null)
   const [currentPage, setCurrentPage] = useState('dashboard')
+  const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
+
+  function toggleHideValues() {
+    setHideValues(v => {
+      localStorage.setItem('hideValues', String(!v))
+      return !v
+    })
+  }
 
   async function handleLogout() {
     await logout()
@@ -34,12 +42,14 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className={`min-h-screen bg-gray-100${hideValues ? ' hide-values' : ''}`}>
       <Navigation
         user={user}
         currentPage={currentPage}
         onNavigate={handleNavigate}
         onLogout={handleLogout}
+        hideValues={hideValues}
+        onToggleHideValues={toggleHideValues}
       />
 
       <main className="p-8">
