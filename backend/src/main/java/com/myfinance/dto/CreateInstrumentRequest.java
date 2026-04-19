@@ -9,5 +9,6 @@ public record CreateInstrumentRequest(
         String isin,
         String ticker,
         @NotBlank String name,
-        @NotBlank String currency
+        @NotBlank String currency,
+        Boolean stablePrice
 ) {}

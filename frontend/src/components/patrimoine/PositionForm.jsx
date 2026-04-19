@@ -24,6 +24,7 @@ function InstrumentSearch({ category, value, onChange }) {
   const [creating, setCreating]           = useState(false)
   const [newName, setNewName]             = useState('')
   const [newCurrency, setNewCurrency]     = useState('EUR')
+  const [newStablePrice, setNewStablePrice] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
   const [createError, setCreateError]     = useState(null)
   const debounceRef                       = useRef(null)
@@ -66,6 +67,7 @@ function InstrumentSearch({ category, value, onChange }) {
     setCreating(true)
     setNewName('')
     setNewCurrency('EUR')
+    setNewStablePrice(false)
     setCreateError(null)
   }
 
@@ -76,10 +78,11 @@ function InstrumentSearch({ category, value, onChange }) {
     try {
       const payload = {
         category,
-        isin:     category === 'BOURSE' ? query.trim().toUpperCase() : null,
-        ticker:   category === 'CRYPTO' ? query.trim().toUpperCase() : null,
-        name:     newName.trim(),
-        currency: newCurrency,
+        isin:        category === 'BOURSE' ? query.trim().toUpperCase() : null,
+        ticker:      category === 'CRYPTO' ? query.trim().toUpperCase() : null,
+        name:        newName.trim(),
+        currency:    newCurrency,
+        stablePrice: newStablePrice,
       }
       const created = await createInstrument(payload)
       select(created)
@@ -157,6 +160,15 @@ function InstrumentSearch({ category, value, onChange }) {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-700 select-none">
+            <input
+              type="checkbox"
+              checked={newStablePrice}
+              onChange={e => setNewStablePrice(e.target.checked)}
+              className="accent-indigo-600"
+            />
+            Prix fixe (fonds euros, stablecoin) — pas d'indicateur d'obsolescence
+          </label>
           {createError && (
             <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">{createError}</p>
           )}

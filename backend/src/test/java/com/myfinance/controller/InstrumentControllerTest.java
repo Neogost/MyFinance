@@ -46,12 +46,12 @@ class InstrumentControllerTest {
         etfDto = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0));
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false);
 
         bitcoinDto = new InstrumentDto(
                 2L, AssetCategory.CRYPTO, null, "BTC",
                 "Bitcoin", "USD",
-                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0));
+                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false);
     }
 
     // ── GET /api/instruments ───────────────────────────────────
@@ -126,7 +126,7 @@ class InstrumentControllerTest {
         InstrumentDto updated = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("95.00"), LocalDateTime.now());
+                new BigDecimal("95.00"), LocalDateTime.now(), false);
 
         when(instrumentService.updatePrices(any())).thenReturn(List.of(updated));
 
@@ -154,6 +154,34 @@ class InstrumentControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isNotFound());
+    }
+
+    // ── PATCH /api/instruments/{id}/stable-price ───────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateStablePrice_asAdmin_retourne200() throws Exception {
+        InstrumentDto stable = new InstrumentDto(
+                1L, AssetCategory.BOURSE, "FR0010315770", null,
+                "Lyxor PEA Nasdaq-100", "EUR",
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true);
+
+        when(instrumentService.updateStablePrice(1L, true)).thenReturn(stable);
+
+        mockMvc.perform(patch("/api/instruments/1/stable-price")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stablePrice\": true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stablePrice").value(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void updateStablePrice_asUser_retourne403() throws Exception {
+        mockMvc.perform(patch("/api/instruments/1/stable-price")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stablePrice\": true}"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

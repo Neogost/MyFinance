@@ -50,4 +50,9 @@ public class Instrument {
 
     /** Date de la dernière mise à jour du prix */
     private LocalDateTime lastPriceUpdatedAt;
+
+    /** Vrai si le prix est fixe — pas d'indicateur d'obsolescence (fonds euros, stablecoins) */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean stablePrice = false;
 }

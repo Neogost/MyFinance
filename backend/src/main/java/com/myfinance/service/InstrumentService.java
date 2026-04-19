@@ -53,6 +53,7 @@ public class InstrumentService {
                 .ticker(request.ticker())
                 .name(request.name())
                 .currency(request.currency())
+                .stablePrice(Boolean.TRUE.equals(request.stablePrice()))
                 .build();
 
         return InstrumentDto.from(instrumentRepository.save(instrument));
@@ -69,7 +70,16 @@ public class InstrumentService {
         instrument.setTicker(request.ticker());
         instrument.setName(request.name());
         instrument.setCurrency(request.currency());
+        instrument.setStablePrice(Boolean.TRUE.equals(request.stablePrice()));
 
+        return InstrumentDto.from(instrumentRepository.save(instrument));
+    }
+
+    // ── Prix fixe ─────────────────────────────────────────────
+
+    public InstrumentDto updateStablePrice(Long id, boolean stablePrice) {
+        Instrument instrument = getOrThrow(id);
+        instrument.setStablePrice(stablePrice);
         return InstrumentDto.from(instrumentRepository.save(instrument));
     }
 

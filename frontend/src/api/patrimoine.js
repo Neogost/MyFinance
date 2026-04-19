@@ -8,8 +8,9 @@ export const getInstruments          = (params = {}) => api.get('/api/instrument
 export const getInstrument           = (id)           => api.get(`/api/instruments/${id}`).then(r => r.data)
 export const createInstrument        = (data)         => api.post('/api/instruments', data).then(r => r.data)
 export const updateInstrument        = (id, data)     => api.put(`/api/instruments/${id}`, data).then(r => r.data)
-export const getActiveInstruments    = ()             => api.get('/api/instruments/active').then(r => r.data)
-export const updateInstrumentPrices  = (updates)      => api.put('/api/instruments/prices', updates).then(r => r.data)
+export const getActiveInstruments      = ()                    => api.get('/api/instruments/active').then(r => r.data)
+export const updateInstrumentPrices    = (updates)             => api.put('/api/instruments/prices', updates).then(r => r.data)
+export const updateInstrumentStablePrice = (id, stablePrice)  => api.patch(`/api/instruments/${id}/stable-price`, { stablePrice }).then(r => r.data)
 
 // ── Positions ──────────────────────────────────────────────────
 

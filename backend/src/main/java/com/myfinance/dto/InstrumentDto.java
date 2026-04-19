@@ -14,7 +14,8 @@ public record InstrumentDto(
         String name,
         String currency,
         BigDecimal lastPrice,
-        LocalDateTime lastPriceUpdatedAt
+        LocalDateTime lastPriceUpdatedAt,
+        boolean stablePrice
 ) {
     public static InstrumentDto from(Instrument instrument) {
         return new InstrumentDto(
@@ -25,7 +26,8 @@ public record InstrumentDto(
                 instrument.getName(),
                 instrument.getCurrency(),
                 instrument.getLastPrice(),
-                instrument.getLastPriceUpdatedAt()
+                instrument.getLastPriceUpdatedAt(),
+                instrument.isStablePrice()
         );
     }
 }

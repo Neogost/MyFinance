@@ -4,6 +4,7 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
+import com.myfinance.dto.UpdateStablePriceRequest;
 import com.myfinance.service.InstrumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,15 @@ public class InstrumentController {
             @PathVariable Long id,
             @Valid @RequestBody CreateInstrumentRequest request) {
         return instrumentService.update(id, request);
+    }
+
+    /** PATCH /api/instruments/{id}/stable-price — marquer un instrument comme prix fixe (ADMIN) */
+    @PatchMapping("/{id}/stable-price")
+    @PreAuthorize("hasRole('ADMIN')")
+    public InstrumentDto updateStablePrice(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateStablePriceRequest request) {
+        return instrumentService.updateStablePrice(id, request.stablePrice());
     }
 
     /** GET /api/instruments/active — instruments liés à au moins une position ACTIVE */
