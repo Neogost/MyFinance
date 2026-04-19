@@ -1,7 +1,9 @@
+import FireProjectionWidget from './FireProjectionWidget'
 import SalaryEvolutionChart from './SalaryEvolutionChart'
 import CapitalGainsByCategoryChart from './CapitalGainsByCategoryChart'
 import PatrimoineByCategoryChart from './PatrimoineByCategoryChart'
 import PatrimoineByEnvelopeChart from './PatrimoineByEnvelopeChart'
+import PatrimoineEvolutionChart from './PatrimoineEvolutionChart'
 import ExpensesByCategoryChart from './ExpensesByCategoryChart'
 import PassifsByCategoryChart from './PassifsByCategoryChart'
 import SalaryAnnualBarChart from './SalaryAnnualBarChart'
@@ -73,8 +75,21 @@ export default function DashboardPage({ user }) {
       <div>
         <SectionTitle
           title="Patrimoine"
-          subtitle="Répartition et plus-values des positions actives."
+          subtitle="Évolution, répartition et plus-values des positions actives."
         />
+
+        <div className="grid grid-cols-3 gap-6 mb-6">
+          <div className="col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution du patrimoine</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              Valeur brute par catégorie au fil des relevés saisis.
+            </p>
+            <PatrimoineEvolutionChart />
+          </div>
+          <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-200 p-6">
+            <FireProjectionWidget />
+          </div>
+        </div>
 
         <div className="grid grid-cols-4 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
