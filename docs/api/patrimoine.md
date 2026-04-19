@@ -659,6 +659,44 @@ Recalculer un snapshot existant avec les données actuelles (prix marché + ordr
 
 ---
 
+---
+
+## GET `/api/patrimoine/referentiel`
+
+Retourne le référentiel INSEE Enquête Patrimoine 2021-2022 : seuils de patrimoine brut par tranche d'âge et par décile (D1–D9).
+
+**Accès** : authentifié
+
+### Réponse 200
+
+```json
+{
+  "source": "INSEE Enquête Patrimoine 2021-2022",
+  "tranches": [
+    {
+      "label": "18-29 ans",
+      "ageMin": 18,
+      "ageMax": 29,
+      "d1": 0,
+      "d2": 200,
+      "d3": 2000,
+      "d4": 6000,
+      "d5": 13000,
+      "d6": 27000,
+      "d7": 53000,
+      "d8": 100000,
+      "d9": 193000
+    }
+  ]
+}
+```
+
+### Utilisation frontend
+
+`PatrimoinePage` appelle cet endpoint au chargement, calcule l'âge de l'utilisateur depuis son `birthDate` (fourni par `GET /api/auth/me`), trouve la tranche correspondante et détermine dans quel décile se situe son patrimoine brut. Affiché sous la valeur brute : `D{rang}/10 · {label tranche}`.
+
+---
+
 ## Droits d'accès
 
 | Action | Rôle requis |
@@ -666,5 +704,6 @@ Recalculer un snapshot existant avec les données actuelles (prix marché + ordr
 | Gérer ses positions et ordres | USER, ADMIN |
 | Consulter / déclencher ses snapshots | USER, ADMIN |
 | Gérer le référentiel d'instruments | USER, ADMIN |
+| Consulter le référentiel INSEE | USER, ADMIN |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 | Créer / modifier / supprimer des snapshots admin | ADMIN uniquement — voir [`docs/api/admin-snapshots.md`](admin-snapshots.md) |

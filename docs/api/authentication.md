@@ -41,9 +41,12 @@ username=admin&password=motdepasse
   "login": "admin",
   "firstName": "Jean",
   "lastName": "Dupont",
-  "role": "ADMIN"
+  "role": "ADMIN",
+  "birthDate": "1990-05-14"
 }
 ```
+
+> `birthDate` peut être `null` si non renseigné sur le profil utilisateur.
 
 **401 Unauthorized**
 
@@ -163,5 +166,27 @@ Content-Type: application/json
 | `firstName` | `string` | Prénom                    |
 | `lastName`  | `string` | Nom de famille            |
 | `role`      | `string` | `USER` ou `ADMIN`         |
+| `birthDate` | `string` | Date de naissance ISO (nullable), ex : `"1990-05-14"` |
 
 > Le mot de passe n'est jamais retourné dans les réponses.
+
+---
+
+## Gestion de session
+
+| Paramètre | Valeur | Note |
+|-----------|--------|------|
+| Durée de vie session | **12 heures** | Configuré via `server.servlet.session.timeout=12h` |
+| Cookie | `JSESSIONID` | `HttpOnly=true`, `SameSite=Strict` |
+| Restauration au refresh | **Oui** | Le frontend appelle `GET /api/auth/me` au démarrage et restaure la session si le cookie est encore valide |
+
+Le frontend utilise le pattern suivant dans `App.jsx` au montage :
+
+```js
+useEffect(() => {
+  getMe()
+    .then(setUser)      // session valide → restaure l'utilisateur
+    .catch(() => {})    // 401 → affiche le formulaire de connexion
+    .finally(() => setAuthLoading(false))
+}, [])
+```

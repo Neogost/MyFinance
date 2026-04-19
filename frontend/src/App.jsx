@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import LoginForm from './components/LoginForm'
 import Navigation from './components/Navigation'
 import UserList from './components/users/UserList'
@@ -14,12 +14,20 @@ import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
-import { logout } from './api/auth'
+import { logout, getMe } from './api/auth'
 
 export default function App() {
-  const [user, setUser]               = useState(null)
+  const [user,        setUser]        = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState('dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
+
+  useEffect(() => {
+    getMe()
+      .then(setUser)
+      .catch(() => {}) // session expirée ou absente → affiche le login
+      .finally(() => setAuthLoading(false))
+  }, [])
 
   function toggleHideValues() {
     setHideValues(v => {
@@ -37,6 +45,14 @@ export default function App() {
   function handleNavigate(page) {
     if ((page === 'users' || page === 'admin-snapshots') && user?.role !== 'ADMIN') return
     setCurrentPage(page)
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-400 text-sm">Chargement…</div>
+      </div>
+    )
   }
 
   if (!user) {

@@ -374,3 +374,112 @@ Appelle `GET /api/possessions/summary` (endpoint passifs) qui retourne :
 **Fichier :** `frontend/src/components/dashboard/PassifsByCategoryChart.jsx`
 
 **Librairie :** Recharts (`PieChart` donut, `innerRadius=42`, `outerRadius=72`)
+
+---
+
+## 8. Évolution du patrimoine par catégorie — `PatrimoineEvolutionChart`
+
+### Objectif
+
+Visualiser l'évolution de la valeur du patrimoine dans le temps, par catégorie d'actif, à partir des relevés de patrimoine (snapshots) saisis par l'utilisateur.
+
+### Source de données
+
+1. `GET /api/portfolio/snapshots` → liste des snapshots (résumés)
+2. `GET /api/portfolio/snapshots/{id}` × N → détail de chaque snapshot (positions)
+3. `GET /api/positions?status=ACTIVE` → positions actives pour le point « temps réel »
+
+Les snapshots et les positions actives sont fusionnés dans un tableau de points chronologiques.
+
+### Règles de construction des données
+
+- Les points de snapshot sont triés par `snapshotDate` croissant.
+- Un point supplémentaire **"Aujourd'hui"** est ajouté en fin de série à partir de `computed.currentValueEur` des positions actives — sauf si un snapshot de la journée existe déjà.
+- L'axe X utilise des **timestamps Unix** pour garantir un espacement temporel proportionnel (Recharts `type="number" scale="time"`).
+
+### Modes d'affichage
+
+| Mode | Description |
+|------|-------------|
+| **Valeur (€)** | Aires empilées en valeur absolue — le total est visible dans le tooltip |
+| **Répartition (%)** | Chaque catégorie normalisée à 100 % — permet de visualiser l'évolution de la composition |
+
+### Ordre des catégories (bas → haut)
+
+`IMMO_PHYSIQUE` → `IMMO_PAPIER` → `LIQUIDITE` → `LIVRET` → `CRYPTO` → `BOURSE`
+
+### Point live
+
+- Le point "Aujourd'hui" est identifié par `isLive: true`.
+- Il est dessiné avec un point plus grand (r=5, contour blanc) pour le distinguer des snapshots saisis.
+- Une `ReferenceLine` verticale en pointillé violet est ajoutée avec le label "Auj.".
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/PatrimoineEvolutionChart.jsx`
+
+**Librairie :** Recharts (`AreaChart` empilé, `stackId="a"`)
+
+**Positionnement sur le dashboard :** `col-span-2` dans une grille `grid-cols-3`, le widget FIRE occupe la 3e colonne.
+
+---
+
+## 9. Widget FIRE — `FireProjectionWidget`
+
+### Objectif
+
+Afficher une projection de l'**indépendance financière** (méthode FIRE — Financial Independence, Retire Early) : estimation du nombre d'années restant avant d'atteindre le seuil où les revenus passifs couvrent l'ensemble des dépenses.
+
+### Principe FIRE
+
+```
+Objectif FIRE = Dépenses annuelles × 25   (règle des 4 %)
+Années restantes = f(patrimoine actuel, épargne mensuelle, rendement pondéré)
+```
+
+### Sources de données (6 appels parallèles)
+
+| Endpoint | Usage |
+|----------|-------|
+| `GET /api/salary-contracts` | Salaire mensuel net actif |
+| `GET /api/other-incomes` | Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE) |
+| `GET /api/positions?status=ACTIVE` | Patrimoine financier + rendement pondéré |
+| `GET /api/tax-simulator` | Impôt mensuel estimé (`.catch(() => null)` si indisponible) |
+| `GET /api/recurring-expenses/summary` | Dépenses mensuelles par catégorie |
+
+### Calculs clés
+
+**Patrimoine financier (`totalActif`)** : somme de `computed.currentValueEur` de toutes les positions actives **hors `IMMO_PHYSIQUE`**.
+
+**Rendement pondéré** :
+```
+weightedRate = Σ(valeur_catégorie × PROJECTION_RATES[cat]) / totalActif
+```
+
+**Années restantes** (formule des intérêts composés) :
+```
+r   = (1 + weightedRate)^(1/12) − 1   (taux mensuel)
+n   = ln((FV·r + PMT) / (PV·r + PMT)) / ln(1 + r)
+années = n / 12
+```
+Avec `PV = totalActif`, `PMT = épargne mensuelle (Δ R-D)`, `FV = objectif FIRE`.
+
+**Revenus passifs mensuels** :
+```
+revenusPassifs = (totalActif × weightedRate) / 12 + totalOtherIncome
+```
+
+### Sections affichées
+
+| Section | Contenu |
+|---------|---------|
+| Résultat principal | `~X.X ans` vers `AAAA` ou « Objectif atteint ! » |
+| Barre de progression | `totalActif / fireTarget` avec jalons à 25/50/75 % |
+| Autonomie passive | Revenus passifs vs dépenses, barre de couverture % |
+| Hypothèses | Taux d'épargne, épargne mensuelle, rendement pondéré, dépenses annuelles |
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/FireProjectionWidget.jsx`
+
+**Positionnement sur le dashboard :** colonne droite (`col-span-1`) aux côtés de `PatrimoineEvolutionChart`, fond violet (`bg-violet-50 border-violet-200`).

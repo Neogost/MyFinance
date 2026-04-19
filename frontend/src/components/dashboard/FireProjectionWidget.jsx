@@ -154,9 +154,15 @@ export default function FireProjectionWidget() {
       {/* Barre de progression avec jalons */}
       <div>
         <div className="flex justify-between text-xs text-violet-600 mb-1.5">
-          <span className="amount font-semibold">{fmt(totalActif)} €</span>
+          <div>
+            <span className="amount font-semibold">{fmt(totalActif)} €</span>
+            <span className="text-violet-300 ml-1">actif financier</span>
+          </div>
           <span className="font-bold">{fireProgress.toFixed(1)} %</span>
-          <span className="amount text-violet-400">{fmt(fireTarget)} €</span>
+          <div className="text-right">
+            <span className="amount text-violet-400">{fmt(fireTarget)} €</span>
+            <span className="text-violet-300 ml-1">objectif</span>
+          </div>
         </div>
         <div className="relative w-full bg-violet-100 rounded-full h-3">
           <div

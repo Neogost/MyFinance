@@ -416,18 +416,44 @@ npm run dev
   - Revenus : salaire actif, revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE), gains mensuels moyens par catégorie d'actif (`capitalGainEur / 12`)
   - Dépenses : dépenses récurrentes par catégorie + impôt estimé (`totalEstimatedTax / 12`)
   - Actif / Passif côte à côte : positions actives (hors IMMO_PHYSIQUE) / possessions + IMMO_PHYSIQUE
-  - `IMMO_PHYSIQUE` classé en Passif (résidence principale non locative)
-  - Type `AUTRE` des revenus complémentaires exclu (non récurrent)
+  - Δ R-D en vert/rouge + **taux d'épargne** en sous-titre
+  - **Ratio de couverture patrimoniale** : `totalActif / (dépenses annuelles)` affiché en années (bloc indigo)
+  - **Projection FIRE** : objectif × 25 dépenses, barre de progression, années restantes, rendement pondéré (bloc violet)
   - Toggle Mensuel / Annuel (× 12) ; TOTAL Actif et Passif toujours alignés en bas (`mt-auto`)
-  - Δ R-D en vert/rouge selon la capacité d'épargne
   - Aucun endpoint backend nouveau — 6 appels parallèles vers endpoints existants
   - Documentation : `docs/architecture/bilan-financier.md`
 
+- **Patrimoine — Relevé optionnel du montant investi** :
+  - `investedAmountEur` n'est plus obligatoire dans la saisie d'un relevé manuel
+  - Colonnes `investedAmountEur` et `capitalGainEur` devenues nullable dans `PositionSnapshot` et `PortfolioSnapshot`
+  - La logique de calcul des totaux ignore les positions sans données d'investissement
+
+- **Patrimoine — Positionnement INSEE par décile** :
+  - Référentiel INSEE Enquête Patrimoine 2021-2022 chargé depuis `patrimoine-referentiel.yml` via `@ConfigurationProperties`
+  - Endpoint `GET /api/patrimoine/referentiel` retournant les seuils D1–D9 par tranche d'âge (7 tranches : 18-29, 30-39, …, 80+)
+  - `birthDate` ajouté dans la réponse du login (`SecurityConfig`) pour permettre le calcul côté frontend
+  - `PatrimoinePage` affiche `D{rang}/10 · {label tranche}` sous la valeur du patrimoine brut
+  - Documentation : `docs/api/patrimoine.md`
+
+- **Tableau de bord — Évolution du patrimoine** (`PatrimoineEvolutionChart`) :
+  - Graphique en aires empilées par catégorie (IMMO_PHYSIQUE → BOURSE) basé sur les snapshots saisis
+  - Axe X proportionnel au temps (timestamps Unix, Recharts `scale="time"`)
+  - Point live "Aujourd'hui" depuis les positions actives, avec ReferenceLine pointillée
+  - Toggle valeur absolue (€) / répartition (%)
+  - Documentation : `docs/architecture/dashboard.md`
+
+- **Tableau de bord — Widget FIRE** (`FireProjectionWidget`) :
+  - Projection FIRE (règle des 4 %) : années restantes, barre de progression jalonnée 25/50/75 %
+  - Autonomie passive actuelle : revenus passifs vs dépenses mensuelles, barre de couverture
+  - Hypothèses : taux d'épargne, épargne mensuelle, rendement pondéré, dépenses annuelles
+  - Documentation : `docs/architecture/dashboard.md`
+
+- **Authentification — Restauration de session au refresh** :
+  - `App.jsx` appelle `GET /api/auth/me` au démarrage pour restaurer la session sans passer par le login
+  - Timeout de session passé de 30 min à **12 heures** (`server.servlet.session.timeout=12h`)
+  - Cookie renforcé : `HttpOnly=true`, `SameSite=Strict`
+  - Documentation : `docs/api/authentication.md`
+
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)
-- Patrimoine — autres catégories (Bourse, Crypto, Immo Papier, Immo Physique)
 - Scheduler Yahoo Finance / CoinGecko (mise à jour des prix marché)
-- **Tableau de bord** :
-  - Graphique d'évolution salariale (`SalaryEvolutionChart`) — 4 courbes (brut, net fiscal, net versé, PAS) basées sur `MonthlyPaySlip` — doc : `docs/architecture/dashboard.md`, API : `docs/api/dashboard.md`
-  - Graphique plus-values par catégorie (`CapitalGainsByCategoryChart`) — camembert (donut) Recharts, agrège `computed.capitalGainEur` par catégorie depuis `GET /api/positions?status=ACTIVE`, couleurs cohérentes avec `PatrimoinePage`, catégories en perte affichées en opacité réduite — occupes `w-1/4` du dashboard — doc : `docs/architecture/dashboard.md`
-  - Graphiques patrimoine et diversification (à définir)

@@ -118,13 +118,29 @@ impôtMensuel = taxSimulator.totalEstimatedTax / 12
 
 Badge « estimé » affiché. Si le simulateur échoue (profil fiscal incomplet ou erreur réseau), la ligne est simplement absente — l'appel utilise `.catch(() => null)`.
 
-### Δ R-D
+### Δ R-D et taux d'épargne
 
 ```
 ΔRD = totalRevenus − totalDépenses
+tauxEpargne = (ΔRD / totalRevenus) × 100
 ```
 
-Affiché en vert (`+X €`) si positif, rouge si négatif. La section rouge inclut le message « Capacité d'épargne négative ».
+Affiché en vert (`+X €`) si positif, rouge si négatif. La section rouge inclut le message « Capacité d'épargne négative ». Le taux d'épargne est affiché en sous-titre (ex. `Taux d'épargne : 32,4 %`).
+
+### Ratio de couverture patrimoniale
+
+```
+ratioCouverture = totalActif / (totalDépenses × 12)   [en années]
+```
+
+Représente le nombre d'années pendant lesquelles le patrimoine financier permettrait de couvrir les dépenses sans aucun revenu. Affiché dans un bloc indigo distinct avec l'unité « ans ».
+
+### Projection FIRE
+
+Voir la description complète dans `docs/architecture/dashboard.md` (section 9 — FireProjectionWidget). Le bilan financier intègre le même calcul sous forme de bloc violet avec :
+- Barre de progression vers l'objectif FIRE (`totalActif / fireTarget`)
+- Estimation des années restantes et année cible
+- Trois hypothèses : rendement pondéré, dépenses annuelles, objectif FIRE (25× dépenses)
 
 ### Vue annuelle
 
@@ -180,5 +196,4 @@ Page auto-contenue, pas de composant enfant externe. Deux sous-composants locaux
 - **Vue historique** : comparer avec la date d'un snapshot passé.
 - **Export PDF** : `window.print()` + CSS print media.
 - **Patrimoine net** : afficher `Actif − Passif` sous le bilan.
-- **Taux d'épargne** : `Δ R-D / Total Revenus × 100` en badge.
 - **Revenus IMMO_PHYSIQUE locatif** : si une position IMMO_PHYSIQUE est en location, permettre de la basculer côté Actif/Revenus.
