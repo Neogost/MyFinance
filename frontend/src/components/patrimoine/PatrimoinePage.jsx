@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   getPositions, createPosition, updatePosition,
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
-  getSnapshots,
+  getSnapshots, getReferentiel,
 } from '../../api/patrimoine'
 import { CATEGORY_META, PROJECTION_RATES } from './constants'
 import { fmt, Tooltip } from './utils'
@@ -15,6 +15,7 @@ import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 import SnapshotPanel from './SnapshotPanel'
 import PatrimoineGroupedView from './PatrimoineGroupedView'
 
+
 export default function PatrimoinePage({ currentUser }) {
   const [positions, setPositions]             = useState([])
   const [snapshots, setSnapshots]             = useState([])
@@ -25,6 +26,7 @@ export default function PatrimoinePage({ currentUser }) {
   const [showPriceUpdate, setShowPriceUpdate]               = useState(false)
   const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
   const [showSnapshots, setShowSnapshots]                   = useState(false)
+  const [referentiel,   setReferentiel]                     = useState(null)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
   const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('patrimoine.viewMode') ?? 'grouped')
@@ -38,7 +40,7 @@ export default function PatrimoinePage({ currentUser }) {
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
-  useEffect(() => { fetchPositions(); fetchSnapshots() }, [])
+  useEffect(() => { fetchPositions(); fetchSnapshots(); fetchReferentiel() }, [])
 
   async function fetchPositions() {
     try {
@@ -56,6 +58,14 @@ export default function PatrimoinePage({ currentUser }) {
       setSnapshots(await getSnapshots())
     } catch {
       // snapshots non critiques, on ignore l'erreur
+    }
+  }
+
+  async function fetchReferentiel() {
+    try {
+      setReferentiel(await getReferentiel())
+    } catch {
+      // référentiel non critique
     }
   }
 
@@ -191,8 +201,21 @@ export default function PatrimoinePage({ currentUser }) {
     .filter(s => s.snapshotDate < jan1CurrentYear)
     .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0] ?? null
   const totalPlusValueYTD = ytdRefSnapshot != null
-    ? totalPlusValue - parseFloat(ytdRefSnapshot.totalCapitalGainEur ?? 0)
+    ? patrimoineBrut - parseFloat(ytdRefSnapshot.totalCurrentValueEur ?? 0)
     : null
+
+  // ── Positionnement INSEE ─────────────────────────────────────
+  const inseeInfo = (() => {
+    if (!referentiel || !currentUser?.birthDate) return null
+    const age = Math.floor((new Date() - new Date(currentUser.birthDate)) / (365.25 * 24 * 3600 * 1000))
+    const tranche = referentiel.tranches.find(t => age >= t.ageMin && age <= t.ageMax)
+    if (!tranche) return null
+    const seuils = [tranche.d1, tranche.d2, tranche.d3, tranche.d4, tranche.d5,
+                    tranche.d6, tranche.d7, tranche.d8, tranche.d9]
+    const decile = seuils.findIndex(s => patrimoineBrut < s)
+    const rang   = decile === -1 ? 10 : decile + 1
+    return { tranche, rang, seuils }
+  })()
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
 
@@ -234,23 +257,38 @@ export default function PatrimoinePage({ currentUser }) {
 
       {/* ── Synthèse globale ── */}
       {positions.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
               Patrimoine Brut
               <Tooltip>Somme de l'ensemble des actifs : bourse, crypto, livrets, liquidités, immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-lg font-bold text-gray-900 amount">{fmt(patrimoineBrut)}</p>
+            <p className="text-sm font-bold text-gray-900 amount">{fmt(patrimoineBrut)}</p>
+            {inseeInfo && (
+              <p className="text-xs text-gray-400 mt-0.5">
+                D{inseeInfo.rang}/10 · {inseeInfo.tranche.label}
+                <Tooltip>
+                  <span className="block font-semibold mb-1">Référentiel INSEE — {inseeInfo.tranche.label}</span>
+                  <span className="block text-gray-400 text-xs mb-2">{referentiel.source}</span>
+                  {inseeInfo.seuils.map((s, i) => (
+                    <span key={i} className={`flex justify-between gap-3 ${inseeInfo.rang === i + 1 ? 'text-white font-semibold' : ''}`}>
+                      <span>D{i + 1}</span>
+                      <span className="amount">{s.toLocaleString('fr-FR')} €</span>
+                    </span>
+                  ))}
+                </Tooltip>
+              </p>
+            )}
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
-              Patrimoine Financier
+          <div className="bg-white rounded-xl shadow-sm p-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
+              Pat. Financier
               <Tooltip>Actifs financiers uniquement : bourse, crypto, livrets et liquidités. Hors immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-lg font-bold text-gray-700 amount">{fmt(patrimoineFinancier)}</p>
+            <p className="text-sm font-bold text-gray-700 amount">{fmt(patrimoineFinancier)}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+          <div className="bg-white rounded-xl shadow-sm p-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
               Total investi
               {investiByCategory.length > 0 && (
                 <Tooltip>
@@ -264,10 +302,10 @@ export default function PatrimoinePage({ currentUser }) {
                 </Tooltip>
               )}
             </p>
-            <p className="text-lg font-bold text-gray-700 amount">{fmt(totalInvesti)}</p>
+            <p className="text-sm font-bold text-gray-700 amount">{fmt(totalInvesti)}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+          <div className="bg-white rounded-xl shadow-sm p-2">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
               Plus-value
               {gainsByCategory.length > 0 && (
                 <Tooltip>
@@ -281,30 +319,30 @@ export default function PatrimoinePage({ currentUser }) {
                 </Tooltip>
               )}
             </p>
-            <p className={`text-lg font-bold amount ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+            <p className={`text-sm font-bold amount ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
               {fmt(totalPlusValue)}
             </p>
           </div>
           {totalPlusValueYTD != null && (
-            <div className="bg-white rounded-xl shadow-sm p-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center">
+            <div className="bg-white rounded-xl shadow-sm p-2">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
                 Plus-value YTD
-                <Tooltip>Variation de la plus-value depuis le 1er janvier {new Date().getFullYear()}, calculée par rapport au dernier relevé de l'année précédente ({ytdRefSnapshot.snapshotDate}).</Tooltip>
+                <Tooltip>Évolution de la valeur du patrimoine brut depuis le dernier relevé de l'année précédente ({ytdRefSnapshot.snapshotDate}). Ne tient pas compte des nouveaux versements effectués en {new Date().getFullYear()}.</Tooltip>
               </p>
-              <p className={`text-lg font-bold amount ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+              <p className={`text-sm font-bold amount ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {totalPlusValueYTD >= 0 ? '+' : ''}{fmt(totalPlusValueYTD)}
               </p>
             </div>
           )}
           {totalProjection > 0 && (
-            <div className="bg-emerald-50 rounded-xl shadow-sm p-3">
-              <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1">Revenus / mois</p>
-              <p className="text-lg font-bold text-emerald-700 amount">{fmt(totalProjection)}</p>
+            <div className="bg-emerald-50 rounded-xl shadow-sm p-2">
+              <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1 leading-tight">Revenus / mois</p>
+              <p className="text-sm font-bold text-emerald-700 amount">{fmt(totalProjection)}</p>
             </div>
           )}
           {totalProjectionAnnuelle > 0 && (
-            <div className="bg-amber-50 rounded-xl shadow-sm p-3">
-              <p className="text-xs text-amber-600 uppercase tracking-wide mb-1 flex items-center">
+            <div className="bg-amber-50 rounded-xl shadow-sm p-2">
+              <p className="text-xs text-amber-600 uppercase tracking-wide mb-1 flex items-center leading-tight">
                 Projection {today.getFullYear()}
                 <Tooltip>
                   <span className="block font-semibold mb-1">Plus-value estimée ({daysLeft} j restants)</span>
@@ -317,7 +355,7 @@ export default function PatrimoinePage({ currentUser }) {
                   <span className="block mt-2 text-gray-400 text-xs">Taux annuels × valeur actuelle, proratisé sur {daysLeft} j. Estimation indicative.</span>
                 </Tooltip>
               </p>
-              <p className="text-lg font-bold text-amber-700 amount">+{fmt(projectionProrataYTD)}</p>
+              <p className="text-sm font-bold text-amber-700 amount">+{fmt(projectionProrataYTD)}</p>
               <p className="text-xs text-amber-500 mt-0.5 amount">annuel : +{fmt(totalProjectionAnnuelle)}</p>
             </div>
           )}

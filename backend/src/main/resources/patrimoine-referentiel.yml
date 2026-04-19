@@ -1,0 +1,93 @@
+## Référentiel patrimoine — Enquête Patrimoine INSEE 2021-2022
+## Source : INSEE Enquête Patrimoine 2021-2022 (https://www.insee.fr/fr/statistiques/7651333)
+## Données : patrimoine brut par tranche d'âge de la personne de référence du ménage (en euros).
+## D1=10e percentile … D9=90e percentile  |  D5 = médiane
+## Mettre à jour ce fichier lors de la prochaine publication INSEE (tous les ~5 ans).
+
+patrimoine:
+  source: "INSEE Enquête Patrimoine 2021-2022"
+  tranches:
+    - label: "moins de 30 ans"
+      ageMin: 18
+      ageMax: 29
+      d1: 0
+      d2: 0
+      d3: 0
+      d4: 0
+      d5: 4000
+      d6: 10000
+      d7: 25000
+      d8: 55000
+      d9: 150000
+    - label: "30-39 ans"
+      ageMin: 30
+      ageMax: 39
+      d1: 0
+      d2: 1000
+      d3: 5000
+      d4: 30000
+      d5: 95000
+      d6: 165000
+      d7: 240000
+      d8: 340000
+      d9: 530000
+    - label: "40-49 ans"
+      ageMin: 40
+      ageMax: 49
+      d1: 3000
+      d2: 18000
+      d3: 60000
+      d4: 125000
+      d5: 190000
+      d6: 280000
+      d7: 390000
+      d8: 560000
+      d9: 850000
+    - label: "50-59 ans"
+      ageMin: 50
+      ageMax: 59
+      d1: 8000
+      d2: 35000
+      d3: 90000
+      d4: 180000
+      d5: 275000
+      d6: 390000
+      d7: 520000
+      d8: 730000
+      d9: 1100000
+    - label: "60-69 ans"
+      ageMin: 60
+      ageMax: 69
+      d1: 12000
+      d2: 55000
+      d3: 140000
+      d4: 240000
+      d5: 355000
+      d6: 500000
+      d7: 670000
+      d8: 900000
+      d9: 1400000
+    - label: "70-79 ans"
+      ageMin: 70
+      ageMax: 79
+      d1: 10000
+      d2: 48000
+      d3: 120000
+      d4: 210000
+      d5: 295000
+      d6: 430000
+      d7: 580000
+      d8: 800000
+      d9: 1250000
+    - label: "80 ans et plus"
+      ageMin: 80
+      ageMax: 150
+      d1: 8000
+      d2: 40000
+      d3: 100000
+      d4: 175000
+      d5: 250000
+      d6: 360000
+      d7: 490000
+      d8: 700000
+      d9: 1100000

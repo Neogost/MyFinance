@@ -63,13 +63,14 @@ public class SecurityConfig {
                     User user = (User) authentication.getPrincipal();
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(), Map.of(
-                            "id", user.getId(),
-                            "login", user.getLogin(),
-                            "firstName", user.getFirstName(),
-                            "lastName", user.getLastName(),
-                            "role", user.getRole()
-                    ));
+                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                    payload.put("id",         user.getId());
+                    payload.put("login",      user.getLogin());
+                    payload.put("firstName",  user.getFirstName());
+                    payload.put("lastName",   user.getLastName());
+                    payload.put("role",       user.getRole());
+                    payload.put("birthDate",  user.getBirthDate());
+                    objectMapper.writeValue(response.getWriter(), payload);
                 })
                 .failureHandler((request, response, exception) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

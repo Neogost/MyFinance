@@ -43,6 +43,10 @@ export const createSnapshot     = (data)      => api.post('/api/portfolio/snapsh
 export const recalculateSnapshot    = (id)    => api.put(`/api/portfolio/snapshots/${id}/recalculate`).then(r => r.data)
 export const createSnapshotForAll   = (data)  => api.post('/api/portfolio/snapshots/all', data).then(r => r.data)
 
+// ── Référentiel INSEE ──────────────────────────────────────────
+
+export const getReferentiel = () => api.get('/api/patrimoine/referentiel').then(r => r.data)
+
 // ── Admin — Snapshots ──────────────────────────────────────────
 
 export const getAdminSnapshots       = (userId)       => api.get('/api/admin/snapshots', { params: { userId } }).then(r => r.data)
