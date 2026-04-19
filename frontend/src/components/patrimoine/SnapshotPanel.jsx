@@ -160,9 +160,9 @@ export default function SnapshotPanel({ onClose }) {
                     return (
                       <tr key={s.id} className="group">
                         <td className="py-3 font-medium text-gray-900">{fmtDate(s.snapshotDate)}</td>
-                        <td className="py-3 text-right text-gray-700">{fmt(s.totalInvestedEur)}</td>
-                        <td className="py-3 text-right font-semibold text-gray-900">{fmt(s.totalCurrentValueEur)}</td>
-                        <td className={`py-3 text-right font-semibold ${gain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                        <td className="py-3 text-right text-gray-700 amount">{fmt(s.totalInvestedEur)}</td>
+                        <td className="py-3 text-right font-semibold text-gray-900 amount">{fmt(s.totalCurrentValueEur)}</td>
+                        <td className={`py-3 text-right font-semibold amount ${gain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                           {gain >= 0 ? '+' : ''}{fmt(s.totalCapitalGainEur)}
                         </td>
                         <td className="py-3 text-right">

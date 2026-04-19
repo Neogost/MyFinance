@@ -806,7 +806,7 @@ export default function LoanSimulatorPage() {
               {incomeLoading
                 ? <p className="text-sm text-gray-400 italic py-1">Chargement…</p>
                 : apiIncome
-                ? <p className="text-lg font-semibold text-indigo-700">{fmt(apiIncome)}/mois</p>
+                ? <p className="text-lg font-semibold text-indigo-700 amount">{fmt(apiIncome)}/mois</p>
                 : <p className="text-sm text-gray-400 italic">Aucun contrat actif — saisir manuellement</p>
               }
             </div>
@@ -814,7 +814,7 @@ export default function LoanSimulatorPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Surcharger le revenu mensuel net (€)</label>
               <input type="number" value={incomeOverride} min={0} step={100}
                 onChange={e => setIncomeOverride(e.target.value)}
-                placeholder={apiIncome ? String(apiIncome) : 'Ex : 3500'}
+                placeholder={'Ex : 3500'}
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
               <p className="text-xs text-gray-400 mt-0.5">
@@ -850,7 +850,7 @@ export default function LoanSimulatorPage() {
                       </div>
                       <input type="text" value={inc.name}
                         onChange={e => updateAdditionalIncome(inc.id, 'name', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
+                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white amount" />
 
                       {/* Picker utilisateur */}
                       {isPicking && (
@@ -887,7 +887,7 @@ export default function LoanSimulatorPage() {
                         : <input type="number" value={inc.amount} min={0} step={100}
                             onChange={e => updateAdditionalIncome(inc.id, 'amount', e.target.value)}
                             placeholder="Ex : 2800"
-                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white amount" />
                       }
                     </div>
                   </div>
@@ -905,12 +905,12 @@ export default function LoanSimulatorPage() {
                   <>
                     <div className="flex justify-between text-gray-400">
                       <span>Votre revenu</span>
-                      <span>{fmt(baseIncome)}/mois</span>
+                      <span className="amount">{fmt(baseIncome)}/mois</span>
                     </div>
                     {additionalIncomes.filter(i => parseFloat(i.amount) > 0).map(i => (
                       <div key={i.id} className="flex justify-between text-gray-400">
-                        <span className="truncate max-w-[160px]">{i.name || 'Co-emprunteur'}</span>
-                        <span>{fmt(parseFloat(i.amount))}/mois</span>
+                        <span className="truncate max-w-[160px] amount">{i.name || 'Co-emprunteur'}</span>
+                        <span className="amount">{fmt(parseFloat(i.amount))}/mois</span>
                       </div>
                     ))}
                     <div className="border-t border-indigo-100 pt-1 mt-0.5" />
@@ -1038,7 +1038,7 @@ export default function LoanSimulatorPage() {
                     <label className="block text-xs text-gray-500 mb-1">Nom</label>
                     <input type="text" value={p.name}
                       onChange={e => updateParticipant(p.id, 'name', e.target.value)}
-                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                      className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 amount" />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Part (%)</label>
@@ -1368,7 +1368,7 @@ export default function LoanSimulatorPage() {
                   const sharePtz   = ptzEnabled ? ptzMonthlyPayment * p.percent / 100 : 0
                   return (
                     <div key={p.id} className="bg-indigo-50 rounded-lg p-3 border border-indigo-100">
-                      <p className="text-xs font-semibold text-indigo-700 truncate mb-1">{p.name}</p>
+                      <p className="text-xs font-semibold text-indigo-700 truncate mb-1 amount">{p.name}</p>
                       <p className="text-xs text-gray-500 mb-2">{p.percent} % de l'emprunt</p>
                       <p className="text-lg font-bold text-gray-900">{fmt(share)}<span className="text-xs font-normal text-gray-400">/mois</span></p>
                       <div className="text-xs text-gray-400 mt-1 space-y-0.5">
