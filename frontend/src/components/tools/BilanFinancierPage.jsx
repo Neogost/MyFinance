@@ -164,7 +164,8 @@ export default function BilanFinancierPage() {
   const totalExpenses      = totalExpensesBase + (monthlyTax ?? 0)
 
   // ── Δ R-D ────────────────────────────────────────────────────────
-  const delta = totalRevenues - totalExpenses
+  const delta       = totalRevenues - totalExpenses
+  const tauxEpargne = totalRevenues > 0 ? (delta / totalRevenues) * 100 : null
 
   // ── Actif (hors IMMO_PHYSIQUE — traité côté Passif) ───────────────
   const actifByCategory = {}
@@ -178,6 +179,38 @@ export default function BilanFinancierPage() {
     }
   }
   const totalActif = Object.values(actifByCategory).reduce((s, v) => s + v, 0)
+
+  // ── Ratio de couverture ──────────────────────────────────────────
+  const depensesAnnuelles = totalExpenses * 12
+  const ratioCouverture   = depensesAnnuelles > 0 ? totalActif / depensesAnnuelles : null
+
+  // ── Projection FIRE (règle des 4 %) ──────────────────────────────
+  const fireTarget   = depensesAnnuelles * 25
+  const fireProgress = fireTarget > 0 ? Math.min((totalActif / fireTarget) * 100, 100) : 0
+  const fireAtteint  = totalActif >= fireTarget && fireTarget > 0
+
+  // Taux annuel pondéré par la valeur de chaque catégorie d'actif
+  const weightedRate = totalActif > 0
+    ? Object.entries(actifByCategory)
+        .reduce((s, [cat, val]) => s + val * (PROJECTION_RATES[cat] ?? 0), 0) / totalActif
+    : 0.05
+
+  // Nombre de mois pour atteindre la cible (formule intérêts composés)
+  // n = ln((FV·r + PMT) / (PV·r + PMT)) / ln(1 + r)
+  const yearsToFire = (() => {
+    if (fireAtteint) return 0
+    if (fireTarget <= 0 || depensesAnnuelles <= 0) return null
+    const r   = Math.pow(1 + weightedRate, 1 / 12) - 1  // taux mensuel
+    const PV  = totalActif
+    const PMT = delta   // épargne mensuelle
+    const FV  = fireTarget
+    if (r > 0 && PMT + PV * r > 0) {
+      const n = Math.log((FV * r + PMT) / (PV * r + PMT)) / Math.log(1 + r)
+      return n > 0 ? n / 12 : null
+    }
+    if (PMT > 0) return (FV - PV) / PMT / 12
+    return null
+  })()
 
   // ── Passif (possessions + immobilier physique) ────────────────────
   const passifByCategory = possessionSummary?.byCategory ?? []
@@ -397,15 +430,108 @@ export default function BilanFinancierPage() {
             <span className={`text-sm font-bold uppercase tracking-widest ${delta >= 0 ? 'text-green-800' : 'text-red-800'}`}>
               Δ Revenus − Dépenses
             </span>
-            {delta < 0 && (
-              <p className="text-xs text-red-500 mt-0.5">Capacité d'épargne négative</p>
-            )}
+            {delta < 0
+              ? <p className="text-xs text-red-500 mt-0.5">Capacité d'épargne négative</p>
+              : tauxEpargne != null && (
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Taux d'épargne : <span className="font-semibold">{tauxEpargne.toFixed(1)} %</span>
+                  </p>
+                )
+            }
           </div>
           <span className={`text-2xl font-bold amount ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
             {delta >= 0 ? '+' : ''}{fmt(delta * mult)} €
           </span>
         </div>
       </div>
+
+      {/* ── Ratio de couverture ── */}
+      {ratioCouverture != null && (
+        <div className="rounded-xl shadow-sm border border-indigo-200 bg-indigo-50">
+          <div className="flex items-center justify-between px-6 py-3">
+            <div>
+              <span className="text-sm font-bold uppercase tracking-widest text-indigo-800">
+                Ratio de couverture
+              </span>
+              <p className="text-xs text-indigo-500 mt-0.5">
+                Patrimoine financier ÷ dépenses annuelles — sans aucun revenu
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-2xl font-bold text-indigo-700">
+                {ratioCouverture.toFixed(1)} ans
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Projection FIRE ── */}
+      {fireTarget > 0 && (
+        <div className="rounded-xl shadow-sm border border-violet-200 bg-violet-50">
+          <div className="px-6 py-4 space-y-3">
+
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-sm font-bold uppercase tracking-widest text-violet-800">
+                  Indépendance Financière (FIRE)
+                </span>
+                <p className="text-xs text-violet-500 mt-0.5">
+                  Règle des 4 % — cible = dépenses annuelles × 25
+                </p>
+              </div>
+              <div className="text-right">
+                {fireAtteint ? (
+                  <span className="text-xl font-bold text-violet-700">🎉 Objectif atteint !</span>
+                ) : yearsToFire != null ? (
+                  <>
+                    <span className="text-2xl font-bold text-violet-700">~{yearsToFire.toFixed(1)} ans</span>
+                    <p className="text-xs text-violet-400 mt-0.5">
+                      vers {new Date().getFullYear() + Math.ceil(yearsToFire)}
+                    </p>
+                  </>
+                ) : (
+                  <span className="text-sm text-violet-400 italic">Épargne insuffisante</span>
+                )}
+              </div>
+            </div>
+
+            {/* Barre de progression */}
+            <div>
+              <div className="flex justify-between text-xs text-violet-600 mb-1">
+                <span className="amount">{fmt(totalActif)} €</span>
+                <span className="font-semibold">{fireProgress.toFixed(1)} %</span>
+                <span className="amount">Cible : {fmt(fireTarget)} €</span>
+              </div>
+              <div className="w-full bg-violet-200 rounded-full h-2.5">
+                <div
+                  className="bg-violet-500 h-2.5 rounded-full transition-all"
+                  style={{ width: `${fireProgress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Hypothèses */}
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div>
+                <p className="text-xs text-violet-400">Rendement pondéré</p>
+                <p className="text-sm font-semibold text-violet-700">{(weightedRate * 100).toFixed(1)} % / an</p>
+              </div>
+              <div>
+                <p className="text-xs text-violet-400">Épargne mensuelle</p>
+                <p className={`text-sm font-semibold ${delta >= 0 ? 'text-violet-700' : 'text-red-600'}`}>
+                  <span className="amount">{fmt(delta)} €</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-violet-400">Dépenses annuelles</p>
+                <p className="text-sm font-semibold text-violet-700 amount">{fmt(depensesAnnuelles)} €</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Note méthodologique */}
       <p className="text-xs text-gray-400 text-center pb-2">
