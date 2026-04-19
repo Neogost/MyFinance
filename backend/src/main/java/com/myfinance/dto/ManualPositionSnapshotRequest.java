@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 public record ManualPositionSnapshotRequest(
         @NotNull Long positionId,
-        @NotNull BigDecimal investedAmountEur,
+        BigDecimal investedAmountEur,
         @NotNull BigDecimal currentValueEur,
         BigDecimal units,
         BigDecimal unitPriceEur

@@ -79,10 +79,10 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
     }
 
     const positionsPayload = Object.entries(inputs)
-      .filter(([, row]) => row.investedAmountEur !== '' && row.currentValueEur !== '')
+      .filter(([, row]) => row.currentValueEur !== '')
       .map(([positionId, row]) => ({
         positionId:       parseInt(positionId),
-        investedAmountEur: parseFloat(row.investedAmountEur),
+        investedAmountEur: row.investedAmountEur !== '' ? parseFloat(row.investedAmountEur) : null,
         currentValueEur:   parseFloat(row.currentValueEur),
         units:             row.units !== '' ? parseFloat(row.units) : null,
         unitPriceEur:      row.unitPriceEur !== '' ? parseFloat(row.unitPriceEur) : null,
@@ -117,7 +117,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
   const totalInvested      = sumField(inputs, 'investedAmountEur')
   const totalCurrentValue  = sumField(inputs, 'currentValueEur')
   const totalCapitalGain   = totalCurrentValue - totalInvested
-  const hasAnyInput = Object.values(inputs).some(r => r.investedAmountEur !== '' && r.currentValueEur !== '')
+  const hasAnyInput = Object.values(inputs).some(r => r.currentValueEur !== '')
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -188,7 +188,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                   <tr className="text-xs text-gray-500 uppercase tracking-wide">
                     <th className="text-left px-4 py-3 font-medium">Position</th>
                     <th className="text-right px-3 py-3 font-medium w-36">Investi (€)</th>
-                    <th className="text-right px-3 py-3 font-medium w-36">Valeur actuelle (€)</th>
+                    <th className="text-right px-3 py-3 font-medium w-36">Valeur actuelle (€) <span className="text-red-500">*</span></th>
                     <th className="text-right px-3 py-3 font-medium w-28">Plus-value</th>
                     <th className="text-right px-3 py-3 font-medium w-28">Unités</th>
                     <th className="text-right px-3 py-3 font-medium w-28">Prix unit. (€)</th>

@@ -127,7 +127,9 @@ public class AdminSnapshotService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                             "Position introuvable : " + req.positionId()));
 
-            BigDecimal capitalGain = req.currentValueEur().subtract(req.investedAmountEur());
+            BigDecimal capitalGain = req.investedAmountEur() != null
+                    ? req.currentValueEur().subtract(req.investedAmountEur())
+                    : null;
 
             PositionSnapshot posSnap = PositionSnapshot.builder()
                     .portfolioSnapshot(snapshot)
@@ -146,15 +148,19 @@ public class AdminSnapshotService {
     private void computeTotals(PortfolioSnapshot snapshot) {
         BigDecimal totalInvested = snapshot.getPositionSnapshots().stream()
                 .map(PositionSnapshot::getInvestedAmountEur)
+                .filter(v -> v != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalCurrentValue = snapshot.getPositionSnapshots().stream()
                 .map(PositionSnapshot::getCurrentValueEur)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        snapshot.setTotalInvestedEur(totalInvested);
+        boolean anyInvested = snapshot.getPositionSnapshots().stream()
+                .anyMatch(p -> p.getInvestedAmountEur() != null);
+
+        snapshot.setTotalInvestedEur(anyInvested ? totalInvested : null);
         snapshot.setTotalCurrentValueEur(totalCurrentValue);
-        snapshot.setTotalCapitalGainEur(totalCurrentValue.subtract(totalInvested));
+        snapshot.setTotalCapitalGainEur(anyInvested ? totalCurrentValue.subtract(totalInvested) : null);
     }
 
     private void checkNoDuplicateMonth(User user, LocalDate date, Long excludeId) {

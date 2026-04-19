@@ -31,13 +31,13 @@ public class PositionSnapshot {
     @JoinColumn(name = "position_id", nullable = false)
     private Position position;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(precision = 19, scale = 2)
     private BigDecimal investedAmountEur;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal currentValueEur;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(precision = 19, scale = 2)
     private BigDecimal capitalGainEur;
 
     /** Nombre de parts / tokens — null pour LIVRET, IMMO, LIQUIDITE */

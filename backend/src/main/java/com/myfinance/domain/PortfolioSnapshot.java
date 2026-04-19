@@ -35,13 +35,13 @@ public class PortfolioSnapshot {
     @Column(nullable = false)
     private LocalDate snapshotDate;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(precision = 19, scale = 2)
     private BigDecimal totalInvestedEur;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal totalCurrentValueEur;
 
-    @Column(nullable = false, precision = 19, scale = 2)
+    @Column(precision = 19, scale = 2)
     private BigDecimal totalCapitalGainEur;
 
     @OneToMany(mappedBy = "portfolioSnapshot", cascade = CascadeType.ALL, orphanRemoval = true)
