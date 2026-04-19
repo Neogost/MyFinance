@@ -13,6 +13,7 @@ import OrderPanel from './OrderPanel'
 import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 import SnapshotPanel from './SnapshotPanel'
+import PatrimoineGroupedView from './PatrimoineGroupedView'
 
 export default function PatrimoinePage({ currentUser }) {
   const [positions, setPositions]             = useState([])
@@ -26,6 +27,12 @@ export default function PatrimoinePage({ currentUser }) {
   const [showSnapshots, setShowSnapshots]                   = useState(false)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
+  const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('patrimoine.viewMode') ?? 'grouped')
+
+  function handleSetViewMode(mode) {
+    sessionStorage.setItem('patrimoine.viewMode', mode)
+    setViewMode(mode)
+  }
   const [loading, setLoading]                 = useState(true)
   const [error, setError]                     = useState(null)
 
@@ -146,6 +153,18 @@ export default function PatrimoinePage({ currentUser }) {
         return acc
       }, {})
   ).sort(([, a], [, b]) => b - a)
+
+  const categoryStats = CATEGORY_ORDER
+    .map(cat => {
+      const catActive  = active.filter(p => p.category === cat)
+      const catAll     = allPos.filter(p => p.category === cat)
+      const value      = catActive.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur   ?? 0), 0)
+      const gain       = catAll.reduce((s, p)    => s + parseFloat(p.computed?.capitalGainEur     ?? 0), 0)
+      const invested   = catAll.reduce((s, p)    => s + parseFloat(p.computed?.investedAmountEur  ?? 0), 0)
+      const gainPct    = invested !== 0 ? (gain / Math.abs(invested)) * 100 : null
+      return { cat, value, gain, invested, gainPct }
+    })
+    .filter(({ value }) => value > 0)
 
   // Projection annuelle : valeur actuelle × taux moyen par catégorie
   const projectionByCategory = CATEGORY_ORDER
@@ -305,6 +324,40 @@ export default function PatrimoinePage({ currentUser }) {
         </div>
       )}
 
+      {/* ── Répartition par catégorie ── */}
+      {categoryStats.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          {categoryStats.map(({ cat, value, gain, gainPct }) => {
+            const meta     = CATEGORY_META[cat]
+            const showGain = gain !== 0
+            return (
+              <div key={cat} className="bg-white rounded-xl shadow-sm p-3">
+                <p className="flex items-center gap-1.5 mb-2">
+                  <span className="text-base">{meta.icon}</span>
+                  <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${meta.color}`}>{meta.label}</span>
+                </p>
+                <p className="text-base font-bold text-gray-900 amount">{fmt(value)}</p>
+                {patrimoineBrut > 0 && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {((value / patrimoineBrut) * 100).toFixed(1)} % du patrimoine
+                  </p>
+                )}
+                {showGain && (
+                  <p className={`text-xs font-semibold amount mt-0.5 ${gain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {gain >= 0 ? '+' : ''}{fmt(gain)}
+                    {gainPct !== null && (
+                      <span className="ml-1 font-normal opacity-75">
+                        ({gainPct >= 0 ? '+' : ''}{gainPct.toFixed(1)} %)
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* ── Filtres ── */}
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <div className="flex gap-1.5 flex-wrap">
@@ -319,15 +372,48 @@ export default function PatrimoinePage({ currentUser }) {
             </button>
           ))}
         </div>
-        <label className="ml-auto flex items-center gap-2 cursor-pointer text-xs text-gray-500">
-          <input type="checkbox" checked={showClosed} onChange={e => setShowClosed(e.target.checked)}
-            className="accent-indigo-600" />
-          Afficher les positions fermées
-        </label>
+
+        <div className="ml-auto flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-500">
+            <input type="checkbox" checked={showClosed} onChange={e => setShowClosed(e.target.checked)}
+              className="accent-indigo-600" />
+            Afficher les positions fermées
+          </label>
+
+          {/* Toggle vue */}
+          <div className="flex border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => handleSetViewMode('grid')}
+              title="Vue grille"
+              className={`px-2.5 py-1.5 text-xs transition ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => handleSetViewMode('grouped')}
+              title="Vue par partenaire"
+              className={`px-2.5 py-1.5 text-xs border-l border-gray-200 transition ${viewMode === 'grouped' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* ── Grille de positions ── */}
-      {filtered.length === 0 ? (
+      {/* ── Positions ── */}
+      {viewMode === 'grouped' ? (
+        <PatrimoineGroupedView
+          positions={filtered}
+          onEdit={setFormTarget}
+          onDelete={handleDelete}
+          onClose={handleClose}
+          onUpdateBalance={setBalanceTarget}
+          onUpdateEstimatedValue={setEstimatedTarget}
+          onViewOrders={setOrdersTarget}
+        />
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
           <p className="text-lg mb-2">Aucune position</p>
           <p className="text-sm">Cliquez sur « + Ajouter une position » pour commencer.</p>

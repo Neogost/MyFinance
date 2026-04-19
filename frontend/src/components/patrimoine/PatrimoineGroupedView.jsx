@@ -1,0 +1,417 @@
+import { Fragment, useState } from 'react'
+import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, OWNERSHIP_TYPES } from './constants'
+import { fmt } from './utils'
+
+const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
+const OWNERSHIP_LABEL = Object.fromEntries(OWNERSHIP_TYPES.map(({ value, label }) => [value, label]))
+const STALE_MS = 30 * 24 * 60 * 60 * 1000
+
+const isStale = (dateStr) => dateStr && new Date(dateStr) < new Date(Date.now() - STALE_MS)
+
+function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmClose,  setConfirmClose]  = useState(false)
+
+  if (position.status === 'CLOSED') return null
+
+  const isLiquidite    = position.category === 'LIQUIDITE'
+  const isImmoPhysique = position.category === 'IMMO_PHYSIQUE'
+
+  if (confirmClose) return (
+    <span className="flex items-center gap-1 whitespace-nowrap">
+      <span className="text-xs text-orange-700">Fermer ?</span>
+      <button onClick={() => { setConfirmClose(false); onClose(position) }}
+        className="px-2 py-0.5 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Oui</button>
+      <button onClick={() => setConfirmClose(false)}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-gray-400">Non</button>
+    </span>
+  )
+
+  if (confirmDelete) return (
+    <span className="flex items-center gap-1 whitespace-nowrap">
+      <span className="text-xs text-red-700">Supprimer ?</span>
+      <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
+        className="px-2 py-0.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">Oui</button>
+      <button onClick={() => setConfirmDelete(false)}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-gray-400">Non</button>
+    </span>
+  )
+
+  return (
+    <span className="flex items-center gap-1 whitespace-nowrap">
+      {isLiquidite ? (
+        <button onClick={() => onUpdateBalance(position)}
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          Solde
+        </button>
+      ) : isImmoPhysique ? (
+        <button onClick={() => onUpdateEstimatedValue(position)}
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          Valeur
+        </button>
+      ) : (
+        <button onClick={() => onViewOrders(position)}
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          Mvts
+        </button>
+      )}
+      <button onClick={() => onEdit(position)}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600">
+        Modifier
+      </button>
+      <button onClick={() => setConfirmClose(true)}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600">
+        Fermer
+      </button>
+      <button onClick={() => setConfirmDelete(true)}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-400 hover:text-red-600">
+        ×
+      </button>
+    </span>
+  )
+}
+
+function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+  const fiscal        = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
+  const c             = position.computed ?? {}
+  const gain          = parseFloat(c.capitalGainEur ?? 0)
+  const invested      = parseFloat(c.investedAmountEur ?? 0)
+  const gainPct       = invested !== 0 && c.capitalGainEur != null ? (gain / Math.abs(invested)) * 100 : null
+  const showGain      = c.capitalGainEur != null && parseFloat(c.capitalGainEur) !== 0
+  const isClosed      = position.status === 'CLOSED'
+  const isBourseOrCrypto = position.category === 'BOURSE' || position.category === 'CRYPTO'
+  const isImmo        = position.category === 'IMMO_PHYSIQUE' || position.category === 'IMMO_PAPIER'
+
+  const units = parseFloat(c.units ?? 0)
+  const pru   = isBourseOrCrypto && units > 0 && invested !== 0 ? invested / units : null
+
+  const stale = isBourseOrCrypto && !position.instrument?.stablePrice && isStale(position.instrument?.lastPriceUpdatedAt)
+
+  return (
+    <tr className={`border-b border-gray-100 hover:bg-gray-50 transition ${isClosed ? 'opacity-50' : ''}`}>
+      {/* Nom + ISIN + indicateur cours obsolète */}
+      <td className="py-2 pl-6 pr-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-gray-900">{position.label}</span>
+              {stale && (
+                <span
+                  title={`Cours non mis à jour depuis plus de 30 jours (${new Date(position.instrument.lastPriceUpdatedAt).toLocaleDateString('fr-FR')})`}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 whitespace-nowrap"
+                >
+                  Cours obsolète
+                </span>
+              )}
+            </div>
+            {position.instrument && (
+              <span className="text-xs text-gray-400">{position.instrument.isin ?? position.instrument.ticker}</span>
+            )}
+          </div>
+          {isClosed && (
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0">Fermé</span>
+          )}
+        </div>
+      </td>
+
+      {/* Badges : enveloppe + sous-type + propriété (immo) */}
+      <td className="py-2 px-2">
+        <div className="flex items-center gap-1 flex-wrap">
+          {position.assetSubType && (
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+              {position.assetSubType}
+            </span>
+          )}
+          {fiscal && (
+            <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${fiscal.color}`}>
+              {fiscal.label}
+            </span>
+          )}
+          {isImmo && position.ownershipType && position.ownershipType !== 'PLEINE_PROPRIETE' && (
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+              {OWNERSHIP_LABEL[position.ownershipType] ?? position.ownershipType}
+            </span>
+          )}
+          {isImmo && position.ownershipType === 'PLEINE_PROPRIETE' && (
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">
+              Pleine prop.
+            </span>
+          )}
+        </div>
+      </td>
+
+      {/* Valeur actuelle */}
+      <td className="py-2 px-2 text-right">
+        <span className="text-sm font-bold text-gray-900 amount">{fmt(c.currentValueEur)}</span>
+      </td>
+
+      {/* Investi + PRU */}
+      <td className="py-2 px-2 text-right">
+        <span className="text-sm text-gray-500 amount">{fmt(c.investedAmountEur)}</span>
+        {pru !== null && (
+          <p className="text-xs text-gray-400 amount">PRU {fmt(pru)}/u</p>
+        )}
+      </td>
+
+      {/* Plus-value € + % */}
+      <td className="py-2 px-2 text-right">
+        {showGain && (
+          <div className="flex flex-col items-end">
+            <span className={`text-sm font-semibold amount ${gain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+              {gain >= 0 ? '+' : ''}{fmt(c.capitalGainEur)}
+            </span>
+            {gainPct !== null && (
+              <span className={`text-xs ${gain >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                {gainPct >= 0 ? '+' : ''}{gainPct.toFixed(1)} %
+              </span>
+            )}
+          </div>
+        )}
+      </td>
+
+      {/* Taux annuel */}
+      <td className="py-2 px-2 text-right">
+        {position.annualRate != null && (
+          <span className="text-xs font-medium text-gray-500">{position.annualRate} %/an</span>
+        )}
+      </td>
+
+      {/* Actions */}
+      <td className="py-2 pl-2 pr-3 text-right">
+        <ActionButtons
+          position={position}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onClose={onClose}
+          onUpdateBalance={onUpdateBalance}
+          onUpdateEstimatedValue={onUpdateEstimatedValue}
+          onViewOrders={onViewOrders}
+        />
+      </td>
+    </tr>
+  )
+}
+
+export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+  const [collapsed, setCollapsed] = useState(new Set())
+
+  const toggle = (partner) => setCollapsed(prev => {
+    const next = new Set(prev)
+    next.has(partner) ? next.delete(partner) : next.add(partner)
+    return next
+  })
+
+  const grandTotal = positions.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+
+  const grouped = {}
+  positions.forEach(p => {
+    const partner = p.partner || 'Sans partenaire'
+    if (!grouped[partner]) grouped[partner] = {}
+    if (!grouped[partner][p.category]) grouped[partner][p.category] = []
+    grouped[partner][p.category].push(p)
+  })
+
+  const sumField   = (ps, field) => ps.reduce((s, p) => s + parseFloat(p.computed?.[field] ?? 0), 0)
+  const partnerTotal = (byCategory) => Object.values(byCategory).flat().reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+
+  const partners = Object.entries(grouped).sort(([, a], [, b]) => partnerTotal(b) - partnerTotal(a))
+
+  if (positions.length === 0) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
+        <p className="text-lg mb-2">Aucune position</p>
+        <p className="text-sm">Cliquez sur « + Ajouter une position » pour commencer.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {partners.map(([partner, byCategory]) => {
+        const allPs       = Object.values(byCategory).flat()
+        const total       = sumField(allPs, 'currentValueEur')
+        const totalInv    = sumField(allPs, 'investedAmountEur')
+        const totalGain   = sumField(allPs, 'capitalGainEur')
+        const totalGainPct = totalInv !== 0 ? (totalGain / Math.abs(totalInv)) * 100 : null
+        const pct         = grandTotal > 0 ? (total / grandTotal) * 100 : 0
+        const isCollapsed = collapsed.has(partner)
+        const cats        = CATEGORY_ORDER.filter(cat => byCategory[cat])
+
+        return (
+          <div key={partner} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+            {/* ── En-tête partenaire ── */}
+            <button
+              onClick={() => toggle(partner)}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition text-left"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                className={`text-gray-400 shrink-0 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+                viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+              </svg>
+              <span className="font-semibold text-gray-900 text-sm flex-1 text-left">{partner}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs text-gray-400 w-9 text-right whitespace-nowrap">{pct.toFixed(1)} %</span>
+              </div>
+              <span className="text-sm font-bold text-gray-700 amount w-28 text-right">{fmt(total)}</span>
+            </button>
+
+            {/* ── Contenu dépliable ── */}
+            {!isCollapsed && (
+              <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '27%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '8%' }} />
+                  <col />
+                </colgroup>
+
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-xs text-gray-400 font-normal py-1.5 pl-6 pr-2">Position</th>
+                    <th className="text-left text-xs text-gray-400 font-normal py-1.5 px-2">Enveloppe / Type</th>
+                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Valeur actuelle</th>
+                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Investi</th>
+                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Plus-value</th>
+                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Taux</th>
+                    <th className="py-1.5 px-3" />
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {cats.map(cat => {
+                    const meta    = CATEGORY_META[cat] ?? {}
+                    const ps      = byCategory[cat]
+                    const catVal  = sumField(ps, 'currentValueEur')
+                    const catPct  = grandTotal > 0 ? (catVal / grandTotal) * 100 : 0
+
+                    return (
+                      <Fragment key={cat}>
+                        {/* Sous-en-tête catégorie */}
+                        <tr className="bg-gray-50/70 border-y border-gray-100">
+                          <td colSpan={7} className="py-1.5 pl-6 pr-4">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                <span>{meta.icon}</span>
+                                <span>{meta.label}</span>
+                                <span className="font-normal text-gray-400 normal-case tracking-normal">
+                                  — {ps.length} position{ps.length > 1 ? 's' : ''}
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">{catPct.toFixed(1)} % du patrimoine</span>
+                                <span className="text-xs font-semibold text-gray-600 amount">{fmt(catVal)}</span>
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {ps.map(position => (
+                          <PositionRow
+                            key={position.id}
+                            position={position}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onClose={onClose}
+                            onUpdateBalance={onUpdateBalance}
+                            onUpdateEstimatedValue={onUpdateEstimatedValue}
+                            onViewOrders={onViewOrders}
+                          />
+                        ))}
+                      </Fragment>
+                    )
+                  })}
+
+                  {/* ── Ligne de sous-total partenaire ── */}
+                  <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                    <td colSpan={2} className="py-2 pl-6 pr-2">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total {partner}</span>
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      <span className="text-sm font-bold text-gray-900 amount">{fmt(total)}</span>
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      <span className="text-sm font-semibold text-gray-500 amount">{fmt(totalInv)}</span>
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      {totalGain !== 0 && (
+                        <div className="flex flex-col items-end">
+                          <span className={`text-sm font-bold amount ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                            {totalGain >= 0 ? '+' : ''}{fmt(totalGain)}
+                          </span>
+                          {totalGainPct !== null && (
+                            <span className={`text-xs ${totalGain >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                              {totalGainPct >= 0 ? '+' : ''}{totalGainPct.toFixed(1)} %
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td colSpan={2} />
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      })}
+
+      {/* ── Légende ── */}
+      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Légende & calculs</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
+          <LegendItem term="PRU — Prix de Revient Unitaire">
+            Montant total investi divisé par le nombre d'unités détenues.
+            Permet de comparer directement au cours actuel pour évaluer la position.
+            <Formula>PRU = Investi (€) ÷ Nombre d'unités</Formula>
+          </LegendItem>
+          <LegendItem term="Plus-value %">
+            Rendement réalisé rapporté au capital engagé, tous ordres confondus (achats et ventes).
+            <Formula>Plus-value % = Plus-value (€) ÷ |Investi (€)| × 100</Formula>
+          </LegendItem>
+          <LegendItem term="% du patrimoine">
+            Part que représente la catégorie dans la valeur totale des positions affichées.
+            Change si un filtre catégorie est actif.
+            <Formula>% = Valeur catégorie ÷ Valeur totale affichée × 100</Formula>
+          </LegendItem>
+          <LegendItem term="Barre de poids (en-tête partenaire)">
+            Représentation visuelle du poids du partenaire dans l'ensemble du patrimoine affiché.
+            Triés par valeur décroissante.
+          </LegendItem>
+          <LegendItem term={<><span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600">Cours obsolète</span></>}>
+            Le dernier cours connu de l'instrument date de plus de 30 jours.
+            La valeur actuelle affichée peut ne plus refléter le marché — pensez à mettre à jour les cours.
+          </LegendItem>
+          <LegendItem term="Valeur actuelle vs Investi">
+            <strong className="font-semibold text-gray-600">Valeur actuelle</strong> : estimation au cours du jour (ou valeur estimée manuelle pour l'immo).{' '}
+            <strong className="font-semibold text-gray-600">Investi</strong> : somme nette apportée, déduction faite des ventes partielles.
+          </LegendItem>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LegendItem({ term, children }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-600 mb-0.5">{term}</p>
+      <p className="text-xs text-gray-400 leading-relaxed">{children}</p>
+    </div>
+  )
+}
+
+function Formula({ children }) {
+  return (
+    <span className="block mt-1 font-mono text-xs text-indigo-500 bg-indigo-50 rounded px-1.5 py-0.5 w-fit">
+      {children}
+    </span>
+  )
+}
