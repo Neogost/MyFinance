@@ -16,10 +16,17 @@ Le simulateur pré-remplit le **revenu mensuel net** depuis le profil fiscal de 
 
 | Paramètre | Source | Description |
 |-----------|--------|-------------|
-| `apiIncome` | `GET /api/tax-simulator` → `salaryIncome / 12` | Revenu mensuel net de l'utilisateur |
+| `apiIncome` | `GET /api/tax-simulator` → `salaryIncome / 12` | Revenu mensuel net de l'utilisateur connecté |
 | `incomeOverride` | Saisie manuelle (optionnel) | Surcharge du revenu mensuel net pour simulation |
+| `additionalIncomes` | Saisie manuelle ou recherche utilisateur | Liste de revenus co-emprunteurs additionnels |
 
-Si `incomeOverride` est renseigné, il remplace `apiIncome` dans tous les calculs.
+Si `incomeOverride` est renseigné, il remplace `apiIncome`. Le revenu mensuel total utilisé dans les calculs est :
+
+```
+monthlyIncome = (incomeOverride || apiIncome) + Σ additionalIncomes[i].amount
+```
+
+Chaque entrée `additionalIncomes` a la structure `{ id, name, amount }`. Le montant peut être renseigné manuellement ou auto-rempli via `GET /api/tax-simulator/users/{userId}` (champ `salaryIncome / 12`).
 
 ---
 
@@ -95,13 +102,49 @@ Permet de calculer le **coût mensuel total réel** du projet (crédit + charges
 
 ---
 
-### 2.8 Comparaison de scénarios — optionnel
+### 2.8 Sauvegarde de simulation — optionnel
+
+| Paramètre | Stockage | Description |
+|-----------|----------|-------------|
+| `savedSimulations` | `localStorage` clé `loan_simulations` | Tableau de snapshots nommés |
+
+Chaque snapshot est un objet `{ name, date, ...allStateValues }` sérialisé en JSON. L'utilisateur peut sauvegarder, charger et supprimer des simulations par nom. Les données sont purement locales (aucun backend).
+
+---
+
+### 2.9 Comparaison de scénarios — optionnel
 
 | Paramètre | Type | Description |
 |-----------|------|-------------|
 | `showComparison` | `boolean` | Activer le scénario alternatif |
 | `compDuration` | `number` | Durée alternative (années) |
 | `compRate` | `number` | Taux alternatif (%) |
+
+---
+
+### 2.9 Simulation de revente — optionnel
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `showResale` | `boolean` | Activer la simulation de revente |
+| `resaleYear` | `number` | Année de revente (1 à loanDuration) |
+| `resalePrice` | `number` | Prix de revente (0 = calculé automatiquement via appréciation) |
+| `resaleAgencyFeesPct` | `number` | Frais d'agence à la revente (%, défaut 5) |
+| `propertyAppreciation` | `number` | Appréciation annuelle du bien (%) — partagé avec §2.10 |
+
+---
+
+### 2.10 Louer vs Acheter — optionnel
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `showRentComparison` | `boolean` | Activer la comparaison |
+| `monthlyRent` | `number` | Loyer mensuel équivalent actuel (€) |
+| `rentIncreaseRate` | `number` | Hausse annuelle du loyer (%) |
+| `investmentReturnRate` | `number` | Rendement annuel net du portefeuille locataire (%) |
+| `rentBuyHorizon` | `number` | Horizon d'analyse (années, max 40) |
+| `propertyAppreciation` | `number` | Appréciation annuelle du bien (%) — partagé avec §2.9 |
+| `resaleAgencyFeesPct` | `number` | Frais d'agence à la revente (%) — partagé avec §2.9 |
 
 ---
 
@@ -258,7 +301,52 @@ TAEG = (1 + r)^12 − 1
 
 ---
 
-### 3.10 Comparaison de scénarios
+### 3.10 Simulation de revente
+
+```
+effectiveResalePrice = resalePrice > 0 ? resalePrice : propertyPrice × (1 + propertyAppreciation/100)^resaleYear
+
+resaleFees           = effectiveResalePrice × resaleAgencyFeesPct / 100
+remainingCapital     = capitalTotal au mois resaleYear×12 (depuis le tableau d'amortissement)
+ira                  = min(remainingCapital × 3 %, 6 × intérêts_du_mois) si capital > 0
+netProceeds          = effectiveResalePrice − resaleFees − remainingCapital − ira
+
+initialCashOut       = acquisitionCost − loanAmount − ptzAmount  // apport + frais initiaux
+totalNonRecoverable  = initialCashOut + Σ intérêts + Σ assurance + resaleYear × (taxeFoncière + charges×12)
+netGain              = netProceeds − totalNonRecoverable
+```
+
+---
+
+### 3.11 Louer vs Acheter
+
+Simulation mensuelle sur `rentBuyHorizon` années.
+
+**Patrimoine acheteur** à l'année y :
+```
+propValue    = propertyPrice × (1 + propertyAppreciation/100)^y
+remainDebt   = capitalTotal du dernier mois de l'année y
+buyNetWealth = propValue × (1 − resaleAgencyFeesPct/100) − remainDebt
+```
+
+**Portefeuille locataire** — simulation mois par mois :
+```
+// Investissement initial = apport personnel + frais d'acquisition du propriétaire
+rentPortfolio = requiredContrib   // à t=0
+
+// Chaque mois m :
+saving = max(0, coût_mensuel_propriétaire − loyer_du_mois)
+  où coût = mensualité + ptzMonthly + charges + taxeFoncière/12
+  où loyer = monthlyRent × (1 + rentIncreaseRate/100)^(mois/12)
+
+rentPortfolio = rentPortfolio × (1 + investmentReturnRate/100/12) + saving
+```
+
+**Point de croisement** : première année où `buyNetWealth ≥ rentPortfolio` (achat devient plus rentable).
+
+---
+
+### 3.12 Comparaison de scénarios
 
 Le scénario alternatif recalcule un tableau d'amortissement complet avec `compDuration` et `compRate`, sans remboursements anticipés et avec `insuranceBase = 'initial'`. Il expose :
 
@@ -310,6 +398,11 @@ Le scénario alternatif recalcule un tableau d'amortissement complet avec `compD
 - Si l'API échoue ou si l'utilisateur n'a pas de contrat actif : champ vide avec placeholder
 - Input "Surcharger le revenu mensuel net (€)" — si renseigné, remplace le revenu API
 - Taux d'endettement en temps réel (badge vert < 33 % / orange 33–35 % / rouge > 35 %)
+- Bouton "+ Ajouter un co-emprunteur" : crée une ligne `additionalIncomes` avec nom et montant mensuel
+  - Bouton "Depuis un utilisateur" : ouvre un dropdown de recherche parmi les utilisateurs de l'application (ADMIN)
+  - La recherche filtre sur `login`, `firstName`, `lastName`
+  - À la sélection : le nom est auto-rempli (`firstName lastName`) et le revenu est chargé via `GET /api/tax-simulator/users/{userId}` (champ `salaryIncome / 12`)
+  - Si l'appel échoue, l'utilisateur peut saisir le montant manuellement
 
 ### 4.3 Section "Le bien"
 
@@ -376,6 +469,16 @@ TAEG estimé     Durée effective
 - Vue **annuelle** par défaut (agrégats) avec graphique ComposedChart (Bar intérêts + Bar amortissement + Area capital)
 - Vue **mensuelle** dépliable — lignes de remboursement anticipé surlignées en amber
 - Colonnes : Mois, Intérêts, Amortissement, Assurance, Mensualité, Remb. anticipé, IRA, Capital principal, Capital PTZ, Capital total
+
+### 4.12 Sauvegarde de simulation
+
+Un bouton "Sauvegarder" en en-tête ouvre une modal demandant un nom. Après saisie, un snapshot complet de tous les paramètres est persisté dans `localStorage` (clé `loan_simulations`).
+
+Un bouton "Charger" affiche la liste des simulations sauvegardées. Un clic restaure tous les paramètres ; un bouton de suppression retire l'entrée du localStorage.
+
+### 4.13 Export PDF
+
+Un bouton "Exporter PDF" en en-tête déclenche `window.print()`. La mise en page d'impression est celle du navigateur (aucune mise en forme print CSS spécifique). Les éléments marqués `print:hidden` (ex. boutons d'action) sont masqués à l'impression.
 
 ---
 
@@ -470,10 +573,45 @@ const [showComparison, setShowComparison] = useState(false)
 const [compDuration, setCompDuration]     = useState(25)
 const [compRate, setCompRate]             = useState(3.0)
 
+// Comparaison de scénarios
+const [showComparison, setShowComparison] = useState(false)
+const [compDuration, setCompDuration]     = useState(25)
+const [compRate, setCompRate]             = useState(3.0)
+
+// Simulation de revente
+const [showResale, setShowResale]                   = useState(false)
+const [resaleYear, setResaleYear]                   = useState(5)
+const [resalePrice, setResalePrice]                 = useState(0)
+const [resaleAgencyFeesPct, setResaleAgencyFeesPct] = useState(5)
+const [propertyAppreciation, setPropertyAppreciation] = useState(1)
+
+// Louer vs Acheter
+const [showRentComparison, setShowRentComparison]   = useState(false)
+const [monthlyRent, setMonthlyRent]                 = useState(800)
+const [rentIncreaseRate, setRentIncreaseRate]        = useState(1)
+const [investmentReturnRate, setInvestmentReturnRate] = useState(5)
+const [rentBuyHorizon, setRentBuyHorizon]            = useState(20)
+
+// Sauvegarde localStorage
+const LOAN_STORAGE_KEY = 'loan_simulations'
+const [savedSimulations, setSavedSimulations] = useState(() => { /* init depuis localStorage */ })
+const [showSaveModal, setShowSaveModal]       = useState(false)
+const [saveName, setSaveName]                 = useState('')
+const [showLoadPanel, setShowLoadPanel]       = useState(false)
+
+// Co-emprunteurs (revenus)
+const [additionalIncomes, setAdditionalIncomes] = useState([])
+const [userPickerOpen, setUserPickerOpen]       = useState(null) // id de la ligne ouverte
+const [usersList, setUsersList]                 = useState([])
+const [usersLoading, setUsersLoading]           = useState(false)
+const [userSearchQuery, setUserSearchQuery]     = useState('')
+const [incomeLoadingFor, setIncomeLoadingFor]   = useState(null) // id de la ligne en chargement
+
 // UI
 const [showMonthly, setShowMonthly]     = useState(false)
 const [showTable, setShowTable]         = useState(true)
 const [notaryTooltip, setNotaryTooltip] = useState(null)
+const [tableMaxHeight, setTableMaxHeight] = useState(null) // calculé par ResizeObserver (mode mensuel)
 ```
 
 ### 6.4 useMemo principal
@@ -484,6 +622,7 @@ const calc = useMemo(() => {
   // taeg, comparison, totalMonthlyCost
   // pricePerSqm, debtRatio, maxLoanCapacity
   // donutItems, chartData
+  // resale (§3.10), rentVsBuy (§3.11)
 }, [
   propertyPrice, surface, propertyType,
   agencyFees, agencyFeesMode, dossierFees, dossierFeesMode,
@@ -495,8 +634,12 @@ const calc = useMemo(() => {
   propertyTax, condoFees,
   showComparison, compDuration, compRate,
   monthlyIncome,
+  showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
+  showRentComparison, monthlyRent, rentIncreaseRate, investmentReturnRate, rentBuyHorizon,
 ])
 ```
+
+Un `useEffect` secondaire observe le panneau gauche et le conteneur du tableau via `ResizeObserver` pour calculer dynamiquement `tableMaxHeight` — utilisé uniquement en mode mensuel pour aligner la hauteur du tableau avec le bas du panneau gauche.
 
 ---
 
@@ -538,6 +681,12 @@ La variable `isToolsPage` inclut `'loan-simulator'`.
 
 ---
 
-## 9. Pas de backend requis (sauf revenus)
+## 9. Appels API (tous optionnels)
 
-Le seul appel API est `GET /api/tax-simulator` pour pré-remplir le revenu — le champ `salaryIncome` du `TaxSimulationDto` est divisé par 12. Si l'appel échoue, l'outil reste entièrement fonctionnel via saisie manuelle. Aucune entité JPA ni endpoint `/api/loan-simulator` à créer.
+L'outil reste entièrement fonctionnel via saisie manuelle si les appels API échouent. Aucune entité JPA ni endpoint `/api/loan-simulator` à créer.
+
+| Endpoint | Rôle requis | Usage |
+|----------|-------------|-------|
+| `GET /api/tax-simulator` | Authentifié | Pré-remplissage du revenu mensuel net (`salaryIncome / 12`) au chargement de la page |
+| `GET /api/users` | ADMIN | Chargement de la liste des utilisateurs pour la recherche co-emprunteur (lazy, au premier clic "Depuis un utilisateur") |
+| `GET /api/tax-simulator/users/{userId}` | ADMIN | Auto-remplissage du revenu mensuel d'un co-emprunteur à la sélection dans la liste |

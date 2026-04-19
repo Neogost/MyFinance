@@ -9,3 +9,7 @@ export function simulateTax({ year, salarySource, includedIncomes } = {}) {
   if (includedIncomes) includedIncomes.forEach(id => params.append('includedIncomes', id))
   return api.get('/api/tax-simulator', { params }).then(r => r.data)
 }
+
+export function simulateTaxForUser(userId) {
+  return api.get(`/api/tax-simulator/users/${userId}`).then(r => r.data)
+}

@@ -1,11 +1,13 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
-  ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Bar, Area, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts'
-import { simulateTax } from '../../api/tools'
+import { simulateTax, simulateTaxForUser } from '../../api/tools'
+import { getUsers } from '../../api/users'
 
 const CURRENT_YEAR = new Date().getFullYear()
+const LOAN_STORAGE_KEY = 'loan_simulations'
 
 function fmt(amount) {
   if (amount == null || isNaN(amount) || !isFinite(amount)) return '—'
@@ -260,6 +262,12 @@ export default function LoanSimulatorPage() {
   const [apiIncome, setApiIncome]           = useState(null)
   const [incomeLoading, setIncomeLoading]   = useState(true)
   const [incomeOverride, setIncomeOverride] = useState('')
+  const [additionalIncomes, setAdditionalIncomes] = useState([])
+  const [userPickerOpen, setUserPickerOpen]       = useState(null)
+  const [usersList, setUsersList]                 = useState([])
+  const [usersLoading, setUsersLoading]           = useState(false)
+  const [userSearchQuery, setUserSearchQuery]     = useState('')
+  const [incomeLoadingFor, setIncomeLoadingFor]   = useState(null)
 
   // Bien
   const [propertyPrice, setPropertyPrice]         = useState(250000)
@@ -303,10 +311,35 @@ export default function LoanSimulatorPage() {
   const [compDuration, setCompDuration]     = useState(25)
   const [compRate, setCompRate]             = useState(3.0)
 
+  // Revente
+  const [showResale, setShowResale]                   = useState(false)
+  const [resaleYear, setResaleYear]                   = useState(10)
+  const [resalePrice, setResalePrice]                 = useState(0)
+  const [resaleAgencyFeesPct, setResaleAgencyFeesPct] = useState(5)
+  const [propertyAppreciation, setPropertyAppreciation] = useState(2)
+
+  // Louer vs Acheter
+  const [showRentComparison, setShowRentComparison]   = useState(false)
+  const [monthlyRent, setMonthlyRent]                 = useState(1200)
+  const [rentIncreaseRate, setRentIncreaseRate]       = useState(2)
+  const [investmentReturnRate, setInvestmentReturnRate] = useState(5)
+  const [rentBuyHorizon, setRentBuyHorizon]           = useState(20)
+
   // UI
   const [showMonthly, setShowMonthly]     = useState(false)
   const [showTable, setShowTable]         = useState(true)
   const [notaryTooltip, setNotaryTooltip] = useState(null)
+  const [tableMaxHeight, setTableMaxHeight] = useState(null)
+  const leftPanelRef = useRef(null)
+  const tableBodyRef = useRef(null)
+
+  // Simulations sauvegardées
+  const [savedSimulations, setSavedSimulations] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(LOAN_STORAGE_KEY) || '[]') } catch { return [] }
+  })
+  const [showSaveModal, setShowSaveModal]   = useState(false)
+  const [saveName, setSaveName]             = useState('')
+  const [showLoadPanel, setShowLoadPanel]   = useState(false)
 
   useEffect(() => {
     setIncomeLoading(true)
@@ -316,7 +349,96 @@ export default function LoanSimulatorPage() {
       .finally(() => setIncomeLoading(false))
   }, [])
 
-  const monthlyIncome = incomeOverride !== '' ? (parseFloat(incomeOverride) || 0) : (apiIncome ?? 0)
+  useEffect(() => {
+    if (!showMonthly || !showTable) return
+    const update = () => {
+      if (!leftPanelRef.current || !tableBodyRef.current) return
+      const leftBottom = leftPanelRef.current.getBoundingClientRect().bottom + window.scrollY
+      const tableTop   = tableBodyRef.current.getBoundingClientRect().top   + window.scrollY
+      setTableMaxHeight(Math.max(200, Math.floor(leftBottom - tableTop)))
+    }
+    const obs = new ResizeObserver(update)
+    obs.observe(leftPanelRef.current)
+    obs.observe(tableBodyRef.current)
+    update()
+    return () => obs.disconnect()
+  }, [showMonthly, showTable])
+
+  useEffect(() => {
+    localStorage.setItem(LOAN_STORAGE_KEY, JSON.stringify(savedSimulations))
+  }, [savedSimulations])
+
+  function getSimulationSnapshot(name) {
+    return {
+      id: Date.now(), name, savedAt: new Date().toISOString(),
+      propertyPrice, surface, propertyType,
+      agencyFees, agencyFeesMode, dossierFees, dossierFeesMode,
+      guaranteeFees, guaranteeFeesMode, brokerageFees, brokerageFeesMode,
+      loanAmount, personalContrib, loanDuration, annualRate, insuranceRate, insuranceBase,
+      participants, ptzEnabled, ptzAmount, ptzDuration, ptzDeferral,
+      earlyRepayments, propertyTax, condoFees,
+      showComparison, compDuration, compRate,
+      showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
+      showRentComparison, monthlyRent, rentIncreaseRate, investmentReturnRate, rentBuyHorizon,
+      incomeOverride, additionalIncomes,
+    }
+  }
+
+  function handleSave() {
+    const trimmed = saveName.trim()
+    if (!trimmed) return
+    setSavedSimulations(prev => [getSimulationSnapshot(trimmed), ...prev])
+    setSaveName('')
+    setShowSaveModal(false)
+  }
+
+  function handleLoad(sim) {
+    setPropertyPrice(sim.propertyPrice ?? 250000)
+    setSurface(sim.surface ?? 0)
+    setPropertyType(sim.propertyType ?? 'ancien')
+    setAgencyFees(sim.agencyFees ?? 0); setAgencyFeesMode(sim.agencyFeesMode ?? 'percent')
+    setDossierFees(sim.dossierFees ?? 1000); setDossierFeesMode(sim.dossierFeesMode ?? 'amount')
+    setGuaranteeFees(sim.guaranteeFees ?? 1); setGuaranteeFeesMode(sim.guaranteeFeesMode ?? 'percent')
+    setBrokerageFees(sim.brokerageFees ?? 0); setBrokerageFeesMode(sim.brokerageFeesMode ?? 'amount')
+    setLoanAmount(sim.loanAmount ?? 200000)
+    setPersonalContrib(sim.personalContrib ?? 30000)
+    setLoanDuration(sim.loanDuration ?? 20)
+    setAnnualRate(sim.annualRate ?? 3.5)
+    setInsuranceRate(sim.insuranceRate ?? 0.20)
+    setInsuranceBase(sim.insuranceBase ?? 'initial')
+    setParticipants(sim.participants ?? [{ id: 1, name: 'Emprunteur 1', percent: 100 }])
+    setPtzEnabled(sim.ptzEnabled ?? false)
+    setPtzAmount(sim.ptzAmount ?? 30000)
+    setPtzDuration(sim.ptzDuration ?? 15)
+    setPtzDeferral(sim.ptzDeferral ?? 5)
+    setEarlyRepayments(sim.earlyRepayments ?? [])
+    setPropertyTax(sim.propertyTax ?? 0)
+    setCondoFees(sim.condoFees ?? 0)
+    setShowComparison(sim.showComparison ?? false)
+    setCompDuration(sim.compDuration ?? 25)
+    setCompRate(sim.compRate ?? 3.0)
+    setShowResale(sim.showResale ?? false)
+    setResaleYear(sim.resaleYear ?? 10)
+    setResalePrice(sim.resalePrice ?? 0)
+    setResaleAgencyFeesPct(sim.resaleAgencyFeesPct ?? 5)
+    setPropertyAppreciation(sim.propertyAppreciation ?? 2)
+    setShowRentComparison(sim.showRentComparison ?? false)
+    setMonthlyRent(sim.monthlyRent ?? 1200)
+    setRentIncreaseRate(sim.rentIncreaseRate ?? 2)
+    setInvestmentReturnRate(sim.investmentReturnRate ?? 5)
+    setRentBuyHorizon(sim.rentBuyHorizon ?? 20)
+    setIncomeOverride(sim.incomeOverride ?? '')
+    setAdditionalIncomes(sim.additionalIncomes ?? [])
+    setShowLoadPanel(false)
+  }
+
+  function handleDeleteSaved(id) {
+    setSavedSimulations(prev => prev.filter(s => s.id !== id))
+  }
+
+  const baseIncome      = incomeOverride !== '' ? (parseFloat(incomeOverride) || 0) : (apiIncome ?? 0)
+  const additionalTotal = additionalIncomes.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
+  const monthlyIncome   = baseIncome + additionalTotal
 
   // ── Calculs principaux ────────────────────────────────────────────────────
   const calc = useMemo(() => {
@@ -389,6 +511,71 @@ export default function LoanSimulatorPage() {
       }
     }
 
+    // Simulation de revente
+    let resale = null
+    if (showResale && resaleYear >= 1) {
+      const resaleMonthIdx = Math.min(resaleYear * 12, amortization.rows.length) - 1
+      const rowAtResale    = resaleMonthIdx >= 0 ? amortization.rows[resaleMonthIdx] : null
+      if (rowAtResale) {
+        const remainingCapital     = rowAtResale.capitalTotal
+        const effectiveResalePrice = resalePrice > 0
+          ? resalePrice
+          : Math.round(propertyPrice * Math.pow(1 + propertyAppreciation / 100, resaleYear))
+        const resaleFees = Math.round(effectiveResalePrice * resaleAgencyFeesPct / 100)
+        const ira = remainingCapital > 0.5
+          ? Math.min(remainingCapital * 0.03, 6 * rowAtResale.interets)
+          : 0
+        const netProceeds          = effectiveResalePrice - resaleFees - Math.round(remainingCapital) - Math.round(ira)
+        const rowsUpTo             = amortization.rows.slice(0, resaleMonthIdx + 1)
+        const interestPaid         = Math.round(rowsUpTo.reduce((s, r) => s + r.interets, 0))
+        const insurancePaid        = Math.round(rowsUpTo.reduce((s, r) => s + r.assurance, 0))
+        const chargesPaid          = Math.round(resaleYear * (propertyTax + condoFees * 12))
+        const initialCashOut       = Math.max(0, Math.round(acquisitionCost) - loanAmount - ptzAmt)
+        const totalNonRecoverable  = initialCashOut + interestPaid + insurancePaid + chargesPaid
+        const netGain              = netProceeds - totalNonRecoverable
+        resale = {
+          effectiveResalePrice, resaleFees,
+          remainingCapital: Math.round(remainingCapital), ira: Math.round(ira),
+          netProceeds, interestPaid, insurancePaid, chargesPaid,
+          initialCashOut, totalNonRecoverable, netGain,
+        }
+      }
+    }
+
+    // Louer vs Acheter
+    let rentVsBuy = null
+    if (showRentComparison && monthlyRent > 0 && rentBuyHorizon > 0) {
+      const horizon         = Math.min(rentBuyHorizon, 40)
+      const monthlyInvRate  = investmentReturnRate / 100 / 12
+      let rentPortfolio     = Math.max(0, requiredContrib)
+      const yearlyRentVsBuy = []
+      for (let y = 1; y <= horizon; y++) {
+        const yearRows = amortization.rows.filter(r => r.year === y)
+        const numMonths = yearRows.length > 0 ? yearRows.length : 12
+        for (let m = 0; m < numMonths; m++) {
+          const monthRow          = yearRows[m]
+          const purchaseMonthlyCost = monthRow
+            ? monthRow.mensualite + monthRow.ptzPayment + condoFees + propertyTax / 12
+            : condoFees + propertyTax / 12
+          const currentMonthRent  = monthlyRent * Math.pow(1 + rentIncreaseRate / 100, y - 1 + m / 12)
+          const saving            = Math.max(0, purchaseMonthlyCost - currentMonthRent)
+          rentPortfolio           = rentPortfolio * (1 + monthlyInvRate) + saving
+        }
+        const propValue    = propertyPrice * Math.pow(1 + propertyAppreciation / 100, y)
+        const lastYearRow  = yearRows[yearRows.length - 1] || amortization.rows[amortization.rows.length - 1]
+        const remainDebt   = lastYearRow ? lastYearRow.capitalTotal : 0
+        const buyNetWealth = Math.round(propValue * (1 - resaleAgencyFeesPct / 100) - remainDebt)
+        yearlyRentVsBuy.push({ year: y, label: `An ${y}`, achat: buyNetWealth, location: Math.round(rentPortfolio) })
+      }
+      const finalBuyWealth  = yearlyRentVsBuy[yearlyRentVsBuy.length - 1]?.achat ?? 0
+      const finalRentWealth = yearlyRentVsBuy[yearlyRentVsBuy.length - 1]?.location ?? 0
+      let crossoverYear = null
+      for (const d of yearlyRentVsBuy) {
+        if (d.achat >= d.location) { crossoverYear = d.year; break }
+      }
+      rentVsBuy = { horizon, finalBuyWealth, finalRentWealth, advantage: finalBuyWealth - finalRentWealth, crossoverYear, yearlyData: yearlyRentVsBuy }
+    }
+
     // Données graphiques
     const donutItems = [
       { name: 'Prix du bien',       value: Math.round(propertyPrice) },
@@ -418,13 +605,16 @@ export default function LoanSimulatorPage() {
       ptzMonthlyPayment, totalMonthlyAfterDeferral, totalMonthlyCost,
       monthlyPropertyTax,
       debtRatio, maxLoanCapacity, pricePerSqm, taeg, comparison,
+      resale, rentVsBuy,
       donutData: donutItems, capitalChartData, breakdownChartData,
     }
   }, [propertyPrice, surface, propertyType, agencyFees, agencyFeesMode,
       dossierFees, dossierFeesMode, guaranteeFees, guaranteeFeesMode, brokerageFees, brokerageFeesMode,
       loanAmount, personalContrib, loanDuration, annualRate, insuranceRate, insuranceBase,
       ptzEnabled, ptzAmount, ptzDuration, ptzDeferral, earlyRepayments,
-      propertyTax, condoFees, showComparison, compDuration, compRate, monthlyIncome])
+      propertyTax, condoFees, showComparison, compDuration, compRate, monthlyIncome,
+      showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
+      showRentComparison, monthlyRent, rentIncreaseRate, investmentReturnRate, rentBuyHorizon])
 
   const {
     notaryFees, agencyFeesAmt, dossierFeesAmt, guaranteeFeesAmt, brokerageFeesAmt,
@@ -432,11 +622,46 @@ export default function LoanSimulatorPage() {
     amortization, totalInterest, totalInsurance, totalCreditCost, totalProjectCost,
     ptzMonthlyPayment, totalMonthlyAfterDeferral, totalMonthlyCost, monthlyPropertyTax,
     debtRatio, maxLoanCapacity, pricePerSqm, taeg, comparison,
+    resale, rentVsBuy,
     donutData, capitalChartData, breakdownChartData,
   } = calc
 
   const totalPercent    = participants.reduce((s, p) => s + p.percent, 0)
   const percentBalanced = Math.abs(totalPercent - 100) < 0.01
+
+  function addAdditionalIncome() {
+    setAdditionalIncomes(prev => [...prev, { id: Date.now(), name: `Co-emprunteur ${prev.length + 1}`, amount: '' }])
+  }
+  function updateAdditionalIncome(id, field, value) {
+    setAdditionalIncomes(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i))
+  }
+  function removeAdditionalIncome(id) {
+    setAdditionalIncomes(prev => prev.filter(i => i.id !== id))
+  }
+
+  function openUserPicker(incId) {
+    setUserPickerOpen(v => v === incId ? null : incId)
+    setUserSearchQuery('')
+    if (usersList.length === 0) {
+      setUsersLoading(true)
+      getUsers()
+        .then(data => setUsersList(Array.isArray(data) ? data : []))
+        .catch(() => setUsersList([]))
+        .finally(() => setUsersLoading(false))
+    }
+  }
+
+  async function selectUser(incId, user) {
+    updateAdditionalIncome(incId, 'name', `${user.firstName} ${user.lastName}`)
+    setUserPickerOpen(null)
+    setIncomeLoadingFor(incId)
+    try {
+      const data   = await simulateTaxForUser(user.id)
+      const income = data.salaryIncome ? Math.round(data.salaryIncome / 12) : ''
+      updateAdditionalIncome(incId, 'amount', income)
+    } catch { /* l'utilisateur peut saisir manuellement */ }
+    finally { setIncomeLoadingFor(null) }
+  }
 
   function addParticipant() {
     const remaining = Math.max(0, 100 - totalPercent)
@@ -476,12 +701,100 @@ export default function LoanSimulatorPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Simulateur d'Emprunt Immobilier</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Simulateur d'Emprunt Immobilier</h1>
+        <div className="flex items-center gap-2 print:hidden">
+          <button onClick={() => { setSaveName(`Simulation du ${new Date().toLocaleDateString('fr-FR')}`); setShowSaveModal(true) }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Sauvegarder
+          </button>
+          <div className="relative">
+            <button onClick={() => setShowLoadPanel(v => !v)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+              </svg>
+              Mes simulations {savedSimulations.length > 0 && <span className="bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{savedSimulations.length}</span>}
+            </button>
+
+            {showLoadPanel && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                  <p className="text-sm font-semibold text-gray-700">Simulations sauvegardées</p>
+                  <button onClick={() => setShowLoadPanel(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+                </div>
+                {savedSimulations.length === 0
+                  ? <p className="px-4 py-6 text-sm text-gray-400 text-center italic">Aucune simulation sauvegardée</p>
+                  : <ul className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
+                      {savedSimulations.map(sim => (
+                        <li key={sim.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">{sim.name}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {new Date(sim.savedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {' · '}{sim.loanAmount?.toLocaleString('fr-FR')} € sur {sim.loanDuration} ans à {sim.annualRate} %
+                            </p>
+                          </div>
+                          <button onClick={() => handleLoad(sim)}
+                            className="shrink-0 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                            Charger
+                          </button>
+                          <button onClick={() => handleDeleteSaved(sim.id)}
+                            className="shrink-0 text-gray-300 hover:text-red-500 transition text-sm">✕</button>
+                        </li>
+                      ))}
+                    </ul>
+                }
+              </div>
+            )}
+          </div>
+          <button onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.75 19.5m10.56-5.671-.72-.096m.72.096L17.25 19.5M12 6.75v6m0-6a2.25 2.25 0 0 1 2.25-2.25H15a2.25 2.25 0 0 1 2.25 2.25v.75M12 6.75a2.25 2.25 0 0 0-2.25-2.25H9.75A2.25 2.25 0 0 0 7.5 6.75v.75m4.5-3V3m0 0H9.75M12 3h2.25" />
+            </svg>
+            Exporter PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Modal sauvegarde */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSaveModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Sauvegarder la simulation</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              {loanAmount.toLocaleString('fr-FR')} € · {loanDuration} ans · {annualRate} % — mensualité {fmt(calc.totalMonthlyAfterDeferral)}
+            </p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la simulation</label>
+            <input
+              type="text" value={saveName} onChange={e => setSaveName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSave()}
+              autoFocus
+              placeholder="Ex : Appartement Paris 75011"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-5"
+            />
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowSaveModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Annuler
+              </button>
+              <button onClick={handleSave} disabled={!saveName.trim()}
+                className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
+                Sauvegarder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-6 items-start">
 
         {/* ── Panneau gauche ── */}
-        <div className="w-80 shrink-0 space-y-4">
+        <div className="w-80 shrink-0 space-y-4" ref={leftPanelRef}>
 
           {/* Revenus */}
           <Section title="Revenus" accent={!!apiIncome && !incomeLoading}>
@@ -508,10 +821,103 @@ export default function LoanSimulatorPage() {
                 {incomeOverride !== '' ? 'Revenu de profil ignoré pour les calculs' : 'Laisser vide pour utiliser le profil'}
               </p>
             </div>
+            {/* Revenus co-emprunteurs */}
+            {additionalIncomes.map((inc) => {
+              const isPicking   = userPickerOpen === inc.id
+              const isLoading   = incomeLoadingFor === inc.id
+              const q = userSearchQuery.toLowerCase()
+              const filtered    = (Array.isArray(usersList) ? usersList : []).filter(u =>
+                (u.login || '').toLowerCase().includes(q) ||
+                (u.firstName || '').toLowerCase().includes(q) ||
+                (u.lastName || '').toLowerCase().includes(q)
+              )
+              return (
+                <div key={inc.id} className="relative bg-indigo-50 border border-indigo-100 rounded-lg p-3 pr-8">
+                  <button onClick={() => removeAdditionalIncome(inc.id)}
+                    className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-100 transition text-xs">✕</button>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs text-gray-500">Nom</label>
+                        <button onClick={() => openUserPicker(inc.id)}
+                          title="Rechercher un utilisateur"
+                          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded transition ${isPicking ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-100'}`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                          </svg>
+                          Depuis un utilisateur
+                        </button>
+                      </div>
+                      <input type="text" value={inc.name}
+                        onChange={e => updateAdditionalIncome(inc.id, 'name', e.target.value)}
+                        className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
+
+                      {/* Picker utilisateur */}
+                      {isPicking && (
+                        <div className="mt-1.5 bg-white border border-indigo-200 rounded-lg shadow-lg overflow-hidden">
+                          <div className="p-2 border-b border-gray-100">
+                            <input type="text" value={userSearchQuery}
+                              onChange={e => setUserSearchQuery(e.target.value)}
+                              autoFocus placeholder="Rechercher…"
+                              className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                          </div>
+                          {usersLoading
+                            ? <p className="text-xs text-gray-400 text-center py-3">Chargement…</p>
+                            : filtered.length === 0
+                            ? <p className="text-xs text-gray-400 text-center py-3">Aucun utilisateur trouvé</p>
+                            : <ul className="max-h-40 overflow-y-auto divide-y divide-gray-50">
+                                {filtered.map(u => (
+                                  <li key={u.id}>
+                                    <button onClick={() => selectUser(inc.id, u)}
+                                      className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 transition">
+                                      <span className="font-medium text-gray-800">{u.firstName} {u.lastName}</span>
+                                      <span className="text-gray-400 ml-1.5">({u.login})</span>
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                          }
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Revenu mensuel net (€)</label>
+                      {isLoading
+                        ? <p className="text-xs text-indigo-500 italic py-1">Chargement du revenu…</p>
+                        : <input type="number" value={inc.amount} min={0} step={100}
+                            onChange={e => updateAdditionalIncome(inc.id, 'amount', e.target.value)}
+                            placeholder="Ex : 2800"
+                            className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" />
+                      }
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            <button onClick={addAdditionalIncome}
+              className="w-full py-1.5 border border-dashed border-indigo-300 rounded-md text-sm text-indigo-500 hover:bg-indigo-50 transition">
+              + Ajouter un revenu (co-emprunteur)
+            </button>
+
             {monthlyIncome > 0 && (
               <div className="text-xs bg-white rounded-md p-2.5 border border-indigo-100 space-y-1">
+                {baseIncome > 0 && additionalTotal > 0 && (
+                  <>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Votre revenu</span>
+                      <span>{fmt(baseIncome)}/mois</span>
+                    </div>
+                    {additionalIncomes.filter(i => parseFloat(i.amount) > 0).map(i => (
+                      <div key={i.id} className="flex justify-between text-gray-400">
+                        <span className="truncate max-w-[160px]">{i.name || 'Co-emprunteur'}</span>
+                        <span>{fmt(parseFloat(i.amount))}/mois</span>
+                      </div>
+                    ))}
+                    <div className="border-t border-indigo-100 pt-1 mt-0.5" />
+                  </>
+                )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Revenu utilisé</span>
+                  <span className="text-gray-500">{additionalTotal > 0 ? 'Revenu foyer total' : 'Revenu utilisé'}</span>
                   <span className="font-semibold text-gray-700">{fmt(monthlyIncome)}/mois</span>
                 </div>
                 <div className="flex justify-between">
@@ -759,6 +1165,72 @@ export default function LoanSimulatorPage() {
               </>
             )}
           </Section>
+
+          {/* Simulation de revente */}
+          <Section title="Simulation de revente" collapsible defaultOpen={false}>
+            <p className="text-xs text-gray-400 -mt-2">Estimez votre gain net si vous revendez avant la fin du prêt.</p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showResale} onChange={e => setShowResale(e.target.checked)}
+                className="accent-indigo-600 w-4 h-4" />
+              <span className="text-sm text-gray-700">Simuler une revente</span>
+            </label>
+            {showResale && (
+              <>
+                <NumInput label="Année de revente" value={resaleYear} onChange={setResaleYear}
+                  min={1} max={loanDuration} step={1}
+                  hint={`Capital restant estimé à cet horizon`} />
+                <NumInput label="Prix de revente (€) — 0 = automatique" value={resalePrice} onChange={setResalePrice}
+                  min={0} step={5000}
+                  hint={resalePrice === 0
+                    ? `Auto : ${fmt(propertyPrice * Math.pow(1 + propertyAppreciation / 100, resaleYear))} avec ${propertyAppreciation} %/an`
+                    : ''} />
+                <NumInput label="Appréciation annuelle du bien (%)" value={propertyAppreciation}
+                  onChange={setPropertyAppreciation} min={-5} max={15} step={0.5}
+                  hint="Utilisé si prix de revente = 0" />
+                <NumInput label="Frais d'agence à la revente (%)" value={resaleAgencyFeesPct}
+                  onChange={setResaleAgencyFeesPct} min={0} max={10} step={0.5} />
+              </>
+            )}
+          </Section>
+
+          {/* Louer vs Acheter */}
+          <Section title="Louer vs Acheter" collapsible defaultOpen={false}>
+            <p className="text-xs text-gray-400 -mt-2">Comparaison patrimoniale sur N ans : propriétaire vs locataire qui investit son apport.</p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showRentComparison} onChange={e => setShowRentComparison(e.target.checked)}
+                className="accent-indigo-600 w-4 h-4" />
+              <span className="text-sm text-gray-700">Activer la comparaison</span>
+            </label>
+            {showRentComparison && (
+              <>
+                <NumInput label="Loyer mensuel actuel (€)" value={monthlyRent} onChange={setMonthlyRent}
+                  min={0} step={50} hint="Loyer équivalent pour le même bien" />
+                <NumInput label="Hausse annuelle du loyer (%)" value={rentIncreaseRate} onChange={setRentIncreaseRate}
+                  min={0} max={10} step={0.5} />
+                <NumInput label="Rendement placement net (%/an)" value={investmentReturnRate} onChange={setInvestmentReturnRate}
+                  min={0} max={20} step={0.5}
+                  hint="Taux annuel net appliqué à l'apport et aux économies mensuelles" />
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-sm font-medium text-gray-700">Horizon d'analyse</label>
+                    <span className="text-sm font-semibold text-indigo-700">{rentBuyHorizon} ans</span>
+                  </div>
+                  <input type="range" min={1} max={40} value={rentBuyHorizon}
+                    onChange={e => setRentBuyHorizon(parseInt(e.target.value))}
+                    className="w-full accent-indigo-600" />
+                  <div className="flex justify-between text-xs text-gray-400 mt-0.5"><span>1 an</span><span>40 ans</span></div>
+                </div>
+                {!showResale && (
+                  <>
+                    <NumInput label="Appréciation annuelle du bien (%)" value={propertyAppreciation}
+                      onChange={setPropertyAppreciation} min={-5} max={15} step={0.5} />
+                    <NumInput label="Frais d'agence à la revente (%)" value={resaleAgencyFeesPct}
+                      onChange={setResaleAgencyFeesPct} min={0} max={10} step={0.5} />
+                  </>
+                )}
+              </>
+            )}
+          </Section>
         </div>
 
         {/* ── Panneau droit ── */}
@@ -913,6 +1385,100 @@ export default function LoanSimulatorPage() {
             </div>
           )}
 
+          {/* Simulation de revente */}
+          {showResale && resale && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+                Simulation de revente — An {resaleYear} ({CURRENT_YEAR + resaleYear})
+              </h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2 text-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Produit de la vente</p>
+                  <div className="flex justify-between"><span className="text-gray-500">Prix de revente estimé</span><span className="font-medium">{fmt(resale.effectiveResalePrice)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">− Frais d'agence ({resaleAgencyFeesPct} %)</span><span className="text-red-500">− {fmt(resale.resaleFees)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">− Capital restant dû</span><span className="text-red-500">− {fmt(resale.remainingCapital)}</span></div>
+                  {resale.ira > 0 && <div className="flex justify-between"><span className="text-gray-500">− IRA (remb. anticipé)</span><span className="text-red-500">− {fmt(resale.ira)}</span></div>}
+                  <div className={`flex justify-between font-semibold border-t border-gray-200 pt-2 mt-1 ${resale.netProceeds >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    <span>Produit net de cession</span><span>{fmt(resale.netProceeds)}</span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Coûts non récupérables</p>
+                  <div className="flex justify-between"><span className="text-gray-500">Apport initial + frais achat</span><span>{fmt(resale.initialCashOut)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Intérêts payés</span><span>{fmt(resale.interestPaid)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Assurance payée</span><span>{fmt(resale.insurancePaid)}</span></div>
+                  {resale.chargesPaid > 0 && <div className="flex justify-between"><span className="text-gray-500">Charges / taxe foncière</span><span>{fmt(resale.chargesPaid)}</span></div>}
+                  <div className="flex justify-between font-semibold border-t border-gray-200 pt-2 mt-1 text-gray-700">
+                    <span>Total sorti de poche</span><span>{fmt(resale.totalNonRecoverable)}</span>
+                  </div>
+                </div>
+              </div>
+              <div className={`mt-4 rounded-lg p-4 flex items-center justify-between ${resale.netGain >= 0 ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Gain / perte net après {resaleYear} an{resaleYear > 1 ? 's' : ''}</p>
+                  <p className={`text-2xl font-bold ${resale.netGain >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    {resale.netGain >= 0 ? '+' : ''}{fmt(resale.netGain)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 mb-0.5">Produit net vs capital engagé</p>
+                  <p className={`text-lg font-semibold ${resale.netProceeds >= resale.initialCashOut ? 'text-green-700' : 'text-red-500'}`}>
+                    {resale.initialCashOut > 0 ? `${((resale.netProceeds / resale.initialCashOut - 1) * 100).toFixed(1)} % sur l'apport` : '—'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {resalePrice === 0 ? `Appréciation ${propertyAppreciation} %/an supposée` : 'Prix de revente manuel'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Louer vs Acheter */}
+          {showRentComparison && rentVsBuy && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Louer vs Acheter — Patrimoine net sur {rentVsBuy.horizon} ans</h3>
+              <p className="text-xs text-gray-400 mb-4">
+                Locataire investit l'apport ({fmt(requiredContrib)}) + économies mensuelles à {investmentReturnRate} %/an.
+                Propriétaire : valeur nette du bien (appréciation {propertyAppreciation} %/an − dette − {resaleAgencyFeesPct} % frais revente).
+              </p>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className={`rounded-lg p-4 border ${rentVsBuy.advantage >= 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                  <p className="text-xs text-gray-500 mb-1">Patrimoine acheteur (an {rentVsBuy.horizon})</p>
+                  <p className="text-xl font-bold text-indigo-700">{fmt(rentVsBuy.finalBuyWealth)}</p>
+                </div>
+                <div className={`rounded-lg p-4 border ${rentVsBuy.advantage < 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
+                  <p className="text-xs text-gray-500 mb-1">Patrimoine locataire (an {rentVsBuy.horizon})</p>
+                  <p className="text-xl font-bold text-emerald-700">{fmt(rentVsBuy.finalRentWealth)}</p>
+                </div>
+                <div className="bg-gray-800 text-white rounded-lg p-4">
+                  <p className="text-xs text-gray-400 mb-1">
+                    {rentVsBuy.advantage >= 0 ? 'Avantage acheteur' : 'Avantage locataire'}
+                  </p>
+                  <p className="text-xl font-bold">{fmt(Math.abs(rentVsBuy.advantage))}</p>
+                  {rentVsBuy.crossoverYear != null
+                    ? <p className="text-xs text-gray-400 mt-1">Achat rentable dès l'an {rentVsBuy.crossoverYear}</p>
+                    : <p className="text-xs text-gray-400 mt-1">Achat jamais rentable sur l'horizon</p>}
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <ComposedChart data={rentVsBuy.yearlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} interval={Math.max(0, Math.floor(rentVsBuy.yearlyData.length / 8) - 1)} />
+                  <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} width={65}
+                    tickFormatter={v => v >= 1000000 ? `${(v/1000000).toFixed(1)}M €` : v >= 1000 ? `${(v/1000).toFixed(0)}k €` : `${v} €`} />
+                  <Tooltip formatter={(v, name) => [fmt(v), name === 'achat' ? 'Patrimoine acheteur' : 'Patrimoine locataire']} contentStyle={{ fontSize: 12 }} />
+                  <Legend formatter={v => v === 'achat' ? 'Acheteur (valeur nette bien)' : 'Locataire (portefeuille investi)'} wrapperStyle={{ fontSize: 11 }} />
+                  <Line type="monotone" dataKey="achat"     stroke="#6366f1" strokeWidth={2} dot={false} name="achat" />
+                  <Line type="monotone" dataKey="location"  stroke="#10b981" strokeWidth={2} dot={false} name="location" strokeDasharray="5 5" />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-gray-400 mt-3">
+                Hypothèses : loyer {fmt(monthlyRent)}/mois, hausse {rentIncreaseRate} %/an — rendement placement {investmentReturnRate} %/an net — appréciation bien {propertyAppreciation} %/an.
+                Le locataire investit l'apport initial + toute économie mensuelle (si mensualité achat &gt; loyer).
+              </p>
+            </div>
+          )}
+
           {/* Charts */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -980,7 +1546,8 @@ export default function LoanSimulatorPage() {
             </div>
 
             {showTable && (
-              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+              <div ref={tableBodyRef} className="overflow-x-auto"
+                style={showMonthly && tableMaxHeight ? { maxHeight: tableMaxHeight, overflowY: 'auto' } : {}}>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
