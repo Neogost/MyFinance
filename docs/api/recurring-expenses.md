@@ -192,3 +192,64 @@ DELETE /api/recurring-expenses/{id}
 **403 Forbidden** — l'utilisateur n'est pas propriétaire
 
 **404 Not Found** — dépense introuvable
+
+---
+
+## GET /api/expense-budgets
+
+Retourne les plafonds mensuels définis par l'utilisateur connecté, sous forme de map catégorie → montant.
+
+**Accès** : authentifié
+
+```http
+GET /api/expense-budgets
+```
+
+### Réponse — 200 OK
+
+```json
+{
+  "LOGEMENT": 900.0,
+  "TRANSPORT": 200.0,
+  "ABONNEMENTS": 80.0
+}
+```
+
+Seules les catégories pour lesquelles un budget a été défini apparaissent. Une map vide `{}` signifie qu'aucun budget n'est configuré.
+
+---
+
+## PUT /api/expense-budgets
+
+Remplace intégralement les budgets de l'utilisateur connecté. L'opération est atomique (delete-then-saveAll en transaction).
+
+**Accès** : authentifié
+
+```http
+PUT /api/expense-budgets
+Content-Type: application/json
+```
+
+### Corps de la requête
+
+```json
+{
+  "budgets": {
+    "LOGEMENT": 900.0,
+    "TRANSPORT": 200.0,
+    "ABONNEMENTS": 80.0
+  }
+}
+```
+
+| Champ | Type | Obligatoire | Contraintes |
+|-------|------|-------------|-------------|
+| `budgets` | `Map<ExpenseCategoryEnum, Float>` | ✓ | Non null ; les valeurs ≤ 0 sont ignorées |
+
+### Réponses
+
+**200 OK** — map mise à jour retournée (même format que GET)
+
+**400 Bad Request** — `budgets` est null
+
+**401 Unauthorized** — non authentifié

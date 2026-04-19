@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getExpenses, getExpenseSummary, createExpense, updateExpense, deleteExpense } from '../../api/expenses'
+import { getExpenses, getExpenseSummary, createExpense, updateExpense, deleteExpense, getExpenseBudgets, saveExpenseBudgets } from '../../api/expenses'
 import RecurringExpenseForm from './RecurringExpenseForm'
 
 const CATEGORY_META = {
@@ -47,21 +47,57 @@ function SavingsCard({ label, value, sub, color, unit = '€', labelTooltip }) {
 }
 
 export default function RecurringExpensePage() {
-  const [expenses,   setExpenses]   = useState([])
-  const [summary,    setSummary]    = useState(null)
-  const [formTarget, setFormTarget] = useState(undefined)
-  const [filter,     setFilter]     = useState('ALL')
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [expenses,          setExpenses]          = useState([])
+  const [summary,           setSummary]           = useState(null)
+  const [formTarget,        setFormTarget]        = useState(undefined)
+  const [filter,            setFilter]            = useState('ALL')
+  const [loading,           setLoading]           = useState(true)
+  const [error,             setError]             = useState(null)
+  const [budgets,           setBudgets]           = useState({})
+  const [budgetsDirty,      setBudgetsDirty]      = useState(false)
+  const [budgetsSaving,     setBudgetsSaving]     = useState(false)
+  const [showBudgetEditor,  setShowBudgetEditor]  = useState(false)
+
+  function updateBudget(category, value) {
+    const updated = { ...budgets }
+    if (value === '' || isNaN(parseFloat(value))) {
+      delete updated[category]
+    } else {
+      updated[category] = parseFloat(value)
+    }
+    setBudgets(updated)
+    setBudgetsDirty(true)
+  }
+
+  async function handleSaveBudgets() {
+    setBudgetsSaving(true)
+    try {
+      const saved = await saveExpenseBudgets(budgets)
+      setBudgets(saved)
+      setBudgetsDirty(false)
+    } finally {
+      setBudgetsSaving(false)
+    }
+  }
+
+  function budgetBarColor(category, amount) {
+    const budget = budgets[category]
+    if (!budget) return null
+    const pct = (amount / budget) * 100
+    if (pct > 100) return 'bg-red-500'
+    if (pct > 75)  return 'bg-orange-400'
+    return 'bg-green-500'
+  }
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     try {
       setLoading(true)
-      const [exp, sum] = await Promise.all([getExpenses(), getExpenseSummary()])
+      const [exp, sum, bud] = await Promise.all([getExpenses(), getExpenseSummary(), getExpenseBudgets()])
       setExpenses(exp)
       setSummary(sum)
+      setBudgets(bud ?? {})
     } catch {
       setError('Impossible de charger les dépenses.')
     } finally {
@@ -186,14 +222,62 @@ export default function RecurringExpensePage() {
 
           {/* Répartition par catégorie — moitié droite */}
           {summary.byCategory?.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
-              <div className="flex flex-col gap-2 ">
+            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Répartition par catégorie</p>
+                <button
+                  onClick={() => setShowBudgetEditor(v => !v)}
+                  className={`text-xs px-2 py-1 rounded-md border transition ${showBudgetEditor ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600'}`}
+                >
+                  ⚙ Budgets
+                </button>
+              </div>
+
+              {showBudgetEditor && (
+                <div className="mb-4 bg-gray-50 rounded-lg p-3 flex flex-col gap-2 border border-gray-200">
+                  <p className="text-xs text-gray-400 mb-1">Plafond mensuel par catégorie (laisser vide pour désactiver)</p>
+                  {summary.byCategory.map(cat => {
+                    const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
+                    return (
+                      <div key={cat.category} className="flex items-center gap-2">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color} w-32 text-center shrink-0`}>
+                          {meta.label}
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="— €"
+                          value={budgets[cat.category] ?? ''}
+                          onChange={e => updateBudget(cat.category, e.target.value)}
+                          className="w-24 border border-gray-300 rounded-md px-2 py-1 text-xs text-right focus:outline-none focus:border-indigo-400"
+                        />
+                        <span className="text-xs text-gray-400">€/mois</span>
+                      </div>
+                    )
+                  })}
+                  <div className="flex justify-end mt-1">
+                    <button
+                      onClick={handleSaveBudgets}
+                      disabled={!budgetsDirty || budgetsSaving}
+                      className="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40 transition"
+                    >
+                      {budgetsSaving ? 'Enregistrement…' : 'Sauvegarder les budgets'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
                 {summary.byCategory.map(cat => {
-                  const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
-                  const pct = summary.totalMonthlyExpenses > 0
-                    ? (cat.monthlyAmount / summary.totalMonthlyExpenses) * 100
-                    : 0
+                  const meta    = CATEGORY_META[cat.category] ?? CATEGORY_META.AUTRE
+                  const budget  = budgets[cat.category]
+                  const barColor = budgetBarColor(cat.category, cat.monthlyAmount) ?? meta.dot
+                  const pct = budget
+                    ? Math.min((cat.monthlyAmount / budget) * 100, 100)
+                    : summary.totalMonthlyExpenses > 0
+                      ? (cat.monthlyAmount / summary.totalMonthlyExpenses) * 100
+                      : 0
+                  const isOver = budget && cat.monthlyAmount > budget
                   return (
                     <div key={cat.category} className="flex items-center gap-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color} w-36 text-center shrink-0`}>
@@ -201,12 +285,12 @@ export default function RecurringExpensePage() {
                       </span>
                       <div className="flex-1 bg-gray-100 rounded-full h-2">
                         <div
-                          className={`${meta.dot} h-2 rounded-full`}
-                          style={{ width: `${Math.min(pct, 100).toFixed(1)}%` }}
+                          className={`${barColor} h-2 rounded-full transition-all`}
+                          style={{ width: `${pct.toFixed(1)}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 w-24 text-right shrink-0 amount">
-                        {fmt(cat.monthlyAmount)} €/mois
+                      <span className={`text-xs w-32 text-right shrink-0 amount ${isOver ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                        {fmt(cat.monthlyAmount)}{budget ? ` / ${fmt(budget)}` : ''} €
                       </span>
                     </div>
                   )
@@ -252,9 +336,23 @@ export default function RecurringExpensePage() {
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.color}`}>
                     {meta.label}
                   </span>
-                  <span className="text-sm font-semibold text-gray-700 amount">
-                    {fmt(catMonthly)} €/mois
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {budgets[category] && catMonthly > budgets[category] && (
+                      <span className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5">
+                        ⚠ Plafond dépassé
+                      </span>
+                    )}
+                    {budgets[category] && catMonthly <= budgets[category] && (
+                      <span className="text-xs text-gray-400 amount">
+                        {fmt(catMonthly)} / {fmt(budgets[category])} €
+                      </span>
+                    )}
+                    {!budgets[category] && (
+                      <span className="text-sm font-semibold text-gray-700 amount">
+                        {fmt(catMonthly)} €/mois
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <table className="w-full border-collapse">
                   <tbody>

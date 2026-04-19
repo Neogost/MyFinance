@@ -79,7 +79,20 @@ public enum ExpenseCategoryEnum {
 }
 ```
 
-### 2.3 Diagramme de classes
+### 2.3 Entité — `UserBudget`
+
+Plafond mensuel défini par l'utilisateur pour une catégorie de dépense. Stocké en base et synchronisé entre tous ses appareils.
+
+| Champ | Type Java | Colonne SQLite | Description |
+|-------|-----------|----------------|-------------|
+| `id` | `Long` | `id` | Identifiant auto-incrémenté |
+| `user` | `User` | `user_id` (FK) | Propriétaire du budget |
+| `category` | `ExpenseCategoryEnum` | `category` | Catégorie concernée |
+| `monthlyLimit` | `Float` | `monthly_limit` | Plafond mensuel en € |
+
+**Contrainte d'unicité :** `(user_id, category)` — un seul budget par catégorie et par utilisateur.
+
+### 2.4 Diagramme de classes
 
 ```mermaid
 classDiagram
@@ -103,6 +116,12 @@ classDiagram
         +String notes
     }
 
+    class UserBudget {
+        +Long id
+        +ExpenseCategoryEnum category
+        +Float monthlyLimit
+    }
+
     class FrequencyEnum {
         MONTHLY
         ANNUAL
@@ -115,13 +134,16 @@ classDiagram
         ABONNEMENTS
         SANTE
         FAMILLE
+        ALIMENTATION
         EPARGNE
         AUTRE
     }
 
     User "1" o-- "0..*" RecurringExpense : expenses
+    User "1" o-- "0..*" UserBudget : budgets
     RecurringExpense --> FrequencyEnum : frequency
     RecurringExpense --> ExpenseCategoryEnum : category
+    UserBudget --> ExpenseCategoryEnum : category
 ```
 
 ---
@@ -170,6 +192,8 @@ Le résumé expose aussi le total mensuel et annuel par catégorie, pour permett
 
 ## 4. API REST
 
+### 4.0 Dépenses récurrentes
+
 Préfixe : `/api/recurring-expenses`  
 Accès : Utilisateur authentifié (toutes ses propres dépenses uniquement)
 
@@ -180,6 +204,28 @@ Accès : Utilisateur authentifié (toutes ses propres dépenses uniquement)
 | `PUT` | `/api/recurring-expenses/{id}` | Modifier une dépense (ownership vérifié) |
 | `DELETE` | `/api/recurring-expenses/{id}` | Supprimer une dépense (ownership vérifié) |
 | `GET` | `/api/recurring-expenses/summary` | Résumé : total par catégorie + capacité d'épargne calculée |
+
+### 4.0b Budgets par catégorie
+
+Préfixe : `/api/expense-budgets`  
+Accès : Utilisateur authentifié
+
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/expense-budgets` | Retourne la map `{ catégorie → plafond mensuel }` de l'utilisateur |
+| `PUT` | `/api/expense-budgets` | Remplace intégralement les budgets de l'utilisateur (delete-then-saveAll) |
+
+Réponse (GET et PUT) :
+```json
+{ "LOGEMENT": 900.0, "TRANSPORT": 200.0, "ABONNEMENTS": 80.0 }
+```
+
+Requête PUT :
+```json
+{ "budgets": { "LOGEMENT": 900.0, "TRANSPORT": 200.0 } }
+```
+
+> Envoyer une map vide (`{}`) supprime tous les budgets de l'utilisateur. Les catégories absentes de la map sont traitées comme "sans budget".
 
 ### 4.1 Requête de création / modification
 
@@ -257,20 +303,25 @@ Suit les mêmes conventions que les autres modules :
 com.myfinance
 ├── domain/
 │   ├── RecurringExpense.java       (@Entity)
+│   ├── UserBudget.java             (@Entity, UNIQUE user_id+category)
 │   └── ExpenseCategoryEnum.java
 │   └── FrequencyEnum.java
 ├── repository/
-│   └── RecurringExpenseRepository.java
+│   ├── RecurringExpenseRepository.java
+│   └── UserBudgetRepository.java          (findByUser, deleteByUser)
 ├── service/
-│   └── RecurringExpenseService.java
+│   ├── RecurringExpenseService.java
+│   └── UserBudgetService.java             (getBudgets, upsertAll @Transactional)
 ├── controller/
-│   └── RecurringExpenseController.java
+│   ├── RecurringExpenseController.java
+│   └── UserBudgetController.java
 └── dto/
     ├── RecurringExpenseDto.java           (record)
     ├── ExpenseSummaryDto.java             (record)
     ├── ExpenseCategorySummaryDto.java     (record)
     ├── CreateRecurringExpenseRequest.java (record)
-    └── UpdateRecurringExpenseRequest.java (record)
+    ├── UpdateRecurringExpenseRequest.java (record)
+    └── UpsertUserBudgetsRequest.java      (record — Map<ExpenseCategoryEnum, Float>)
 ```
 
 `RecurringExpenseService` injecte :
@@ -285,12 +336,11 @@ com.myfinance
 ```
 frontend/src/
 ├── api/
-│   └── expenses.js                         # Appels API /api/recurring-expenses
+│   └── expenses.js                         # Appels API /api/recurring-expenses + /api/expense-budgets
 └── components/
     └── expenses/
-        ├── RecurringExpensePage.jsx         # Page principale (liste + résumé)
-        ├── RecurringExpenseForm.jsx         # Modal création / édition
-        └── ExpenseSummaryPanel.jsx          # Bloc capacité d'épargne + répartition par catégorie
+        ├── RecurringExpensePage.jsx         # Page principale (liste + résumé + éditeur de budgets)
+        └── RecurringExpenseForm.jsx         # Modal création / édition
 ```
 
 ### 6.1 Navigation
@@ -303,15 +353,23 @@ Dashboard | Patrimoine | Revenus ▾ | Dépenses | Outils ▾ | [ADMIN] | Mon pr
 
 ### 6.2 Page principale — `RecurringExpensePage`
 
-La page se compose de deux zones :
+La page se compose de trois zones :
 
-1. **Résumé capacité d'épargne** (`ExpenseSummaryPanel`) — en haut de page :
-   - Ligne de chiffres clés : Revenus nets / Total dépenses / Capacité d'épargne / Taux d'épargne
-   - Graphique camembert (Recharts Pie) des dépenses par catégorie
+1. **Résumé capacité d'épargne** — en haut de page, 4 KPIs :
+   - Revenus nets mensuels (avec tooltip de décomposition)
+   - Total dépenses / mois
+   - Capacité d'épargne (vert si ≥ 0, rouge sinon)
+   - Taux d'épargne (vert ≥ 30 %, orange ≥ 10 %, rouge sinon)
 
-2. **Liste des dépenses** — tableau ou liste de cartes :
-   - Groupées par catégorie
+2. **Répartition par catégorie** — barres horizontales avec **seuils de budget** :
+   - Bouton **⚙ Budgets** : ouvre un éditeur inline pour définir un plafond mensuel par catégorie
+   - Barres colorées selon le ratio dépenses réelles / plafond : vert (< 75 %), orange (75–100 %), rouge (> 100 %)
+   - Les budgets sont persistés en base via `GET/PUT /api/expense-budgets` et synchronisés entre appareils
+   - Mise à jour en temps réel lors de la saisie ; envoi explicite via le bouton **"Sauvegarder les budgets"**
+
+3. **Liste des dépenses** — groupée par catégorie :
    - Affichage : libellé, montant saisi + fréquence, quote-part (si < 100 %), montant mensuel et annuel projeté
+   - En-tête de catégorie : badge "⚠ Plafond dépassé" si budget défini et dépassé
    - Actions : modifier / supprimer
 
 ### 6.3 Formulaire — `RecurringExpenseForm`
@@ -367,6 +425,8 @@ Suivent les conventions du projet :
 |----------------|---------|
 | `RecurringExpenseServiceTest` | CRUD, calcul de projection, capacité d'épargne, vérification ownership, fallback `NET_IMPOSABLE` |
 | `RecurringExpenseControllerTest` | Tous les endpoints, authentification, validation des DTOs |
+| `UserBudgetServiceTest` | `getBudgets`, `upsertAll` (nominal, map vide, valeurs ≤ 0 ignorées) |
+| `UserBudgetControllerTest` | GET/PUT 200, 401 sans auth, 400 corps invalide |
 
 ---
 
@@ -377,5 +437,4 @@ Suivent les conventions du projet :
 | **Graphique d'évolution** | Historisation mensuelle des dépenses pour visualiser leur évolution dans le tableau de bord |
 | **Import automatique** | Import depuis un relevé bancaire (CSV/OFX) pour détecter les dépenses récurrentes |
 | **Regroupements familiaux** | Partager une dépense entre plusieurs membres d'un groupe (future feature `FamilyGroup`) |
-| **Alertes de dépassement** | Notification si la capacité d'épargne devient négative |
 | **Catégories personnalisées** | Permettre à l'utilisateur de créer ses propres catégories |
