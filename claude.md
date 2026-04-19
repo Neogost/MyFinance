@@ -195,6 +195,7 @@ frontend/src/
 | `PUT` | `/api/instruments/{id}` | Authentifié | Modifier un instrument |
 | `GET` | `/api/instruments/active` | ADMIN | Liste les instruments liés à au moins une position ACTIVE |
 | `PUT` | `/api/instruments/prices` | ADMIN | Mise à jour groupée des cours (lastPrice + lastPriceUpdatedAt) |
+| `PATCH` | `/api/instruments/{id}/stable-price` | ADMIN | Activer / désactiver le prix fixe d'un instrument |
 
 ### Patrimoine — Positions
 | Méthode | URL | Rôle requis | Description |
@@ -351,8 +352,12 @@ npm run dev
   - **Endpoints API** : `/api/positions`, `/api/instruments`, `/api/portfolio-snapshots` (CRUD complet)
   - **Documentation** : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`
 - **Patrimoine — Mise à jour manuelle des cours** (ADMIN) :
-  - `GET /api/instruments/active` + `PUT /api/instruments/prices` protégés `ADMIN`
-  - Modal `InstrumentPriceUpdateModal` : tableau de saisie groupée, cours obsolètes (>7 j) en orange
+  - `GET /api/instruments/active` + `PUT /api/instruments/prices` + `PATCH /api/instruments/{id}/stable-price` protégés `ADMIN`
+  - Modal `InstrumentPriceUpdateModal` : instruments groupés par catégorie (BOURSE / CRYPTO séparés), cours obsolètes (> 30 j) en orange, compteur global d'obsolètes, variation % temps réel lors de la saisie
+  - Toggle 🔒/🔓 par instrument pour activer le prix fixe (`stablePrice`) — ligne grisée, saisie désactivée, pas d'indicateur d'obsolescence
+  - `stablePrice` saisissable aussi à la création d'un instrument dans `PositionForm` (checkbox "Prix fixe")
+  - Mise à jour optimiste du toggle avec revert sur erreur API
+  - Fix CORS : `PATCH` ajouté dans `setAllowedMethods` de `SecurityConfig`
   - Bouton "Mettre à jour les cours" visible uniquement pour le rôle ADMIN
   - Documentation : `docs/architecture/instrument-price-update.md`
 - **Patrimoine — Création d'instrument à la volée** :

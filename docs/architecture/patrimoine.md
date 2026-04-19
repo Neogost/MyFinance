@@ -107,6 +107,7 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `currency` | `String` | Devise native (ex : `EUR`, `USD`) |
 | `lastPrice` | `BigDecimal` | Dernier prix connu |
 | `lastPriceUpdatedAt` | `LocalDateTime` | Date de la dernière mise à jour du prix |
+| `stablePrice` | `boolean` | Si `true`, le prix est fixe (fonds euros, stablecoin) — pas d'indicateur d'obsolescence, saisie désactivée dans la modale de mise à jour |
 
 **Contraintes :**
 - `isin` est unique parmi les instruments de type `BOURSE`
@@ -383,6 +384,7 @@ classDiagram
         +String currency
         +BigDecimal lastPrice
         +LocalDateTime lastPriceUpdatedAt
+        +boolean stablePrice
     }
 
     class Position {
@@ -466,6 +468,7 @@ classDiagram
 | `PUT` | `/api/instruments/{id}` | Modifier un instrument |
 | `GET` | `/api/instruments/active` | Liste les instruments liés à au moins une position ACTIVE — ADMIN |
 | `PUT` | `/api/instruments/prices` | Mise à jour groupée des cours manuellement — ADMIN |
+| `PATCH` | `/api/instruments/{id}/stable-price` | Activer / désactiver le prix fixe d'un instrument — ADMIN |
 
 ### Positions
 
@@ -515,6 +518,7 @@ classDiagram
 | Consulter / déclencher ses snapshots | USER, ADMIN |
 | Créer et modifier les instruments du référentiel | USER, ADMIN |
 | Mettre à jour les cours manuellement (`/active`, `/prices`) | ADMIN uniquement |
+| Activer / désactiver le prix fixe d'un instrument (`PATCH /stable-price`) | ADMIN uniquement |
 | Consulter et modifier les taux de change (`/exchange-rates`) | ADMIN uniquement |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 
@@ -552,6 +556,110 @@ Un bloc **« Projection [année] »** est affiché dans la synthèse globale si 
 - Tooltip : détail par catégorie avec le taux appliqué et un avertissement "Estimation indicative"
 
 > Les taux sont indicatifs et ne constituent pas un conseil en investissement.
+
+---
+
+## Consultation des positions — vues frontend
+
+### Sélecteur de vue
+
+La page `PatrimoinePage` propose deux modes de visualisation, basculables via un toggle icône en haut à droite des filtres. Le choix est mémorisé en `sessionStorage` (clé `patrimoine.viewMode`) et survit aux rechargements de page. Le mode **liste groupée** est activé par défaut.
+
+| Mode | Composant | Description |
+|------|-----------|-------------|
+| Grille (cards) | `PositionCard` | Affichage en grille responsive, une card par position |
+| Liste groupée | `PatrimoineGroupedView` | Regroupement Partenaire → Catégorie, vue tabulaire compacte |
+
+---
+
+### Synthèse globale (`PatrimoinePage`)
+
+Deux rangées de KPIs s'affichent au-dessus des filtres dès qu'au moins une position existe.
+
+**Rangée 1 — KPIs globaux**
+
+| Indicateur | Calcul | Notes |
+|------------|--------|-------|
+| Patrimoine Brut | Σ `currentValueEur` (positions ACTIVE) | Toutes catégories |
+| Patrimoine Financier | Σ `currentValueEur` hors `IMMO_PHYSIQUE` et `IMMO_PAPIER` | — |
+| Total investi | Σ `investedAmountEur` (toutes positions) | Inclut les positions CLOSED |
+| Plus-value | Σ `capitalGainEur` (toutes positions) | Tooltip : ventilation par catégorie |
+| Plus-value YTD | Plus-value actuelle − plus-value au dernier snapshot N-1 | Affiché si un snapshot de l'année précédente existe |
+| Revenus / mois | Σ `monthlyIncomeProjectionEur` (positions ACTIVE avec projection activée) | — |
+| Projection [année] | `projectionAnnuelle × joursRestants / joursInYear` | Tooltip : détail par catégorie + taux appliqués |
+
+**Rangée 2 — Répartition par catégorie**
+
+Une card par catégorie ayant au moins une position ACTIVE, dans l'ordre `CATEGORY_ORDER`. Chaque card affiche :
+- Icône + badge coloré de la catégorie
+- Valeur actuelle (Σ `currentValueEur` des positions ACTIVE de la catégorie)
+- % du patrimoine brut total
+- Plus-value (€) et rendement (%) si non nul — `gain / |investi| × 100`
+
+---
+
+### Vue liste groupée (`PatrimoineGroupedView`)
+
+#### Structure
+
+Les positions filtrées sont regroupées en deux niveaux :
+1. **Partenaire** — les positions sans partenaire sont regroupées sous « Sans partenaire »
+2. **Catégorie** — dans l'ordre `CATEGORY_ORDER` au sein de chaque partenaire
+
+Les blocs partenaires sont triés par valeur décroissante.
+
+#### En-tête partenaire
+
+Cliquable pour plier/déplier le bloc (état local, tous dépliés par défaut). Affiche :
+- Nom du partenaire
+- Barre de poids horizontale (% visuel dans le patrimoine total affiché)
+- Pourcentage numérique
+- Valeur totale du partenaire
+
+#### Sous-en-tête catégorie
+
+Ligne de séparation visuelle dans le tableau. Affiche :
+- Icône + libellé de catégorie
+- Nombre de positions
+- % du patrimoine total affiché
+- Valeur totale de la catégorie chez ce partenaire
+
+#### Colonnes du tableau
+
+| Colonne | Contenu | Catégories concernées |
+|---------|---------|----------------------|
+| Position | Nom + ISIN/ticker + badge « Cours obsolète » si applicable | Toutes |
+| Enveloppe / Type | Badges : sous-type d'actif, enveloppe fiscale, type de propriété | Selon catégorie |
+| Valeur actuelle | `currentValueEur` | Toutes |
+| Investi | `investedAmountEur` + PRU en sous-ligne | BOURSE, CRYPTO (si unités connues) |
+| Plus-value | Montant € + pourcentage | Toutes sauf LIQUIDITE |
+| Taux | `annualRate %/an` | LIVRET |
+| Actions | Boutons contextuels selon catégorie | Toutes |
+
+#### Indicateurs spécifiques
+
+**PRU (Prix de Revient Unitaire)**
+```
+PRU = investedAmountEur ÷ units
+```
+Affiché en sous-ligne dans la colonne Investi pour les positions BOURSE et CRYPTO lorsque `units > 0`. Exprimé en EUR/unité.
+
+**Cours obsolète**
+Badge orange « Cours obsolète » affiché sur la ligne si `instrument.lastPriceUpdatedAt` date de plus de **30 jours**. Applicable aux catégories BOURSE et CRYPTO uniquement, et uniquement si `instrument.stablePrice = false`. Le survol affiche la date de la dernière mise à jour.
+
+**Type de propriété**
+Badge affiché dans la colonne Enveloppe pour toutes les positions IMMO (`IMMO_PHYSIQUE`, `IMMO_PAPIER`) selon `ownershipType` : gris pour `PLEINE_PROPRIETE`, violet pour `NUE_PROPRIETE` et `USUFRUIT`.
+
+#### Ligne de sous-total partenaire
+
+En pied de chaque bloc partenaire :
+- Valeur totale (Σ `currentValueEur`)
+- Investi total (Σ `investedAmountEur`)
+- Plus-value totale € + % (`gain / |investi| × 100`)
+
+#### Légende
+
+Section fixe en bas de page expliquant : PRU, Plus-value %, % du patrimoine, barre de poids, badge Cours obsolète, distinction Valeur actuelle vs Investi.
 
 ---
 

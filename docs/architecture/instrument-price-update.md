@@ -20,16 +20,27 @@ Cette définition garantit de n'afficher que les instruments réellement utiles 
 
 ## 3. Modèle de données impacté
 
-Aucune nouvelle entité. Les deux champs existants de `Instrument` sont mis à jour :
+Aucune nouvelle entité. Les champs suivants de `Instrument` sont concernés :
 
 | Champ | Type | Comportement |
 |-------|------|-------------|
 | `lastPrice` | `BigDecimal` | Mis à jour avec la valeur saisie par l'administrateur |
 | `lastPriceUpdatedAt` | `LocalDateTime` | Mis à jour automatiquement à `now()` côté serveur — non transmis par le frontend |
+| `stablePrice` | `boolean` | Géré par `PATCH /api/instruments/{id}/stable-price` — désactive l'indicateur d'obsolescence et le champ de saisie pour cet instrument |
 
 ---
 
-## 4. Nouveau DTO
+## 4. Nouveaux DTOs
+
+### `UpdateStablePriceRequest`
+
+Record immuable transmis pour activer ou désactiver le prix fixe.
+
+| Champ | Type | Contrainte |
+|-------|------|------------|
+| `stablePrice` | `Boolean` | Obligatoire (`@NotNull`) |
+
+---
 
 ### `UpdateInstrumentPriceRequest`
 
@@ -72,7 +83,8 @@ Retourne la liste des instruments liés à au moins une position `ACTIVE`, trié
     "name": "Lyxor CAC 40 ETF",
     "currency": "EUR",
     "lastPrice": 32.15,
-    "lastPriceUpdatedAt": "2025-04-10T08:00:00"
+    "lastPriceUpdatedAt": "2025-04-10T08:00:00",
+    "stablePrice": false
   },
   {
     "id": 3,
@@ -82,7 +94,8 @@ Retourne la liste des instruments liés à au moins une position `ACTIVE`, trié
     "name": "Bitcoin",
     "currency": "USD",
     "lastPrice": 29850.00,
-    "lastPriceUpdatedAt": "2025-04-09T18:30:00"
+    "lastPriceUpdatedAt": "2025-04-09T18:30:00",
+    "stablePrice": false
   }
 ]
 ```
@@ -112,6 +125,27 @@ Met à jour le cours de plusieurs instruments en une seule requête.
 |------|-----|
 | `400 BAD_REQUEST` | `lastPrice` nul ou ≤ 0 pour au moins un instrument |
 | `404 NOT_FOUND` | Un `instrumentId` n'existe pas en base |
+
+### `PATCH /api/instruments/{id}/stable-price`
+
+Active ou désactive le prix fixe d'un instrument.
+
+**Rôle requis :** `ADMIN`
+
+**Corps de la requête :** `UpdateStablePriceRequest`
+
+```json
+{ "stablePrice": true }
+```
+
+**Réponse :** `200 OK` — `InstrumentDto` mis à jour
+
+**Erreurs possibles :**
+
+| Code | Cas |
+|------|-----|
+| `400 BAD_REQUEST` | `stablePrice` absent du corps |
+| `404 NOT_FOUND` | Instrument introuvable |
 
 ---
 
@@ -176,7 +210,30 @@ Il n'est **affiché que si l'utilisateur connecté a le rôle `ADMIN`**.
 
 ### Affichage du cours obsolète
 
-Si `lastPriceUpdatedAt` est antérieur à **7 jours**, la date est affichée en **orange** pour signaler visuellement que le cours n'a pas été mis à jour récemment.
+Si `lastPriceUpdatedAt` est antérieur à **30 jours**, la date est affichée en **orange** pour signaler visuellement que le cours n'a pas été mis à jour récemment. Les instruments avec `stablePrice = true` sont exclus de cet indicateur — leur ligne est grisée et la date de mise à jour n'est pas affichée.
+
+Un compteur global d'instruments obsolètes est affiché dans l'en-tête du modal.
+
+### Toggle prix fixe (🔒 / 🔓)
+
+Chaque ligne du tableau comporte un bouton icône permettant de basculer l'état `stablePrice` d'un instrument :
+
+| État | Icône | Comportement |
+|------|-------|-------------|
+| `stablePrice = false` | 🔓 | Cours actif — saisie activée, indicateur d'obsolescence visible |
+| `stablePrice = true` | 🔒 | Prix fixe — ligne grisée (`opacity-50`), saisie désactivée, pas d'indicateur de date |
+
+Le toggle utilise une **mise à jour optimiste** : l'état local est modifié immédiatement, puis revert en cas d'erreur API. L'appel effectué est `PATCH /api/instruments/{id}/stable-price`.
+
+### Indicateur de variation en temps réel
+
+Lors de la saisie d'un nouveau cours, la colonne **Variation** affiche immédiatement la variation en % par rapport au cours actuel :
+
+```
+variation = ((nouveauCours - coursActuel) / coursActuel) × 100
+```
+
+Affichée en vert si ≥ 0, en rouge si < 0.
 
 ---
 
@@ -186,6 +243,7 @@ Si `lastPriceUpdatedAt` est antérieur à **7 jours**, la date est affichée en 
 |--------|-------------|
 | Consulter les instruments actifs (`GET /active`) | `ADMIN` |
 | Mettre à jour les cours (`PUT /prices`) | `ADMIN` |
+| Activer / désactiver le prix fixe (`PATCH /stable-price`) | `ADMIN` |
 | Afficher le bouton "Mettre à jour les cours" | `ADMIN` (vérifié côté frontend sur `currentUser.roles`) |
 
 ---
@@ -201,6 +259,13 @@ Si `lastPriceUpdatedAt` est antérieur à **7 jours**, la date est affichée en 
 | `service/InstrumentServiceTest.java` | Modifier | Tests des deux nouvelles méthodes de service |
 | `controller/InstrumentControllerTest.java` | Modifier | Tests des deux nouveaux endpoints |
 | `frontend/src/api/patrimoine.js` | Modifier | Ajouter `getActiveInstruments()` et `updateInstrumentPrices()` |
+| `dto/UpdateStablePriceRequest.java` | Créer | Record de requête pour activer/désactiver le prix fixe |
+| `service/InstrumentService.java` | Modifier | Ajouter `updateStablePrice()` |
+| `controller/InstrumentController.java` | Modifier | Ajouter `PATCH /{id}/stable-price` |
+| `service/InstrumentServiceTest.java` | Modifier | Tests `updateStablePrice_*` |
+| `controller/InstrumentControllerTest.java` | Modifier | Tests `updateStablePrice_asAdmin_*` et `updateStablePrice_asUser_*` |
+| `config/SecurityConfig.java` | Modifier | Ajouter `PATCH` dans `setAllowedMethods` (CORS) |
 | `frontend/src/components/patrimoine/InstrumentPriceUpdateModal.jsx` | Créer | Composant modal de saisie groupée des cours |
 | `frontend/src/components/patrimoine/PatrimoinePage.jsx` | Modifier | Ajouter le bouton d'accès et l'intégration du modal |
-| `docs/api/patrimoine.md` | Modifier | Documenter les deux nouveaux endpoints |
+| `frontend/src/api/patrimoine.js` | Modifier | Ajouter `updateInstrumentStablePrice()` |
+| `docs/api/patrimoine.md` | Modifier | Documenter les nouveaux endpoints |
