@@ -75,6 +75,7 @@ mindmap
         Simulateur d'intérêts composés
         Simulateur d'emprunt immobilier
         Déclaration de patrimoine
+        Simulateur de crise
     Administration
         Gestion des utilisateurs
         Mise à jour des cours instruments
@@ -223,6 +224,12 @@ Simulation complète d'un crédit immobilier : mensualité, coût total, tableau
 Document officiel exportable en PDF synthétisant l'identité civile, le patrimoine net, les revenus et le détail des actifs par catégorie (avec enveloppe fiscale pour BOURSE/IMMO_PAPIER).
 
 → [`docs/architecture/patrimoine-declaration.md`](patrimoine-declaration.md)
+
+#### Simulateur de crise
+
+Applique les taux de chute historiques de crises majeures (2008, dot-com, COVID, 2022) au patrimoine actuel. Montre l'impact par catégorie, la couverture du matelas de sécurité post-crise et une estimation du temps de récupération selon le taux d'épargne.
+
+→ [`docs/architecture/crisis-simulator.md`](crisis-simulator.md)
 
 ---
 
