@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { login } from '../api/auth'
 
 export default function LoginForm({ onSuccess }) {
@@ -6,6 +6,34 @@ export default function LoginForm({ onSuccess }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [lockoutSecondes, setLockoutSecondes] = useState(0)
+  const intervalRef = useRef(null)
+
+  useEffect(() => {
+    if (lockoutSecondes <= 0) {
+      clearInterval(intervalRef.current)
+      return
+    }
+    intervalRef.current = setInterval(() => {
+      setLockoutSecondes(s => {
+        if (s <= 1) {
+          clearInterval(intervalRef.current)
+          setError(null)
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => clearInterval(intervalRef.current)
+  }, [lockoutSecondes > 0])
+
+  const estVerrouille = lockoutSecondes > 0
+
+  function formatDuree(secondes) {
+    if (secondes >= 3600) return `${Math.floor(secondes / 3600)} h ${Math.floor((secondes % 3600) / 60)} min`
+    if (secondes >= 60) return `${Math.floor(secondes / 60)} min ${secondes % 60} s`
+    return `${secondes} s`
+  }
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') handleSubmit(e)
@@ -13,13 +41,20 @@ export default function LoginForm({ onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (estVerrouille) return
     setError(null)
     setLoading(true)
     try {
       const user = await login(username, password)
       onSuccess(user)
-    } catch {
-      setError('Identifiants incorrects')
+    } catch (err) {
+      if (err.response?.status === 429) {
+        const secondes = err.response.data?.secondesRestantes ?? 300
+        setLockoutSecondes(secondes)
+        setError(err.response.data?.message ?? 'Trop de tentatives. Compte temporairement bloqué.')
+      } else {
+        setError('Identifiants incorrects')
+      }
     } finally {
       setLoading(false)
     }
@@ -44,7 +79,8 @@ export default function LoginForm({ onSuccess }) {
               placeholder="Votre login"
               required
               autoFocus
-              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+              disabled={estVerrouille}
+              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -60,22 +96,32 @@ export default function LoginForm({ onSuccess }) {
               onKeyDown={handleKeyDown}
               placeholder="••••••••"
               required
-              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+              disabled={estVerrouille}
+              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className={`text-sm rounded-lg px-3 py-2 ${
+              estVerrouille
+                ? 'text-orange-700 bg-orange-50 border border-orange-200'
+                : 'text-red-600 bg-red-50 border border-red-200'
+            }`}>
               {error}
+              {estVerrouille && (
+                <span className="block mt-1 font-semibold">
+                  Réessayez dans {formatDuree(lockoutSecondes)}
+                </span>
+              )}
             </p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || estVerrouille}
             className="mt-1 py-3 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
-            {loading ? 'Connexion…' : 'Se connecter'}
+            {loading ? 'Connexion…' : estVerrouille ? `Bloqué (${formatDuree(lockoutSecondes)})` : 'Se connecter'}
           </button>
         </form>
       </div>

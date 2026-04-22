@@ -2,8 +2,10 @@ package com.myfinance.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.domain.User;
+import com.myfinance.service.LoginAttemptService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +29,10 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper;
+
+    // Optionnel pour rester compatible avec les @WebMvcTest qui n'incluent pas les @Service
+    @Autowired(required = false)
+    private LoginAttemptService loginAttemptService;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
@@ -59,20 +66,37 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginProcessingUrl("/api/auth/login")
                 .successHandler((request, response, authentication) -> {
-                    // Retourne les infos de l'utilisateur connecté en JSON
+                    if (loginAttemptService != null) {
+                        loginAttemptService.enregistrerSucces(authentication.getName());
+                    }
                     User user = (User) authentication.getPrincipal();
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
-                    payload.put("id",         user.getId());
-                    payload.put("login",      user.getLogin());
-                    payload.put("firstName",  user.getFirstName());
-                    payload.put("lastName",   user.getLastName());
-                    payload.put("role",       user.getRole());
-                    payload.put("birthDate",  user.getBirthDate());
+                    Map<String, Object> payload = new HashMap<>();
+                    payload.put("id",        user.getId());
+                    payload.put("login",     user.getLogin());
+                    payload.put("firstName", user.getFirstName());
+                    payload.put("lastName",  user.getLastName());
+                    payload.put("role",      user.getRole());
+                    payload.put("birthDate", user.getBirthDate());
                     objectMapper.writeValue(response.getWriter(), payload);
                 })
                 .failureHandler((request, response, exception) -> {
+                    String login = request.getParameter("username");
+                    if (loginAttemptService != null && login != null && !login.isBlank()) {
+                        loginAttemptService.enregistrerEchec(login);
+                        if (loginAttemptService.estBloque(login)) {
+                            long secondes = loginAttemptService.secondesRestantes(login);
+                            response.setStatus(429);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(response.getWriter(), Map.of(
+                                    "message", "Compte bloqué après trop de tentatives. Réessayez dans "
+                                               + formaterDuree(secondes) + ".",
+                                    "secondesRestantes", secondes
+                            ));
+                            return;
+                        }
+                    }
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     objectMapper.writeValue(response.getWriter(),
@@ -99,5 +123,11 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    private String formaterDuree(long secondes) {
+        if (secondes >= 3600) return (secondes / 3600) + " h";
+        if (secondes >= 60) return (secondes / 60) + " min";
+        return secondes + " s";
     }
 }

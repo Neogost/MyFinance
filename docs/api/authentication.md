@@ -48,13 +48,57 @@ username=admin&password=motdepasse
 
 > `birthDate` peut être `null` si non renseigné sur le profil utilisateur.
 
-**401 Unauthorized**
+**401 Unauthorized** — Identifiants incorrects.
 
 ```json
 {
   "message": "Identifiants incorrects"
 }
 ```
+
+**429 Too Many Requests** — Compte temporairement bloqué après trop d'échecs consécutifs.
+
+```json
+{
+  "message": "Compte bloqué après trop de tentatives. Réessayez dans 5 min.",
+  "secondesRestantes": 287
+}
+```
+
+> Le champ `secondesRestantes` indique le nombre de secondes avant de pouvoir réessayer. Le frontend utilise cette valeur pour afficher un compte à rebours et désactiver le formulaire.
+
+---
+
+## Protection brute-force
+
+La protection anti brute-force est assurée par deux composants :
+
+- **`LoginRateLimitFilter`** — Filtre Servlet (`@Order(HIGHEST_PRECEDENCE)`) qui s'exécute *avant* Spring Security. Bloque immédiatement les tentatives sur un compte verrouillé, y compris si le mot de passe est correct.
+- **`SecurityConfig` failure handler** — Incrémente le compteur après chaque échec et retourne `429` dès que le seuil est atteint.
+
+### Durée de blocage exponentielle
+
+| Tentatives échouées | Durée de blocage |
+|--------------------:|:-----------------|
+| 5 – 9               | 5 min            |
+| 10 – 14             | 10 min           |
+| 15 – 19             | 20 min           |
+| 20 – 24             | 40 min           |
+| 25+                 | 80 min (plafond) |
+
+Le compteur est **remis à zéro** après une authentification réussie.
+
+### Paramétrage par profil
+
+Les seuils sont configurables dans les fichiers `application-{profil}.properties` :
+
+```properties
+security.login.max-attempts=5       # Nombre d'échecs avant blocage
+security.login.base-lock-minutes=5  # Durée du premier blocage (minutes)
+security.login.max-lock-minutes=80  # Durée maximale (plafond, minutes)
+```
+
+Valeurs en développement : `max-attempts=3`, `base-lock-minutes=1`, `max-lock-minutes=10`.
 
 ---
 
