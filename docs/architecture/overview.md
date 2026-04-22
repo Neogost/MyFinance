@@ -6,7 +6,7 @@ Vue d'ensemble de l'application **MyFinance** et index de la documentation.
 
 ## 1. Description générale
 
-Application web personnelle de gestion financière personnelle, hébergée sur NAS QNAP en réseau local.
+Application web personnelle de gestion financière, hébergée sur NAS QNAP en réseau local.
 
 | Composant | Technologie |
 |-----------|-------------|
@@ -26,10 +26,18 @@ mindmap
     Authentification
         Login / Logout
         Changement de mot de passe
+        Historique des connexions
+        Protection brute-force
+    Profil
+        Informations personnelles
+        Matelas de sécurité
+        Regroupement familial
     Tableau de bord
         Évolution salariale
         Répartition du patrimoine
         Plus-values par catégorie
+        Widget matelas de sécurité
+        Projection FIRE
     Revenus
         Contrats salariaux
             Projections brut / net fiscal / net d'impôt
@@ -60,13 +68,20 @@ mindmap
         Livrets
         Liquidités
         Relevés mensuels
+        Stratégie & objectifs
     Outils
         Simulateur d'impôts IRPP
+        Bilan financier personnel
+        Simulateur d'intérêts composés
+        Simulateur d'emprunt immobilier
+        Déclaration de patrimoine
     Administration
         Gestion des utilisateurs
         Mise à jour des cours instruments
         Gestion des taux de change
         Gestion manuelle des relevés
+        Historique des connexions
+        Gestion des groupes familiaux
 ```
 
 ---
@@ -75,7 +90,7 @@ mindmap
 
 ### 3.1 Authentification & gestion des utilisateurs
 
-Authentification par session cookie. Deux rôles : `USER` (accès à ses propres données) et `ADMIN` (accès global + fonctionnalités d'administration).
+Authentification par session cookie. Deux rôles : `USER` (accès à ses propres données) et `ADMIN` (accès global + fonctionnalités d'administration). Protection brute-force avec durée de blocage exponentielle.
 
 | Documentation | Lien |
 |---------------|------|
@@ -85,9 +100,25 @@ Authentification par session cookie. Deux rôles : `USER` (accès à ses propres
 
 ---
 
-### 3.2 Tableau de bord
+### 3.2 Profil utilisateur
 
-Page d'accueil après connexion. Synthèse visuelle des finances sous forme de graphiques (Recharts) : évolution salariale sur les bulletins réels, valorisation du patrimoine par enveloppe et par catégorie, plus-values YTD.
+#### Matelas de sécurité
+
+Réserve de liquidités que l'utilisateur configure selon trois modes : montant fixe, N mois de dépenses, ou N mois de salaire. Visualisé via un widget tableau de bord et un indicateur sur les cartes LIVRET/LIQUIDITE du patrimoine.
+
+→ [`docs/architecture/safety-net.md`](safety-net.md)
+
+#### Regroupement familial
+
+Permet à plusieurs utilisateurs de former un foyer pour visualiser leur patrimoine et leurs données de manière agrégée. Système d'invitations owner → membre, toggle "Mode Foyer" dans la navigation.
+
+→ [`docs/architecture/family-group.md`](family-group.md) — API : [`docs/api/family-group.md`](../api/family-group.md)
+
+---
+
+### 3.3 Tableau de bord
+
+Page d'accueil après connexion. Synthèse visuelle des finances : évolution salariale, valorisation du patrimoine par catégorie et par devise, plus-values YTD, widget matelas de sécurité, projection FIRE (règle des 4 %).
 
 | Documentation | Lien |
 |---------------|------|
@@ -96,13 +127,13 @@ Page d'accueil après connexion. Synthèse visuelle des finances sous forme de g
 
 ---
 
-### 3.3 Revenus
+### 3.4 Revenus
 
 Deux sous-modules accessibles depuis le menu **Revenus**.
 
 #### Revenus salariaux
 
-Un contrat salarial stocke les conditions d'emploi et génère des **projections automatiques** sur quatre niveaux : super brut → brut → net imposable → net d'impôt. Des bulletins de paie réels permettent de comparer réel et théorique. L'historique salarial est suivi via les révisions de contrat.
+Un contrat salarial génère des **projections automatiques** sur quatre niveaux : super brut → brut → net imposable → net d'impôt. Des bulletins de paie réels permettent de comparer réel et théorique. L'historique salarial est suivi via les révisions de contrat.
 
 #### Revenus complémentaires
 
@@ -116,78 +147,118 @@ Tout revenu hors salaire (locatif, dividendes, aides sociales, autre), utilisé 
 
 ---
 
-### 3.4 Dépenses récurrentes
+### 3.5 Dépenses récurrentes
 
-Saisie des charges fixes ou périodiques (loyer, abonnements, assurances…) en fréquence mensuelle ou annuelle. Le système projette automatiquement le montant manquant (mensuel ↔ annuel). Une répartition en pourcentage permet de modéliser les dépenses partagées en colocation. La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
+Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. Répartition en pourcentage pour les dépenses partagées (colocation). La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
 
 | Documentation | Lien |
 |---------------|------|
 | Architecture | [`docs/architecture/recurring-expenses.md`](recurring-expenses.md) |
+| API | [`docs/api/recurring-expenses.md`](../api/recurring-expenses.md) |
 
 ---
 
-### 3.5 Passifs (Grandes possessions)
+### 3.6 Passifs (Grandes possessions)
 
-Recensement des biens matériels importants (voiture, informatique, mobilier, collection, loisirs…) pour compléter le bilan patrimonial de l'utilisateur. Chaque bien est suivi avec son prix d'achat et une **valeur actuelle estimée** — calculée automatiquement par un modèle de décote exponentielle par catégorie, ou saisie manuellement. Le module distingue la valeur brute d'achat de la valeur actuelle dépréciée, et expose une synthèse globale (décote cumulée, taux de dépréciation).
+Recensement des biens matériels (voiture, informatique, mobilier…). Décote exponentielle automatique par catégorie ou valeur saisie manuellement. Contribue au **patrimoine net** dans le bilan et la déclaration.
 
 | Documentation | Lien |
 |---------------|------|
 | Architecture | [`docs/architecture/passifs.md`](passifs.md) |
+| API | [`docs/api/possessions.md`](../api/possessions.md) |
 
 ---
 
-### 3.6 Patrimoine
+### 3.7 Patrimoine
 
-Suivi de l'ensemble des actifs financiers, organisés en six catégories. Repose sur un modèle **Position → Ordres** : chaque position agrège les transactions successives pour calculer la valorisation en temps réel. Un relevé mensuel historise la valeur du patrimoine mois par mois.
+Suivi de l'ensemble des actifs financiers en six catégories. Modèle **Position → Ordres** avec valorisation en temps réel. Relevés mensuels pour historiser l'évolution.
 
 | Catégorie | Mécanisme de valorisation |
 |-----------|--------------------------|
-| Bourse, Crypto | Quantité × prix marché (Yahoo Finance / CoinGecko) |
+| Bourse, Crypto | Quantité × prix marché |
 | Livret, Immo papier | Montant investi + intérêts cumulés |
 | Immo physique | Valeur estimée saisie manuellement |
 | Liquidités | Solde saisi manuellement |
 
+#### Stratégie & objectifs patrimoniaux
+
+Objectifs cibles par catégorie persistés en base. Barres de progression sur chaque carte de résumé (en cours / atteint / dépassé).
+
 | Documentation | Lien |
 |---------------|------|
 | Architecture | [`docs/architecture/patrimoine.md`](patrimoine.md) |
+| Stratégie | [`docs/architecture/patrimoine-strategy.md`](patrimoine-strategy.md) |
 | API | [`docs/api/patrimoine.md`](../api/patrimoine.md) |
 
 ---
 
-### 3.7 Outils
+### 3.8 Outils
 
 #### Simulateur d'impôts (IRPP)
 
-Estimation de l'impôt sur le revenu à partir du profil fiscal de l'utilisateur (parts, abattement). Choix de la source salariale (projection contrat ou bulletins réels) et sélection des revenus complémentaires à inclure.
+Estimation de l'impôt sur le revenu à partir du profil fiscal. Choix de la source salariale et sélection des revenus complémentaires.
 
-| Documentation | Lien |
-|---------------|------|
-| Architecture | [`docs/architecture/tax-simulator.md`](tax-simulator.md) |
-| API | [`docs/api/tax-simulator.md`](../api/tax-simulator.md) |
+→ [`docs/architecture/tax-simulator.md`](tax-simulator.md) — API : [`docs/api/tax-simulator.md`](../api/tax-simulator.md)
+
+#### Bilan financier personnel
+
+Vue synthétique calquée sur un compte de résultat d'entreprise. Revenus, dépenses, actifs, passifs, taux d'épargne, ratio de couverture patrimoniale et projection FIRE côte à côte.
+
+→ [`docs/architecture/bilan-financier.md`](bilan-financier.md)
+
+#### Simulateur d'intérêts composés
+
+Projection de la croissance d'un capital avec versements périodiques, inflation, frais, fiscalité PFU et mode inversé (calcul des paramètres pour atteindre un objectif).
+
+→ [`docs/architecture/compound-interest-simulator.md`](compound-interest-simulator.md)
+
+#### Simulateur d'emprunt immobilier
+
+Simulation complète d'un crédit immobilier : mensualité, coût total, tableau d'amortissement. Prend en compte frais de notaire, frais d'agence, assurance, PTZ et remboursement anticipé.
+
+→ [`docs/architecture/loan-simulator.md`](loan-simulator.md)
+
+#### Déclaration de patrimoine
+
+Document officiel exportable en PDF synthétisant l'identité civile, le patrimoine net, les revenus et le détail des actifs par catégorie (avec enveloppe fiscale pour BOURSE/IMMO_PAPIER).
+
+→ [`docs/architecture/patrimoine-declaration.md`](patrimoine-declaration.md)
 
 ---
 
-### 3.8 Fonctionnalités d'administration
+### 3.9 Fonctionnalités d'administration
 
 Accessibles uniquement au rôle `ADMIN`.
 
 #### Mise à jour manuelle des cours
 
-Mécanisme de secours pour mettre à jour le `lastPrice` des instruments actifs lorsque la mise à jour automatique n'est pas disponible ou retourne une valeur incorrecte.
+Mise à jour du `lastPrice` des instruments actifs. Toggle prix fixe pour les instruments à cours stable.
 
 → [`docs/architecture/instrument-price-update.md`](instrument-price-update.md)
 
 #### Gestion des taux de change
 
-Saisie et maintenance des taux de change (USD, GBP, CHF…) pour convertir correctement en EUR les positions BOURSE et CRYPTO libellées en devise étrangère.
+Saisie et maintenance des taux de change (USD, GBP, CHF…) pour la conversion EUR des positions en devise étrangère.
 
 → [`docs/architecture/exchange-rates.md`](exchange-rates.md) — API : [`docs/api/exchange-rates.md`](../api/exchange-rates.md)
 
 #### Gestion manuelle des relevés
 
-CRUD complet sur les relevés de patrimoine de n'importe quel utilisateur. Utilisé pour corriger des snapshots incorrects ou reconstituer un historique.
+CRUD complet sur les relevés de patrimoine de n'importe quel utilisateur. Utilisé pour corriger des snapshots ou reconstituer un historique.
 
 → [`docs/architecture/admin-snapshot-management.md`](admin-snapshot-management.md) — API : [`docs/api/admin-snapshots.md`](../api/admin-snapshots.md)
+
+#### Historique des connexions
+
+Consultation paginée des événements de connexion (SUCCESS / FAILURE / BLOCKED) avec filtres par login, type et date. Permet de détecter les tentatives d'intrusion.
+
+→ [`docs/architecture/login-history.md`](login-history.md) — API : [`docs/api/login-history.md`](../api/login-history.md)
+
+#### Gestion des groupes familiaux
+
+Consultation et modération des groupes familiaux (dissolution, retrait de membres).
+
+→ [`docs/architecture/family-group.md`](family-group.md) — API : [`docs/api/family-group.md`](../api/family-group.md)
 
 ---
 
