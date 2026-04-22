@@ -14,6 +14,7 @@ import LoanSimulatorPage from './components/tools/LoanSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
+import LoginHistoryPage from './components/admin/LoginHistoryPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import { logout, getMe } from './api/auth'
@@ -51,7 +52,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    if ((page === 'users' || page === 'admin-snapshots') && user?.role !== 'ADMIN') return
+    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history') && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
 
@@ -114,6 +115,8 @@ export default function App() {
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 
         {currentPage === 'admin-snapshots' && user.role === 'ADMIN' && <AdminSnapshotPage />}
+
+        {currentPage === 'login-history' && user.role === 'ADMIN' && <LoginHistoryPage />}
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} />}
       </main>

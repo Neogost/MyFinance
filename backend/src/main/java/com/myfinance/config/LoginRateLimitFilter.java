@@ -2,6 +2,7 @@ package com.myfinance.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.service.LoginAttemptService;
+import com.myfinance.service.LoginHistoryService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +29,9 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     @Autowired(required = false)
     private LoginAttemptService loginAttemptService;
 
+    @Autowired(required = false)
+    private LoginHistoryService loginHistoryService;
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !("/api/auth/login".equals(request.getServletPath())
@@ -40,6 +44,9 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         if (loginAttemptService != null) {
             String login = request.getParameter("username");
             if (loginAttemptService.estBloque(login)) {
+                if (loginHistoryService != null) {
+                    loginHistoryService.logBlocked(login, request.getRemoteAddr(), request.getHeader("User-Agent"));
+                }
                 long secondes = loginAttemptService.secondesRestantes(login);
                 response.setStatus(429);
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);

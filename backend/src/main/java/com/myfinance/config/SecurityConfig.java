@@ -3,6 +3,7 @@ package com.myfinance.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.domain.User;
 import com.myfinance.service.LoginAttemptService;
+import com.myfinance.service.LoginHistoryService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     // Optionnel pour rester compatible avec les @WebMvcTest qui n'incluent pas les @Service
     @Autowired(required = false)
     private LoginAttemptService loginAttemptService;
+
+    @Autowired(required = false)
+    private LoginHistoryService loginHistoryService;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
@@ -69,6 +73,12 @@ public class SecurityConfig {
                     if (loginAttemptService != null) {
                         loginAttemptService.enregistrerSucces(authentication.getName());
                     }
+                    if (loginHistoryService != null) {
+                        loginHistoryService.logSuccess(
+                                authentication.getName(),
+                                request.getRemoteAddr(),
+                                request.getHeader("User-Agent"));
+                    }
                     User user = (User) authentication.getPrincipal();
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -83,8 +93,14 @@ public class SecurityConfig {
                 })
                 .failureHandler((request, response, exception) -> {
                     String login = request.getParameter("username");
+                    String ip = request.getRemoteAddr();
+                    String ua = request.getHeader("User-Agent");
                     if (loginAttemptService != null && login != null && !login.isBlank()) {
                         loginAttemptService.enregistrerEchec(login);
+                        int nbEchecs = loginAttemptService.getNbEchecs(login);
+                        if (loginHistoryService != null) {
+                            loginHistoryService.logFailure(login, ip, ua, nbEchecs);
+                        }
                         if (loginAttemptService.estBloque(login)) {
                             long secondes = loginAttemptService.secondesRestantes(login);
                             response.setStatus(429);
@@ -96,6 +112,8 @@ public class SecurityConfig {
                             ));
                             return;
                         }
+                    } else if (loginHistoryService != null && login != null && !login.isBlank()) {
+                        loginHistoryService.logFailure(login, ip, ua, null);
                     }
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);

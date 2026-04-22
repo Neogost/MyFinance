@@ -36,6 +36,12 @@ public class LoginAttemptService {
         return LocalDateTime.now().isBefore(heureDeblocage(info));
     }
 
+    public int getNbEchecs(String login) {
+        if (login == null) return 0;
+        InfoTentative info = tentatives.get(login);
+        return info != null ? info.nbEchecs() : 0;
+    }
+
     public long secondesRestantes(String login) {
         if (login == null) return 0;
         InfoTentative info = tentatives.get(login);

@@ -6,6 +6,7 @@ Avant d'implémenter quoi que ce soit, lire ces deux fichiers pour connaître le
 
 - **Backend** (entité, service, controller, DTOs, tests) → [`docs/architecture/decisions/PATTERNS-backend.md`](docs/architecture/decisions/PATTERNS-backend.md)
 - **Frontend** (page, formulaire modal, API layer, CSS, navigation) → [`docs/architecture/decisions/PATTERNS-frontend.md`](docs/architecture/decisions/PATTERNS-frontend.md)
+- **Documentation** (architecture, API, mise à jour CLAUDE.md) → [`docs/architecture/decisions/PATTERNS-documentation.md`](docs/architecture/decisions/PATTERNS-documentation.md)
 
 Ces fichiers contiennent les squelettes de code à suivre. Tout nouveau module doit respecter ces patterns.
 
@@ -111,6 +112,8 @@ frontend/src/
 - Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/compound-interest-simulator.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
+- Historique des connexions (architecture) : `docs/architecture/login-history.md`
+- API historique des connexions : `docs/api/login-history.md`
 
 ## Endpoints backend existants
 
@@ -239,6 +242,11 @@ frontend/src/
 | `POST` | `/api/recurring-expenses` | Authentifié | Créer une dépense |
 | `PUT` | `/api/recurring-expenses/{id}` | Authentifié | Modifier une dépense (ownership vérifié) |
 | `DELETE` | `/api/recurring-expenses/{id}` | Authentifié | Supprimer une dépense (ownership vérifié) |
+
+### Historique des connexions (admin)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/admin/login-history` | ADMIN | Liste paginée des événements de connexion (filtres : login, type, from, to, page, size) |
 
 ### Passifs (grandes possessions)
 | Méthode | URL | Rôle requis | Description |
@@ -453,6 +461,31 @@ npm run dev
   - Timeout de session passé de 30 min à **12 heures** (`server.servlet.session.timeout=12h`)
   - Cookie renforcé : `HttpOnly=true`, `SameSite=Strict`
   - Documentation : `docs/api/authentication.md`
+
+- **Protection brute-force (anti brute-force login)** :
+  - `LoginAttemptService` : tracking en mémoire des échecs par login (`ConcurrentHashMap`), durée de blocage exponentielle (5→10→20→40→80 min)
+  - `LoginRateLimitFilter` : filtre Servlet `@Order(HIGHEST_PRECEDENCE)` exécuté avant Spring Security — bloque même si le mot de passe est correct pendant le verrouillage
+  - `SecurityConfig` : failure handler retourne `429` avec `secondesRestantes`, success handler réinitialise le compteur
+  - `LoginRateLimitProperties` : paramètres externalisés dans les fichiers `application-{profil}.properties` (`security.login.max-attempts`, `base-lock-minutes`, `max-lock-minutes`)
+  - Frontend (`LoginForm.jsx`) : affiche un compte à rebours orange, désactive le formulaire pendant le blocage
+  - Valeurs dev : 3 tentatives / 1 min / 10 min max — valeurs prod : 5 / 5 min / 80 min
+  - Documentation : `docs/api/authentication.md` (section "Protection brute-force")
+
+- **Pages d'erreurs HTTP** :
+  - `ErrorPage.jsx` : composant polyvalent couvrant toutes les familles HTTP (3xx bleu, 4xx ambre, 5xx rouge) — utilisable plein écran (`fullPage`) ou inline, props `onRetry` et `onHome`
+  - `ErrorBoundary.jsx` : React Error Boundary (classe) qui capture les erreurs JS non gérées pendant le rendu et affiche une page 500 avec bouton "Réessayer"
+  - `api/client.js` : instance Axios partagée avec intercepteurs globaux — `401` redirige vers le login, `5xx` affiche la page d'erreur
+  - Tous les fichiers `api/*.js` migrés vers l'instance partagée (`client.js`)
+  - `App.jsx` : intègre `ErrorBoundary`, état `appError` pour les 5xx, enregistrement des callbacks d'intercepteur au démarrage
+
+- **Historique des connexions** (admin) :
+  - Entité `LoginEvent` (table `login_events`) : login tenté, type (`SUCCESS`/`FAILURE`/`BLOCKED`), IP, User-Agent, compteur d'échecs, horodatage
+  - `LoginHistoryService` : `logSuccess`, `logFailure`, `logBlocked`, `getHistory` (paginé + filtres)
+  - Intégration dans `SecurityConfig` (success/failure handlers) et `LoginRateLimitFilter` (blocked)
+  - `GET /api/admin/login-history` (ADMIN) : liste paginée avec filtres `login`, `type`, `from`, `to`, `page`, `size`
+  - Frontend : `LoginHistoryPage` (tableau coloré SUCCESS/FAILURE/BLOCKED, filtres, pagination) — bouton "Historique connexions" visible ADMIN
+  - Tests : (LoginHistoryServiceTest +9, AdminLoginHistoryControllerTest +5)
+  - Documentation : `docs/architecture/login-history.md`, `docs/api/login-history.md`
 
 **À venir :**
 - Regroupements familiaux (`FamilyGroup`)

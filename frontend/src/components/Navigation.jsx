@@ -34,11 +34,13 @@ function EyeIcon({ hidden }) {
 export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues }) {
   const [incomeOpen, setIncomeOpen] = useState(false)
   const [toolsOpen,  setToolsOpen]  = useState(false)
+  const [adminOpen,  setAdminOpen]  = useState(false)
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier' || currentPage === 'compound-interest' || currentPage === 'loan-simulator'
+  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history'
 
-  function closeAll() { setIncomeOpen(false); setToolsOpen(false) }
+  function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white shadow-sm">
@@ -159,8 +161,60 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           )}
         </div>
 
-        {user.role === 'ADMIN' && <NavBtn page="users" label="Utilisateurs" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />}
-        {user.role === 'ADMIN' && <NavBtn page="admin-snapshots" label="Gestion des relevés" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />}
+        {/* ── Menu Administration (ADMIN uniquement) ── */}
+        {user.role === 'ADMIN' && (
+          <div className="relative">
+            <button
+              onClick={() => { setAdminOpen(v => !v); setIncomeOpen(false); setToolsOpen(false) }}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${
+                isAdminPage
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              Administration
+              <span className="text-xs">{adminOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {adminOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setAdminOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+                  <button
+                    onClick={() => { onNavigate('users'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition ${
+                      currentPage === 'users'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Utilisateurs
+                  </button>
+                  <button
+                    onClick={() => { onNavigate('admin-snapshots'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition ${
+                      currentPage === 'admin-snapshots'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Gestion des relevés
+                  </button>
+                  <button
+                    onClick={() => { onNavigate('login-history'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition ${
+                      currentPage === 'login-history'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Historique des connexions
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
       </nav>
 
