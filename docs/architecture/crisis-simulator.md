@@ -2,7 +2,7 @@
 
 ## Objectif
 
-Permettre à l'utilisateur de visualiser l'impact qu'une crise financière historique aurait sur son patrimoine actuel, et d'estimer le temps de récupération selon son taux d'épargne.
+Permettre à l'utilisateur de visualiser l'impact qu'une crise financière historique aurait sur son patrimoine actuel, d'estimer le temps de récupération, et d'explorer des leviers d'action (réallocation au creux, rééquilibrage préventif).
 
 Accessible via **Outils → Simulation de crise**.
 
@@ -10,12 +10,25 @@ Accessible via **Outils → Simulation de crise**.
 
 ## Principe de fonctionnement
 
-Le simulateur est **100 % frontend** — aucun nouvel endpoint backend n'est nécessaire. Il s'appuie sur :
-- Les positions actives déjà chargées (`GET /api/positions?status=ACTIVE`)
-- Des **taux de chute historiques par catégorie** stockés comme constantes
-- Le taux d'épargne et le patrimoine calculés localement
+Le simulateur est **100 % frontend** — aucun endpoint backend n'est nécessaire. Il s'appuie sur quatre appels API existants effectués en parallèle au chargement :
 
-L'utilisateur choisit un scénario, visualise l'impact immédiat sur chaque catégorie, et consulte une estimation du temps de récupération.
+| Donnée | Endpoint |
+|--------|----------|
+| Positions actives par catégorie | `GET /api/positions?status=ACTIVE` |
+| Total passifs | `GET /api/possessions/summary` |
+| Dépenses mensuelles | `GET /api/recurring-expenses/summary` |
+| Contrat salarial actif | `GET /api/salary-contracts` |
+
+L'utilisateur choisit un scénario, configure des options (perte d'emploi, réallocation), et consulte l'impact immédiat, le score de résilience, la trajectoire de récupération et l'impact sur son horizon FIRE.
+
+---
+
+## Fichiers
+
+| Fichier | Rôle |
+|---------|------|
+| `CrisisSimulatorPage.jsx` | Page principale — toute la logique et l'UI |
+| `crisisScenarios.js` | Constantes : taux de chute et rendements post-crise par scénario |
 
 ---
 
@@ -23,75 +36,16 @@ L'utilisateur choisit un scénario, visualise l'impact immédiat sur chaque cat�
 
 ### Scénarios historiques
 
-#### 2008 — Crise des subprimes
-
-La plus grande crise financière depuis 1929. Effondrement du marché immobilier américain, faillite de Lehman Brothers, chute mondiale des marchés actions.
-
-| Catégorie      | Chute estimée | Durée de récupération |
-|----------------|---------------|-----------------------|
-| BOURSE         | −55 %         | 5–7 ans               |
-| IMMO_PAPIER    | −15 %         | 3–4 ans               |
-| IMMO_PHYSIQUE  | −10 %         | 3–5 ans               |
-| CRYPTO         | n/a (inexistant) | —                  |
-| LIVRET         | 0 %           | immédiat              |
-| LIQUIDITE      | 0 %           | immédiat              |
-
-Rendement moyen post-crise (pour le calcul de récupération) : **+8 % / an** (BOURSE), **+3 % / an** (IMMO).
-
----
-
-#### 2000 — Éclatement de la bulle dot-com
-
-Effondrement des valeurs technologiques après une période de spéculation extrême. Impact limité sur l'immobilier physique, qui a joué un rôle refuge en France.
-
-| Catégorie      | Chute estimée | Durée de récupération |
-|----------------|---------------|-----------------------|
-| BOURSE         | −50 %         | 6–8 ans               |
-| IMMO_PAPIER    | −5 %          | 1–2 ans               |
-| IMMO_PHYSIQUE  | +5 %          | (hausse contre-cyclique) |
-| CRYPTO         | n/a           | —                     |
-| LIVRET         | 0 %           | immédiat              |
-| LIQUIDITE      | 0 %           | immédiat              |
-
-Rendement moyen post-crise : **+9 % / an** (BOURSE).
-
----
-
-#### 2020 — Choc COVID-19
-
-Chute brutale et récupération en V. La crise la plus courte de l'histoire moderne sur les marchés actions.
-
-| Catégorie      | Chute estimée | Durée de récupération |
-|----------------|---------------|-----------------------|
-| BOURSE         | −35 %         | 6–12 mois             |
-| IMMO_PAPIER    | −10 %         | 1–2 ans               |
-| IMMO_PHYSIQUE  | −3 %          | 6–12 mois             |
-| CRYPTO         | −50 %         | 6–12 mois             |
-| LIVRET         | 0 %           | immédiat              |
-| LIQUIDITE      | 0 %           | immédiat              |
-
-Rendement moyen post-crise : **+25 % / an** sur 2 ans (rebond exceptionnel).
-
----
-
-#### 2022 — Crypto Winter + marché baissier
-
-Hausse des taux directeurs, effondrement des cryptomonnaies, bear market actions.
-
-| Catégorie      | Chute estimée | Durée de récupération |
-|----------------|---------------|-----------------------|
-| BOURSE         | −20 %         | 1–3 ans               |
-| IMMO_PAPIER    | −8 %          | 2–3 ans               |
-| IMMO_PHYSIQUE  | −5 %          | 2–4 ans               |
-| CRYPTO         | −75 %         | 3–5 ans               |
-| LIVRET         | 0 %           | immédiat              |
-| LIQUIDITE      | 0 %           | immédiat              |
-
----
+| Scénario | BOURSE | IMMO_PAPIER | IMMO_PHYSIQUE | CRYPTO | LIVRET / LIQUIDITE | Rendement post-crise | Réf. historique |
+|----------|--------|-------------|---------------|--------|--------------------|----------------------|-----------------|
+| 2008 — Subprimes      | −55 % | −15 % | −10 % |  0 %  | 0 % | 8 % / an  | 5–7 ans  |
+| 2000 — Bulle dot-com  | −50 % |  −5 % |  +5 % |  0 %  | 0 % | 9 % / an  | 6–8 ans  |
+| 2020 — COVID-19       | −35 % | −10 % |  −3 % | −50 % | 0 % | 20 % / an | 6–12 mois |
+| 2022 — Crypto Winter  | −20 % |  −8 % |  −5 % | −75 % | 0 % | 8 % / an  | 3–5 ans  |
 
 ### Scénario personnalisé
 
-L'utilisateur définit lui-même un taux de chute par catégorie via des sliders (−100 % à 0 %). Utile pour tester des hypothèses personnalisées ou des scénarios extrêmes.
+L'utilisateur définit ses propres taux de chute par catégorie via des sliders (−100 % à 0 %).
 
 ---
 
@@ -99,123 +53,119 @@ L'utilisateur définit lui-même un taux de chute par catégorie via des sliders
 
 ### Impact immédiat
 
-Pour chaque catégorie `cat` :
-
 ```
-valeurApres(cat) = valeurAvant(cat) × (1 + tauxChute(cat))
-pertePotentielle(cat) = valeurAvant(cat) − valeurApres(cat)
-```
-
-Totaux :
-
-```
-patrimoineBrutApres  = Σ valeurApres(cat)
-patrimoineNetApres   = patrimoineBrutApres − totalPassif
-perteTotale          = patrimoineBrutAvant − patrimoineBrutApres
+valeurApres(cat)    = valeurAvant(cat) × (1 + tauxChute(cat))
+perteTotale         = Σ valeurApres(cat) − patrimoineBrutAvant
+patrimoineNetApres  = patrimoineBrutApres − totalPassif
 ```
 
-### Couverture du matelas de sécurité
+### Perte d'emploi — érosion du matelas
 
-Si l'utilisateur a configuré un matelas de sécurité :
+Lorsque l'option "perte d'emploi" est activée avec une durée N mois :
 
 ```
-liquiditesApres  = valeurApres(LIQUIDITE) + valeurApres(LIVRET)
-moisCouverts     = liquiditesApres / totalDepensesMenusuelles
-objectifAtteint  = liquiditesApres >= targetMatelas
+erosionMatelas           = min(liquiditesApres, N × depensesMensuelles)
+liquiditesApresChomage   = max(0, liquiditesApres − N × depensesMensuelles)
+patrimoineBrutApresChomage = patrimoineBrutApres − erosionMatelas
+epargneAnnuelle          = 0   // aucune épargne pendant la récupération
 ```
+
+Le point de départ du calcul de récupération est `patrimoineBrutApresChomage` (et non `patrimoineBrutApres`).
 
 ### Estimation du temps de récupération
 
-Basé sur le **rendement moyen historique post-crise** du scénario et le **taux d'épargne actuel** de l'utilisateur :
+Simulation itérative année par année jusqu'au retour au niveau pré-crise (plafonnée à 50 ans) :
 
 ```
-epargneAnnuelle   = capaciteEpargne × 12
-rendementAnnuel   = rendementPostCrise(scenario)  // constante par scénario
-
-// Croissance composée jusqu'au retour au niveau d'avant-crise
-N = log(patrimoineBrutAvant / patrimoineBrutApres)
-    / log(1 + rendementAnnuel + epargneAnnuelle / patrimoineBrutApres)
+valeur(0) = recoveryStart  // patrimoineBrutApres ou patrimoineBrutApresChomage
+valeur(n) = valeur(n-1) × (1 + rendementPostCrise) + epargneAnnuelle
+recoveryYears = n tel que valeur(n) ≥ patrimoineBrutAvant
 ```
 
-Si l'utilisateur active l'option "perte d'emploi" :
+### Réallocation post-crise — rachat au creux
+
+Lorsque l'utilisateur réinjecte `reinvestPct %` de son matelas en Bourse au creux :
 
 ```
-epargneAnnuelleReduite = 0  // ou valeur partielle selon durée chômage saisie
+reinvestAmount  = liquiditesAffichees × reinvestPct / 100
+reinvestBonus   = reinvestAmount × (1 / (1 + bourseDrawdown) − 1)
+  // acheter à prix décoté donne un surplus de parts ; le bonus = gain théorique
+  // si retour au niveau pré-crise
+recoveryStartReinvest = recoveryStart + reinvestBonus
 ```
+
+Le `recoveryBonus` s'ajoute au point de départ de la récupération sans modifier le patrimoine total (on modélise uniquement le gain de parts supplémentaires sur la portion réinvestie).
+
+### Impact FIRE
+
+Calcul séparé avec un rendement long terme fixe (7 % / an) indépendant du scénario :
+
+```
+fireTarget          = depensesMensuelles × 12 × 25  // règle des 4 %
+yearsToFireBefore   = computeRecoveryYears(patrimoineBrutAvant, fireTarget, 7 %, epargneAnnuelle)
+yearsToFireAfter    = computeRecoveryYears(recoveryStart, fireTarget, 7 %, epargneAnnuelle)
+fireDelay           = yearsToFireAfter − yearsToFireBefore
+```
+
+### Score de résilience
+
+Score synthétique de 0 à 10 calculé comme la moyenne pondérée de trois composantes :
+
+| Composante | Poids | Formule | Seuils |
+|------------|-------|---------|--------|
+| Perte patrimoniale | 40 % | `max(0, 10 × (1 − │perte│ / 50 %))` | 10 si 0 % de perte, 0 si ≥ 50 % |
+| Couverture du matelas | 30 % | `min(10, moisCouverts × 10 / 6)` | 10 si ≥ 6 mois couverts |
+| Temps de récupération | 30 % | `max(0, 10 × (1 − années / 15))` | 10 si immédiat, 0 si ≥ 15 ans |
+
+```
+resilienceScore = round(lossScore × 0.4 + matScore × 0.3 + recScore × 0.3)
+```
+
+Libellés : 7–10 → **Résilient** (vert), 4–6 → **Modéré** (ambre), 0–3 → **Vulnérable** (rouge).
+
+### Recommandation de rééquilibrage
+
+Le composant identifie le sous-score le plus faible et calcule une action concrète :
+
+| Cas | Action proposée | Calcul |
+|-----|-----------------|--------|
+| Matelas insuffisant | Transférer X € de CRYPTO/BOURSE/IMMO_PAPIER vers LIVRET | Monte jusqu'à 6 mois de couverture |
+| Perte trop élevée | Réduire de 20 % l'exposition à CRYPTO ou BOURSE | Cible : limiter la perte à < 30 % |
+| Récupération trop lente | Augmenter l'épargne mensuelle de 10 % des dépenses | Réduit les années de récupération |
+
+Le nouveau score projeté est affiché pour chaque suggestion.
 
 ---
 
 ## Interface utilisateur
 
-### Mise en page
+### Sections de la page
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Sélecteur de scénario  [2008 ▼]    □ Perte d'emploi   │
-├──────────────────┬──────────────────────────────────────┤
-│  AVANT           │  APRÈS                               │
-│  Patrimoine brut │  Patrimoine brut                     │
-│  Patrimoine net  │  Patrimoine net                      │
-│                  │  Perte totale  −XXX €  (−XX %)       │
-├──────────────────┴──────────────────────────────────────┤
-│  Détail par catégorie                                   │
-│  ████████████  BOURSE    125 000 €  →  56 250 €  −55%  │
-│  ██████        IMMO      200 000 €  → 180 000 €  −10%  │
-│  ████████████  LIVRET     20 000 €  →  20 000 €    0%  │
-├─────────────────────────────────────────────────────────┤
-│  Matelas de sécurité                                    │
-│  Liquidités après crise : 18 000 €  → X mois couverts  │
-│  Objectif matelas : [atteint ✓ / insuffisant ✗]        │
-├─────────────────────────────────────────────────────────┤
-│  Récupération estimée                                   │
-│  À ton taux d'épargne actuel (XXX €/mois) + rendement  │
-│  historique post-crise :  ≈ N années                   │
-│  [barre de progression avec jalons 25/50/75/100 %]     │
-└─────────────────────────────────────────────────────────┘
-```
+1. **Sélecteur de scénario** — boutons de scénario + description + sliders (mode personnalisé) + toggle perte d'emploi avec durée (mois)
+2. **Synthèse avant / après** — 3 cartes : patrimoine brut, patrimoine net, perte potentielle
+3. **Score de résilience** — anneau SVG + 3 sous-scores + recommandation de rééquilibrage
+4. **Impact par catégorie** — barres horizontales avec valeurs avant/après et badge %
+5. **Matelas de sécurité** — valeur résiduelle, mois couverts, objectif ; épuisement mois par mois (si perte d'emploi active)
+6. **Réallocation post-crise** — slider de réinvestissement + montant, plus-value latente, récupération accélérée
+7. **Estimation de récupération** — nombre d'années + courbe Recharts avec ligne "Avant crise", ligne "FIRE" et trajectoire avec/sans réallocation
+8. **Impact sur la projection FIRE** — 3 cartes (objectif FIRE, sans crise, après crise) + barres de progression vers l'objectif
+9. **Méthodologie** — explication du calcul du score de résilience
 
-### Composants
+### Courbe de récupération
 
-| Composant | Rôle |
-|-----------|------|
-| `CrisisSimulatorPage.jsx` | Page principale, orchestration |
-| `CrisisScenarioSelector.jsx` | Sélecteur de scénario + toggle perte d'emploi |
-| `CrisisSummaryCards.jsx` | Cartes avant/après (patrimoine brut, net, perte) |
-| `CrisisCategoryBreakdown.jsx` | Tableau détail par catégorie avec barres visuelles |
-| `CrisisSafetyNetStatus.jsx` | Indicateur matelas post-crise |
-| `CrisisRecoveryEstimate.jsx` | Estimation de récupération + barre de progression |
-| `crisisScenarios.js` | Constantes : taux de chute et rendements post-crise |
-| `crisisUtils.js` | Fonctions de calcul (impact, récupération) |
-
----
-
-## Données utilisées
-
-| Donnée | Source |
-|--------|--------|
-| Positions actives par catégorie | `GET /api/positions?status=ACTIVE` (déjà disponible) |
-| Total passifs | `GET /api/possessions/summary` (déjà disponible) |
-| Capacité d'épargne / dépenses | `GET /api/recurring-expenses/summary` (déjà disponible) |
-| Matelas de sécurité (cible) | `user.safetyNetMode` + `computeSafetyNetTarget()` (déjà disponible) |
-| Taux de chute historiques | Constantes locales dans `crisisScenarios.js` |
-
-Aucun nouvel endpoint backend requis.
+Graphique `LineChart` Recharts montrant la trajectoire année par année depuis le creux :
+- Ligne indigo : trajectoire de base
+- Ligne verte en pointillés : trajectoire avec réallocation (si active)
+- `ReferenceLine` horizontal gris : niveau pré-crise
+- `ReferenceLine` horizontal violet : objectif FIRE (si inférieur au patrimoine actuel)
 
 ---
 
 ## Limites et avertissements
 
-Le simulateur doit afficher un avertissement visible :
-
-> *Les taux de chute utilisés sont des approximations basées sur les données historiques. Les performances passées ne préjugent pas des performances futures. Cet outil est fourni à titre indicatif uniquement.*
-
-Limites connues :
-- Les taux appliqués sont des moyennes globales — l'impact réel dépend de la composition précise du portefeuille (secteur, géographie, duration des obligations…)
-- L'immobilier physique est valorisé via `estimatedCurrentValue` saisie manuellement — la simulation applique un taux forfaitaire sur cette valeur
-- Le scénario "perte d'emploi" est binaire (oui/non + durée) ; il ne modélise pas les indemnités chômage
-
----
-
-## Navigation
-
-Entrée **Simulation de crise** à ajouter dans le menu **Outils** de `Navigation.jsx`, routée via `currentPage = 'crisis-simulator'`.
+- Les taux appliqués sont des moyennes globales — l'impact réel dépend de la composition précise du portefeuille (secteur, géographie, duration)
+- L'immobilier physique est valorisé via `estimatedCurrentValue` saisie manuellement — la simulation applique un taux forfaitaire
+- Le scénario "perte d'emploi" ne modélise pas les indemnités chômage
+- Le "bonus de réallocation au creux" suppose un retour intégral au niveau pré-crise de la Bourse
+- Le score FIRE utilise un rendement fixe de 7 % / an indépendant du scénario sélectionné
+- La recommandation de rééquilibrage est indicative et ne tient pas compte de la fiscalité des arbitrages
