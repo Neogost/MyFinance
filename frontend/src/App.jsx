@@ -12,6 +12,7 @@ import BilanFinancierPage from './components/tools/BilanFinancierPage'
 import CompoundInterestSimulatorPage from './components/tools/CompoundInterestSimulatorPage'
 import LoanSimulatorPage from './components/tools/LoanSimulatorPage'
 import PatrimoineDeclarationPage from './components/tools/PatrimoineDeclarationPage'
+import CrisisSimulatorPage from './components/tools/CrisisSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -124,6 +125,8 @@ export default function App() {
         {currentPage === 'loan-simulator' && <LoanSimulatorPage user={user} />}
 
         {currentPage === 'patrimoine-declaration' && <PatrimoineDeclarationPage user={user} onNavigate={handleNavigate} />}
+
+        {currentPage === 'crisis-simulator' && <CrisisSimulatorPage user={user} />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 
