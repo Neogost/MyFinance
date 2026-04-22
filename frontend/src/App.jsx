@@ -15,6 +15,7 @@ import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import LoginHistoryPage from './components/admin/LoginHistoryPage'
+import AdminFamilyGroupPage from './components/admin/AdminFamilyGroupPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import { logout, getMe } from './api/auth'
@@ -25,6 +26,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState('dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
+  const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
 
   useEffect(() => {
@@ -49,10 +51,16 @@ export default function App() {
     await logout()
     setUser(null)
     setCurrentPage('dashboard')
+    setFamilyMode(false)
+  }
+
+  function handleGroupChange(group) {
+    setUser(u => ({ ...u, familyGroupId: group ? group.id : null }))
+    if (!group) setFamilyMode(false)
   }
 
   function handleNavigate(page) {
-    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history') && user?.role !== 'ADMIN') return
+    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history' || page === 'admin-family-groups') && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
 
@@ -89,12 +97,14 @@ export default function App() {
         onLogout={handleLogout}
         hideValues={hideValues}
         onToggleHideValues={toggleHideValues}
+        familyMode={familyMode}
+        onToggleFamilyMode={() => setFamilyMode(v => !v)}
       />
 
       <main className="p-8">
-        {currentPage === 'dashboard' && <DashboardPage user={user} />}
+        {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} />}
 
-        {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} />}
+        {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} familyMode={familyMode} />}
 
         {currentPage === 'salary' && <SalaryContractPage />}
 
@@ -118,7 +128,9 @@ export default function App() {
 
         {currentPage === 'login-history' && user.role === 'ADMIN' && <LoginHistoryPage />}
 
-        {currentPage === 'profile' && <ChangePasswordForm user={user} />}
+        {currentPage === 'admin-family-groups' && user.role === 'ADMIN' && <AdminFamilyGroupPage />}
+
+        {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} />}
       </main>
     </div>
     </ErrorBoundary>

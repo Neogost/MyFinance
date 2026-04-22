@@ -14,7 +14,8 @@ public record UserDto(
         RoleEnum role,
         Float fiscalParts,
         Boolean useFlatRateDeduction,
-        Float customProfessionalDeduction
+        Float customProfessionalDeduction,
+        Long familyGroupId
 ) {
     public static UserDto from(User user) {
         return new UserDto(
@@ -26,7 +27,8 @@ public record UserDto(
                 user.getRole(),
                 user.getFiscalParts(),
                 user.getUseFlatRateDeduction(),
-                user.getCustomProfessionalDeduction()
+                user.getCustomProfessionalDeduction(),
+                user.getFamilyGroup() != null ? user.getFamilyGroup().getId() : null
         );
     }
 }

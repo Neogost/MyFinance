@@ -102,7 +102,7 @@ class AdminSnapshotServiceTest {
         when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE))
                 .thenReturn(List.of(livret, liquidite));
 
-        List<PositionAdminRefDto> result = adminSnapshotService.findActivePositionsByUser(1L);
+        List<PositionAdminRefDto> result = adminSnapshotService.findAllPositionsByUser(1L);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).id()).isEqualTo(10L);

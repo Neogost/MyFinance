@@ -73,7 +73,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 }
 
-function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false }) {
   const fiscal        = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c             = position.computed ?? {}
   const gain          = parseFloat(c.capitalGainEur ?? 0)
@@ -180,7 +180,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
 
       {/* Actions */}
       <td className="py-2 pl-2 pr-3 text-right">
-        <ActionButtons
+        {!readOnly && <ActionButtons
           position={position}
           onEdit={onEdit}
           onDelete={onDelete}
@@ -188,13 +188,13 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
           onUpdateBalance={onUpdateBalance}
           onUpdateEstimatedValue={onUpdateEstimatedValue}
           onViewOrders={onViewOrders}
-        />
+        />}
       </td>
     </tr>
   )
 }
 
-export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false }) {
   const [collapsed, setCollapsed] = useState(new Set())
 
   const toggle = (partner) => setCollapsed(prev => {
@@ -325,6 +325,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                             onUpdateBalance={onUpdateBalance}
                             onUpdateEstimatedValue={onUpdateEstimatedValue}
                             onViewOrders={onViewOrders}
+                            readOnly={readOnly}
                           />
                         ))}
                       </Fragment>
@@ -365,38 +366,6 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
         )
       })}
 
-      {/* ── Légende ── */}
-      <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Légende & calculs</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
-          <LegendItem term="PRU — Prix de Revient Unitaire">
-            Montant total investi divisé par le nombre d'unités détenues.
-            Permet de comparer directement au cours actuel pour évaluer la position.
-            <Formula>PRU = Investi (€) ÷ Nombre d'unités</Formula>
-          </LegendItem>
-          <LegendItem term="Plus-value %">
-            Rendement réalisé rapporté au capital engagé, tous ordres confondus (achats et ventes).
-            <Formula>Plus-value % = Plus-value (€) ÷ |Investi (€)| × 100</Formula>
-          </LegendItem>
-          <LegendItem term="% du patrimoine">
-            Part que représente la catégorie dans la valeur totale des positions affichées.
-            Change si un filtre catégorie est actif.
-            <Formula>% = Valeur catégorie ÷ Valeur totale affichée × 100</Formula>
-          </LegendItem>
-          <LegendItem term="Barre de poids (en-tête partenaire)">
-            Représentation visuelle du poids du partenaire dans l'ensemble du patrimoine affiché.
-            Triés par valeur décroissante.
-          </LegendItem>
-          <LegendItem term={<><span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600">Cours obsolète</span></>}>
-            Le dernier cours connu de l'instrument date de plus de 30 jours.
-            La valeur actuelle affichée peut ne plus refléter le marché — pensez à mettre à jour les cours.
-          </LegendItem>
-          <LegendItem term="Valeur actuelle vs Investi">
-            <strong className="font-semibold text-gray-600">Valeur actuelle</strong> : estimation au cours du jour (ou valeur estimée manuelle pour l'immo).{' '}
-            <strong className="font-semibold text-gray-600">Investi</strong> : somme nette apportée, déduction faite des ventes partielles.
-          </LegendItem>
-        </div>
-      </div>
     </div>
   )
 }
@@ -415,5 +384,41 @@ function Formula({ children }) {
     <span className="block mt-1 font-mono text-xs text-indigo-500 bg-indigo-50 rounded px-1.5 py-0.5 w-fit">
       {children}
     </span>
+  )
+}
+
+export function PatrimoineLegend() {
+  return (
+    <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Légende & calculs</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2.5">
+        <LegendItem term="PRU — Prix de Revient Unitaire">
+          Montant total investi divisé par le nombre d'unités détenues.
+          Permet de comparer directement au cours actuel pour évaluer la position.
+          <Formula>PRU = Investi (€) ÷ Nombre d'unités</Formula>
+        </LegendItem>
+        <LegendItem term="Plus-value %">
+          Rendement réalisé rapporté au capital engagé, tous ordres confondus (achats et ventes).
+          <Formula>Plus-value % = Plus-value (€) ÷ |Investi (€)| × 100</Formula>
+        </LegendItem>
+        <LegendItem term="% du patrimoine">
+          Part que représente la catégorie dans la valeur totale des positions affichées.
+          Change si un filtre catégorie est actif.
+          <Formula>% = Valeur catégorie ÷ Valeur totale affichée × 100</Formula>
+        </LegendItem>
+        <LegendItem term="Barre de poids (en-tête partenaire)">
+          Représentation visuelle du poids du partenaire dans l'ensemble du patrimoine affiché.
+          Triés par valeur décroissante.
+        </LegendItem>
+        <LegendItem term={<><span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600">Cours obsolète</span></>}>
+          Le dernier cours connu de l'instrument date de plus de 30 jours.
+          La valeur actuelle affichée peut ne plus refléter le marché — pensez à mettre à jour les cours.
+        </LegendItem>
+        <LegendItem term="Valeur actuelle vs Investi">
+          <strong className="font-semibold text-gray-600">Valeur actuelle</strong> : estimation au cours du jour (ou valeur estimée manuelle pour l'immo).{' '}
+          <strong className="font-semibold text-gray-600">Investi</strong> : somme nette apportée, déduction faite des ventes partielles.
+        </LegendItem>
+      </div>
+    </div>
   )
 }

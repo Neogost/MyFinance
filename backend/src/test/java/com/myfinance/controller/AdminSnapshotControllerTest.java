@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.domain.AssetCategory;
+import com.myfinance.domain.PositionStatus;
 import com.myfinance.dto.*;
 import com.myfinance.service.AdminSnapshotService;
 import org.junit.jupiter.api.BeforeEach;
@@ -186,8 +187,8 @@ class AdminSnapshotControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void findActivePositions_asAdmin_retourne200() throws Exception {
-        PositionAdminRefDto pos = new PositionAdminRefDto(10L, "Livret A", "BNP", AssetCategory.LIVRET);
-        when(adminSnapshotService.findActivePositionsByUser(1L)).thenReturn(List.of(pos));
+        PositionAdminRefDto pos = new PositionAdminRefDto(10L, "Livret A", "BNP", AssetCategory.LIVRET, PositionStatus.ACTIVE);
+        when(adminSnapshotService.findAllPositionsByUser(1L)).thenReturn(List.of(pos));
 
         mockMvc.perform(get("/api/admin/users/1/positions"))
                 .andExpect(status().isOk())

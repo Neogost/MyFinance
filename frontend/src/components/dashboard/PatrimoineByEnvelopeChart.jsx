@@ -17,40 +17,40 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function PatrimoineByEnvelopeChart() {
+export default function PatrimoineByEnvelopeChart({ positions: positionsProp = null }) {
   const [data, setData]       = useState([])
   const [total, setTotal]     = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(positionsProp === null)
   const [error, setError]     = useState(null)
 
+  function compute(positions) {
+    const byEnvelope = {}
+    positions.filter(p => p.status === 'ACTIVE').forEach(p => {
+      const envelope = p.fiscalEnvelope ?? 'NONE'
+      const val = parseFloat(p.computed?.currentValueEur ?? 0)
+      byEnvelope[envelope] = (byEnvelope[envelope] ?? 0) + val
+    })
+    const sum = Object.values(byEnvelope).reduce((s, v) => s + v, 0)
+    const chartData = Object.entries(byEnvelope)
+      .filter(([, v]) => v > 0.01)
+      .sort(([, a], [, b]) => b - a)
+      .map(([env, v]) => ({
+        envelope: env,
+        label:    FISCAL_ENVELOPE_LABELS[env]?.label ?? env,
+        value:    v,
+        pct:      sum > 0 ? (v / sum * 100).toFixed(1) : '0.0',
+      }))
+    setData(chartData)
+    setTotal(sum)
+  }
+
   useEffect(() => {
+    if (positionsProp !== null) { compute(positionsProp); return }
     getPositions({ status: 'ACTIVE' })
-      .then(positions => {
-        const byEnvelope = {}
-        positions.forEach(p => {
-          const envelope = p.fiscalEnvelope ?? 'NONE'
-          const val = parseFloat(p.computed?.currentValueEur ?? 0)
-          byEnvelope[envelope] = (byEnvelope[envelope] ?? 0) + val
-        })
-
-        const sum = Object.values(byEnvelope).reduce((s, v) => s + v, 0)
-
-        const chartData = Object.entries(byEnvelope)
-          .filter(([, v]) => v > 0.01)
-          .sort(([, a], [, b]) => b - a)
-          .map(([env, v]) => ({
-            envelope: env,
-            label:    FISCAL_ENVELOPE_LABELS[env]?.label ?? env,
-            value:    v,
-            pct:      sum > 0 ? (v / sum * 100).toFixed(1) : '0.0',
-          }))
-
-        setData(chartData)
-        setTotal(sum)
-      })
+      .then(compute)
       .catch(() => setError('Impossible de charger les données'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [positionsProp])
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>

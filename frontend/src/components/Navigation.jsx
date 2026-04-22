@@ -31,14 +31,23 @@ function EyeIcon({ hidden }) {
   )
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues }) {
+function HomeIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  )
+}
+
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode }) {
   const [incomeOpen, setIncomeOpen] = useState(false)
   const [toolsOpen,  setToolsOpen]  = useState(false)
   const [adminOpen,  setAdminOpen]  = useState(false)
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier' || currentPage === 'compound-interest' || currentPage === 'loan-simulator'
-  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history'
+  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history' || currentPage === 'admin-family-groups'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
 
@@ -210,6 +219,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                   >
                     Historique des connexions
                   </button>
+                  <button
+                    onClick={() => { onNavigate('admin-family-groups'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition ${
+                      currentPage === 'admin-family-groups'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Regroupements familiaux
+                  </button>
                 </div>
               </>
             )}
@@ -226,6 +245,17 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
         >
           <EyeIcon hidden={hideValues} />
         </button>
+        {user.familyGroupId && (
+          <button
+            onClick={onToggleFamilyMode}
+            title={familyMode
+              ? 'Mode Foyer actif — cliquer pour désactiver'
+              : 'Activer le Mode Foyer (vue agrégée du groupe)'}
+            className={`p-1.5 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+          >
+            <HomeIcon />
+          </button>
+        )}
         <span className="text-gray-700">{user.firstName} {user.lastName}</span>
         <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
           {user.role}

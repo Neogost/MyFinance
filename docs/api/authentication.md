@@ -42,11 +42,13 @@ username=admin&password=motdepasse
   "firstName": "Jean",
   "lastName": "Dupont",
   "role": "ADMIN",
-  "birthDate": "1990-05-14"
+  "birthDate": "1990-05-14",
+  "familyGroupId": 3
 }
 ```
 
-> `birthDate` peut être `null` si non renseigné sur le profil utilisateur.
+> `birthDate` peut être `null` si non renseigné sur le profil utilisateur.  
+> `familyGroupId` peut être `null` si l'utilisateur n'appartient à aucun groupe. Le frontend utilise cette valeur pour afficher le bouton **Mode Foyer** dans la navigation.
 
 **401 Unauthorized** — Identifiants incorrects.
 
@@ -152,7 +154,8 @@ GET /api/auth/me
   "login": "admin",
   "firstName": "Jean",
   "lastName": "Dupont",
-  "role": "ADMIN"
+  "role": "ADMIN",
+  "familyGroupId": 3
 }
 ```
 
@@ -203,14 +206,15 @@ Content-Type: application/json
 
 ## Modèle `UserDto`
 
-| Champ       | Type     | Description              |
-|-------------|----------|--------------------------|
-| `id`        | `number` | Identifiant unique        |
-| `login`     | `string` | Nom d'utilisateur         |
-| `firstName` | `string` | Prénom                    |
-| `lastName`  | `string` | Nom de famille            |
-| `role`      | `string` | `USER` ou `ADMIN`         |
-| `birthDate` | `string` | Date de naissance ISO (nullable), ex : `"1990-05-14"` |
+| Champ           | Type     | Description              |
+|-----------------|----------|--------------------------|
+| `id`            | `number` | Identifiant unique        |
+| `login`         | `string` | Nom d'utilisateur         |
+| `firstName`     | `string` | Prénom                    |
+| `lastName`      | `string` | Nom de famille            |
+| `role`          | `string` | `USER` ou `ADMIN`         |
+| `birthDate`     | `string` | Date de naissance ISO (nullable), ex : `"1990-05-14"` |
+| `familyGroupId` | `number` | Identifiant du groupe familial (nullable) — présent si l'utilisateur appartient à un groupe |
 
 > Le mot de passe n'est jamais retourné dans les réponses.
 

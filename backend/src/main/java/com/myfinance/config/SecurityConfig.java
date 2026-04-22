@@ -83,12 +83,13 @@ public class SecurityConfig {
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     Map<String, Object> payload = new HashMap<>();
-                    payload.put("id",        user.getId());
-                    payload.put("login",     user.getLogin());
-                    payload.put("firstName", user.getFirstName());
-                    payload.put("lastName",  user.getLastName());
-                    payload.put("role",      user.getRole());
-                    payload.put("birthDate", user.getBirthDate());
+                    payload.put("id",            user.getId());
+                    payload.put("login",         user.getLogin());
+                    payload.put("firstName",     user.getFirstName());
+                    payload.put("lastName",      user.getLastName());
+                    payload.put("role",          user.getRole());
+                    payload.put("birthDate",     user.getBirthDate());
+                    payload.put("familyGroupId", user.getFamilyGroup() != null ? user.getFamilyGroup().getId() : null);
                     objectMapper.writeValue(response.getWriter(), payload);
                 })
                 .failureHandler((request, response, exception) -> {

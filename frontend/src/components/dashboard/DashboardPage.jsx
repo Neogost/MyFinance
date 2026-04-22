@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import FireProjectionWidget from './FireProjectionWidget'
 import SalaryEvolutionChart from './SalaryEvolutionChart'
 import CapitalGainsByCategoryChart from './CapitalGainsByCategoryChart'
@@ -7,6 +8,8 @@ import PatrimoineEvolutionChart from './PatrimoineEvolutionChart'
 import ExpensesByCategoryChart from './ExpensesByCategoryChart'
 import PassifsByCategoryChart from './PassifsByCategoryChart'
 import SalaryAnnualBarChart from './SalaryAnnualBarChart'
+import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
+import { getPositions } from '../../api/patrimoine'
 
 function SectionTitle({ title, subtitle }) {
   return (
@@ -17,7 +20,23 @@ function SectionTitle({ title, subtitle }) {
   )
 }
 
-export default function DashboardPage({ user }) {
+export default function DashboardPage({ user, familyMode }) {
+  const [familyPositions, setFamilyPositions] = useState(null)
+
+  useEffect(() => {
+    if (!familyMode) { setFamilyPositions(null); return }
+    async function fetchAll() {
+      try {
+        const [ownPositions, members] = await Promise.all([getPositions(), getMyGroupMembers()])
+        const memberPositions = await Promise.all(members.map(m => getMemberPositions(m.id)))
+        setFamilyPositions([...ownPositions, ...memberPositions.flat()])
+      } catch {
+        setFamilyPositions(null)
+      }
+    }
+    fetchAll()
+  }, [familyMode])
+
   return (
     <div className="space-y-10">
       <div>
@@ -26,6 +45,13 @@ export default function DashboardPage({ user }) {
           Bonjour <strong>{user.firstName}</strong> — une vue d'ensemble de vos revenus, dépenses et patrimoine.
         </p>
       </div>
+
+      {familyMode && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium">
+          <span>🏠</span>
+          <span>Mode Foyer activé — les graphiques patrimoniaux agrègent les données de tous les membres du groupe.</span>
+        </div>
+      )}
 
       {/* ── Revenus & Dépenses ───────────────────────────────────── */}
       <div>
@@ -97,7 +123,7 @@ export default function DashboardPage({ user }) {
             <p className="text-xs text-gray-400 mb-6">
               Répartition de la valeur actuelle par catégorie d'actif.
             </p>
-            <PatrimoineByCategoryChart />
+            <PatrimoineByCategoryChart positions={familyPositions} />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -105,7 +131,7 @@ export default function DashboardPage({ user }) {
             <p className="text-xs text-gray-400 mb-6">
               Répartition hors immobilier physique et papier.
             </p>
-            <PatrimoineByCategoryChart financierOnly />
+            <PatrimoineByCategoryChart financierOnly positions={familyPositions} />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -113,7 +139,7 @@ export default function DashboardPage({ user }) {
             <p className="text-xs text-gray-400 mb-6">
               Répartition du patrimoine brut par type d'enveloppe fiscale (AV, PEA, CTO…).
             </p>
-            <PatrimoineByEnvelopeChart />
+            <PatrimoineByEnvelopeChart positions={familyPositions} />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -121,7 +147,7 @@ export default function DashboardPage({ user }) {
             <p className="text-xs text-gray-400 mb-6">
               Répartition des plus-values latentes sur l'ensemble des positions actives.
             </p>
-            <CapitalGainsByCategoryChart />
+            <CapitalGainsByCategoryChart positions={familyPositions} />
           </div>
         </div>
       </div>

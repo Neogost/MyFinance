@@ -19,46 +19,47 @@ function CustomTooltip({ active, payload }) {
 
 const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
 
-export default function PatrimoineByCategoryChart({ financierOnly = false }) {
+export default function PatrimoineByCategoryChart({ financierOnly = false, positions: positionsProp = null }) {
   const [data, setData]       = useState([])
   const [total, setTotal]     = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(positionsProp === null)
   const [error, setError]     = useState(null)
 
-  useEffect(() => {
-    getPositions({ status: 'ACTIVE' })
-      .then(positions => {
-        const byCategory = {}
-        positions
-          .filter(p => !financierOnly || !IMMO_CATEGORIES.has(p.category))
-          .forEach(p => {
-            const val = parseFloat(p.computed?.currentValueEur ?? 0)
-            byCategory[p.category] = (byCategory[p.category] ?? 0) + val
-          })
-
-        const sum = Object.values(byCategory).reduce((s, v) => s + v, 0)
-
-        const CATEGORY_ORDER = ['BOURSE', 'CRYPTO', 'IMMO_PHYSIQUE', 'IMMO_PAPIER', 'LIVRET', 'LIQUIDITE']
-        const chartData = Object.entries(byCategory)
-          .filter(([, v]) => v > 0.01)
-          .sort(([a], [b]) => {
-            const ia = CATEGORY_ORDER.indexOf(a)
-            const ib = CATEGORY_ORDER.indexOf(b)
-            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
-          })
-          .map(([cat, v]) => ({
-            category: cat,
-            label:    CATEGORY_META[cat]?.label ?? cat,
-            value:    v,
-            pct:      sum > 0 ? (v / sum * 100).toFixed(1) : '0.0',
-          }))
-
-        setData(chartData)
-        setTotal(sum)
+  function compute(positions) {
+    const byCategory = {}
+    positions
+      .filter(p => p.status === 'ACTIVE')
+      .filter(p => !financierOnly || !IMMO_CATEGORIES.has(p.category))
+      .forEach(p => {
+        const val = parseFloat(p.computed?.currentValueEur ?? 0)
+        byCategory[p.category] = (byCategory[p.category] ?? 0) + val
       })
+    const sum = Object.values(byCategory).reduce((s, v) => s + v, 0)
+    const CATEGORY_ORDER = ['BOURSE', 'CRYPTO', 'IMMO_PHYSIQUE', 'IMMO_PAPIER', 'LIVRET', 'LIQUIDITE']
+    const chartData = Object.entries(byCategory)
+      .filter(([, v]) => v > 0.01)
+      .sort(([a], [b]) => {
+        const ia = CATEGORY_ORDER.indexOf(a)
+        const ib = CATEGORY_ORDER.indexOf(b)
+        return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+      })
+      .map(([cat, v]) => ({
+        category: cat,
+        label:    CATEGORY_META[cat]?.label ?? cat,
+        value:    v,
+        pct:      sum > 0 ? (v / sum * 100).toFixed(1) : '0.0',
+      }))
+    setData(chartData)
+    setTotal(sum)
+  }
+
+  useEffect(() => {
+    if (positionsProp !== null) { compute(positionsProp); return }
+    getPositions({ status: 'ACTIVE' })
+      .then(compute)
       .catch(() => setError('Impossible de charger les données'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [positionsProp])
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>

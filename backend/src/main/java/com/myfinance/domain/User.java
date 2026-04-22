@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -52,6 +54,14 @@ public class User implements UserDetails {
     private Boolean useFlatRateDeduction; // true = abattement 10%, false = frais réels
 
     private Float customProfessionalDeduction; // Montant frais réels (€), si useFlatRateDeduction = false
+
+    // ── Regroupement familial ──────────────────────────────────
+
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "family_group_id")
+    private FamilyGroup familyGroup;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -18,36 +18,37 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function CapitalGainsByCategoryChart() {
+export default function CapitalGainsByCategoryChart({ positions: positionsProp = null }) {
   const [data, setData]       = useState([])
   const [totalGain, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(positionsProp === null)
   const [error, setError]     = useState(null)
 
+  function compute(positions) {
+    const byCategory = {}
+    positions.filter(p => p.status === 'ACTIVE').forEach(p => {
+      const gain = parseFloat(p.computed?.capitalGainEur ?? 0)
+      byCategory[p.category] = (byCategory[p.category] ?? 0) + gain
+    })
+    const chartData = Object.entries(byCategory)
+      .filter(([, v]) => Math.abs(v) > 0.01)
+      .map(([cat, v]) => ({
+        category: cat,
+        label:     CATEGORY_META[cat]?.label ?? cat,
+        value:     Math.abs(v),
+        realValue: v,
+      }))
+    setData(chartData)
+    setTotal(Object.values(byCategory).reduce((s, v) => s + v, 0))
+  }
+
   useEffect(() => {
+    if (positionsProp !== null) { compute(positionsProp); return }
     getPositions({ status: 'ACTIVE' })
-      .then(positions => {
-        const byCategory = {}
-        positions.forEach(p => {
-          const gain = parseFloat(p.computed?.capitalGainEur ?? 0)
-          byCategory[p.category] = (byCategory[p.category] ?? 0) + gain
-        })
-
-        const chartData = Object.entries(byCategory)
-          .filter(([, v]) => Math.abs(v) > 0.01)
-          .map(([cat, v]) => ({
-            category: cat,
-            label:     CATEGORY_META[cat]?.label ?? cat,
-            value:     Math.abs(v),
-            realValue: v,
-          }))
-
-        setData(chartData)
-        setTotal(Object.values(byCategory).reduce((s, v) => s + v, 0))
-      })
+      .then(compute)
       .catch(() => setError('Impossible de charger les données'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [positionsProp])
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>

@@ -4,6 +4,7 @@ import {
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
   getSnapshots, getReferentiel,
 } from '../../api/patrimoine'
+import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { CATEGORY_META, PROJECTION_RATES } from './constants'
 import { fmt, Tooltip } from './utils'
 import PositionCard from './PositionCard'
@@ -13,10 +14,10 @@ import OrderPanel from './OrderPanel'
 import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 import SnapshotPanel from './SnapshotPanel'
-import PatrimoineGroupedView from './PatrimoineGroupedView'
+import PatrimoineGroupedView, { PatrimoineLegend } from './PatrimoineGroupedView'
 
 
-export default function PatrimoinePage({ currentUser }) {
+export default function PatrimoinePage({ currentUser, familyMode }) {
   const [positions, setPositions]             = useState([])
   const [snapshots, setSnapshots]             = useState([])
   const [formTarget, setFormTarget]           = useState(undefined)
@@ -37,10 +38,27 @@ export default function PatrimoinePage({ currentUser }) {
   }
   const [loading, setLoading]                 = useState(true)
   const [error, setError]                     = useState(null)
+  const [familyMembers, setFamilyMembers]     = useState([]) // [{ id, firstName, lastName, positions }]
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
   useEffect(() => { fetchPositions(); fetchSnapshots(); fetchReferentiel() }, [])
+
+  useEffect(() => {
+    if (!familyMode) { setFamilyMembers([]); return }
+    async function fetchFamily() {
+      try {
+        const members = await getMyGroupMembers()
+        const withPositions = await Promise.all(
+          members.map(async m => ({ ...m, positions: await getMemberPositions(m.id) }))
+        )
+        setFamilyMembers(withPositions)
+      } catch {
+        setFamilyMembers([])
+      }
+    }
+    fetchFamily()
+  }, [familyMode])
 
   async function fetchPositions() {
     try {
@@ -133,8 +151,11 @@ export default function PatrimoinePage({ currentUser }) {
   // ── Synthèse ─────────────────────────────────────────────────────
 
   const IMMO_CATEGORIES = new Set(['IMMO_PHYSIQUE', 'IMMO_PAPIER'])
-  const active = positions.filter(p => p.status === 'ACTIVE')
-  const allPos = positions
+  const allFamilyPositions = familyMode && familyMembers.length > 0
+    ? [...positions, ...familyMembers.flatMap(m => m.positions)]
+    : positions
+  const active = allFamilyPositions.filter(p => p.status === 'ACTIVE')
+  const allPos = allFamilyPositions
 
   const patrimoineBrut      = active.reduce((s, p) => s + parseFloat(p.computed?.currentValueEur  ?? 0), 0)
   const patrimoineFinancier = active
@@ -212,9 +233,11 @@ export default function PatrimoinePage({ currentUser }) {
     if (!tranche) return null
     const seuils = [tranche.d1, tranche.d2, tranche.d3, tranche.d4, tranche.d5,
                     tranche.d6, tranche.d7, tranche.d8, tranche.d9]
-    const decile = seuils.findIndex(s => patrimoineBrut < s)
+    const nbMembres = familyMode && familyMembers.length > 0 ? 1 + familyMembers.length : 1
+    const patrimoineComparaison = patrimoineBrut / nbMembres
+    const decile = seuils.findIndex(s => patrimoineComparaison < s)
     const rang   = decile === -1 ? 10 : decile + 1
-    return { tranche, rang, seuils }
+    return { tranche, rang, seuils, nbMembres, patrimoineComparaison }
   })()
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
@@ -224,6 +247,14 @@ export default function PatrimoinePage({ currentUser }) {
       {/* ── Erreur ── */}
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>
+      )}
+
+      {/* ── Bannière Mode Foyer ── */}
+      {familyMode && (
+        <div className="flex items-center gap-2 px-4 py-2 mb-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium">
+          <span>🏠</span>
+          <span>Mode Foyer — patrimoine agrégé du groupe ({familyMembers.length + 1} membres)</span>
+        </div>
       )}
 
       {/* ── En-tête ── */}
@@ -270,6 +301,11 @@ export default function PatrimoinePage({ currentUser }) {
                 <Tooltip>
                   <span className="block font-semibold mb-1">Référentiel INSEE — {inseeInfo.tranche.label}</span>
                   <span className="block text-gray-400 text-xs mb-2">{referentiel.source}</span>
+                  {inseeInfo.nbMembres > 1 && (
+                    <span className="block text-indigo-300 text-xs mb-2">
+                      Mode Foyer — moyenne par membre : {fmt(inseeInfo.patrimoineComparaison)} ({inseeInfo.nbMembres} membres)
+                    </span>
+                  )}
                   {inseeInfo.seuils.map((s, i) => (
                     <span key={i} className={`flex justify-between gap-3 ${inseeInfo.rang === i + 1 ? 'text-white font-semibold' : ''}`}>
                       <span>D{i + 1}</span>
@@ -472,6 +508,21 @@ export default function PatrimoinePage({ currentUser }) {
           ))}
         </div>
       )}
+
+      {/* ── Positions des autres membres (Mode Foyer) ── */}
+      {familyMode && familyMembers.map(member => {
+        const memberFiltered = member.positions.filter(p => showClosed || p.status !== 'CLOSED')
+        return (
+          <div key={member.id} className="mt-6">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              🏠 {member.firstName} {member.lastName}
+            </p>
+            <PatrimoineGroupedView positions={memberFiltered} readOnly />
+          </div>
+        )
+      })}
+
+      <PatrimoineLegend />
 
       {/* ── Modals ── */}
       {formTarget !== undefined && (

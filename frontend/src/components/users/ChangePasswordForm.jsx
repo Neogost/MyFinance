@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { changePassword } from '../../api/users'
+import FamilyGroupPanel from '../profile/FamilyGroupPanel'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 const labelCls = 'text-sm font-semibold text-gray-700'
 
-export default function ChangePasswordForm({ user }) {
+export default function ChangePasswordForm({ user, onGroupChange }) {
   const [form, setForm]       = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [error, setError]     = useState(null)
   const [success, setSuccess] = useState(false)
@@ -41,17 +42,18 @@ export default function ChangePasswordForm({ user }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-8 max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-gray-900 mb-1">Mon profil</h2>
-      <p className="text-sm text-gray-500 mb-6">
-        Connecté en tant que <strong className="text-gray-700">{user.login}</strong>
-        {' '}—{' '}
-        <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
-          {user.role}
-        </span>
-      </p>
+    <div className="max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="bg-white rounded-xl shadow-sm p-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-1">Mon profil</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Connecté en tant que <strong className="text-gray-700">{user.login}</strong>
+          {' '}—{' '}
+          <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
+            {user.role}
+          </span>
+        </p>
 
-      <h3 className="text-base font-semibold text-gray-800 mb-4">Changer mon mot de passe</h3>
+        <h3 className="text-base font-semibold text-gray-800 mb-4">Changer mon mot de passe</h3>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -107,6 +109,9 @@ export default function ChangePasswordForm({ user }) {
           {loading ? 'Enregistrement…' : 'Changer le mot de passe'}
         </button>
       </form>
+      </div>
+
+      <FamilyGroupPanel onGroupChange={onGroupChange} />
     </div>
   )
 }
