@@ -1,9 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: '/',
-  withCredentials: true, // envoie le cookie de session automatiquement
-})
+import api from './client'
 
 export async function login(username, password) {
   const params = new URLSearchParams()

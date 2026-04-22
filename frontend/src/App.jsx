@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
+import ErrorPage from './components/ErrorPage'
 import LoginForm from './components/LoginForm'
 import Navigation from './components/Navigation'
 import UserList from './components/users/UserList'
@@ -15,14 +17,20 @@ import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import { logout, getMe } from './api/auth'
+import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 
 export default function App() {
   const [user,        setUser]        = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState('dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
+  const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
 
   useEffect(() => {
+    // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
+    setUnauthorizedHandler(() => { setUser(null) })
+    setServerErrorHandler(status => setAppError(status))
+
     getMe()
       .then(setUser)
       .catch(() => {}) // session expirée ou absente → affiche le login
@@ -55,11 +63,23 @@ export default function App() {
     )
   }
 
+  if (appError) {
+    return (
+      <ErrorPage
+        status={appError}
+        fullPage
+        onRetry={() => { setAppError(null); window.location.reload() }}
+        onHome={() => { setAppError(null); setCurrentPage('dashboard') }}
+      />
+    )
+  }
+
   if (!user) {
     return <LoginForm onSuccess={setUser} />
   }
 
   return (
+    <ErrorBoundary>
     <div className={`min-h-screen bg-gray-100${hideValues ? ' hide-values' : ''}`}>
       <Navigation
         user={user}
@@ -98,5 +118,6 @@ export default function App() {
         {currentPage === 'profile' && <ChangePasswordForm user={user} />}
       </main>
     </div>
+    </ErrorBoundary>
   )
 }

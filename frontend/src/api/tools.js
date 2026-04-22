@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/', withCredentials: true })
+import api from './client'
 
 export function simulateTax({ year, salarySource, includedIncomes } = {}) {
   const params = new URLSearchParams()

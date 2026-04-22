@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/', withCredentials: true })
+import api from './client'
 
 // ── Tableau de bord ────────────────────────────────────────────
 export const getSalaryEvolution = () => api.get('/api/dashboard/salary-evolution').then(r => r.data)

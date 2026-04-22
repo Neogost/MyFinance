@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/', withCredentials: true })
+import api from './client'
 
 export const getUsers       = ()         => api.get('/api/users').then(r => r.data)
 export const createUser     = (data)     => api.post('/api/users', data).then(r => r.data)

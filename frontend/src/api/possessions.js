@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/', withCredentials: true })
+import api from './client'
 
 export const getPossessions        = ()         => api.get('/api/possessions').then(r => r.data)
 export const getPossession         = (id)       => api.get(`/api/possessions/${id}`).then(r => r.data)

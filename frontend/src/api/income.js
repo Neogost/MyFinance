@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const api = axios.create({ baseURL: '/', withCredentials: true })
+import api from './client'
 
 // ── Contrats salariaux ─────────────────────────────────────────
 export const getSalaryContracts  = ()         => api.get('/api/salary-contracts').then(r => r.data)
