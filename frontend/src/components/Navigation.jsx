@@ -52,7 +52,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 bg-white shadow-sm">
       <img src={logo} alt="MyFinance" className="h-12 w-auto" />
 
       <nav className="flex items-center gap-1">

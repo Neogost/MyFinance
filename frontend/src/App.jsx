@@ -120,7 +120,7 @@ export default function App() {
 
         {currentPage === 'compound-interest' && <CompoundInterestSimulatorPage />}
 
-        {currentPage === 'loan-simulator' && <LoanSimulatorPage />}
+        {currentPage === 'loan-simulator' && <LoanSimulatorPage user={user} />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 

@@ -119,7 +119,10 @@ export default function DashboardPage({ user, familyMode }) {
 
         <div className="grid grid-cols-4 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Patrimoine brut</h3>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Patrimoine brut</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
             <p className="text-xs text-gray-400 mb-6">
               Répartition de la valeur actuelle par catégorie d'actif.
             </p>
@@ -127,7 +130,10 @@ export default function DashboardPage({ user, familyMode }) {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Patrimoine financier</h3>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Patrimoine financier</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
             <p className="text-xs text-gray-400 mb-6">
               Répartition hors immobilier physique et papier.
             </p>
@@ -135,7 +141,10 @@ export default function DashboardPage({ user, familyMode }) {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition par enveloppe</h3>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Répartition par enveloppe</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
             <p className="text-xs text-gray-400 mb-6">
               Répartition du patrimoine brut par type d'enveloppe fiscale (AV, PEA, CTO…).
             </p>
@@ -143,7 +152,10 @@ export default function DashboardPage({ user, familyMode }) {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Plus-values par catégorie</h3>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Plus-values par catégorie</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
             <p className="text-xs text-gray-400 mb-6">
               Répartition des plus-values latentes sur l'ensemble des positions actives.
             </p>

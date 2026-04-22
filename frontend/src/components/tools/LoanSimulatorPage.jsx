@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { simulateTax, simulateTaxForUser } from '../../api/tools'
 import { getUsers } from '../../api/users'
+import { getMyGroupMembers } from '../../api/familyGroup'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const LOAN_STORAGE_KEY = 'loan_simulations'
@@ -257,7 +258,7 @@ const DONUT_COLORS = ['#6366f1', '#06b6d4', '#8b5cf6', '#f97316', '#f59e0b']
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-export default function LoanSimulatorPage() {
+export default function LoanSimulatorPage({ user }) {
   // Revenus
   const [apiIncome, setApiIncome]           = useState(null)
   const [incomeLoading, setIncomeLoading]   = useState(true)
@@ -644,7 +645,8 @@ export default function LoanSimulatorPage() {
     setUserSearchQuery('')
     if (usersList.length === 0) {
       setUsersLoading(true)
-      getUsers()
+      const fetch = user?.familyGroupId ? getMyGroupMembers() : getUsers()
+      fetch
         .then(data => setUsersList(Array.isArray(data) ? data : []))
         .catch(() => setUsersList([]))
         .finally(() => setUsersLoading(false))
@@ -839,14 +841,16 @@ export default function LoanSimulatorPage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs text-gray-500">Nom</label>
-                        <button onClick={() => openUserPicker(inc.id)}
-                          title="Rechercher un utilisateur"
-                          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded transition ${isPicking ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-100'}`}>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                          </svg>
-                          Depuis un utilisateur
-                        </button>
+                        {(user?.familyGroupId || user?.role === 'ADMIN') && (
+                          <button onClick={() => openUserPicker(inc.id)}
+                            title={user?.familyGroupId ? 'Rechercher un membre du groupe familial' : 'Rechercher un utilisateur'}
+                            className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded transition ${isPicking ? 'bg-indigo-600 text-white' : 'text-indigo-500 hover:bg-indigo-100'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                            {user?.familyGroupId ? 'Depuis le groupe familial' : 'Depuis un utilisateur'}
+                          </button>
+                        )}
                       </div>
                       <input type="text" value={inc.name}
                         onChange={e => updateAdditionalIncome(inc.id, 'name', e.target.value)}
