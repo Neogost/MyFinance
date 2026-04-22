@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { computeSafetyNetTarget } from '../../utils/safetyNet'
 import { getSalaryContracts, getOtherIncomes } from '../../api/income'
 import { getPositions } from '../../api/patrimoine'
 import { simulateTax } from '../../api/tools'
@@ -84,7 +85,7 @@ function TotalRow({ label, amount, color = 'text-gray-900' }) {
   )
 }
 
-export default function BilanFinancierPage() {
+export default function BilanFinancierPage({ user }) {
   const [period,   setPeriod]   = useState('MONTHLY')
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
@@ -211,6 +212,14 @@ export default function BilanFinancierPage() {
     if (PMT > 0) return (FV - PV) / PMT / 12
     return null
   })()
+
+  // ── Matelas de sécurité ──────────────────────────────────────────
+  const snLivretLiquidite = positions
+    .filter(p => p.category === 'LIVRET' || p.category === 'LIQUIDITE')
+    .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+  const snTarget   = computeSafetyNetTarget(user, expenseSummary, activeContract)
+  const snPct      = snTarget != null ? Math.min((snLivretLiquidite / snTarget) * 100, 100) : null
+  const snAchieved = snPct != null && snLivretLiquidite >= snTarget
 
   // ── Passif (possessions + immobilier physique) ────────────────────
   const passifByCategory = possessionSummary?.byCategory ?? []
@@ -444,6 +453,38 @@ export default function BilanFinancierPage() {
           </span>
         </div>
       </div>
+
+      {/* ── Matelas de sécurité ── */}
+      {snTarget != null && (
+        <div className={`rounded-xl shadow-sm border ${snAchieved ? 'border-emerald-200 bg-emerald-50' : 'border-indigo-200 bg-indigo-50'}`}>
+          <div className="px-6 py-4 space-y-2">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className={`text-sm font-bold uppercase tracking-widest ${snAchieved ? 'text-emerald-800' : 'text-indigo-800'}`}>
+                  Matelas de sécurité
+                </span>
+                <p className={`text-xs mt-0.5 ${snAchieved ? 'text-emerald-600' : 'text-indigo-500'}`}>
+                  Livrets & Liquidités — objectif {snTarget.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €
+                </p>
+              </div>
+              <div className="text-right">
+                <span className={`text-2xl font-bold ${snAchieved ? 'text-emerald-700' : 'text-indigo-700'}`}>
+                  {snPct.toFixed(0)} %{snAchieved ? ' ✓' : ''}
+                </span>
+                <p className={`text-xs mt-0.5 amount ${snAchieved ? 'text-emerald-500' : 'text-indigo-400'}`}>
+                  {fmt(snLivretLiquidite)} €
+                </p>
+              </div>
+            </div>
+            <div className={`w-full rounded-full h-2 ${snAchieved ? 'bg-emerald-200' : 'bg-indigo-200'}`}>
+              <div
+                className={`h-2 rounded-full transition-all ${snAchieved ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                style={{ width: `${snPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Ratio de couverture ── */}
       {ratioCouverture != null && (

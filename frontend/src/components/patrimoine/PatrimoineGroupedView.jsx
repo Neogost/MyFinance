@@ -418,6 +418,25 @@ export function PatrimoineLegend() {
           <strong className="font-semibold text-gray-600">Valeur actuelle</strong> : estimation au cours du jour (ou valeur estimée manuelle pour l'immo).{' '}
           <strong className="font-semibold text-gray-600">Investi</strong> : somme nette apportée, déduction faite des ventes partielles.
         </LegendItem>
+        <LegendItem term="Barre de stratégie (cartes de répartition)">
+          Avancement vers l'objectif patrimonial défini par catégorie (bouton « Stratégie & Objectifs »).
+          Basée sur vos propres positions, même en mode Foyer.
+          <span className="flex flex-wrap gap-2 mt-1">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">En cours</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Atteint</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">Dépassé</span>
+          </span>
+        </LegendItem>
+        <LegendItem term="Indicateur Matelas (cartes LIVRET & LIQUIDITE)">
+          Progression vers l'objectif de matelas de sécurité configuré dans votre profil.
+          Le pourcentage est calculé sur la somme combinée de vos positions LIVRET et LIQUIDITE actives.
+          <Formula>Matelas % = (LIVRET + LIQUIDITE) ÷ Objectif × 100</Formula>
+        </LegendItem>
+        <LegendItem term="D{n}/10 — Positionnement INSEE">
+          Décile de patrimoine selon l'Enquête Patrimoine INSEE 2021-2022, pour votre tranche d'âge.
+          D1 = 10 % les moins dotés, D10 = 10 % les plus dotés.
+          En mode Foyer, la comparaison porte sur la moyenne par membre.
+        </LegendItem>
       </div>
     </div>
   )

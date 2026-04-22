@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react'
 import {
   getPositions, createPosition, updatePosition,
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
-  getSnapshots, getReferentiel,
+  getSnapshots, getReferentiel, getPatrimoineTargets,
 } from '../../api/patrimoine'
+import { getExpenseSummary } from '../../api/expenses'
+import { getSalaryContracts } from '../../api/income'
+import { computeSafetyNetTarget } from '../../utils/safetyNet'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { CATEGORY_META, PROJECTION_RATES } from './constants'
 import { fmt, Tooltip } from './utils'
@@ -15,6 +18,8 @@ import InstrumentPriceUpdateModal from './InstrumentPriceUpdateModal'
 import ExchangeRateUpdateModal from './ExchangeRateUpdateModal'
 import SnapshotPanel from './SnapshotPanel'
 import PatrimoineGroupedView, { PatrimoineLegend } from './PatrimoineGroupedView'
+import PatrimoineStrategyModal from './PatrimoineStrategyModal'
+import CategoryStrategyBar from './CategoryStrategyBar'
 
 
 export default function PatrimoinePage({ currentUser, familyMode }) {
@@ -27,7 +32,11 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const [showPriceUpdate, setShowPriceUpdate]               = useState(false)
   const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
   const [showSnapshots, setShowSnapshots]                   = useState(false)
-  const [referentiel,   setReferentiel]                     = useState(null)
+  const [showStrategy, setShowStrategy]                     = useState(false)
+  const [targets, setTargets]                               = useState({})
+  const [referentiel,      setReferentiel]      = useState(null)
+  const [snExpensesSummary, setSnExpensesSummary] = useState(null)
+  const [snActiveContract,  setSnActiveContract]  = useState(null)
   const [filter, setFilter]                   = useState('ALL')
   const [showClosed, setShowClosed]           = useState(false)
   const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('patrimoine.viewMode') ?? 'grouped')
@@ -42,7 +51,17 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
-  useEffect(() => { fetchPositions(); fetchSnapshots(); fetchReferentiel() }, [])
+  useEffect(() => {
+    fetchPositions(); fetchSnapshots(); fetchReferentiel(); fetchTargets()
+    const mode = currentUser?.safetyNetMode
+    if (mode === 'MONTHS_EXPENSES') {
+      getExpenseSummary().then(setSnExpensesSummary).catch(() => {})
+    } else if (mode === 'MONTHS_SALARY') {
+      getSalaryContracts()
+        .then(cs => setSnActiveContract(cs.find(c => c.endDate == null) ?? null))
+        .catch(() => {})
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!familyMode) { setFamilyMembers([]); return }
@@ -84,6 +103,14 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       setReferentiel(await getReferentiel())
     } catch {
       // référentiel non critique
+    }
+  }
+
+  async function fetchTargets() {
+    try {
+      setTargets(await getPatrimoineTargets())
+    } catch {
+      // objectifs non critiques
     }
   }
 
@@ -185,6 +212,18 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       }, {})
   ).sort(([, a], [, b]) => b - a)
 
+  const ownActivePositions = positions.filter(p => p.status === 'ACTIVE')
+
+  // ── Matelas de sécurité ──────────────────────────────────────
+  const snLivretLiquidite = ownActivePositions
+    .filter(p => p.category === 'LIVRET' || p.category === 'LIQUIDITE')
+    .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+
+  const snTarget = computeSafetyNetTarget(currentUser, snExpensesSummary, snActiveContract)
+
+  const snPct      = snTarget != null ? Math.min((snLivretLiquidite / snTarget) * 100, 100) : null
+  const snAchieved = snPct != null && snLivretLiquidite >= snTarget
+
   const categoryStats = CATEGORY_ORDER
     .map(cat => {
       const catActive  = active.filter(p => p.category === cat)
@@ -193,9 +232,15 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       const gain       = catAll.reduce((s, p)    => s + parseFloat(p.computed?.capitalGainEur     ?? 0), 0)
       const invested   = catAll.reduce((s, p)    => s + parseFloat(p.computed?.investedAmountEur  ?? 0), 0)
       const gainPct    = invested !== 0 ? (gain / Math.abs(invested)) * 100 : null
-      return { cat, value, gain, invested, gainPct }
+      const ownValue   = ownActivePositions
+        .filter(p => p.category === cat)
+        .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
+      return { cat, value, gain, invested, gainPct, ownValue }
     })
     .filter(({ value }) => value > 0)
+
+  // Affiche l'indicateur matelas une seule fois, sur la première carte LIQUIDITE ou LIVRET présente
+  const snIndicatorCat = categoryStats.find(s => s.cat === 'LIQUIDITE' || s.cat === 'LIVRET')?.cat ?? null
 
   // Projection annuelle : valeur actuelle × taux moyen par catégorie
   const projectionByCategory = CATEGORY_ORDER
@@ -279,6 +324,10 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
               Mettre à jour les cours
             </button>
           )}
+          <button onClick={() => setShowStrategy(true)}
+            className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg text-sm font-semibold hover:bg-gray-50 transition">
+            Stratégie & Objectifs
+          </button>
           <button onClick={() => setFormTarget(null)}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
             + Ajouter une position
@@ -401,11 +450,11 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       {/* ── Répartition par catégorie ── */}
       {categoryStats.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          {categoryStats.map(({ cat, value, gain, gainPct }) => {
+          {categoryStats.map(({ cat, value, gain, gainPct, ownValue }) => {
             const meta     = CATEGORY_META[cat]
             const showGain = gain !== 0
             return (
-              <div key={cat} className="bg-white rounded-xl shadow-sm p-3">
+              <div key={cat} className="bg-white rounded-xl shadow-sm p-3 flex flex-col">
                 <p className="flex items-center gap-1.5 mb-2">
                   <span className="text-base">{meta.icon}</span>
                   <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${meta.color}`}>{meta.label}</span>
@@ -426,6 +475,27 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                     )}
                   </p>
                 )}
+                {snPct != null && cat === snIndicatorCat && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className={`${snAchieved ? 'text-emerald-600' : 'text-indigo-600'}`}>
+                        Matelas · LIVRET + LIQUIDITE
+                      </span>
+                      <span className={snAchieved ? 'text-emerald-600 font-semibold' : 'text-indigo-600'}>
+                        {snPct.toFixed(0)} %{snAchieved ? ' ✓' : ''}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full ${snAchieved ? 'bg-emerald-500' : 'bg-indigo-400'}`}
+                        style={{ width: `${snPct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="mt-auto">
+                  <CategoryStrategyBar currentValue={ownValue} target={targets[cat] ?? null} />
+                </div>
               </div>
             )
           })}
@@ -573,6 +643,14 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
 
       {showSnapshots && (
         <SnapshotPanel onClose={() => setShowSnapshots(false)} />
+      )}
+
+      {showStrategy && (
+        <PatrimoineStrategyModal
+          targets={targets}
+          onClose={() => setShowStrategy(false)}
+          onSave={setTargets}
+        />
       )}
     </div>
   )

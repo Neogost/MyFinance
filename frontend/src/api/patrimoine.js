@@ -45,6 +45,11 @@ export const createSnapshotForAll   = (data)  => api.post('/api/portfolio/snapsh
 
 export const getReferentiel = () => api.get('/api/patrimoine/referentiel').then(r => r.data)
 
+// ── Stratégie & Objectifs ──────────────────────────────────────
+
+export const getPatrimoineTargets  = ()        => api.get('/api/patrimoine/targets').then(r => r.data)
+export const savePatrimoineTargets = (targets) => api.put('/api/patrimoine/targets', targets).then(r => r.data)
+
 // ── Admin — Snapshots ──────────────────────────────────────────
 
 export const getAdminSnapshots       = (userId)       => api.get('/api/admin/snapshots', { params: { userId } }).then(r => r.data)
