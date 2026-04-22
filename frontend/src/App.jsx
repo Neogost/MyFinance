@@ -20,6 +20,7 @@ import LoginHistoryPage from './components/admin/LoginHistoryPage'
 import AdminFamilyGroupPage from './components/admin/AdminFamilyGroupPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
+import DettePage from './components/debts/DettePage'
 import { logout, getMe } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 
@@ -115,6 +116,8 @@ export default function App() {
         {currentPage === 'expenses'    && <RecurringExpensePage />}
 
         {currentPage === 'possessions' && <PossessionPage />}
+
+        {currentPage === 'dettes'      && <DettePage />}
 
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 

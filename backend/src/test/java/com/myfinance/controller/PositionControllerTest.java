@@ -50,12 +50,12 @@ class PositionControllerTest {
         livretDto = new PositionDto(
                 1L, AssetCategory.LIVRET, "BNP Parisbas", "Livret A", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.00"), null, true, PositionStatus.ACTIVE,
+                null, new BigDecimal("3.00"), null, true, PositionStatus.ACTIVE,
                 LocalDateTime.now(), null, zeroComputed);
 
         liquiditeDto = new PositionDto(
                 2L, AssetCategory.LIQUIDITE, "Swile", "Ticket Restaurant", "EUR",
-                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null,
                 new BigDecimal("525.79"), false, PositionStatus.ACTIVE,
                 LocalDateTime.now(), null,
                 new PositionComputedDto(
@@ -137,7 +137,7 @@ class PositionControllerTest {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIVRET, "BNP Parisbas", "Livret A", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.00"), null, true);
+                null, new BigDecimal("3.00"), null, true);
 
         when(positionService.create(any(), any())).thenReturn(livretDto);
 
@@ -154,7 +154,7 @@ class PositionControllerTest {
     void create_liquidite_retourne201() throws Exception {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIQUIDITE, "Swile", "Ticket Restaurant", "EUR",
-                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null,
                 new BigDecimal("525.79"), false);
 
         when(positionService.create(any(), any())).thenReturn(liquiditeDto);
@@ -172,7 +172,7 @@ class PositionControllerTest {
     void create_sansLabel_retourne400() throws Exception {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIVRET, "BNP Parisbas", "", "EUR",
-                null, null, null, null, null, null, null, null, null, null, false);
+                null, null, null, null, null, null, null, null, null, null, null, false);
 
         mockMvc.perform(post("/api/positions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -188,12 +188,12 @@ class PositionControllerTest {
         UpdatePositionRequest request = new UpdatePositionRequest(
                 "BNP Parisbas", "Livret A modifié", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.50"), true);
+                null, new BigDecimal("3.50"), true);
 
         PositionDto updated = new PositionDto(
                 1L, AssetCategory.LIVRET, "BNP Parisbas", "Livret A modifié", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.50"), null, true, PositionStatus.ACTIVE,
+                null, new BigDecimal("3.50"), null, true, PositionStatus.ACTIVE,
                 LocalDateTime.now(), null, zeroComputed);
 
         when(positionService.update(eq(1L), any(), any())).thenReturn(updated);
@@ -215,7 +215,7 @@ class PositionControllerTest {
 
         PositionDto updated = new PositionDto(
                 2L, AssetCategory.LIQUIDITE, "Swile", "Ticket Restaurant", "EUR",
-                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null,
                 new BigDecimal("612.00"), false, PositionStatus.ACTIVE,
                 LocalDateTime.now(), null,
                 new PositionComputedDto(
@@ -253,7 +253,7 @@ class PositionControllerTest {
         PositionDto updated = new PositionDto(
                 4L, AssetCategory.IMMO_PHYSIQUE, null, "Appartement", "EUR",
                 null, null, null, OwnershipType.PLEINE_PROPRIETE, "12 Rue X",
-                new BigDecimal("120000"), null, null, null, null, false, PositionStatus.ACTIVE,
+                new BigDecimal("120000"), null, null, null, null, null, false, PositionStatus.ACTIVE,
                 LocalDateTime.now(), null,
                 new PositionComputedDto(BigDecimal.ZERO, new BigDecimal("120000"),
                         new BigDecimal("120000"), null, null));
@@ -275,7 +275,7 @@ class PositionControllerTest {
         PositionDto closed = new PositionDto(
                 1L, AssetCategory.LIVRET, "BNP Parisbas", "Livret A", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.00"), null, true, PositionStatus.CLOSED,
+                null, new BigDecimal("3.00"), null, true, PositionStatus.CLOSED,
                 LocalDateTime.now(), null, zeroComputed);
 
         when(positionService.close(eq(1L), any())).thenReturn(closed);

@@ -5,6 +5,7 @@ import { getPositions } from '../../api/patrimoine'
 import { simulateTax } from '../../api/tools'
 import { getExpenseSummary } from '../../api/expenses'
 import { getPossessionsSummary } from '../../api/possessions'
+import { getDebtsSummary } from '../../api/debts'
 import { PROJECTION_RATES } from '../patrimoine/constants'
 
 const ASSET_LABELS = {
@@ -29,6 +30,14 @@ const EXPENSE_LABELS = {
   FAMILLE:      'Famille',
   EPARGNE:      'Épargne',
   AUTRE:        'Autre',
+}
+
+const DETTE_TYPE_LABELS = {
+  IMMOBILIER:   'Emprunt immobilier',
+  ETUDIANT:     'Prêt étudiant',
+  VEHICULE:     'Crédit véhicule',
+  CONSOMMATION: 'Crédit consommation',
+  AUTRE:        'Autre dette',
 }
 
 const POSSESSION_LABELS = {
@@ -96,19 +105,21 @@ export default function BilanFinancierPage({ user }) {
   const [taxResult,         setTaxResult]         = useState(null)
   const [expenseSummary,    setExpenseSummary]    = useState(null)
   const [possessionSummary, setPossessionSummary] = useState(null)
+  const [debtsSummary,      setDebtsSummary]      = useState(null)
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     try {
       setLoading(true)
-      const [c, oi, pos, tax, exp, poss] = await Promise.all([
+      const [c, oi, pos, tax, exp, poss, debts] = await Promise.all([
         getSalaryContracts(),
         getOtherIncomes(),
         getPositions({ status: 'ACTIVE' }),
         simulateTax().catch(() => null),
         getExpenseSummary(),
         getPossessionsSummary(),
+        getDebtsSummary().catch(() => null),
       ])
       setContracts(c)
       setOtherIncomes(oi)
@@ -116,6 +127,7 @@ export default function BilanFinancierPage({ user }) {
       setTaxResult(tax)
       setExpenseSummary(exp)
       setPossessionSummary(poss)
+      setDebtsSummary(debts)
     } catch {
       setError('Impossible de charger les données du bilan.')
     } finally {
@@ -221,9 +233,11 @@ export default function BilanFinancierPage({ user }) {
   const snPct      = snTarget != null ? Math.min((snLivretLiquidite / snTarget) * 100, 100) : null
   const snAchieved = snPct != null && snLivretLiquidite >= snTarget
 
-  // ── Passif (possessions + immobilier physique) ────────────────────
-  const passifByCategory = possessionSummary?.byCategory ?? []
-  const totalPassif = (possessionSummary?.totalEffectiveValue ?? 0) + immoPhysiqueValue
+  // ── Passif (possessions + immobilier physique + dettes) ──────────
+  const passifByCategory  = possessionSummary?.byCategory ?? []
+  const totalDettes       = debtsSummary?.totalRemainingCapital ?? 0
+  const dettesByType      = debtsSummary?.byType ?? []
+  const totalPassif       = (possessionSummary?.totalEffectiveValue ?? 0) + immoPhysiqueValue + totalDettes
 
   if (loading) return <p className="text-gray-500 text-sm">Chargement du bilan…</p>
   if (error)   return (
@@ -395,7 +409,7 @@ export default function BilanFinancierPage({ user }) {
           </div>
           <table className="w-full border-collapse">
             <tbody>
-              {passifByCategory.length === 0 && immoPhysiqueValue === 0 && (
+              {passifByCategory.length === 0 && immoPhysiqueValue === 0 && totalDettes === 0 && (
                 <tr>
                   <td colSpan={2} className="px-4 py-4 text-sm text-gray-400 text-center italic">
                     Aucun passif renseigné
@@ -423,6 +437,23 @@ export default function BilanFinancierPage({ user }) {
                   </tr>
                 ))
               }
+              {totalDettes > 0 && (
+                <>
+                  <tr className="border-t border-gray-200 bg-red-50">
+                    <td className="px-4 py-2 text-xs font-semibold text-red-600 uppercase tracking-wide" colSpan={2}>
+                      Dettes — capital restant dû
+                    </td>
+                  </tr>
+                  {dettesByType.map(d => (
+                    <tr key={d.type} className="border-t border-gray-100 hover:bg-red-50 transition">
+                      <td className="px-4 py-2 text-sm text-gray-700 pl-6">{DETTE_TYPE_LABELS[d.type] ?? d.type}</td>
+                      <td className="px-4 py-2 text-sm font-semibold text-red-600 text-right">
+                        <span className="amount">− {fmt(d.totalRemainingCapital)} €</span>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
           </table>
           <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-4 py-2.5">

@@ -99,7 +99,7 @@ class AdminSnapshotServiceTest {
     @Test
     void findActivePositionsByUser_retourneLesPositionsActives() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE))
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user))
                 .thenReturn(List.of(livret, liquidite));
 
         List<PositionAdminRefDto> result = adminSnapshotService.findAllPositionsByUser(1L);

@@ -60,6 +60,12 @@ mindmap
         Mobilier
         Collection
         Loisirs
+    Dettes
+        Emprunt immobilier (lié à un bien IMMO_PHYSIQUE)
+        Prêt étudiant
+        Crédit véhicule
+        Crédit consommation
+        Taux assurance emprunteur
     Patrimoine
         Bourse
         Crypto-monnaie
@@ -167,6 +173,17 @@ Recensement des biens matériels (voiture, informatique, mobilier…). Décote e
 |---------------|------|
 | Architecture | [`docs/architecture/passifs.md`](passifs.md) |
 | API | [`docs/api/possessions.md`](../api/possessions.md) |
+
+---
+
+### 3.6b Dettes
+
+Recensement des dettes financières (emprunt immobilier, prêt étudiant, crédit véhicule, crédit à la consommation). Chaque dette porte un taux d'intérêt annuel et un **taux d'assurance emprunteur** pour calculer le coût mensuel total. Un emprunt immobilier peut être **lié à une position `IMMO_PHYSIQUE`** pour afficher la valeur nette du bien (valeur estimée − capital restant dû). Le total des dettes entre dans le calcul du **patrimoine net**, du **bilan financier** et du **simulateur de crise**.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/dettes.md`](dettes.md) |
+| API | [`docs/api/debts.md`](../api/debts.md) |
 
 ---
 

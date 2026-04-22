@@ -156,7 +156,7 @@ class PositionServiceTest {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIVRET, "BNP Parisbas", "Livret A", "EUR",
                 FiscalEnvelope.NONE, null, null, null, null, null, null, null,
-                new BigDecimal("3.00"), null, true);
+                null, new BigDecimal("3.00"), null, true);
 
         when(positionRepository.save(any(Position.class))).thenAnswer(inv -> {
             Position p = inv.getArgument(0);
@@ -182,7 +182,7 @@ class PositionServiceTest {
     void create_liquidite_initialiseLeBalance() {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIQUIDITE, "Swile", "Ticket Restaurant", "EUR",
-                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null,
                 new BigDecimal("525.79"), false);
 
         when(positionRepository.save(any(Position.class))).thenAnswer(inv -> {
@@ -208,7 +208,7 @@ class PositionServiceTest {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.BOURSE, "SaxoBank", "Lyxor PEA", "EUR",
                 FiscalEnvelope.PEA, 10L, AssetSubType.ETF, null, null, null, null, null,
-                null, null, false);
+                null, null, null, false);
 
         when(instrumentRepository.findById(10L)).thenReturn(Optional.of(instrument));
         when(positionRepository.save(any(Position.class))).thenAnswer(inv -> {
@@ -235,7 +235,7 @@ class PositionServiceTest {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.BOURSE, "SaxoBank", "ETF", "EUR",
                 FiscalEnvelope.PEA, 99L, AssetSubType.ETF, null, null, null, null, null,
-                null, null, false);
+                null, null, null, false);
 
         when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
 

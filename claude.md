@@ -116,6 +116,8 @@ frontend/src/
 - API historique des connexions : `docs/api/login-history.md`
 - Regroupement familial (architecture) : `docs/architecture/family-group.md`
 - API regroupement familial : `docs/api/family-group.md`
+- Gestion des dettes (architecture) : `docs/architecture/dettes.md`
+- API dettes : `docs/api/debts.md`
 
 ## Endpoints backend existants
 
@@ -284,6 +286,19 @@ frontend/src/
 | `POST` | `/api/possessions` | Authentifié | Créer une possession |
 | `PUT` | `/api/possessions/{id}` | Authentifié | Modifier une possession (ownership vérifié) |
 | `DELETE` | `/api/possessions/{id}` | Authentifié | Supprimer une possession (ownership vérifié) |
+
+### Dettes
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/debts` | Authentifié | Liste ses dettes (avec capital restant et tableau d'amortissement) |
+| `GET` | `/api/debts/{id}` | Authentifié | Détail d'une dette + nextMonthsSchedule |
+| `GET` | `/api/debts/summary` | Authentifié | Synthèse : totaux + répartition par type |
+| `POST` | `/api/debts` | Authentifié | Créer une dette |
+| `PUT` | `/api/debts/{id}` | Authentifié | Modifier une dette (ownership vérifié) |
+| `DELETE` | `/api/debts/{id}` | Authentifié | Supprimer une dette (ownership vérifié) |
+| `GET` | `/api/debts/{id}/balance-entries` | Authentifié | Historique des mises à jour manuelles du capital |
+| `POST` | `/api/debts/{id}/balance-entries` | Authentifié | Ajouter une mise à jour manuelle (met à jour remainingCapitalOverride) |
+| `DELETE` | `/api/debts/{id}/balance-entries/{entryId}` | Authentifié | Supprimer une entrée (recalcule le dernier override actif) |
 
 ### Patrimoine — Snapshots (admin — gestion manuelle)
 | Méthode | URL | Rôle requis | Description |
@@ -517,6 +532,21 @@ npm run dev
 - **Regroupement familial** (`FamilyGroup`) : spécification complète documentée — entités `FamilyGroup` + `FamilyGroupInvitation`, système d'invitation owner→membre (PENDING/ACCEPTED/REFUSED), toggle "Mode Foyer" de session dans la navigation, agrégation Patrimoine (sous-lignes dépliables par membre) et Tableau de bord, restriction co-emprunteur aux membres du groupe, gestion self-service via Mon Profil, modération ADMIN. Documentation : `docs/architecture/family-group.md`, `docs/api/family-group.md`
 
 - **Stratégie & Objectifs patrimoniaux** : objectifs cibles par catégorie persistés en base — entité `PatrimoineTarget` (`patrimoine_targets`, unicité `user_id + category`), `GET/PUT /api/patrimoine/targets` (upsert complet). Frontend : bouton "Stratégie & Objectifs" dans `PatrimoinePage`, modal `PatrimoineStrategyModal` (saisie par catégorie), `CategoryStrategyBar` sur chaque carte de résumé (indigo si en cours, emerald si atteint, rouge si dépassé). Tests : `PatrimoineTargetServiceTest` + `PatrimoineTargetControllerTest`. Documentation : `docs/architecture/patrimoine-strategy.md`
+
+- **Dettes** :
+  - Entité `Debt` (table `debts`) + `DebtBalanceEntry` (table `debt_balance_entries`) avec `DebtTypeEnum` (IMMOBILIER, ETUDIANT, VEHICULE, CONSOMMATION, AUTRE)
+  - Deux modes de suivi du capital : projection automatique (formule d'amortissement `B(n) = P*(1+r)^n − M*((1+r)^n − 1)/r`) ou override manuel via `remainingCapitalOverride`
+  - `DebtDto` calcule à la volée : `remainingCapital`, `isManualOverride`, `monthlyInsurance`, `monthlyTotal`, `progressPercent`, `nextMonthsSchedule` (tableau 12 mois)
+  - `DebtBalanceEntry` : historique des mises à jour manuelles — chaque ajout/suppression recalcule `debt.remainingCapitalOverride` depuis la valeur la plus récente
+  - `GET /api/debts/summary` : totaux + répartition par type (`DebtSummaryDto`)
+  - **`DebtForm`** : champ "Lier à un bien immobilier" avec autocomplétion sur les positions `IMMO_PHYSIQUE` actives (filtrage temps réel, surlignage des caractères, item pré-sélectionné en édition) — remplace l'ancien champ ID numérique
+  - **`PositionCard`** (IMMO_PHYSIQUE liée à un crédit) : bloc rouge "Crédit lié — capital restant dû" + calcul de la **valeur nette** = valeur estimée − capital restant ; données chargées en parallèle dans `PatrimoinePage` via `GET /api/debts`
+  - **Bilan financier** : section Passif enrichie — dettes regroupées par type avec capital restant dû en rouge ; `totalPassif` inclut désormais `totalRemainingCapital` des dettes
+  - **Déclaration de patrimoine** : synthèse "Passifs & dettes" avec sous-lignes par type ; tableau "Dettes" en section dédiée (libellé, établissement, capital restant, mensualité par crédit)
+  - **Simulateur de crise** : `patrimoineNet = patrimoineBrut − (possessions + dettes)` — les dettes ne baissent pas en crise, amplifiant l'impact sur le patrimoine net
+  - Frontend : `DettePage` (4 KPIs, barres de répartition, liste groupée par type avec accordéon amortissement et historique manuel), bouton **Dettes** dans la navigation
+  - Tests : 533 tests (DebtServiceTest +15, DebtControllerTest +15 ; corrections de régressions : PositionControllerTest, PositionServiceTest, AdminSnapshotServiceTest, FamilyGroupServiceTest)
+  - Documentation : `docs/architecture/dettes.md`, `docs/api/debts.md`
 
 **À venir :**
 - Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)

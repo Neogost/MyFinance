@@ -57,6 +57,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void findMyGroup_retourneLe_Dto_siGroupe() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByFamilyGroup(group)).thenReturn(List.of(owner, member));
         when(invitationRepository.findByGroupOrderByCreatedAtDesc(group)).thenReturn(List.of());
 
@@ -79,6 +80,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void findMyGroupMembers_exclutLUtilisateurCourant() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByFamilyGroup(group)).thenReturn(List.of(owner, member));
 
         List<FamilyMemberDto> result = familyGroupService.findMyGroupMembers(owner);
@@ -119,6 +121,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void rename_leve403_siPasOwner() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         assertThatThrownBy(() -> familyGroupService.rename(new UpdateFamilyGroupRequest("Nouveau"), member))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
@@ -127,6 +130,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void rename_miseAJourLeNom() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(userRepository.findByFamilyGroup(group)).thenReturn(List.of(owner, member));
         when(invitationRepository.findByGroupOrderByCreatedAtDesc(group)).thenReturn(List.of());
@@ -140,6 +144,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void leave_leve403_siOwner() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         assertThatThrownBy(() -> familyGroupService.leave(owner))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
@@ -156,6 +161,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void leave_retireLeMembreEtSauvegarde() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         familyGroupService.leave(member);
@@ -168,6 +174,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void removeMember_leve403_siPasOwner() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         assertThatThrownBy(() -> familyGroupService.removeMember(1L, member))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
@@ -176,6 +183,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void removeMember_leve400_siMembreNAppartientPasAuGroupe() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findById(3L)).thenReturn(Optional.of(outsider));
 
         assertThatThrownBy(() -> familyGroupService.removeMember(3L, owner))
@@ -186,6 +194,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void removeMember_retireLeMembreCorrectement() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findById(2L)).thenReturn(Optional.of(member));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -198,6 +207,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void sendInvitation_leve404_siLoginInconnu() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("inconnu")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> familyGroupService.sendInvitation(
@@ -209,6 +219,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void sendInvitation_leve400_siDejaUnePendingExistante() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("marc")).thenReturn(Optional.of(outsider));
         FamilyGroupInvitation existante = FamilyGroupInvitation.builder()
                 .id(99L).group(group).invitedUser(outsider)
@@ -225,6 +236,7 @@ class FamilyGroupServiceTest {
 
     @Test
     void sendInvitation_creeEtRetourneLInvitation() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("marc")).thenReturn(Optional.of(outsider));
         when(invitationRepository.findByGroupAndInvitedUserAndStatus(group, outsider, InvitationStatus.PENDING))
                 .thenReturn(Optional.empty());

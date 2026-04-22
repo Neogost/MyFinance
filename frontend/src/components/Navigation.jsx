@@ -105,7 +105,9 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
         <NavBtn page="expenses"    label="Dépenses" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
-        <NavBtn page="possessions" label="Passifs"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+        <NavBtn page="possessions" label="Passifs"    currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+
+        <NavBtn page="dettes"      label="Dettes"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
         {/* ── Menu Outils avec sous-menu ── */}
         <div className="relative">

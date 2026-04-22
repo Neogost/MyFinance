@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS } from './constants'
 import { fmt, fmtUnits } from './utils'
 
-export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, linkedDebt }) {
   const meta   = CATEGORY_META[position.category] ?? {}
   const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c      = position.computed ?? {}
@@ -102,6 +102,25 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
           </div>
         )}
       </div>
+
+      {/* Valeur nette (IMMO_PHYSIQUE lié à un crédit) */}
+      {isImmoPhysique && linkedDebt && (() => {
+        const netValue = parseFloat(c.currentValueEur ?? 0) - parseFloat(linkedDebt.remainingCapital ?? 0)
+        return (
+          <div className="col-span-2 bg-red-50 border border-red-100 rounded-lg p-3 -mt-2">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-red-400">Crédit lié — {linkedDebt.label}</p>
+              <p className="text-sm font-semibold text-red-600 amount">− {fmt(linkedDebt.remainingCapital)}</p>
+            </div>
+            <div className="flex items-center justify-between border-t border-red-100 pt-1.5">
+              <p className="text-xs text-gray-500 font-medium">Valeur nette</p>
+              <p className={`text-base font-bold amount ${netValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                {fmt(netValue)}
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Adresse + date d'acquisition (IMMO_PHYSIQUE) */}
       {position.address && (

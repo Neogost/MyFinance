@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { getPositions } from '../../api/patrimoine'
 import { getPossessionsSummary } from '../../api/possessions'
+import { getDebtsSummary } from '../../api/debts'
 import { getExpenseSummary } from '../../api/expenses'
 import { getSalaryContracts } from '../../api/income'
 import { computeSafetyNetTarget } from '../../utils/safetyNet'
@@ -83,6 +84,7 @@ export default function CrisisSimulatorPage({ user }) {
   const [error,           setError]           = useState(null)
   const [categoryValues,  setCategoryValues]  = useState({})
   const [totalPassif,     setTotalPassif]     = useState(0)
+  const [totalDettes,     setTotalDettes]     = useState(0)
   const [monthlyExpenses, setMonthlyExpenses] = useState(0)
   const [activeContract,  setActiveContract]  = useState(null)
 
@@ -92,7 +94,8 @@ export default function CrisisSimulatorPage({ user }) {
       getPossessionsSummary(),
       getExpenseSummary(),
       getSalaryContracts(),
-    ]).then(([positions, possessions, expenses, contracts]) => {
+      getDebtsSummary().catch(() => null),
+    ]).then(([positions, possessions, expenses, contracts, debts]) => {
       const catVals = {}
       positions.forEach(p => {
         const val = parseFloat(p.computed?.currentValueEur ?? 0)
@@ -100,6 +103,7 @@ export default function CrisisSimulatorPage({ user }) {
       })
       setCategoryValues(catVals)
       setTotalPassif(possessions?.totalEffectiveValue ?? 0)
+      setTotalDettes(debts?.totalRemainingCapital ?? 0)
       setMonthlyExpenses(expenses?.totalMonthlyExpenses ?? 0)
       setActiveContract(contracts.find(c => c.endDate == null) ?? null)
     }).catch(() => setError('Impossible de charger les données.'))
@@ -129,8 +133,9 @@ export default function CrisisSimulatorPage({ user }) {
 
   const patrimoineBrutBefore = Object.values(categoryValues).reduce((s, v) => s + v, 0)
   const patrimoineBrutAfter  = Object.values(categoryImpact).reduce((s, v) => s + v.after, 0)
-  const patrimoineNetBefore  = patrimoineBrutBefore - totalPassif
-  const patrimoineNetAfter   = patrimoineBrutAfter  - totalPassif
+  const totalPassifEtDettes  = totalPassif + totalDettes
+  const patrimoineNetBefore  = patrimoineBrutBefore - totalPassifEtDettes
+  const patrimoineNetAfter   = patrimoineBrutAfter  - totalPassifEtDettes
   const totalLoss            = patrimoineBrutAfter - patrimoineBrutBefore
   const totalLossPct         = patrimoineBrutBefore > 0 ? totalLoss / patrimoineBrutBefore : 0
 

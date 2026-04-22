@@ -4,6 +4,7 @@ import {
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
   getSnapshots, getReferentiel, getPatrimoineTargets,
 } from '../../api/patrimoine'
+import { getDebts } from '../../api/debts'
 import { getExpenseSummary } from '../../api/expenses'
 import { getSalaryContracts } from '../../api/income'
 import { computeSafetyNetTarget } from '../../utils/safetyNet'
@@ -48,11 +49,13 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const [loading, setLoading]                 = useState(true)
   const [error, setError]                     = useState(null)
   const [familyMembers, setFamilyMembers]     = useState([]) // [{ id, firstName, lastName, positions }]
+  const [debts, setDebts]                     = useState([])
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
   useEffect(() => {
     fetchPositions(); fetchSnapshots(); fetchReferentiel(); fetchTargets()
+    getDebts().then(setDebts).catch(() => {})
     const mode = currentUser?.safetyNetMode
     if (mode === 'MONTHS_EXPENSES') {
       getExpenseSummary().then(setSnExpensesSummary).catch(() => {})
@@ -241,6 +244,9 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
 
   // Affiche l'indicateur matelas une seule fois, sur la première carte LIQUIDITE ou LIVRET présente
   const snIndicatorCat = categoryStats.find(s => s.cat === 'LIQUIDITE' || s.cat === 'LIVRET')?.cat ?? null
+
+  // Map positionId → dette pour afficher la valeur nette sur les cartes IMMO_PHYSIQUE
+  const debtByPositionId = debts.reduce((m, d) => d.positionId ? { ...m, [d.positionId]: d } : m, {})
 
   // Projection annuelle : valeur actuelle × taux moyen par catégorie
   const projectionByCategory = CATEGORY_ORDER
@@ -574,6 +580,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
               onUpdateBalance={setBalanceTarget}
               onUpdateEstimatedValue={setEstimatedTarget}
               onViewOrders={setOrdersTarget}
+              linkedDebt={debtByPositionId[position.id]}
             />
           ))}
         </div>
