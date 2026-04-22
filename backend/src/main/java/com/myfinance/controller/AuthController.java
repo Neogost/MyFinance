@@ -30,7 +30,7 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Non authentifié")
     @GetMapping("/me")
     public ResponseEntity<UserDto> me(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(UserDto.from(user));
+        return ResponseEntity.ok(UserDto.from(userService.findEntityById(user.getId())));
     }
 
     @Operation(summary = "Changer son mot de passe",

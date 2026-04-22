@@ -55,6 +55,21 @@ public class User implements UserDetails {
 
     private Float customProfessionalDeduction; // Montant frais réels (€), si useFlatRateDeduction = false
 
+    // ── Déclaration de patrimoine ──────────────────────────────
+
+    private String birthPlace;
+    private String birthPostalCode;
+    private String jobTitle;
+
+    // ── Matelas de sécurité ────────────────────────────────────
+
+    @Enumerated(EnumType.STRING)
+    private SafetyNetMode safetyNetMode;
+
+    private Double safetyNetMonths; // Utilisé pour MONTHS_EXPENSES et MONTHS_SALARY
+
+    private Double safetyNetAmount; // Utilisé pour FIXED_AMOUNT
+
     // ── Regroupement familial ──────────────────────────────────
 
     @ToString.Exclude

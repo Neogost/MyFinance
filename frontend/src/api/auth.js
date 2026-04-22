@@ -19,3 +19,6 @@ export async function getMe() {
   const { data } = await api.get('/api/auth/me')
   return data
 }
+
+export const updateSafetyNet    = (data) => api.put('/api/profile/safety-net',    data).then(r => r.data)
+export const updatePersonalInfo = (data) => api.put('/api/profile/personal-info', data).then(r => r.data)

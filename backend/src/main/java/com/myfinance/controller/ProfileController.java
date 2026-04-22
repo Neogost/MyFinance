@@ -1,0 +1,46 @@
+package com.myfinance.controller;
+
+import com.myfinance.domain.User;
+import com.myfinance.dto.UpdatePersonalInfoRequest;
+import com.myfinance.dto.UpdateSafetyNetRequest;
+import com.myfinance.dto.UserDto;
+import com.myfinance.service.ProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/profile")
+@RequiredArgsConstructor
+@Tag(name = "Profil", description = "Paramètres personnels de l'utilisateur connecté")
+public class ProfileController {
+
+    private final ProfileService profileService;
+
+    @Operation(summary = "Mettre à jour le matelas de sécurité")
+    @ApiResponse(responseCode = "200", description = "Paramètres mis à jour",
+        content = @Content(schema = @Schema(implementation = UserDto.class)))
+    @ApiResponse(responseCode = "400", description = "Données invalides")
+    @PutMapping("/safety-net")
+    public ResponseEntity<UserDto> updateSafetyNet(
+            @RequestBody UpdateSafetyNetRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(profileService.updateSafetyNet(currentUser, request));
+    }
+
+    @Operation(summary = "Mettre à jour les informations personnelles")
+    @ApiResponse(responseCode = "200", description = "Informations mises à jour",
+        content = @Content(schema = @Schema(implementation = UserDto.class)))
+    @PutMapping("/personal-info")
+    public ResponseEntity<UserDto> updatePersonalInfo(
+            @RequestBody UpdatePersonalInfoRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(profileService.updatePersonalInfo(currentUser, request));
+    }
+}
