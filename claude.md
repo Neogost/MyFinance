@@ -114,6 +114,8 @@ frontend/src/
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 - Historique des connexions (architecture) : `docs/architecture/login-history.md`
 - API historique des connexions : `docs/api/login-history.md`
+- Regroupement familial (architecture) : `docs/architecture/family-group.md`
+- API regroupement familial : `docs/api/family-group.md`
 
 ## Endpoints backend existants
 
@@ -247,6 +249,31 @@ frontend/src/
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
 | `GET` | `/api/admin/login-history` | ADMIN | Liste paginée des événements de connexion (filtres : login, type, from, to, page, size) |
+
+### Regroupement familial
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/family-groups/my` | Authentifié | Groupe de l'utilisateur connecté (null si aucun) |
+| `GET` | `/api/family-groups/my/members` | Authentifié | Membres du groupe hors soi-même (pour co-emprunteur) |
+| `POST` | `/api/family-groups` | Authentifié | Créer un groupe (l'appelant devient owner) |
+| `PUT` | `/api/family-groups/my` | Authentifié (owner) | Renommer son groupe |
+| `DELETE` | `/api/family-groups/my` | Authentifié (owner) | Dissoudre son groupe |
+| `DELETE` | `/api/family-groups/my/leave` | Authentifié (non-owner) | Quitter son groupe |
+| `DELETE` | `/api/family-groups/my/members/{userId}` | Authentifié (owner) | Retirer un membre |
+| `POST` | `/api/family-groups/my/invitations` | Authentifié (owner) | Inviter un utilisateur par login |
+| `GET` | `/api/family-groups/invitations/pending` | Authentifié | Invitations reçues en attente |
+| `POST` | `/api/family-groups/invitations/{id}/accept` | Authentifié | Accepter une invitation |
+| `POST` | `/api/family-groups/invitations/{id}/refuse` | Authentifié | Refuser une invitation |
+| `GET` | `/api/admin/family-groups` | ADMIN | Liste tous les groupes avec membres |
+| `GET` | `/api/admin/family-groups/{id}` | ADMIN | Détail d'un groupe (membres + invitations) |
+| `DELETE` | `/api/admin/family-groups/{id}` | ADMIN | Supprimer un groupe (modération) |
+| `DELETE` | `/api/admin/family-groups/{id}/members/{userId}` | ADMIN | Retirer un membre (modération) |
+
+### Stratégie & Objectifs patrimoniaux
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/patrimoine/targets` | Authentifié | Objectifs cibles par catégorie (`Map<String, Double>`) |
+| `PUT` | `/api/patrimoine/targets` | Authentifié | Remplace l'intégralité des objectifs (upsert) |
 
 ### Passifs (grandes possessions)
 | Méthode | URL | Rôle requis | Description |
@@ -487,6 +514,10 @@ npm run dev
   - Tests : (LoginHistoryServiceTest +9, AdminLoginHistoryControllerTest +5)
   - Documentation : `docs/architecture/login-history.md`, `docs/api/login-history.md`
 
+- **Regroupement familial** (`FamilyGroup`) : spécification complète documentée — entités `FamilyGroup` + `FamilyGroupInvitation`, système d'invitation owner→membre (PENDING/ACCEPTED/REFUSED), toggle "Mode Foyer" de session dans la navigation, agrégation Patrimoine (sous-lignes dépliables par membre) et Tableau de bord, restriction co-emprunteur aux membres du groupe, gestion self-service via Mon Profil, modération ADMIN. Documentation : `docs/architecture/family-group.md`, `docs/api/family-group.md`
+
+- **Stratégie & Objectifs patrimoniaux** : objectifs cibles par catégorie persistés en base — entité `PatrimoineTarget` (`patrimoine_targets`, unicité `user_id + category`), `GET/PUT /api/patrimoine/targets` (upsert complet). Frontend : bouton "Stratégie & Objectifs" dans `PatrimoinePage`, modal `PatrimoineStrategyModal` (saisie par catégorie), `CategoryStrategyBar` sur chaque carte de résumé (indigo si en cours, emerald si atteint, rouge si dépassé). Tests : `PatrimoineTargetServiceTest` + `PatrimoineTargetControllerTest`. Documentation : `docs/architecture/patrimoine-strategy.md`
+
 **À venir :**
-- Regroupements familiaux (`FamilyGroup`)
+- Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)
 - Scheduler Yahoo Finance / CoinGecko (mise à jour des prix marché)
