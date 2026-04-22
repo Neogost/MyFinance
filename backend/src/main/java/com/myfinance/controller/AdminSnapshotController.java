@@ -55,9 +55,9 @@ public class AdminSnapshotController {
         adminSnapshotService.delete(id);
     }
 
-    /** GET /api/admin/users/{userId}/positions — positions actives d'un utilisateur */
+    /** GET /api/admin/users/{userId}/positions — toutes les positions d'un utilisateur (actives + fermées) */
     @GetMapping("/api/admin/users/{userId}/positions")
-    public List<PositionAdminRefDto> findActivePositions(@PathVariable Long userId) {
-        return adminSnapshotService.findActivePositionsByUser(userId);
+    public List<PositionAdminRefDto> findAllPositions(@PathVariable Long userId) {
+        return adminSnapshotService.findAllPositionsByUser(userId);
     }
 }

@@ -37,11 +37,11 @@ public class AdminSnapshotService {
         return AdminSnapshotDetailDto.from(getSnapshot(id));
     }
 
-    public List<PositionAdminRefDto> findActivePositionsByUser(Long userId) {
+    public List<PositionAdminRefDto> findAllPositionsByUser(Long userId) {
         User user = getUser(userId);
-        return positionRepository.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE)
+        return positionRepository.findByUserOrderByCreatedAtDesc(user)
                 .stream()
-                .map(p -> new PositionAdminRefDto(p.getId(), p.getLabel(), p.getPartner(), p.getCategory()))
+                .map(p -> new PositionAdminRefDto(p.getId(), p.getLabel(), p.getPartner(), p.getCategory(), p.getStatus()))
                 .toList();
     }
 

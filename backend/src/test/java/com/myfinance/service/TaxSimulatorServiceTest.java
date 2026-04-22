@@ -107,8 +107,8 @@ class TaxSimulatorServiceTest {
         SalaryContract contract = SalaryContract.builder()
                 .annualGrossSalary(40000f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -129,8 +129,8 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_avecContrat_leve400_siAucunContratActif() {
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.empty());
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of());
 
         assertThatThrownBy(() ->
                 taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null))
@@ -179,8 +179,8 @@ class TaxSimulatorServiceTest {
                 .id(1L).type(OtherIncomeTypeEnum.LOCATIF)
                 .amount(5000f).isTaxable(true).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(locatif));
 
@@ -200,8 +200,8 @@ class TaxSimulatorServiceTest {
                 .id(2L).type(OtherIncomeTypeEnum.DIVIDENDE)
                 .amount(10000f).isTaxable(true).specificTaxRate(12.8f).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(dividende));
 
@@ -219,8 +219,8 @@ class TaxSimulatorServiceTest {
                 .id(3L).type(OtherIncomeTypeEnum.AIDE_SOCIALE)
                 .amount(2000f).isTaxable(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(nonImposable));
 
@@ -241,8 +241,8 @@ class TaxSimulatorServiceTest {
         OtherIncome income2 = OtherIncome.builder().id(2L).type(OtherIncomeTypeEnum.DIVIDENDE)
                 .amount(5000f).isTaxable(true).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(income1, income2));
 
@@ -260,8 +260,8 @@ class TaxSimulatorServiceTest {
         // netTaxable = max(0, 820,09 - 504) = 316,09
         SalaryContract contract = SalaryContract.builder().annualGrossSalary(1000f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -281,8 +281,8 @@ class TaxSimulatorServiceTest {
 
         SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -305,8 +305,8 @@ class TaxSimulatorServiceTest {
 
         SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -325,8 +325,8 @@ class TaxSimulatorServiceTest {
     void simulate_calculeLeTauxEffectif() {
         SalaryContract contract = SalaryContract.builder().annualGrossSalary(40000f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -340,8 +340,8 @@ class TaxSimulatorServiceTest {
     void simulate_tauxEffectifZero_siAucunRevenu() {
         SalaryContract contract = SalaryContract.builder().annualGrossSalary(0f).isCadre(false).build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of());
 
@@ -414,8 +414,8 @@ class TaxSimulatorServiceTest {
                 .annualGrossSalary(48000f).label("Augmentation 2025")
                 .build();
 
-        when(salaryContractRepository.findByUserAndEndDateIsNull(user))
-                .thenReturn(Optional.of(contract));
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
         when(salaryRevisionRepository.findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
                 eq(contract), any()))
                 .thenReturn(Optional.of(revision));

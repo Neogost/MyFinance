@@ -23,7 +23,7 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
         companyName:             contract.companyName           ?? '',
         startDate:               contract.startDate             ?? '',
         endDate:                 contract.endDate               ?? '',
-        annualGrossSalary:       contract.annualGrossSalary     ?? '',
+        annualGrossSalary:       contract.baseGrossSalary ?? contract.annualGrossSalary ?? '',
         paidMonthsPerYear:       contract.paidMonthsPerYear     ?? '12',
         weeklyHours:             contract.weeklyHours           ?? '35',
         mealVoucherAmount:       contract.mealVoucherAmount     ?? '0',

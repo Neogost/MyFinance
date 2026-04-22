@@ -19,7 +19,8 @@ public record SalaryContractDto(
         String companyName,
         LocalDate startDate,
         LocalDate endDate,
-        Float annualGrossSalary,
+        Float annualGrossSalary,   // salaire effectif (révision active ou contrat de base)
+        Float baseGrossSalary,     // salaire brut du contrat de base (toujours c.annualGrossSalary)
         Long activeRevisionId,
         Integer paidMonthsPerYear,
         Float weeklyHours,
@@ -87,6 +88,7 @@ public record SalaryContractDto(
                 c.getStartDate(),
                 c.getEndDate(),
                 effectiveSalary,
+                c.getAnnualGrossSalary(),
                 activeRevisionId,
                 c.getPaidMonthsPerYear(),
                 c.getWeeklyHours(),

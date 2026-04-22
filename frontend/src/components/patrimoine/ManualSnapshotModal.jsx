@@ -13,7 +13,19 @@ const CATEGORY_LABELS = {
   LIQUIDITE:     'Liquidités',
 }
 
+const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE', 'BOURSE']
+
 const HAS_UNITS = new Set(['BOURSE', 'CRYPTO'])
+
+function sortPositions(positions) {
+  return [...positions].sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a.category)
+    const ib = CATEGORY_ORDER.indexOf(b.category)
+    const orderA = ia === -1 ? 99 : ia
+    const orderB = ib === -1 ? 99 : ib
+    return orderA - orderB
+  })
+}
 
 function fmt(v) {
   if (v == null || v === '') return '—'
@@ -177,7 +189,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
 
           {!loadingPos && selectedUserId && positions.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-8 bg-gray-50 rounded-xl">
-              Aucune position active pour cet utilisateur.
+              Aucune position pour cet utilisateur.
             </p>
           )}
 
@@ -195,17 +207,30 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {positions.map(pos => {
+                  {sortPositions(positions).map(pos => {
                     const row        = inputs[pos.id] ?? {}
                     const invested   = parseFloat(row.investedAmountEur)
                     const current    = parseFloat(row.currentValueEur)
                     const gain       = (!isNaN(invested) && !isNaN(current)) ? current - invested : null
                     const hasUnits   = HAS_UNITS.has(pos.category)
 
+                    const isClosed = pos.status === 'CLOSED'
+
                     return (
-                      <tr key={pos.id} className="group hover:bg-gray-50 transition">
+                      <tr key={pos.id} className={`group transition ${isClosed ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50'}`}>
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-900">{pos.label}</p>
+                          <div className="flex items-center gap-2">
+                            {isClosed && (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                              </svg>
+                            )}
+                            <p className={`font-medium ${isClosed ? 'text-gray-500' : 'text-gray-900'}`}>{pos.label}</p>
+                            {isClosed && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 text-xs rounded font-medium">Fermée</span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-400">
                             {CATEGORY_LABELS[pos.category] ?? pos.category}
                             {pos.partner ? ` · ${pos.partner}` : ''}

@@ -12,13 +12,12 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmClose,  setConfirmClose]  = useState(false)
 
-  if (position.status === 'CLOSED') return null
-
+  const isClosed       = position.status === 'CLOSED'
   const isLiquidite    = position.category === 'LIQUIDITE'
   const isImmoPhysique = position.category === 'IMMO_PHYSIQUE'
 
   if (confirmClose) return (
-    <span className="flex items-center gap-1 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <span className="text-xs text-orange-700">Fermer ?</span>
       <button onClick={() => { setConfirmClose(false); onClose(position) }}
         className="px-2 py-0.5 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Oui</button>
@@ -28,7 +27,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 
   if (confirmDelete) return (
-    <span className="flex items-center gap-1 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
       <span className="text-xs text-red-700">Supprimer ?</span>
       <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
         className="px-2 py-0.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">Oui</button>
@@ -38,7 +37,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 
   return (
-    <span className="flex items-center gap-1 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap">
       {isLiquidite ? (
         <button onClick={() => onUpdateBalance(position)}
           className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
@@ -59,10 +58,13 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
         className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600">
         Modifier
       </button>
-      <button onClick={() => setConfirmClose(true)}
-        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600">
+      {!isClosed && (
+        <button onClick={() => setConfirmClose(true)}
+        disabled={isClosed}
+        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 disabled:invisible">
         Fermer
       </button>
+      )}
       <button onClick={() => setConfirmDelete(true)}
         className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-400 hover:text-red-600">
         ×

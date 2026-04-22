@@ -68,10 +68,12 @@ function buildYearlyData(contracts, revisionsMap) {
       .filter(r => new Date(r.effectiveDate) <= dec31)
       .sort((a, b) => new Date(b.effectiveDate) - new Date(a.effectiveDate))[0]
 
-    const brut = activeRevision?.annualGrossSalary ?? activeContract.annualGrossSalary
+    const brut = activeRevision?.annualGrossSalary
+      ?? activeContract.baseGrossSalary
+      ?? activeContract.annualGrossSalary
 
     // Les ratios sont constants pour un contrat donné (isCadre + prevoyance ne changent pas)
-    const baseBrut = activeContract.annualGrossSalary
+    const baseBrut = activeContract.baseGrossSalary ?? activeContract.annualGrossSalary
     const netImposable = baseBrut > 0 && activeContract.annualNetImposable != null
       ? brut * (activeContract.annualNetImposable / baseBrut)
       : null
