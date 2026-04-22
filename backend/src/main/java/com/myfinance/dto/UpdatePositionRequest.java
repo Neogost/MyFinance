@@ -21,6 +21,7 @@ public record UpdatePositionRequest(
         String address,
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal estimatedCurrentValue,
         LocalDate acquisitionDate,
+        @DecimalMin(value = "0.0", inclusive = true) BigDecimal acquisitionPrice,
         // IMMO_PAPIER
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal commissionRate,
         // LIVRET

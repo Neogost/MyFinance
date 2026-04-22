@@ -63,7 +63,9 @@ public class Position {
 
     private BigDecimal estimatedCurrentValue; // saisie manuelle
 
-    private LocalDate acquisitionDate; // date d'acquisition du bien
+    private LocalDate acquisitionDate;  // date d'acquisition du bien
+
+    private BigDecimal acquisitionPrice; // prix d'acquisition du bien
 
     // ── IMMO_PAPIER ────────────────────────────────────────────
 

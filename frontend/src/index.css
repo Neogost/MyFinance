@@ -9,3 +9,27 @@
 .hide-values .amount:hover {
   filter: blur(0);
 }
+
+/* ── Impression (Déclaration de patrimoine) ── */
+@media print {
+  body * { visibility: hidden; }
+  .declaration-document,
+  .declaration-document * { visibility: visible; }
+  .declaration-document {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 1.5cm !important;
+  }
+  .no-print { display: none !important; }
+  .declaration-section { break-inside: avoid; }
+  @page {
+    size: A4;
+    margin: 1.5cm;
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 9pt; color: #9ca3af; }
+  }
+}

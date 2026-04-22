@@ -11,6 +11,7 @@ import TaxSimulatorPage from './components/tools/TaxSimulatorPage'
 import BilanFinancierPage from './components/tools/BilanFinancierPage'
 import CompoundInterestSimulatorPage from './components/tools/CompoundInterestSimulatorPage'
 import LoanSimulatorPage from './components/tools/LoanSimulatorPage'
+import PatrimoineDeclarationPage from './components/tools/PatrimoineDeclarationPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -116,11 +117,13 @@ export default function App() {
 
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
 
-        {currentPage === 'bilan-financier' && <BilanFinancierPage />}
+        {currentPage === 'bilan-financier' && <BilanFinancierPage user={user} />}
 
         {currentPage === 'compound-interest' && <CompoundInterestSimulatorPage />}
 
         {currentPage === 'loan-simulator' && <LoanSimulatorPage user={user} />}
+
+        {currentPage === 'patrimoine-declaration' && <PatrimoineDeclarationPage user={user} onNavigate={handleNavigate} />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 
@@ -130,7 +133,7 @@ export default function App() {
 
         {currentPage === 'admin-family-groups' && user.role === 'ADMIN' && <AdminFamilyGroupPage />}
 
-        {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} />}
+        {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>
     </div>
     </ErrorBoundary>

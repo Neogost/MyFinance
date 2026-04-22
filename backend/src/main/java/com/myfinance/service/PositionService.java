@@ -76,6 +76,7 @@ public class PositionService {
                 .address(request.address())
                 .estimatedCurrentValue(request.estimatedCurrentValue())
                 .acquisitionDate(request.acquisitionDate())
+                .acquisitionPrice(request.acquisitionPrice())
                 .commissionRate(request.commissionRate())
                 .annualRate(request.annualRate())
                 .currentBalance(request.category() == AssetCategory.LIQUIDITE
@@ -106,6 +107,7 @@ public class PositionService {
         position.setAddress(request.address());
         position.setEstimatedCurrentValue(request.estimatedCurrentValue());
         position.setAcquisitionDate(request.acquisitionDate());
+        position.setAcquisitionPrice(request.acquisitionPrice());
         position.setCommissionRate(request.commissionRate());
         position.setAnnualRate(request.annualRate());
         position.setIncludeInIncomeProjection(Boolean.TRUE.equals(request.includeInIncomeProjection()));

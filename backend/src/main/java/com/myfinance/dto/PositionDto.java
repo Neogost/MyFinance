@@ -24,6 +24,7 @@ public record PositionDto(
         String address,
         BigDecimal estimatedCurrentValue,
         LocalDate acquisitionDate,
+        BigDecimal acquisitionPrice,
         // IMMO_PAPIER
         BigDecimal commissionRate,
         // LIVRET
@@ -75,6 +76,7 @@ public record PositionDto(
                 position.getAddress(),
                 position.getEstimatedCurrentValue(),
                 position.getAcquisitionDate(),
+                position.getAcquisitionPrice(),
                 position.getCommissionRate(),
                 position.getAnnualRate(),
                 position.getCurrentBalance(),
