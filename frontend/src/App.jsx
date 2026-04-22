@@ -105,7 +105,7 @@ export default function App() {
       />
 
       <main className="p-8">
-        {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} />}
+        {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} onNavigate={handleNavigate} />}
 
         {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} familyMode={familyMode} />}
 

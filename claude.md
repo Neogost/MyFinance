@@ -545,8 +545,9 @@ npm run dev
   - **Déclaration de patrimoine** : synthèse "Passifs & dettes" avec sous-lignes par type ; tableau "Dettes" en section dédiée (libellé, établissement, capital restant, mensualité par crédit)
   - **Simulateur de crise** : `patrimoineNet = patrimoineBrut − (possessions + dettes)` — les dettes ne baissent pas en crise, amplifiant l'impact sur le patrimoine net
   - Frontend : `DettePage` (4 KPIs, barres de répartition, liste groupée par type avec accordéon amortissement et historique manuel), bouton **Dettes** dans la navigation
+  - **`DetteWidget`** (tableau de bord) : widget placé en 2/3 de la ligne basse Patrimoine, aux côtés du radar Stratégie & Objectifs (1/3) — KPIs avec ratio dette/patrimoine et ratio d'endettement mensuel (règle des 33 %), date de libération ("Libre en AAAA"), bandeau intérêts restants estimés, barre d'avancement global, barres de progression par type de crédit (tous types), lien "Voir mes dettes →" via prop `onNavigate` (chaîne App.jsx → DashboardPage → DetteWidget)
   - Tests : 533 tests (DebtServiceTest +15, DebtControllerTest +15 ; corrections de régressions : PositionControllerTest, PositionServiceTest, AdminSnapshotServiceTest, FamilyGroupServiceTest)
-  - Documentation : `docs/architecture/dettes.md`, `docs/api/debts.md`
+  - Documentation : `docs/architecture/dettes.md`, `docs/api/debts.md`, `docs/architecture/dashboard.md` (sections 10–11)
 
 **À venir :**
 - Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)

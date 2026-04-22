@@ -483,3 +483,115 @@ revenusPassifs = (totalActif × weightedRate) / 12 + totalOtherIncome
 **Fichier :** `frontend/src/components/dashboard/FireProjectionWidget.jsx`
 
 **Positionnement sur le dashboard :** colonne droite (`col-span-1`) aux côtés de `PatrimoineEvolutionChart`, fond violet (`bg-violet-50 border-violet-200`).
+
+---
+
+## 10. Avancement vers les objectifs — `PatrimoineStrategyRadarChart`
+
+### Objectif
+
+Visualiser en radar le **taux d'atteinte des objectifs patrimoniaux** par catégorie d'actif : superposition de la cible (100 %) et de la situation actuelle (% de l'objectif atteint).
+
+### Source de données
+
+Deux appels parallèles :
+- `GET /api/positions?status=ACTIVE` — valeur actuelle par catégorie
+- `GET /api/patrimoine/targets` — objectifs cibles (`Map<String, Double>`)
+
+Le calcul `currentPct = currentValue / targetValue × 100` est effectué côté frontend. La valeur est plafonnée à 120 % pour l'affichage du radar (les dépassements restent lisibles sans écraser les autres axes).
+
+### Règles d'affichage
+
+- Seules les catégories ayant un objectif défini et > 0 apparaissent.
+- L'ordre des axes est fixe : `LIQUIDITE → LIVRET → BOURSE → CRYPTO → IMMO_PAPIER → IMMO_PHYSIQUE`.
+- Axe cible tracé en pointillé gris (100 % pour chaque catégorie).
+- Axe actuel tracé en indigo plein avec points.
+- Tooltip détaillé : valeur actuelle, objectif, avancement % (rouge si dépassé, émeraude si ≥ 100 %, indigo sinon).
+- Si aucun objectif n'est défini, message d'invitation vers la page Patrimoine → Stratégie & Objectifs.
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/PatrimoineStrategyRadarChart.jsx`
+
+**Librairie :** Recharts (`RadarChart`, `Radar`, `PolarGrid`, `PolarAngleAxis`)
+
+**Positionnement sur le dashboard :** 1 colonne sur 3 dans la section Patrimoine (bas de page), aux côtés de `DetteWidget` (2 colonnes).
+
+---
+
+## 11. Widget d'endettement — `DetteWidget`
+
+### Objectif
+
+Afficher une **synthèse de l'endettement** de l'utilisateur : capital restant dû, charge mensuelle, avancement du remboursement par type de crédit, et indicateurs contextuels (ratio patrimoine, ratio salaire, coût restant, date de libération).
+
+### Source de données
+
+Quatre appels parallèles au chargement :
+
+| Endpoint | Usage |
+|----------|-------|
+| `GET /api/debts/summary` | KPIs globaux (capital, mensualité, nombre de crédits, répartition par type) |
+| `GET /api/debts` | Détail par dette (endDate, monthlyPayment, remainingCapital, initialCapital, type) |
+| `GET /api/positions?status=ACTIVE` | Patrimoine brut pour le ratio dette/patrimoine |
+| `GET /api/salary-contracts` | Salaire net mensuel pour le ratio d'endettement |
+
+Le widget retourne `null` si aucune dette n'est enregistrée (`totalCount === 0`).
+
+### Calculs clés
+
+| Indicateur | Formule |
+|------------|---------|
+| Ratio dette/patrimoine | `totalRemainingCapital / patrimoineBrut × 100` |
+| Ratio d'endettement | `totalMonthlyCost / salaryNetMensuel × 100` |
+| Intérêts restants | `Σ max(0, monthlyPayment × monthsRemaining − remainingCapital)` |
+| Avancement global | Moyenne de `(1 − remainingCapital / initialCapital) × 100` sur toutes les dettes avec `initialCapital > 0` |
+| Date de libération | `max(endDate)` de toutes les dettes ayant une date de fin |
+
+### Seuils de couleur
+
+**Ratio dette/patrimoine :**
+- < 30 % → émeraude
+- 30–60 % → ambre
+- ≥ 60 % → rouge
+
+**Ratio d'endettement mensuel (règle des 33 %) :**
+- < 33 % → émeraude
+- 33–40 % → ambre
+- ≥ 40 % → rouge
+
+**Barres de progression :**
+- ≥ 75 % → émeraude
+- 40–75 % → indigo
+- < 40 % → ambre
+
+### Sections affichées
+
+| Section | Description |
+|---------|-------------|
+| 3 KPIs | Capital restant (+ ratio patrimoine), Mensualité totale (+ ratio salaire), Crédits en cours (+ "Libre en AAAA") |
+| Intérêts restants | Bandeau ambre — coût total du crédit restant à payer hors assurance (masqué si ≤ 100 €) |
+| Avancement global | Barre de progression moyenne sur tous les crédits avec initialCapital |
+| Progression par type | Barre par type de crédit (IMMOBILIER, VEHICULE, ETUDIANT…), triée par capital restant décroissant |
+| Lien navigation | Bouton "Voir mes dettes →" si la prop `onNavigate` est fournie |
+
+### Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onNavigate` | `function(page)` | Callback de navigation — si fourni, affiche un lien "Voir mes dettes" |
+
+### Chaîne de navigation
+
+```
+App.jsx (handleNavigate)
+  → DashboardPage (onNavigate prop)
+    → DetteWidget (onNavigate prop)
+      → bouton "Voir mes dettes →" → onNavigate('debts')
+```
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/DetteWidget.jsx`
+
+**Positionnement sur le dashboard :** 2 colonnes sur 3 dans la section Patrimoine (bas de page), aux côtés de `PatrimoineStrategyRadarChart` (1 colonne).

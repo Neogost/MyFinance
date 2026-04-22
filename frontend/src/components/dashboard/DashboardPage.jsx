@@ -12,6 +12,7 @@ import PatrimoineByMemberChart from './PatrimoineByMemberChart'
 import PatrimoineByCurrencyChart from './PatrimoineByCurrencyChart'
 import PatrimoineStrategyRadarChart from './PatrimoineStrategyRadarChart'
 import SafetyNetWidget from './SafetyNetWidget'
+import DetteWidget from './DetteWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { getPositions } from '../../api/patrimoine'
 
@@ -30,7 +31,7 @@ function sumActive(positions) {
     .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
 }
 
-export default function DashboardPage({ user, familyMode }) {
+export default function DashboardPage({ user, familyMode, onNavigate }) {
   const [familyPositions,  setFamilyPositions]  = useState(null)
   const [memberBreakdown,  setMemberBreakdown]  = useState(null)
 
@@ -230,13 +231,18 @@ export default function DashboardPage({ user, familyMode }) {
           </div>
         )}
 
-        {/* Radar objectifs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
-          <p className="text-xs text-gray-400 mb-4">
-            Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
-          </p>
-          <PatrimoineStrategyRadarChart />
+        {/* Radar objectifs + Endettement */}
+        <div className="grid grid-cols-3 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
+            </p>
+            <PatrimoineStrategyRadarChart />
+          </div>
+          <div className="col-span-2">
+            <DetteWidget onNavigate={onNavigate} />
+          </div>
         </div>
       </div>
     </div>
