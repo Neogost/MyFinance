@@ -107,6 +107,7 @@ frontend/src/
 - API simulateur des impôts : `docs/api/tax-simulator.md`
 - Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
 - Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
+- Mise à jour automatique des cours et snapshot mensuel : `docs/architecture/market-data-scheduler.md`
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
 - Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
@@ -562,6 +563,22 @@ npm run dev
   - Tests : 561 tests (PatrimoineScoreServiceTest +8, PatrimoineScoreControllerTest +2)
   - Documentation : `docs/architecture/patrimoine-scoring.md`
 
+- **Mise à jour automatique des cours + snapshot mensuel** :
+  - Scheduler Spring cron mensuel (1er du mois 2h), désactivé en dev (`scheduler.enabled=false`)
+  - BOURSE via **Boursorama** (scraping HTML Jsoup) — symbole saisi manuellement par l'admin (`boursoramaSymbol`)
+  - CRYPTO via **CoinGecko** — `coinGeckoId` résolu automatiquement depuis le ticker
+  - Taux de change via **ECB / Frankfurter**
+  - Snapshot mensuel pour tous les utilisateurs après mise à jour des cours
+  - Endpoint de déclenchement manuel : `POST /api/admin/market-data/run` (ADMIN)
+  - Frontend : bouton "⟳ Mettre à jour les cours" dans `AdminInstrumentPage` avec rapport inline
+  - Tests : `MarketDataServiceTest` (571 tests au total)
+  - Documentation : `docs/architecture/market-data-scheduler.md`
+
+- **Page admin "Gestion des instruments"** (`AdminInstrumentPage`) :
+  - Tableau BOURSE / CRYPTO avec prix actuel, date de mise à jour (orange si > 30 j), symbole Boursorama / CoinGecko ID, prix fixe
+  - Création et édition d'instruments via `AdminInstrumentForm` (modal)
+  - Champ `boursoramaSymbol` saisi manuellement par l'admin
+  - Accessible depuis le menu Administration → "Instruments financiers"
+
 **À venir :**
 - Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)
-- Scheduler Yahoo Finance / CoinGecko (mise à jour des prix marché)

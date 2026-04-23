@@ -31,7 +31,10 @@ Liste les instruments du référentiel. Supporte la recherche par ISIN ou ticker
     "name": "Lyxor PEA Nasdaq-100 UCITS ETF",
     "currency": "EUR",
     "lastPrice": 88.44,
-    "lastPriceUpdatedAt": "2026-04-01T08:00:00"
+    "lastPriceUpdatedAt": "2026-04-01T08:00:00",
+    "stablePrice": false,
+    "boursoramaSymbol": "1rPCAC",
+    "coinGeckoId": null
   },
   {
     "id": 2,
@@ -41,7 +44,10 @@ Liste les instruments du référentiel. Supporte la recherche par ISIN ou ticker
     "name": "Ethereum",
     "currency": "USD",
     "lastPrice": 1890.79,
-    "lastPriceUpdatedAt": "2026-04-01T08:05:00"
+    "lastPriceUpdatedAt": "2026-04-01T08:05:00",
+    "stablePrice": false,
+    "boursoramaSymbol": null,
+    "coinGeckoId": "ethereum"
   }
 ]
 ```
@@ -72,7 +78,9 @@ Créer un instrument manuellement.
   "isin": "LU1681048804",
   "ticker": null,
   "name": "Amundi PEA MSCI Europe UCITS ETF",
-  "currency": "EUR"
+  "currency": "EUR",
+  "boursoramaSymbol": "1rTPCEU",
+  "coinGeckoId": null
 }
 ```
 
@@ -81,6 +89,8 @@ Créer un instrument manuellement.
 - `isin` obligatoire si `category = BOURSE`, doit être unique
 - `ticker` obligatoire si `category = CRYPTO`, doit être unique
 - `name` obligatoire
+- `boursoramaSymbol` optionnel (BOURSE uniquement) — saisi manuellement par l'admin
+- `coinGeckoId` optionnel (CRYPTO uniquement) — résolu automatiquement si absent
 
 **Réponse 201** — instrument créé avec `lastPrice = null`.
 
@@ -94,34 +104,11 @@ Créer un instrument manuellement.
 
 ### PUT `/api/instruments/{id}`
 
-Modifier les informations d'un instrument (hors `lastPrice` qui est géré par le scheduler).
+Modifier les informations d'un instrument.
 
 **Corps de la requête** — mêmes champs que POST.
 
 **Réponse 200**
-
----
-
-### POST `/api/instruments/{id}/refresh-price`
-
-Forcer la mise à jour du prix depuis l'API marché (Yahoo Finance pour BOURSE, CoinGecko pour CRYPTO).
-
-**Réponse 200**
-
-```json
-{
-  "id": 1,
-  "lastPrice": 89.12,
-  "lastPriceUpdatedAt": "2026-04-12T14:23:00"
-}
-```
-
-**Erreurs**
-
-| Code | Raison |
-|------|--------|
-| 404 | Instrument introuvable |
-| 503 | API marché indisponible |
 
 ---
 
@@ -697,6 +684,44 @@ Retourne le référentiel INSEE Enquête Patrimoine 2021-2022 : seuils de patrim
 
 ---
 
+## Données marché (admin)
+
+### POST `/api/admin/market-data/run`
+
+Déclenche la mise à jour complète des données marché de façon synchrone : résolution des IDs CoinGecko manquants, cours via Boursorama (BOURSE) et CoinGecko (CRYPTO), taux de change via ECB, puis snapshot mensuel pour tous les utilisateurs.
+
+**Rôle requis :** `ADMIN`
+
+**Réponse 200**
+
+```json
+{
+  "instrumentsResolved": 1,
+  "instrumentsUpdated": 8,
+  "instrumentsFailed": 0,
+  "ratesUpdated": 5,
+  "snapshotsCreated": 2,
+  "snapshotsSkipped": 0,
+  "snapshotsFailed": 0,
+  "errors": [],
+  "executedAt": "2026-04-01T02:00:00"
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `instrumentsResolved` | Nombre d'IDs CoinGecko résolus automatiquement |
+| `instrumentsUpdated` | Cours mis à jour avec succès |
+| `instrumentsFailed` | Cours en échec (API indisponible ou sélecteur absent) |
+| `ratesUpdated` | Taux de change mis à jour |
+| `snapshotsCreated` | Snapshots patrimoniaux créés |
+| `snapshotsSkipped` | Snapshots ignorés (déjà existants pour la date) |
+| `snapshotsFailed` | Snapshots en échec |
+| `errors` | Liste des messages d'erreurs non bloquantes |
+| `executedAt` | Horodatage de démarrage |
+
+---
+
 ## Droits d'accès
 
 | Action | Rôle requis |
@@ -704,6 +729,9 @@ Retourne le référentiel INSEE Enquête Patrimoine 2021-2022 : seuils de patrim
 | Gérer ses positions et ordres | USER, ADMIN |
 | Consulter / déclencher ses snapshots | USER, ADMIN |
 | Gérer le référentiel d'instruments | USER, ADMIN |
+| Mettre à jour les cours manuellement (`/active`, `/prices`) | ADMIN uniquement |
+| Activer / désactiver le prix fixe (`PATCH /stable-price`) | ADMIN uniquement |
+| Déclencher la mise à jour automatique (`/admin/market-data/run`) | ADMIN uniquement |
 | Consulter le référentiel INSEE | USER, ADMIN |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 | Créer / modifier / supprimer des snapshots admin | ADMIN uniquement — voir [`docs/api/admin-snapshots.md`](admin-snapshots.md) |

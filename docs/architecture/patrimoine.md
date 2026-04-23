@@ -108,6 +108,8 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `lastPrice` | `BigDecimal` | Dernier prix connu |
 | `lastPriceUpdatedAt` | `LocalDateTime` | Date de la dernière mise à jour du prix |
 | `stablePrice` | `boolean` | Si `true`, le prix est fixe (fonds euros, stablecoin) — pas d'indicateur d'obsolescence, saisie désactivée dans la modale de mise à jour |
+| `boursoramaSymbol` | `String` | Symbole Boursorama (ex : `"1rTESE"`) — BOURSE uniquement, saisi manuellement par l'admin |
+| `coinGeckoId` | `String` | Identifiant CoinGecko (ex : `"bitcoin"`) — CRYPTO uniquement, résolu automatiquement |
 
 **Contraintes :**
 - `isin` est unique parmi les instruments de type `BOURSE`
@@ -280,14 +282,13 @@ Un snapshot existant peut être recalculé (`PUT /api/portfolio/snapshots/{id}/r
 
 ## Sources de données marché
 
-| Type d'actif | API recommandée | Clé requise | Notes |
-|--------------|-----------------|-------------|-------|
-| Bourse / ETF (ISIN) | **Yahoo Finance** (endpoint JSON non officiel) | Non | Suffisant pour usage personnel |
-| Bourse / ETF (robuste) | **Twelve Data** free tier (800 req/j) | Oui (gratuit) | Meilleure couverture ISIN européens |
-| Crypto-monnaies | **CoinGecko** API v3 publique | Non | Très complet, pas de limite stricte en usage modéré |
-| Taux de change | **ECB Data Portal** (Frankfurter.app) | Non | Taux officiels BCE, JSON REST |
+| Type d'actif | Source | Clé requise | Notes |
+|--------------|--------|-------------|-------|
+| Bourse / ETF | **Boursorama** (scraping HTML via Jsoup) | Non | Symbole saisi manuellement par l'admin (`boursoramaSymbol`) |
+| Crypto-monnaies | **CoinGecko** API v3 publique | Non | `coinGeckoId` résolu automatiquement depuis le ticker |
+| Taux de change | **ECB / Frankfurter** | Non | Taux officiels BCE, JSON REST |
 
-Le scheduler de mise à jour des prix s'appuie sur `@Scheduled` Spring Boot, désactivé en profil `dev`.
+Le scheduler de mise à jour (`MarketDataScheduler`) s'appuie sur `@Scheduled` Spring Boot, désactivé en profil `dev` (`scheduler.enabled=false`). Il peut aussi être déclenché manuellement via `POST /api/admin/market-data/run`.
 
 ---
 
@@ -385,6 +386,8 @@ classDiagram
         +BigDecimal lastPrice
         +LocalDateTime lastPriceUpdatedAt
         +boolean stablePrice
+        +String boursoramaSymbol
+        +String coinGeckoId
     }
 
     class Position {

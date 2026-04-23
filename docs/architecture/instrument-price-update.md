@@ -4,7 +4,7 @@
 
 Permettre à un administrateur de **mettre à jour manuellement le cours** (`lastPrice`) de tous les instruments financiers actifs dans l'application, depuis un panneau dédié sur la page Patrimoine.
 
-Cette fonctionnalité est conçue comme **mécanisme de secours** : elle intervient lorsque la mise à jour automatique des cours (Yahoo Finance, CoinGecko) n'est pas disponible, pas encore implémentée, ou qu'un cours retourné par l'API est incorrect.
+Cette fonctionnalité est conçue comme **mécanisme de secours** : elle intervient lorsque la mise à jour automatique des cours n'est pas disponible ou qu'un cours retourné par l'API est incorrect.
 
 > Il s'agit d'une action administrative — seul le rôle `ADMIN` peut l'exécuter.
 
@@ -199,7 +199,7 @@ Il n'est **affiché que si l'utilisateur connecté a le rôle `ADMIN`**.
 | Colonne Devise | Devise native de l'instrument (ex : `EUR`, `USD`) |
 | Colonne Cours actuel | `lastPrice` existant, grisé non éditable + date de dernière mise à jour au format `dd/MM/yyyy HH:mm` |
 | Colonne Nouveau cours | `<input type="number" min="0" step="any">` — vide par défaut, facultatif |
-| Pied | Bouton "Annuler" + bouton "Enregistrer" (désactivé si aucun champ renseigné) |
+| Pied | Bouton "Fermer" + bouton "Enregistrer" (désactivé si aucun champ renseigné) |
 
 ### Comportement détaillé
 
