@@ -6,6 +6,7 @@ import com.myfinance.domain.OtherIncome;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.TaxSimulationDto;
+import com.myfinance.repository.ContractOnCallRepository;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.SalaryContractRepository;
@@ -27,6 +28,7 @@ public class TaxSimulatorService {
     private final SalaryRevisionRepository salaryRevisionRepository;
     private final MonthlyPaySlipRepository monthlyPaySlipRepository;
     private final OtherIncomeRepository otherIncomeRepository;
+    private final ContractOnCallRepository contractOnCallRepository;
 
     public static final String SOURCE_PROJECTION = "PROJECTION_CONTRAT";
     public static final String SOURCE_BULLETINS   = "BULLETINS_REELS";
@@ -169,8 +171,15 @@ public class TaxSimulatorService {
                 .orElse(contract.getAnnualGrossSalary());
 
         boolean isCadre = Boolean.TRUE.equals(contract.getIsCadre());
-        return NetImposableCalculator.calculer(
+        float salaryNetImposable = NetImposableCalculator.calculer(
                 effectiveSalary, isCadre, contract.getEmployeePrevoyanceRate(), taxParameters);
+
+        float onCallNetImposable = (float) contractOnCallRepository.findByContractOrderByIdAsc(contract)
+                .stream()
+                .mapToDouble(oc -> oc.getWeeklyFlatRate() * oc.getEstimatedWeeksPerYear() * 0.75)
+                .sum();
+
+        return salaryNetImposable + onCallNetImposable;
     }
 
     // ── Filtrage des revenus complémentaires ───────────────────

@@ -25,6 +25,12 @@ export const createBenefit  = (contractId, data)     => api.post(`/api/salary-co
 export const updateBenefit  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/benefits/${id}`, data).then(r => r.data)
 export const deleteBenefit  = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/benefits/${id}`)
 
+// ── Astreintes ─────────────────────────────────────────────────
+export const getOnCalls    = (contractId)           => api.get(`/api/salary-contracts/${contractId}/on-calls`).then(r => r.data)
+export const createOnCall  = (contractId, data)     => api.post(`/api/salary-contracts/${contractId}/on-calls`, data).then(r => r.data)
+export const updateOnCall  = (contractId, id, data) => api.put(`/api/salary-contracts/${contractId}/on-calls/${id}`, data).then(r => r.data)
+export const deleteOnCall  = (contractId, id)       => api.delete(`/api/salary-contracts/${contractId}/on-calls/${id}`)
+
 // ── Révisions salariales ───────────────────────────────────────
 export const getRevisions    = (contractId)           => api.get(`/api/salary-contracts/${contractId}/revisions`).then(r => r.data)
 export const createRevision  = (contractId, data)     => api.post(`/api/salary-contracts/${contractId}/revisions`, data).then(r => r.data)

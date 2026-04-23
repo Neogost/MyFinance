@@ -8,6 +8,8 @@ import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.TaxSimulationDto;
+import com.myfinance.domain.ContractOnCall;
+import com.myfinance.repository.ContractOnCallRepository;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.SalaryContractRepository;
@@ -39,6 +41,7 @@ class TaxSimulatorServiceTest {
     @Mock SalaryRevisionRepository salaryRevisionRepository;
     @Mock MonthlyPaySlipRepository monthlyPaySlipRepository;
     @Mock OtherIncomeRepository otherIncomeRepository;
+    @Mock ContractOnCallRepository contractOnCallRepository;
     @InjectMocks TaxSimulatorService taxSimulatorService;
 
     User user;
@@ -98,6 +101,9 @@ class TaxSimulatorServiceTest {
         Mockito.lenient().when(salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))
                 .thenReturn(Optional.empty());
+        // Aucune astreinte par défaut
+        Mockito.lenient().when(contractOnCallRepository.findByContractOrderByIdAsc(any()))
+                .thenReturn(List.of());
     }
 
     // ── Source : projection du contrat ────────────────────────
@@ -400,6 +406,31 @@ class TaxSimulatorServiceTest {
 
         assertThat(impot).isNotNull();
         assertThat(impot).isCloseTo(952.32f, org.assertj.core.data.Offset.offset(1f));
+    }
+
+    // ── Astreintes ────────────────────────────────────────────
+
+    @Test
+    void simulate_avecAstreinte_inclutLeNetImposableAstreinte() {
+        // 40 000 brut non-cadre → net imposable ≈ 32 803,60
+        // + astreinte : 500 €/sem × 5 sem × 0.75 = 1 875 € net imposable astreinte
+        // → salaryIncome total ≈ 34 678,60
+        SalaryContract contract = SalaryContract.builder()
+                .annualGrossSalary(40000f).isCadre(false).build();
+        ContractOnCall onCall = ContractOnCall.builder()
+                .weeklyFlatRate(500f).estimatedWeeksPerYear(5).build();
+
+        when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
+                .thenReturn(List.of(contract));
+        when(contractOnCallRepository.findByContractOrderByIdAsc(contract))
+                .thenReturn(List.of(onCall));
+        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
+
+        // net imposable astreinte = 500 × 5 × 0.75 = 1875
+        assertThat(result.salaryIncome()).isCloseTo(32803.6f + 1875f, org.assertj.core.data.Offset.offset(1f));
     }
 
     // ── Révision salariale active ──────────────────────────────

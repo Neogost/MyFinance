@@ -11,6 +11,7 @@ La gestion des revenus repose sur **cinq niveaux complémentaires** :
 | Réel mensuel | `MonthlyPaySlip` | Bulletins de salaire saisis mois par mois |
 | Primes | `ContractBonus` | Versements exceptionnels ou annuels rattachés à un contrat |
 | Avantages en nature | `ContractBenefit` | Compléments mensuels nets (télétravail, téléphone…) rattachés à un contrat |
+| Astreintes | `ContractOnCall` | Forfait hebdomadaire × estimation de semaines/an rattachés à un contrat |
 | Revenus complémentaires | `OtherIncome` | Tout revenu hors salaire (locatif, dividendes, aides…) |
 
 La **vue théorique** (`SalaryProjectionDto`) et les **bulletins réels** (`MonthlyPaySlip`) sont affichables côte à côte pour permettre à l'utilisateur de mesurer l'écart entre les projections et la réalité (primes, avantages en nature, variation de salaire).
@@ -328,7 +329,77 @@ Chaque ligne d'avantage apparaît dans le tooltip du **"Net d'impôt"** correspo
 
 ---
 
-## 5. Revenus non salariés — `OtherIncome`
+## 5. Astreintes — `ContractOnCall`
+
+### Objectif
+
+Enregistrer les périodes d'**astreinte contractuelle** afin d'intégrer leur rémunération forfaitaire dans la vision théorique du revenu annuel. Une astreinte représente une disponibilité hors horaires habituels, rémunérée par un forfait fixe par semaine.
+
+### Modèle persisté
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `contract` | `SalaryContract` | Contrat auquel appartient cette astreinte |
+| `weeklyFlatRate` | `Float` | Forfait hebdomadaire brut en € |
+| `estimatedWeeksPerYear` | `Integer` | Nombre de semaines d'astreinte estimées par an (1–52) |
+
+### Revenu annuel estimé (calculé, non persisté)
+
+```
+annualOnCallIncome = weeklyFlatRate × estimatedWeeksPerYear
+```
+
+Ce montant est calculé dans `ContractOnCallDto.from()` et retourné dans chaque réponse API.
+
+### Intégration dans les projections (frontend)
+
+Les astreintes sont chargées séparément du `SalaryContractDto` (via `GET /api/salary-contracts/{id}/on-calls`) et intégrées dans `ProjectionGrid` côté frontend, selon la même mécanique que les primes :
+
+#### Brut
+
+```
+gross = salaireBrut + totalPrimes + totalAstreintes
+```
+
+#### Net imposable
+
+Les astreintes étant soumises aux cotisations salariales, une approximation de 25 % est appliquée :
+
+```
+netImposableAstreintes = totalAnnualOnCalls × 0,75
+```
+
+#### Net d'impôt
+
+Contrairement aux primes (approximation forfaitaire à 75 %), les astreintes font l'objet d'une **estimation d'impôt au taux moyen du salaire** :
+
+```
+tauxMoyen            = impôtSalaire / netImposableSalaire
+netImposableAstreintes = totalAnnualOnCalls × 0,75
+impôtAstreintes      = netImposableAstreintes × tauxMoyen
+netAprèsImpôtAstreintes = netImposableAstreintes − impôtAstreintes
+```
+
+> **Pourquoi le taux moyen et non le taux marginal ?** Le simulateur fiscal est calculé côté backend sur le seul salaire ; les astreintes sont chargées indépendamment sans nouveau appel au simulateur. Appliquer le taux moyen (et non le taux marginal) sous-estime légèrement l'impôt sur les astreintes dans un barème progressif — c'est une approximation acceptable pour une estimation théorique.
+
+Le tooltip du **"Net d'impôt"** dans la grille de projections détaille :
+- Impôt sur salaire (calculé par le backend)
+- Astreintes net imposable (≈75%)
+- Impôt astreintes au taux moyen (avec le taux affiché en %)
+- Total impôt estimé (somme des deux)
+
+Un **bloc récapitulatif violet** est affiché sous la grille de projections, calqué sur le bloc tickets restaurant : une ligne par astreinte (`X sem. × Y €/sem. : +Z € / an`) et un total si plusieurs lignes existent.
+
+### Relations
+
+- Un `ContractOnCall` est **rattaché à un `SalaryContract`**
+- Un contrat peut avoir **plusieurs configurations d'astreinte** (ex. : astreinte nationale + astreinte locale à des forfaits différents)
+- Les astreintes sont supprimées en **cascade** si le contrat est supprimé
+
+---
+
+## 6. Revenus non salariés — `OtherIncome`
 
 ### Objectif
 
@@ -420,6 +491,11 @@ classDiagram
         +String label
         +Float monthlyAmount
     }
+    class ContractOnCall {
+        +Long id
+        +Float weeklyFlatRate
+        +Integer estimatedWeeksPerYear
+    }
     class OtherIncome {
         +Long id
         +OtherIncomeTypeEnum type
@@ -447,6 +523,7 @@ classDiagram
     SalaryContract "1" o-- "0..*" ContractBonus : bonuses
     ContractBonus --> BonusTypeEnum : type
     SalaryContract "1" o-- "0..*" ContractBenefit : benefits
+    SalaryContract "1" o-- "0..*" ContractOnCall : onCalls
     User "1" o-- "0..*" OtherIncome : otherIncomes
     OtherIncome --> OtherIncomeTypeEnum : type
 ```
@@ -496,6 +573,14 @@ classDiagram
 | `PUT` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Modifier un avantage |
 | `DELETE` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Supprimer un avantage |
 
+### Astreintes
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| `GET` | `/api/salary-contracts/{id}/on-calls` | Liste des astreintes d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/on-calls` | Ajouter une astreinte |
+| `PUT` | `/api/salary-contracts/{id}/on-calls/{onCallId}` | Modifier une astreinte |
+| `DELETE` | `/api/salary-contracts/{id}/on-calls/{onCallId}` | Supprimer une astreinte |
+
 ### Revenus complémentaires
 | Méthode | URL | Description |
 |---------|-----|-------------|
@@ -515,6 +600,7 @@ classDiagram
 | Gérer ses bulletins mensuels | USER, ADMIN |
 | Gérer ses primes | USER, ADMIN |
 | Gérer ses avantages en nature | USER, ADMIN |
+| Gérer ses astreintes | USER, ADMIN |
 | Gérer ses revenus non salariés | USER, ADMIN |
 | Consulter les données d'un autre utilisateur | ADMIN uniquement |
 
@@ -525,7 +611,7 @@ classDiagram
 Les données de revenus salariaux et complémentaires alimentent le **Simulateur des impôts** :
 
 - `MonthlyPaySlip.taxableNetSalary` → utilisé si l'option "Bulletins réels" est choisie
-- `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` → utilisé si l'option "Projection contrat" est choisie
+- `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` + `Σ(ContractOnCall.weeklyFlatRate × estimatedWeeksPerYear × 0,75)` → utilisé si l'option "Projection contrat" est choisie
 - `OtherIncome.amount` (filtrés par `isTaxable` et `specificTaxRate`) → revenus complémentaires
 
 La documentation complète du simulateur est dans [`docs/architecture/tax-simulator.md`](tax-simulator.md).

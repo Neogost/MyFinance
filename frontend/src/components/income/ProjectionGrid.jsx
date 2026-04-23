@@ -4,7 +4,7 @@
  * Quatre niveaux de rémunération :
  *   Super brut (coût employeur)  →  Brut  →  Net imposable (base fiscale)  →  Net d'impôt (après impôt estimé + avantages en nature)
  */
-export default function ProjectionGrid({ contract, annualBonuses = [], benefits = [] }) {
+export default function ProjectionGrid({ contract, annualBonuses = [], benefits = [], onCalls = [] }) {
 
   const fmt = (val) =>
     val != null ? val.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €' : '—'
@@ -51,7 +51,8 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     </div>
   )
 
-  const totalAnnualBonuses = annualBonuses.reduce((s, b) => s + b.grossAmount, 0)
+  const totalAnnualBonuses  = annualBonuses.reduce((s, b) => s + b.grossAmount, 0)
+  const totalAnnualOnCalls  = onCalls.reduce((s, oc) => s + oc.annualOnCallIncome, 0)
 
   const paidMonths  = contract.paidMonthsPerYear ?? 12
   const workingDays = 228
@@ -60,6 +61,10 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
   const bonusPerMonth  = totalAnnualBonuses / paidMonths
   const bonusPerDay    = totalAnnualBonuses / workingDays
   const bonusPerHour   = bonusPerDay / hoursPerDay
+
+  const onCallPerMonth = totalAnnualOnCalls / paidMonths
+  const onCallPerDay   = totalAnnualOnCalls / workingDays
+  const onCallPerHour  = onCallPerDay / hoursPerDay
 
   // Tickets restaurant : la part employeur s'ajoute au net
   const trMonthly = contract.employerMonthlyMealVoucherCost ?? 0
@@ -73,23 +78,35 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     ? (contract.annualNetImposable ?? 0) - contract.annualNetAfterTax + totalBenefitsAnnual
     : null
 
+  // Taux moyen d'imposition du salaire — appliqué au net imposable des astreintes
+  const avgTaxRate = estimatedTax != null && (contract.annualNetImposable ?? 0) > 0
+    ? estimatedTax / contract.annualNetImposable
+    : 0
+
+  // Net imposable astreintes ≈ 75% du brut (charges salariales)
+  // Net d'impôt astreintes = net imposable − impôt estimé au taux moyen du salaire
+  const onCallAnnualNetImp     = totalAnnualOnCalls * 0.75
+  const onCallAnnualNetAfterTax = onCallAnnualNetImp * (1 - avgTaxRate)
+  const onCallAnnualTax         = onCallAnnualNetImp * avgTaxRate
+
   // Net d'impôt : valeurs calculées par le backend (null si profil fiscal incomplet)
   const netAfterTaxAnnual  = contract.annualNetAfterTax != null
-    ? contract.annualNetAfterTax + totalAnnualBonuses * 0.75 + trAnnual
+    ? contract.annualNetAfterTax + totalAnnualBonuses * 0.75 + trAnnual + onCallAnnualNetAfterTax
     : null
   const netAfterTaxMonthly = contract.monthlyNetAfterTax != null
-    ? contract.monthlyNetAfterTax + bonusPerMonth * 0.75 + trMonthly
+    ? contract.monthlyNetAfterTax + bonusPerMonth * 0.75 + trMonthly + onCallAnnualNetAfterTax / paidMonths
     : null
   const netAfterTaxDaily   = contract.dailyNetAfterTax != null
-    ? contract.dailyNetAfterTax + bonusPerDay * 0.75 + trDaily
+    ? contract.dailyNetAfterTax + bonusPerDay * 0.75 + trDaily + onCallAnnualNetAfterTax / workingDays
     : null
   const netAfterTaxHourly  = contract.hourlyNetAfterTax != null
-    ? contract.hourlyNetAfterTax + bonusPerHour * 0.75 + trHourly
+    ? contract.hourlyNetAfterTax + bonusPerHour * 0.75 + trHourly + onCallAnnualNetAfterTax / (workingDays * hoursPerDay)
     : null
 
   const makeGrossTooltip = (baseLabel, baseValue, superGross, bonusDivisor) => {
     const hasBonuses = annualBonuses.length > 0
-    if (!superGross && !hasBonuses) return null
+    const hasOnCalls = onCalls.length > 0
+    if (!superGross && !hasBonuses && !hasOnCalls) return null
     return (
       <div className="space-y-1">
         <div className="flex justify-between gap-4">
@@ -102,6 +119,12 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
             <span className="font-semibold text-blue-300 amount">+{fmt(b.grossAmount / bonusDivisor)}</span>
           </div>
         ))}
+        {hasOnCalls && (
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-300">Astreintes</span>
+            <span className="font-semibold text-violet-300 amount">+{fmt(totalAnnualOnCalls / bonusDivisor)}</span>
+          </div>
+        )}
         {superGross != null && (
           <>
             <div className="border-t border-gray-600 my-1" />
@@ -116,7 +139,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     )
   }
 
-  const makeNetImposableTooltip = (baseNet, bonusNet) => (
+  const makeNetImposableTooltip = (baseNet, bonusNet, onCallNet) => (
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Net imposable estimé</span>
@@ -128,19 +151,43 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           <span className="font-semibold text-blue-300 amount">+{fmt(bonusNet)}</span>
         </div>
       )}
+      {onCallNet > 0 && (
+        <div className="flex justify-between gap-4">
+          <span className="text-gray-300">Astreintes (≈75%)</span>
+          <span className="font-semibold text-violet-300 amount">+{fmt(onCallNet)}</span>
+        </div>
+      )}
     </div>
   )
 
-  const makeNetAfterTaxTooltip = (netImposable, taxAmount, trAmount, benefitMultiplier) => (
+  const makeNetAfterTaxTooltip = (netImposable, taxAmount, trAmount, benefitMultiplier, onCallNetAfterTax, onCallTax) => (
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
-        <span className="text-gray-300">Net imposable</span>
+        <span className="text-gray-300">Net imposable salaire</span>
         <span className="font-semibold amount">{fmt(netImposable)}</span>
       </div>
       <div className="flex justify-between gap-4">
-        <span className="text-gray-300">Impôt estimé</span>
+        <span className="text-gray-300">Impôt sur salaire</span>
         <span className="font-semibold text-red-300 amount">−{fmt(taxAmount)}</span>
       </div>
+      {onCallNetAfterTax > 0 && (
+        <>
+          <div className="border-t border-gray-600 my-1" />
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-300">Astreintes net imposable (≈75%)</span>
+            <span className="font-semibold text-violet-300 amount">+{fmt(onCallNetAfterTax + onCallTax)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-300">Impôt astreintes (taux moyen {(avgTaxRate * 100).toFixed(0)}%)</span>
+            <span className="font-semibold text-red-300 amount">−{fmt(onCallTax)}</span>
+          </div>
+          <div className="border-t border-gray-600 my-1" />
+          <div className="flex justify-between gap-4">
+            <span className="text-gray-300">Total impôt estimé</span>
+            <span className="font-semibold text-red-300 amount">−{fmt(taxAmount + onCallTax)}</span>
+          </div>
+        </>
+      )}
       {trAmount > 0 && (
         <div className="flex justify-between gap-4">
           <span className="text-gray-300">TR part employeur</span>
@@ -163,39 +210,39 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Cell
           label="Annuel"
-          gross={(contract.annualGrossSalary ?? 0) + totalAnnualBonuses}
-          netImposable={(contract.annualNetImposable ?? 0) + totalAnnualBonuses * 0.75}
+          gross={(contract.annualGrossSalary ?? 0) + totalAnnualBonuses + totalAnnualOnCalls}
+          netImposable={(contract.annualNetImposable ?? 0) + totalAnnualBonuses * 0.75 + totalAnnualOnCalls * 0.75}
           netAfterTax={netAfterTaxAnnual}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.annualGrossSalary, contract.annualSuperGross, 1)}
-          netImposableTooltip={makeNetImposableTooltip(contract.annualNetImposable, totalAnnualBonuses * 0.75)}
-          netAfterTaxTooltip={netAfterTaxAnnual != null ? makeNetAfterTaxTooltip(contract.annualNetImposable, estimatedTax, trAnnual, 12) : null}
+          netImposableTooltip={makeNetImposableTooltip(contract.annualNetImposable, totalAnnualBonuses * 0.75, totalAnnualOnCalls * 0.75)}
+          netAfterTaxTooltip={netAfterTaxAnnual != null ? makeNetAfterTaxTooltip(contract.annualNetImposable, estimatedTax, trAnnual, 12, onCallAnnualNetAfterTax, onCallAnnualTax) : null}
         />
         <Cell
           label="Mensuel"
-          gross={(contract.monthlyGrossSalary ?? 0) + bonusPerMonth}
-          netImposable={(contract.monthlyNetImposable ?? 0) + bonusPerMonth * 0.75}
+          gross={(contract.monthlyGrossSalary ?? 0) + bonusPerMonth + onCallPerMonth}
+          netImposable={(contract.monthlyNetImposable ?? 0) + bonusPerMonth * 0.75 + onCallPerMonth * 0.75}
           netAfterTax={netAfterTaxMonthly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.monthlyGrossSalary, contract.monthlySuperGross, paidMonths)}
-          netImposableTooltip={makeNetImposableTooltip(contract.monthlyNetImposable, bonusPerMonth * 0.75)}
-          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / paidMonths, trMonthly, 1) : null}
+          netImposableTooltip={makeNetImposableTooltip(contract.monthlyNetImposable, bonusPerMonth * 0.75, onCallPerMonth * 0.75)}
+          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / paidMonths, trMonthly, 1, onCallAnnualNetAfterTax / paidMonths, onCallAnnualTax / paidMonths) : null}
         />
         <Cell
           label="Journalier"
-          gross={(contract.dailyGrossSalary ?? 0) + bonusPerDay}
-          netImposable={(contract.dailyNetImposable ?? 0) + bonusPerDay * 0.75}
+          gross={(contract.dailyGrossSalary ?? 0) + bonusPerDay + onCallPerDay}
+          netImposable={(contract.dailyNetImposable ?? 0) + bonusPerDay * 0.75 + onCallPerDay * 0.75}
           netAfterTax={netAfterTaxDaily}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.dailyGrossSalary, contract.dailySuperGross, workingDays)}
-          netImposableTooltip={makeNetImposableTooltip(contract.dailyNetImposable, bonusPerDay * 0.75)}
-          netAfterTaxTooltip={netAfterTaxDaily != null ? makeNetAfterTaxTooltip(contract.dailyNetImposable, estimatedTax / workingDays, trDaily, 12 / workingDays) : null}
+          netImposableTooltip={makeNetImposableTooltip(contract.dailyNetImposable, bonusPerDay * 0.75, onCallPerDay * 0.75)}
+          netAfterTaxTooltip={netAfterTaxDaily != null ? makeNetAfterTaxTooltip(contract.dailyNetImposable, estimatedTax / workingDays, trDaily, 12 / workingDays, onCallAnnualNetAfterTax / workingDays, onCallAnnualTax / workingDays) : null}
         />
         <Cell
           label="Horaire"
-          gross={(contract.hourlyGrossSalary ?? 0) + bonusPerHour}
-          netImposable={(contract.hourlyNetImposable ?? 0) + bonusPerHour * 0.75}
+          gross={(contract.hourlyGrossSalary ?? 0) + bonusPerHour + onCallPerHour}
+          netImposable={(contract.hourlyNetImposable ?? 0) + bonusPerHour * 0.75 + onCallPerHour * 0.75}
           netAfterTax={netAfterTaxHourly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.hourlyGrossSalary, contract.hourlySuperGross, workingDays * hoursPerDay)}
-          netImposableTooltip={makeNetImposableTooltip(contract.hourlyNetImposable, bonusPerHour * 0.75)}
-          netAfterTaxTooltip={netAfterTaxHourly != null ? makeNetAfterTaxTooltip(contract.hourlyNetImposable, estimatedTax / (workingDays * hoursPerDay), trHourly, 12 / workingDays / hoursPerDay) : null}
+          netImposableTooltip={makeNetImposableTooltip(contract.hourlyNetImposable, bonusPerHour * 0.75, onCallPerHour * 0.75)}
+          netAfterTaxTooltip={netAfterTaxHourly != null ? makeNetAfterTaxTooltip(contract.hourlyNetImposable, estimatedTax / (workingDays * hoursPerDay), trHourly, 12 / workingDays / hoursPerDay, onCallAnnualNetAfterTax / (workingDays * hoursPerDay), onCallAnnualTax / (workingDays * hoursPerDay)) : null}
         />
       </div>
 
@@ -224,6 +271,28 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
               <span className="text-gray-500">Part employeur : </span>
               <span className="font-semibold text-green-600 amount">+{fmt(contract.employerMonthlyMealVoucherCost)}</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {onCalls.length > 0 && (
+        <div className="mt-3 bg-violet-50 border border-violet-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
+            Astreintes <span className="font-normal normal-case">(revenu brut annuel estimé)</span>
+          </p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            {onCalls.map(oc => (
+              <div key={oc.id}>
+                <span className="text-gray-500">{oc.estimatedWeeksPerYear} sem. × {fmt(oc.weeklyFlatRate)} : </span>
+                <span className="font-semibold text-violet-700 amount">+{fmt(oc.annualOnCallIncome)} / an</span>
+              </div>
+            ))}
+            {onCalls.length > 1 && (
+              <div>
+                <span className="text-gray-500">Total : </span>
+                <span className="font-semibold text-violet-700 amount">+{fmt(totalAnnualOnCalls)} / an</span>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -51,14 +51,16 @@ L'utilisateur choisit explicitement la source à utiliser pour les revenus salar
 
 | Option | Données utilisées | Disponibilité |
 |--------|-------------------|---------------|
-| **Projection contrat** | `NetImposableCalculator.calculer(effectiveSalary, isCadre, employeePrevoyanceRate, taxParams)` du contrat actif, où `effectiveSalary` = révision active si elle existe, sinon `annualGrossSalary` du contrat | Toujours disponible si un contrat existe |
+| **Projection contrat** | `NetImposableCalculator.calculer(effectiveSalary, isCadre, employeePrevoyanceRate, taxParams)` + `Σ(weeklyFlatRate × estimatedWeeksPerYear × 0,75)` des astreintes du contrat actif | Toujours disponible si un contrat existe |
 | **Bulletins réels** | Somme des `taxableNetSalary` des bulletins saisis pour l'année | Disponible uniquement si des bulletins existent pour l'année sélectionnée |
 
 > **Révision active** : en mode "Projection contrat", le simulateur utilise automatiquement la `SalaryRevision` la plus récente dont la `effectiveDate ≤ today`. Si aucune révision n'est active, le `annualGrossSalary` du contrat sert de repli. Ce comportement est cohérent avec les projections affichées sur la page du contrat.
 
+> **Astreintes** : en mode "Projection contrat", le net imposable des astreintes (`ContractOnCall`) est ajouté au net imposable salarial selon l'approximation `weeklyFlatRate × estimatedWeeksPerYear × 0,75` (charges salariales ≈ 25 %). Ce calcul est effectué dans `TaxSimulatorService.salaryIncomeFromContract()` via `ContractOnCallRepository`.
+
 > **Cas typique :** en cours d'année, les bulletins sont incomplets. L'utilisateur peut simuler avec la projection (vision annuelle théorique) ou avec les bulletins réels déjà saisis (vision partielle de l'année).
 
-> Les primes (`ContractBonus`) et avantages en nature (`ContractBenefit`) sont considérés comme **déjà inclus** dans les `taxableNetSalary` lorsque l'option "Bulletins réels" est choisie. En mode "Projection contrat", ils ne sont pas ajoutés pour éviter des doublons.
+> Les primes (`ContractBonus`) et avantages en nature (`ContractBenefit`) sont considérés comme **déjà inclus** dans les `taxableNetSalary` lorsque l'option "Bulletins réels" est choisie. En mode "Projection contrat", ils ne sont pas ajoutés pour éviter des doublons. Les astreintes (`ContractOnCall`) sont incluses en mode "Projection contrat" uniquement.
 
 ### 3.2 Revenus complémentaires — sélection et imposition
 
@@ -98,9 +100,14 @@ Deux nouveaux champs sont ajoutés à l'entité `OtherIncome` :
 // Étape 1 — Revenus salariaux (selon choix de la source)
 effectiveSalary  = revisionActive.annualGrossSalary  si revisionActive existe
                    sinon contract.annualGrossSalary
-revenusSalariaux = NetImposableCalculator.calculer(effectiveSalary, isCadre, prevoyanceRate, taxParams)
-                                                         // option "Projection contrat"
-                   OU Σ taxableNetSalary (bulletins)      // option "Bulletins réels"
+
+// option "Projection contrat"
+salaryNetImposable  = NetImposableCalculator.calculer(effectiveSalary, isCadre, prevoyanceRate, taxParams)
+onCallNetImposable  = Σ (weeklyFlatRate × estimatedWeeksPerYear × 0,75)  // astreintes du contrat
+revenusSalariaux    = salaryNetImposable + onCallNetImposable
+
+// option "Bulletins réels"
+revenusSalariaux    = Σ taxableNetSalary (bulletins)  // astreintes déjà incluses dans les bulletins
 
 // Étape 2 — Revenus complémentaires sélectionnés
 revenusIRPP      = Σ amount  (OtherIncomes cochés, isTaxable=true, specificTaxRate=null)

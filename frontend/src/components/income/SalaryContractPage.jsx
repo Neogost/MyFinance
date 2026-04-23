@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   getSalaryContracts, createSalaryContract,
-  updateSalaryContract, deleteSalaryContract, getBonuses, getBenefits,
+  updateSalaryContract, deleteSalaryContract, getBonuses, getBenefits, getOnCalls,
 } from '../../api/income'
 import SalaryContractForm from './SalaryContractForm'
 import ProjectionGrid from './ProjectionGrid'
@@ -9,6 +9,7 @@ import PaySlipPanel from './PaySlipPanel'
 import BonusPanel from './BonusPanel'
 import BenefitPanel from './BenefitPanel'
 import RevisionPanel from './RevisionPanel'
+import OnCallPanel from './OnCallPanel'
 
 export default function SalaryContractPage() {
   const [contracts, setContracts] = useState([])
@@ -20,8 +21,10 @@ export default function SalaryContractPage() {
   const [showBonuses, setShowBonuses] = useState(false)
   const [showBenefits, setShowBenefits] = useState(false)
   const [showRevisions, setShowRevisions] = useState(false)
+  const [showOnCalls, setShowOnCalls] = useState(false)
   const [annualBonuses, setAnnualBonuses] = useState([])
   const [benefits, setBenefits] = useState([])
+  const [onCalls, setOnCalls] = useState([])
 
   useEffect(() => { fetchContracts() }, [])
 
@@ -39,9 +42,17 @@ export default function SalaryContractPage() {
       .catch(() => setBenefits([]))
   }
 
+  function fetchOnCalls(contractId) {
+    if (!contractId) { setOnCalls([]); return }
+    getOnCalls(contractId)
+      .then(ocs => setOnCalls(ocs))
+      .catch(() => setOnCalls([]))
+  }
+
   useEffect(() => {
     fetchAnnualBonuses(selected?.id)
     fetchBenefits(selected?.id)
+    fetchOnCalls(selected?.id)
   }, [selected?.id])
 
   async function fetchContracts() {
@@ -102,7 +113,7 @@ export default function SalaryContractPage() {
           {contracts.map(c => (
             <button
               key={c.id}
-              onClick={() => { setSelected(c); setShowSlips(false); setShowBonuses(false); setShowBenefits(false); setShowRevisions(false) }}
+              onClick={() => { setSelected(c); setShowSlips(false); setShowBonuses(false); setShowBenefits(false); setShowRevisions(false); setShowOnCalls(false) }}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
                 selected?.id === c.id
                   ? 'bg-indigo-600 text-white'
@@ -151,6 +162,12 @@ export default function SalaryContractPage() {
                 Modifier
               </button>
               <button
+                onClick={() => setShowOnCalls(true)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
+              >
+                Astreintes
+              </button>
+              <button
                 onClick={() => handleDelete(selected)}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-red-500 hover:text-red-600 transition"
               >
@@ -160,7 +177,7 @@ export default function SalaryContractPage() {
           </div>
 
           {/* Projections */}
-          <ProjectionGrid contract={selected} annualBonuses={annualBonuses} benefits={benefits} />
+          <ProjectionGrid contract={selected} annualBonuses={annualBonuses} benefits={benefits} onCalls={onCalls} />
 
           {/* Révisions salariales */}
           <div className="border-t border-gray-100 mt-6 pt-4">
@@ -225,6 +242,27 @@ export default function SalaryContractPage() {
         <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
           <p className="text-lg mb-2">Aucun contrat salarial</p>
           <p className="text-sm">Cliquez sur « + Nouveau contrat » pour commencer.</p>
+        </div>
+      )}
+
+      {/* ── Modal astreintes ── */}
+      {showOnCalls && selected && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-bold text-gray-900">Astreintes</h2>
+              <button
+                onClick={() => setShowOnCalls(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <OnCallPanel
+              contractId={selected.id}
+              onOnCallChange={() => fetchOnCalls(selected.id)}
+            />
+          </div>
         </div>
       )}
 
