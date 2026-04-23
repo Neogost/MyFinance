@@ -50,4 +50,16 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
             ORDER BY i.category ASC, i.name ASC
             """)
     List<Instrument> findAllWithActivePositions();
+
+    // ── Scheduler — résolution des symboles ───────────────────
+
+    /** Instruments CRYPTO sans ID CoinGecko et sans prix fixe */
+    List<Instrument> findByCategoryAndCoinGeckoIdIsNullAndStablePriceFalse(AssetCategory category);
+
+    // ── Scheduler — mise à jour des cours ─────────────────────
+
+    /** Instruments BOURSE sans prix fixe ayant un symbole Boursorama renseigné */
+    List<Instrument> findByCategoryAndStablePriceFalseAndBoursoramaSymbolIsNotNull(AssetCategory category);
+
+    List<Instrument> findByCategoryAndStablePriceFalseAndCoinGeckoIdIsNotNull(AssetCategory category);
 }

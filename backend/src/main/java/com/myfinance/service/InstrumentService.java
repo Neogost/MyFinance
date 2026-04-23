@@ -54,6 +54,7 @@ public class InstrumentService {
                 .name(request.name())
                 .currency(request.currency())
                 .stablePrice(Boolean.TRUE.equals(request.stablePrice()))
+                .boursoramaSymbol(request.boursoramaSymbol())
                 .build();
 
         return InstrumentDto.from(instrumentRepository.save(instrument));
@@ -71,6 +72,7 @@ public class InstrumentService {
         instrument.setName(request.name());
         instrument.setCurrency(request.currency());
         instrument.setStablePrice(Boolean.TRUE.equals(request.stablePrice()));
+        instrument.setBoursoramaSymbol(request.boursoramaSymbol());
 
         return InstrumentDto.from(instrumentRepository.save(instrument));
     }

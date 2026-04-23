@@ -15,7 +15,10 @@ public record InstrumentDto(
         String currency,
         BigDecimal lastPrice,
         LocalDateTime lastPriceUpdatedAt,
-        boolean stablePrice
+        boolean stablePrice,
+        String marketSymbol,
+        String coinGeckoId,
+        String boursoramaSymbol
 ) {
     public static InstrumentDto from(Instrument instrument) {
         return new InstrumentDto(
@@ -27,7 +30,10 @@ public record InstrumentDto(
                 instrument.getCurrency(),
                 instrument.getLastPrice(),
                 instrument.getLastPriceUpdatedAt(),
-                instrument.isStablePrice()
+                instrument.isStablePrice(),
+                instrument.getMarketSymbol(),
+                instrument.getCoinGeckoId(),
+                instrument.getBoursoramaSymbol()
         );
     }
 }

@@ -55,4 +55,13 @@ public class Instrument {
     @Builder.Default
     @Column(nullable = false)
     private boolean stablePrice = false;
+
+    /** Symbole de marché Twelve Data (ex : "ESE:XPAR") — résolu automatiquement depuis l'ISIN, BOURSE uniquement */
+    private String marketSymbol;
+
+    /** Identifiant CoinGecko (ex : "bitcoin") — résolu automatiquement depuis le ticker, CRYPTO uniquement */
+    private String coinGeckoId;
+
+    /** Symbole Boursorama (ex : "1rTESE") — saisi manuellement par l'admin, BOURSE uniquement */
+    private String boursoramaSymbol;
 }

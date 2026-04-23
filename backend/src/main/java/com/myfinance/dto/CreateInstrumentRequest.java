@@ -10,5 +10,6 @@ public record CreateInstrumentRequest(
         String ticker,
         @NotBlank String name,
         @NotBlank String currency,
-        Boolean stablePrice
+        Boolean stablePrice,
+        String boursoramaSymbol
 ) {}
