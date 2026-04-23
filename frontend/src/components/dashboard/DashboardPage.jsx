@@ -11,6 +11,7 @@ import SalaryAnnualBarChart from './SalaryAnnualBarChart'
 import PatrimoineByMemberChart from './PatrimoineByMemberChart'
 import PatrimoineByCurrencyChart from './PatrimoineByCurrencyChart'
 import PatrimoineStrategyRadarChart from './PatrimoineStrategyRadarChart'
+import PatrimoineScoreWidget from './PatrimoineScoreWidget'
 import SafetyNetWidget from './SafetyNetWidget'
 import DetteWidget from './DetteWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
@@ -231,8 +232,11 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           </div>
         )}
 
-        {/* Radar objectifs + Endettement */}
-        <div className="grid grid-cols-3 gap-6">
+        {/* Score patrimonial + Radar objectifs + Endettement */}
+        <div className="grid grid-cols-4 gap-6">
+          <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-6">
+            <PatrimoineScoreWidget />
+          </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
             <p className="text-xs text-gray-400 mb-4">

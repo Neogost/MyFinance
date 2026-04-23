@@ -50,6 +50,10 @@ export const getReferentiel = () => api.get('/api/patrimoine/referentiel').then(
 export const getPatrimoineTargets  = ()        => api.get('/api/patrimoine/targets').then(r => r.data)
 export const savePatrimoineTargets = (targets) => api.put('/api/patrimoine/targets', targets).then(r => r.data)
 
+// ── Scoring patrimonial ────────────────────────────────────────
+
+export const getPatrimoineScore = () => api.get('/api/patrimoine/score').then(r => r.data)
+
 // ── Admin — Snapshots ──────────────────────────────────────────
 
 export const getAdminSnapshots       = (userId)       => api.get('/api/admin/snapshots', { params: { userId } }).then(r => r.data)
