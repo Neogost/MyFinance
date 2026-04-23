@@ -18,6 +18,7 @@ import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import LoginHistoryPage from './components/admin/LoginHistoryPage'
 import AdminFamilyGroupPage from './components/admin/AdminFamilyGroupPage'
+import AdminInstrumentPage from './components/admin/AdminInstrumentPage'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
@@ -63,7 +64,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history' || page === 'admin-family-groups') && user?.role !== 'ADMIN') return
+    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history' || page === 'admin-family-groups' || page === 'admin-instruments') && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
 
@@ -138,6 +139,8 @@ export default function App() {
         {currentPage === 'login-history' && user.role === 'ADMIN' && <LoginHistoryPage />}
 
         {currentPage === 'admin-family-groups' && user.role === 'ADMIN' && <AdminFamilyGroupPage />}
+
+        {currentPage === 'admin-instruments' && user.role === 'ADMIN' && <AdminInstrumentPage />}
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>

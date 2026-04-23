@@ -32,7 +32,7 @@ export default function InstrumentPriceUpdateModal({ onClose, onSaved }) {
   const [prices, setPrices]           = useState({})
   const [loading, setLoading]         = useState(true)
   const [saving, setSaving]           = useState(false)
-  const [toggling, setToggling]       = useState(null)   // id de l'instrument en cours de toggle
+  const [toggling, setToggling]       = useState(null)
   const [error, setError]             = useState(null)
 
   useEffect(() => {
@@ -119,6 +119,13 @@ export default function InstrumentPriceUpdateModal({ onClose, onSaved }) {
             )}
           </div>
         </div>
+
+        {/* ── Notifications (zone fixe, toujours visible) ── */}
+        {error && (
+          <div className="px-6 pt-3 pb-0">
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+          </div>
+        )}
 
         {/* ── Corps ── */}
         <div className="overflow-y-auto flex-1 px-6 py-4 flex flex-col gap-6">
@@ -245,18 +252,15 @@ export default function InstrumentPriceUpdateModal({ onClose, onSaved }) {
             )
           })}
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-          )}
         </div>
 
         {/* ── Pied ── */}
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
           <button
             onClick={onClose}
             disabled={saving}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition disabled:opacity-60">
-            Annuler
+            Fermer
           </button>
           <button
             onClick={handleSave}

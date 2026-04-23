@@ -47,7 +47,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier' || currentPage === 'compound-interest' || currentPage === 'loan-simulator' || currentPage === 'patrimoine-declaration' || currentPage === 'crisis-simulator'
-  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history' || currentPage === 'admin-family-groups'
+  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history' || currentPage === 'admin-family-groups' || currentPage === 'admin-instruments'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
 
@@ -250,6 +250,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                     }`}
                   >
                     Regroupements familiaux
+                  </button>
+                  <button
+                    onClick={() => { onNavigate('admin-instruments'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition ${
+                      currentPage === 'admin-instruments'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Instruments financiers
                   </button>
                 </div>
               </>
