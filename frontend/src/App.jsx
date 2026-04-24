@@ -19,6 +19,8 @@ import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
 import LoginHistoryPage from './components/admin/LoginHistoryPage'
 import AdminFamilyGroupPage from './components/admin/AdminFamilyGroupPage'
 import AdminInstrumentPage from './components/admin/AdminInstrumentPage'
+import RegistrationRequestPage from './components/admin/RegistrationRequestPage'
+import { getRegistrations } from './api/registrations'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
@@ -32,6 +34,7 @@ export default function App() {
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
   const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
+  const [pendingRegistrations, setPendingRegistrations] = useState(0)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -39,7 +42,12 @@ export default function App() {
     setServerErrorHandler(status => setAppError(status))
 
     getMe()
-      .then(setUser)
+      .then(u => {
+        setUser(u)
+        if (u?.role === 'ADMIN') {
+          getRegistrations('PENDING').then(list => setPendingRegistrations(list.length)).catch(() => {})
+        }
+      })
       .catch(() => {}) // session expirée ou absente → affiche le login
       .finally(() => setAuthLoading(false))
   }, [])
@@ -64,7 +72,8 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    if ((page === 'users' || page === 'admin-snapshots' || page === 'login-history' || page === 'admin-family-groups' || page === 'admin-instruments') && user?.role !== 'ADMIN') return
+    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations']
+    if (adminPages.includes(page) && user?.role !== 'ADMIN') return
     setCurrentPage(page)
   }
 
@@ -103,6 +112,7 @@ export default function App() {
         onToggleHideValues={toggleHideValues}
         familyMode={familyMode}
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
+        pendingRegistrations={pendingRegistrations}
       />
 
       <main className="p-8">
@@ -141,6 +151,10 @@ export default function App() {
         {currentPage === 'admin-family-groups' && user.role === 'ADMIN' && <AdminFamilyGroupPage />}
 
         {currentPage === 'admin-instruments' && user.role === 'ADMIN' && <AdminInstrumentPage />}
+
+        {currentPage === 'admin-registrations' && user.role === 'ADMIN' && (
+          <RegistrationRequestPage onPendingCountChange={setPendingRegistrations} />
+        )}
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>

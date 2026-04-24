@@ -40,14 +40,14 @@ function HomeIcon() {
   )
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode, pendingRegistrations = 0 }) {
   const [incomeOpen, setIncomeOpen] = useState(false)
   const [toolsOpen,  setToolsOpen]  = useState(false)
   const [adminOpen,  setAdminOpen]  = useState(false)
 
   const isIncomePage  = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage   = currentPage === 'tax-simulator' || currentPage === 'bilan-financier' || currentPage === 'compound-interest' || currentPage === 'loan-simulator' || currentPage === 'patrimoine-declaration' || currentPage === 'crisis-simulator'
-  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history' || currentPage === 'admin-family-groups' || currentPage === 'admin-instruments'
+  const isAdminPage   = currentPage === 'users' || currentPage === 'admin-snapshots' || currentPage === 'login-history' || currentPage === 'admin-family-groups' || currentPage === 'admin-instruments' || currentPage === 'admin-registrations'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
 
@@ -260,6 +260,21 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                     }`}
                   >
                     Instruments financiers
+                  </button>
+                  <button
+                    onClick={() => { onNavigate('admin-registrations'); setAdminOpen(false) }}
+                    className={`w-full text-left px-4 py-2 text-sm transition flex items-center justify-between ${
+                      currentPage === 'admin-registrations'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Demandes d'inscription
+                    {pendingRegistrations > 0 && (
+                      <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">
+                        {pendingRegistrations}
+                      </span>
+                    )}
                   </button>
                 </div>
               </>

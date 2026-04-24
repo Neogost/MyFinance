@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { login } from '../api/auth'
+import RegistrationForm from './RegistrationForm'
 
 export default function LoginForm({ onSuccess }) {
+  const [showRegister, setShowRegister] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -26,6 +28,10 @@ export default function LoginForm({ onSuccess }) {
     }, 1000)
     return () => clearInterval(intervalRef.current)
   }, [lockoutSecondes > 0])
+
+  if (showRegister) {
+    return <RegistrationForm onBack={() => setShowRegister(false)} />
+  }
 
   const estVerrouille = lockoutSecondes > 0
 
@@ -124,6 +130,16 @@ export default function LoginForm({ onSuccess }) {
             {loading ? 'Connexion…' : estVerrouille ? `Bloqué (${formatDuree(lockoutSecondes)})` : 'Se connecter'}
           </button>
         </form>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Pas encore de compte ?{' '}
+          <button
+            onClick={() => setShowRegister(true)}
+            className="text-indigo-600 font-semibold hover:underline"
+          >
+            Faire une demande
+          </button>
+        </p>
       </div>
     </div>
   )
