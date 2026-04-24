@@ -9,6 +9,8 @@ services:
     volumes:
       # Base de données SQLite persistée sur le NAS
       - /FOLDER/myFinance/data:/data
+      # Logs applicatifs persistés sur le NAS
+      - /FOLDER/myFinance/logs:/logs
     environment:
       # Mettre à jour avec votre domaine QNAP une fois configuré
       # Ex : CORS_ALLOWED_ORIGINS=https://xxxxx.com

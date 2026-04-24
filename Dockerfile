@@ -28,7 +28,7 @@ WORKDIR /app
 
 COPY --from=backend-builder /app/target/myFinance-0.0.1-SNAPSHOT.jar app.jar
 
-RUN mkdir -p /data
+RUN mkdir -p /data /logs
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-jar", "app.jar"]
