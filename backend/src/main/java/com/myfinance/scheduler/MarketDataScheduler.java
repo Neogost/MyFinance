@@ -15,10 +15,10 @@ public class MarketDataScheduler {
 
     private final MarketDataService marketDataService;
 
-    /** Déclenche la mise à jour complète le 1er de chaque mois à 2h00 */
-    @Scheduled(cron = "0 0 2 1 * *")
-    public void runMonthlyUpdate() {
-        log.info("[Scheduler] Déclenchement automatique mensuel (cron: 1er du mois, 2h00)");
+    /** Déclenche la mise à jour complète tous les jours à 2h00 */
+    @Scheduled(cron = "0 0 2 * * *")
+    public void runDailyUpdate() {
+        log.info("[Scheduler] Déclenchement automatique quotidien (cron: tous les jours, 2h00)");
         marketDataService.runFullUpdate();
     }
 }

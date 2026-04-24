@@ -114,7 +114,9 @@ public record PositionDto(
 
     /** IMMO_PHYSIQUE : valeur = estimatedCurrentValue saisie manuellement */
     private static PositionComputedDto computeImmoPhysique(Position position, List<PositionOrder> orders) {
-        BigDecimal invested = computeInvested(orders);
+        BigDecimal invested = position.getAcquisitionPrice() != null
+                ? position.getAcquisitionPrice()
+                : computeInvested(orders);
         BigDecimal currentValue = position.getEstimatedCurrentValue() != null
                 ? position.getEstimatedCurrentValue()
                 : BigDecimal.ZERO;
