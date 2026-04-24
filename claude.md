@@ -382,7 +382,7 @@ npm run dev
 - Ne pas inventer de structure de données non documentée
 
 ## Statut du projet
-🚧 En cours de développement
+✅ V1 livrée — application déployée en production sur NAS QNAP via Docker
 
 **Implémenté :**
 - Authentification (session cookie, BCrypt, login/logout/me)
@@ -583,6 +583,15 @@ npm run dev
   - Création et édition d'instruments via `AdminInstrumentForm` (modal)
   - Champ `boursoramaSymbol` saisi manuellement par l'admin
   - Accessible depuis le menu Administration → "Instruments financiers"
+
+- **Déploiement Docker** :
+  - `Dockerfile` multi-stage (node → JDK → JRE Alpine, image ~140 MB, ciblage `linux/amd64`)
+  - `docker-compose.yml` avec volume SQLite persisté sur le NAS
+  - Profil Spring `docker` : HTTP port 8080, SQLite `/data/myfinance.db`, scheduler activé
+  - `.dockerignore` optimisé
+  - Script `deploy.sh` pour les mises à jour (build → export → transfer → reload)
+  - Documentation : `docs/deployment/docker-deployment.md`
+  - Accès internet via proxy inverse QNAP + myQNAPcloud (HTTPS port 4443, SSL Let's Encrypt auto)
 
 **À venir :**
 - Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)
