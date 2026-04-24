@@ -460,9 +460,9 @@ export default function LoanSimulatorPage({ user }) {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Simulateur d'Emprunt Immobilier</h1>
-        <div className="flex items-center gap-2 print:hidden">
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           <button onClick={() => { setSaveName(`Simulation du ${new Date().toLocaleDateString('fr-FR')}`); setShowSaveModal(true) }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-sm font-medium text-indigo-700 hover:bg-indigo-100 transition">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -470,46 +470,13 @@ export default function LoanSimulatorPage({ user }) {
             </svg>
             Sauvegarder
           </button>
-          <div className="relative">
-            <button onClick={() => setShowLoadPanel(v => !v)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
-              </svg>
-              Mes simulations {savedSimulations.length > 0 && <span className="bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{savedSimulations.length}</span>}
-            </button>
-
-            {showLoadPanel && (
-              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-200 z-50">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-700">Simulations sauvegardées</p>
-                  <button onClick={() => setShowLoadPanel(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
-                </div>
-                {savedSimulations.length === 0
-                  ? <p className="px-4 py-6 text-sm text-gray-400 text-center italic">Aucune simulation sauvegardée</p>
-                  : <ul className="divide-y divide-gray-50 max-h-80 overflow-y-auto">
-                      {savedSimulations.map(sim => (
-                        <li key={sim.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">{sim.name}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {new Date(sim.savedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                              {' · '}{sim.loanAmount?.toLocaleString('fr-FR')} € sur {sim.loanDuration} ans à {sim.annualRate} %
-                            </p>
-                          </div>
-                          <button onClick={() => handleLoad(sim)}
-                            className="shrink-0 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
-                            Charger
-                          </button>
-                          <button onClick={() => handleDeleteSaved(sim.id)}
-                            className="shrink-0 text-gray-300 hover:text-red-500 transition text-sm">✕</button>
-                        </li>
-                      ))}
-                    </ul>
-                }
-              </div>
-            )}
-          </div>
+          <button onClick={() => setShowLoadPanel(v => !v)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+            </svg>
+            Mes simulations {savedSimulations.length > 0 && <span className="bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{savedSimulations.length}</span>}
+          </button>
           <button onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -550,10 +517,44 @@ export default function LoanSimulatorPage({ user }) {
         </div>
       )}
 
-      <div className="flex gap-6 items-start">
+      {/* Modal — simulations sauvegardées */}
+      {showLoadPanel && (
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60" onClick={() => setShowLoadPanel(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+              <p className="text-sm font-semibold text-gray-700">Simulations sauvegardées</p>
+              <button onClick={() => setShowLoadPanel(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            {savedSimulations.length === 0
+              ? <p className="px-4 py-8 text-sm text-gray-400 text-center italic">Aucune simulation sauvegardée</p>
+              : <ul className="divide-y divide-gray-50 overflow-y-auto">
+                  {savedSimulations.map(sim => (
+                    <li key={sim.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{sim.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(sim.savedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {' · '}{sim.loanAmount?.toLocaleString('fr-FR')} € sur {sim.loanDuration} ans à {sim.annualRate} %
+                        </p>
+                      </div>
+                      <button onClick={() => handleLoad(sim)}
+                        className="shrink-0 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                        Charger
+                      </button>
+                      <button onClick={() => handleDeleteSaved(sim.id)}
+                        className="shrink-0 text-gray-300 hover:text-red-500 transition text-sm">✕</button>
+                    </li>
+                  ))}
+                </ul>
+            }
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
 
         {/* ── Panneau gauche ── */}
-        <div className="w-80 shrink-0 space-y-4" ref={leftPanelRef}>
+        <div className="w-full lg:w-80 lg:shrink-0 space-y-4" ref={leftPanelRef}>
 
           {/* Revenus */}
           <Section title="Revenus" accent={!!apiIncome && !incomeLoading}>
@@ -998,24 +999,24 @@ export default function LoanSimulatorPage({ user }) {
         <div className="flex-1 space-y-4">
 
           {/* KPIs */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <p className="text-xs text-gray-500 mb-1">Mensualité principale</p>
-              <p className="text-xl font-bold text-gray-900">{fmt(monthlyTotal)}<span className="text-xs font-normal text-gray-400">/mois</span></p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 overflow-hidden">
+              <p className="text-xs text-gray-500 mb-1 truncate">Mensualité principale</p>
+              <p className="text-lg md:text-xl font-bold text-gray-900">{fmt(monthlyTotal)}<span className="text-xs font-normal text-gray-400">/mois</span></p>
               <p className="text-xs text-gray-400 mt-1">Crédit {fmt(monthlyPrincipal)} + Ass. {fmt(monthlyInsurance)}</p>
               {ptzEnabled && ptzMonthlyPayment > 0 && (
                 <p className="text-xs font-semibold text-violet-600 mt-1">
-                  + PTZ {fmt(ptzMonthlyPayment)} après différé<br />= <span className="text-gray-900">{fmt(totalMonthlyAfterDeferral)}/mois</span>
+                  + PTZ {fmt(ptzMonthlyPayment)}<br />= <span className="text-gray-900">{fmt(totalMonthlyAfterDeferral)}/mois</span>
                 </p>
               )}
               {durationReduced && hasRepayments && (
-                <p className="text-xs text-emerald-600 mt-1">✓ Durée réduite à {effectiveYears} ans</p>
+                <p className="text-xs text-emerald-600 mt-1">✓ {effectiveYears} ans</p>
               )}
             </div>
 
-            <div className={`rounded-xl border p-4 ${debtColor}`}>
-              <p className="text-xs mb-1 opacity-70">Taux d'endettement</p>
-              <p className="text-xl font-bold">{fmtPct(debtRatio)}</p>
+            <div className={`rounded-xl border p-3 md:p-4 overflow-hidden ${debtColor}`}>
+              <p className="text-xs mb-1 opacity-70 truncate">Taux d'endettement</p>
+              <p className="text-lg md:text-xl font-bold">{fmtPct(debtRatio)}</p>
               <p className="text-xs mt-1 opacity-80">
                 {debtRatio > 35 ? '⚠ Dépasse le seuil HCSF (35 %)' : debtRatio > 33 ? 'Proche du seuil HCSF (35 %)' : '✓ Sous le seuil HCSF (35 %)'}
               </p>
@@ -1024,21 +1025,21 @@ export default function LoanSimulatorPage({ user }) {
               )}
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <p className="text-xs text-gray-500 mb-1">Coût total du crédit</p>
-              <p className="text-xl font-bold text-gray-900">{fmt(totalCreditCost)}</p>
-              <p className="text-xs text-gray-400 mt-1">{fmt(totalInterest)} intérêts<br />{fmt(totalInsurance)} assurance</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 overflow-hidden">
+              <p className="text-xs text-gray-500 mb-1 truncate">Coût total du crédit</p>
+              <p className="text-lg md:text-xl font-bold text-gray-900">{fmt(totalCreditCost)}</p>
+              <p className="text-xs text-gray-400 mt-1 leading-tight">{fmt(totalInterest)} intérêts<br />{fmt(totalInsurance)} assurance</p>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <p className="text-xs text-gray-500 mb-1">Coût total du projet</p>
-              <p className="text-xl font-bold text-gray-900">{fmt(totalProjectCost)}</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 md:p-4 overflow-hidden">
+              <p className="text-xs text-gray-500 mb-1 truncate">Coût total du projet</p>
+              <p className="text-lg md:text-xl font-bold text-gray-900">{fmt(totalProjectCost)}</p>
               <p className="text-xs text-gray-400 mt-1">Acquisition {fmt(acquisitionCost)}<br />+ Crédit {fmt(totalInterest + totalInsurance)}</p>
             </div>
           </div>
 
           {/* Bannière TAEG + coût mensuel total */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-gray-800 text-white rounded-xl p-4 flex items-center gap-4">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">TAEG estimé</p>
@@ -1072,7 +1073,7 @@ export default function LoanSimulatorPage({ user }) {
 
           {/* Comparaison de scénarios */}
           {showComparison && comparison && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Comparaison de scénarios</h3>
               <table className="w-full text-sm">
                 <thead>
@@ -1148,11 +1149,11 @@ export default function LoanSimulatorPage({ user }) {
 
           {/* Simulation de revente */}
           {showResale && resale && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
                 Simulation de revente — An {resaleYear} ({CURRENT_YEAR + resaleYear})
               </h3>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2 text-sm">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Produit de la vente</p>
                   <div className="flex justify-between"><span className="text-gray-500">Prix de revente estimé</span><span className="font-medium">{fmt(resale.effectiveResalePrice)}</span></div>
@@ -1174,7 +1175,7 @@ export default function LoanSimulatorPage({ user }) {
                   </div>
                 </div>
               </div>
-              <div className={`mt-4 rounded-lg p-4 flex items-center justify-between ${resale.netGain >= 0 ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+              <div className={`mt-4 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${resale.netGain >= 0 ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Gain / perte net après {resaleYear} an{resaleYear > 1 ? 's' : ''}</p>
                   <p className={`text-2xl font-bold ${resale.netGain >= 0 ? 'text-green-700' : 'text-red-600'}`}>
@@ -1196,13 +1197,13 @@ export default function LoanSimulatorPage({ user }) {
 
           {/* Louer vs Acheter */}
           {showRentComparison && rentVsBuy && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Louer vs Acheter — Patrimoine net sur {rentVsBuy.horizon} ans</h3>
               <p className="text-xs text-gray-400 mb-4">
                 Locataire investit l'apport ({fmt(requiredContrib)}) + économies mensuelles à {investmentReturnRate} %/an.
                 Propriétaire : valeur nette du bien (appréciation {propertyAppreciation} %/an − dette − {resaleAgencyFeesPct} % frais revente).
               </p>
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className={`rounded-lg p-4 border ${rentVsBuy.advantage >= 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'}`}>
                   <p className="text-xs text-gray-500 mb-1">Patrimoine acheteur (an {rentVsBuy.horizon})</p>
                   <p className="text-xl font-bold text-indigo-700">{fmt(rentVsBuy.finalBuyWealth)}</p>
@@ -1221,7 +1222,8 @@ export default function LoanSimulatorPage({ user }) {
                     : <p className="text-xs text-gray-400 mt-1">Achat jamais rentable sur l'horizon</p>}
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={220}>
+              <div className="h-40 md:h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={rentVsBuy.yearlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} interval={Math.max(0, Math.floor(rentVsBuy.yearlyData.length / 8) - 1)} />
@@ -1233,6 +1235,7 @@ export default function LoanSimulatorPage({ user }) {
                   <Line type="monotone" dataKey="location"  stroke="#10b981" strokeWidth={2} dot={false} name="location" strokeDasharray="5 5" />
                 </ComposedChart>
               </ResponsiveContainer>
+              </div>
               <p className="text-xs text-gray-400 mt-3">
                 Hypothèses : loyer {fmt(monthlyRent)}/mois, hausse {rentIncreaseRate} %/an — rendement placement {investmentReturnRate} %/an net — appréciation bien {propertyAppreciation} %/an.
                 Le locataire investit l'apport initial + toute économie mensuelle (si mensualité achat &gt; loyer).
@@ -1241,10 +1244,11 @@ export default function LoanSimulatorPage({ user }) {
           )}
 
           {/* Charts */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Répartition des coûts globaux</h3>
-              <ResponsiveContainer width="100%" height={220}>
+              <div className="h-48 md:h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={donutData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}>
                     {donutData.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
@@ -1253,11 +1257,13 @@ export default function LoanSimulatorPage({ user }) {
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
+              </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Capital restant dû</h3>
-              <ResponsiveContainer width="100%" height={220}>
+              <div className="h-48 md:h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={capitalChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} interval={Math.max(0, Math.floor(capitalChartData.length / 5) - 1)} />
@@ -1269,12 +1275,14 @@ export default function LoanSimulatorPage({ user }) {
                   {ptzEnabled && <Area type="monotone" dataKey="capitalPtz" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} name="capitalPtz" dot={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Répartition annuelle — intérêts vs amortissement du capital</h3>
-            <ResponsiveContainer width="100%" height={220}>
+            <div className="h-48 md:h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={breakdownChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} interval={Math.max(0, Math.floor(breakdownChartData.length / 6) - 1)} />
@@ -1286,6 +1294,7 @@ export default function LoanSimulatorPage({ user }) {
                 <Bar dataKey="amortissement" stackId="a" fill="#6366f1" fillOpacity={0.85} name="amortissement" radius={[3, 3, 0, 0]} />
               </ComposedChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           <AmortizationTable

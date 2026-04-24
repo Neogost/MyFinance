@@ -65,7 +65,7 @@ function BilanRow({ label, amount, badge, dimmed = false }) {
   const isNeg = amount != null && amount < 0
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50 transition">
-      <td className={`px-5 py-2.5 text-sm ${dimmed ? 'text-gray-400 italic' : 'text-gray-800'}`}>
+      <td className={`px-3 md:px-5 py-2.5 text-sm ${dimmed ? 'text-gray-400 italic' : 'text-gray-800'}`}>
         {label}
         {badge && (
           <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">
@@ -73,7 +73,7 @@ function BilanRow({ label, amount, badge, dimmed = false }) {
           </span>
         )}
       </td>
-      <td className={`px-5 py-2.5 text-sm font-semibold text-right w-36 ${isNeg ? 'text-red-600' : 'text-gray-900'}`}>
+      <td className={`px-3 md:px-5 py-2.5 text-sm font-semibold text-right whitespace-nowrap ${isNeg ? 'text-red-600' : 'text-gray-900'}`}>
         {amount == null
           ? <span className="text-gray-400 font-normal text-xs">—</span>
           : <span className="amount">{fmt(amount)} €</span>
@@ -86,8 +86,8 @@ function BilanRow({ label, amount, badge, dimmed = false }) {
 function TotalRow({ label, amount, color = 'text-gray-900' }) {
   return (
     <tr className="border-t-2 border-gray-300 bg-gray-50">
-      <td className="px-5 py-2.5 text-sm font-bold text-gray-700 text-right">{label}</td>
-      <td className={`px-5 py-2.5 text-sm font-bold text-right w-36 ${color}`}>
+      <td className="px-3 md:px-5 py-2.5 text-sm font-bold text-gray-700 text-right">{label}</td>
+      <td className={`px-3 md:px-5 py-2.5 text-sm font-bold text-right whitespace-nowrap ${color}`}>
         <span className="amount">{fmt(amount)} €</span>
       </td>
     </tr>
@@ -248,14 +248,14 @@ export default function BilanFinancierPage({ user }) {
     <div className="max-w-3xl mx-auto space-y-3">
 
       {/* ── En-tête ── */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-2">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Bilan financier personnel</h2>
           <p className="text-gray-500 text-sm mt-0.5">
             Synthèse revenus, dépenses, actif et passif — vue {period === 'MONTHLY' ? 'mensuelle' : 'annuelle'}.
           </p>
         </div>
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-medium">
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-medium self-start md:self-auto">
           <button
             onClick={() => setPeriod('MONTHLY')}
             className={`px-4 py-1.5 transition ${period === 'MONTHLY' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
@@ -367,10 +367,10 @@ export default function BilanFinancierPage({ user }) {
       </div>
 
       {/* ── ACTIF / PASSIF ── */}
-      <div className="grid grid-cols-2 gap-0 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
 
         {/* Actif */}
-        <div className="flex flex-col border-r border-gray-200">
+        <div className="flex flex-col md:border-r border-b md:border-b-0 border-gray-200">
           <div className="bg-green-600 text-white text-center py-2 font-bold text-sm tracking-widest uppercase">
             Actif
           </div>
@@ -387,8 +387,8 @@ export default function BilanFinancierPage({ user }) {
                 .sort(([, a], [, b]) => b - a)
                 .map(([cat, val]) => (
                   <tr key={cat} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                    <td className="px-4 py-2.5 text-sm text-gray-800">{ASSET_LABELS[cat] ?? cat}</td>
-                    <td className="px-4 py-2.5 text-sm font-semibold text-gray-900 text-right">
+                    <td className="px-3 md:px-4 py-2.5 text-sm text-gray-800">{ASSET_LABELS[cat] ?? cat}</td>
+                    <td className="px-3 md:px-4 py-2.5 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
                       <span className="amount">{fmt(val)} €</span>
                     </td>
                   </tr>
@@ -396,9 +396,9 @@ export default function BilanFinancierPage({ user }) {
               }
             </tbody>
           </table>
-          <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-4 py-2.5">
+          <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-3 md:px-4 py-2.5">
             <span className="text-sm font-bold text-green-700">TOTAL</span>
-            <span className="text-sm font-bold text-green-700 amount">{fmt(totalActif)} €</span>
+            <span className="text-sm font-bold text-green-700 amount whitespace-nowrap">{fmt(totalActif)} €</span>
           </div>
         </div>
 
@@ -428,10 +428,10 @@ export default function BilanFinancierPage({ user }) {
                 .sort((a, b) => b.totalEffectiveValue - a.totalEffectiveValue)
                 .map(p => (
                   <tr key={p.category} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                    <td className="px-4 py-2.5 text-sm text-gray-800">
+                    <td className="px-3 md:px-4 py-2.5 text-sm text-gray-800">
                       {POSSESSION_LABELS[p.category] ?? p.category}
                     </td>
-                    <td className="px-4 py-2.5 text-sm font-semibold text-gray-900 text-right">
+                    <td className="px-3 md:px-4 py-2.5 text-sm font-semibold text-gray-900 text-right whitespace-nowrap">
                       <span className="amount">{fmt(p.totalEffectiveValue)} €</span>
                     </td>
                   </tr>
@@ -446,8 +446,8 @@ export default function BilanFinancierPage({ user }) {
                   </tr>
                   {dettesByType.map(d => (
                     <tr key={d.type} className="border-t border-gray-100 hover:bg-red-50 transition">
-                      <td className="px-4 py-2 text-sm text-gray-700 pl-6">{DETTE_TYPE_LABELS[d.type] ?? d.type}</td>
-                      <td className="px-4 py-2 text-sm font-semibold text-red-600 text-right">
+                      <td className="px-3 md:px-4 py-2 text-sm text-gray-700 pl-5 md:pl-6">{DETTE_TYPE_LABELS[d.type] ?? d.type}</td>
+                      <td className="px-3 md:px-4 py-2 text-sm font-semibold text-red-600 text-right whitespace-nowrap">
                         <span className="amount">− {fmt(d.totalRemainingCapital)} €</span>
                       </td>
                     </tr>
@@ -456,16 +456,16 @@ export default function BilanFinancierPage({ user }) {
               )}
             </tbody>
           </table>
-          <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-4 py-2.5">
+          <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-3 md:px-4 py-2.5">
             <span className="text-sm font-bold text-amber-700">TOTAL</span>
-            <span className="text-sm font-bold text-amber-700 amount">{fmt(totalPassif)} €</span>
+            <span className="text-sm font-bold text-amber-700 amount whitespace-nowrap">{fmt(totalPassif)} €</span>
           </div>
         </div>
       </div>
 
       {/* ── Δ R-D ── */}
       <div className={`rounded-xl shadow-sm border ${delta >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-        <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 md:px-6 py-3">
           <div>
             <span className={`text-sm font-bold uppercase tracking-widest ${delta >= 0 ? 'text-green-800' : 'text-red-800'}`}>
               Δ Revenus − Dépenses
@@ -479,7 +479,7 @@ export default function BilanFinancierPage({ user }) {
                 )
             }
           </div>
-          <span className={`text-2xl font-bold amount ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          <span className={`text-2xl font-bold amount whitespace-nowrap ${delta >= 0 ? 'text-green-700' : 'text-red-700'}`}>
             {delta >= 0 ? '+' : ''}{fmt(delta * mult)} €
           </span>
         </div>
@@ -488,8 +488,8 @@ export default function BilanFinancierPage({ user }) {
       {/* ── Matelas de sécurité ── */}
       {snTarget != null && (
         <div className={`rounded-xl shadow-sm border ${snAchieved ? 'border-emerald-200 bg-emerald-50' : 'border-indigo-200 bg-indigo-50'}`}>
-          <div className="px-6 py-4 space-y-2">
-            <div className="flex items-start justify-between">
+          <div className="px-4 md:px-6 py-4 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div>
                 <span className={`text-sm font-bold uppercase tracking-widest ${snAchieved ? 'text-emerald-800' : 'text-indigo-800'}`}>
                   Matelas de sécurité
@@ -498,7 +498,7 @@ export default function BilanFinancierPage({ user }) {
                   Livrets & Liquidités — objectif {snTarget.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €
                 </p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <span className={`text-2xl font-bold ${snAchieved ? 'text-emerald-700' : 'text-indigo-700'}`}>
                   {snPct.toFixed(0)} %{snAchieved ? ' ✓' : ''}
                 </span>
@@ -520,7 +520,7 @@ export default function BilanFinancierPage({ user }) {
       {/* ── Ratio de couverture ── */}
       {ratioCouverture != null && (
         <div className="rounded-xl shadow-sm border border-indigo-200 bg-indigo-50">
-          <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 md:px-6 py-3">
             <div>
               <span className="text-sm font-bold uppercase tracking-widest text-indigo-800">
                 Ratio de couverture
@@ -529,11 +529,9 @@ export default function BilanFinancierPage({ user }) {
                 Patrimoine financier ÷ dépenses annuelles — sans aucun revenu
               </p>
             </div>
-            <div className="text-right">
-              <span className="text-2xl font-bold text-indigo-700">
-                {ratioCouverture.toFixed(1)} ans
-              </span>
-            </div>
+            <span className="text-2xl font-bold text-indigo-700 whitespace-nowrap">
+              {ratioCouverture.toFixed(1)} ans
+            </span>
           </div>
         </div>
       )}
@@ -541,9 +539,9 @@ export default function BilanFinancierPage({ user }) {
       {/* ── Projection FIRE ── */}
       {fireTarget > 0 && (
         <div className="rounded-xl shadow-sm border border-violet-200 bg-violet-50">
-          <div className="px-6 py-4 space-y-3">
+          <div className="px-4 md:px-6 py-4 space-y-3">
 
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div>
                 <span className="text-sm font-bold uppercase tracking-widest text-violet-800">
                   Indépendance Financière (FIRE)
@@ -552,7 +550,7 @@ export default function BilanFinancierPage({ user }) {
                   Règle des 4 % — cible = dépenses annuelles × 25
                 </p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right shrink-0">
                 {fireAtteint ? (
                   <span className="text-xl font-bold text-violet-700">🎉 Objectif atteint !</span>
                 ) : yearsToFire != null ? (
@@ -584,7 +582,7 @@ export default function BilanFinancierPage({ user }) {
             </div>
 
             {/* Hypothèses */}
-            <div className="grid grid-cols-3 gap-3 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 pt-1">
               <div>
                 <p className="text-xs text-violet-400">Rendement pondéré</p>
                 <p className="text-sm font-semibold text-violet-700">{(weightedRate * 100).toFixed(1)} % / an</p>

@@ -370,23 +370,26 @@ export default function CompoundInterestSimulatorPage() {
       </h1>
 
       {/* Toggle mode */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {[
-          { v: 'standard', label: 'Projection directe' },
-          { v: 'inverse',  label: 'Mode inversé — objectif de patrimoine' },
-        ].map(({ v, label }) => (
+          { v: 'standard', label: 'Projection directe', labelMobile: 'Projection' },
+          { v: 'inverse',  label: 'Mode inversé — objectif de patrimoine', labelMobile: 'Mode inversé' },
+        ].map(({ v, label, labelMobile }) => (
           <button
             key={v}
             onClick={() => setMode(v)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mode === v ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:border-indigo-400'}`}
-          >{label}</button>
+          >
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{labelMobile}</span>
+          </button>
         ))}
       </div>
 
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
 
         {/* ── Panneau gauche ── */}
-        <div className="w-72 shrink-0 space-y-4">
+        <div className="w-full lg:w-72 lg:shrink-0 space-y-4">
 
           {/* Paramètres de base */}
           <Section title="Paramètres de base">
@@ -634,7 +637,7 @@ export default function CompoundInterestSimulatorPage() {
 
           {/* Bannière résultat mode inversé */}
           {mode === 'inverse' && inverseResult && (
-            <div className="bg-indigo-600 text-white rounded-xl p-4 flex items-center gap-4">
+            <div className="bg-indigo-600 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
               <div>
                 <p className="text-indigo-200 text-sm">{inverseResult.label}</p>
                 <p className="text-2xl font-bold">
@@ -645,7 +648,7 @@ export default function CompoundInterestSimulatorPage() {
                       : `${fmt(inverseResult.value)} ${inverseResult.unit}`}
                 </p>
               </div>
-              <div className="ml-auto text-indigo-200 text-sm text-right">
+              <div className="sm:ml-auto text-indigo-200 text-sm sm:text-right">
                 {inverseVariant === 'monthlyIncome'
                   ? <>pour un revenu de<br /><span className="font-semibold text-white">{fmt(desiredMonthly)} / mois</span></>
                   : <>pour atteindre<br /><span className="font-semibold text-white">{fmt(targetAmount)}</span></>
@@ -655,8 +658,9 @@ export default function CompoundInterestSimulatorPage() {
           )}
 
           {/* Graphique */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <ResponsiveContainer width="100%" height={340}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+            <div className="h-52 md:h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} />
@@ -696,16 +700,17 @@ export default function CompoundInterestSimulatorPage() {
                 )}
               </ComposedChart>
             </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Synthèse */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
               Patrimoine estimé après {resolvedDuration} ans
               {durationMode === 'targetYear' && mode !== 'inverse' && ` — en ${targetYear}`}
             </h3>
 
-            <div className="grid grid-cols-3 gap-4 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
               <div className="text-center">
                 <p className="text-xs text-gray-500 mb-1">Capital investi</p>
                 <p className="text-lg font-semibold text-indigo-700">{fmt(totalInvested)}</p>
@@ -764,23 +769,24 @@ export default function CompoundInterestSimulatorPage() {
 
           {/* Phase de décaissement */}
           {withdrawalRate > 0 && decumulationData.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
                   Phase de décaissement
                 </h3>
                 {isSustainable ? (
-                  <span className="text-xs text-green-700 bg-green-50 border border-green-100 px-2.5 py-1 rounded-full font-medium">
+                  <span className="text-xs text-green-700 bg-green-50 border border-green-100 px-2.5 py-1 rounded-full font-medium self-start sm:self-auto">
                     Capital perpétuel — rendement ≥ taux de retrait
                   </span>
                 ) : (
-                  <span className="text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full font-medium">
+                  <span className="text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full font-medium self-start sm:self-auto">
                     Capital épuisé en {decumulationData[Math.min(depletionIndex, decumulationData.length - 1)]?.label}
                     {depletionIndex > 0 && ` — après ${depletionIndex} ans`}
                   </span>
                 )}
               </div>
-              <ResponsiveContainer width="100%" height={220}>
+              <div className="h-36 md:h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={decumulationData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} />
@@ -811,6 +817,7 @@ export default function CompoundInterestSimulatorPage() {
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+              </div>
               <p className="text-xs text-gray-400 text-center mt-3">
                 Retrait de {fmt(annualWithdrawal)} / an ({fmt(monthlyWithdrawal)} / mois)
                 {' · '}taux de rendement pendant la retraite : {fmtPct(applyPFU ? realRate * 0.70 : realRate)}
