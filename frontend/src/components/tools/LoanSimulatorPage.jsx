@@ -459,7 +459,7 @@ export default function LoanSimulatorPage({ user }) {
   const durationReduced = effectiveMonths < loanDuration * 12
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto loan-simulator-document">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Simulateur d'Emprunt Immobilier</h1>
         <div className="flex flex-wrap items-center gap-2 print:hidden">

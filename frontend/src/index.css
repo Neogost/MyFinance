@@ -14,7 +14,9 @@
 @media print {
   body * { visibility: hidden; }
   .declaration-document,
-  .declaration-document * { visibility: visible; }
+  .declaration-document *,
+  .loan-simulator-document,
+  .loan-simulator-document * { visibility: visible; }
   .declaration-document {
     position: absolute;
     top: 0;
@@ -24,6 +26,12 @@
     border: none !important;
     border-radius: 0 !important;
     padding: 1.5cm !important;
+  }
+  .loan-simulator-document {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
   .no-print { display: none !important; }
   .declaration-section { break-inside: avoid; }

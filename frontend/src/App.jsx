@@ -32,7 +32,7 @@ export default function App() {
   const [user,        setUser]        = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authView,    setAuthView]    = useState('landing') // 'landing' | 'login' | 'register'
-  const [currentPage, setCurrentPage] = useState('dashboard')
+  const [currentPage, setCurrentPage] = useState(() => window.location.hash.slice(1) || 'dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
   const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
@@ -63,6 +63,7 @@ export default function App() {
 
   async function handleLogout() {
     await logout()
+    window.location.hash = ''
     setUser(null)
     setCurrentPage('dashboard')
     setFamilyMode(false)
@@ -77,6 +78,7 @@ export default function App() {
   function handleNavigate(page) {
     const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
+    window.location.hash = page
     setCurrentPage(page)
   }
 
