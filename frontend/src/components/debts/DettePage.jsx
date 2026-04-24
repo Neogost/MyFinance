@@ -59,8 +59,8 @@ function AmortizationTable({ schedule }) {
         <tr className="bg-gray-50">
           <th className="px-3 py-2 text-left text-gray-400 uppercase tracking-wide">Mois</th>
           <th className="px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Échéance</th>
-          <th className="px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Intérêts</th>
-          <th className="px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Capital</th>
+          <th className="hidden md:table-cell px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Intérêts</th>
+          <th className="hidden md:table-cell px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Capital</th>
           <th className="px-3 py-2 text-right text-gray-400 uppercase tracking-wide">Solde restant</th>
         </tr>
       </thead>
@@ -69,8 +69,8 @@ function AmortizationTable({ schedule }) {
           <tr key={i} className="border-t border-gray-100">
             <td className="px-3 py-2 text-gray-600">{row.month}</td>
             <td className="px-3 py-2 text-right text-gray-700 amount">{fmt(row.payment)} €</td>
-            <td className="px-3 py-2 text-right text-red-500 amount">{fmt(row.interest)} €</td>
-            <td className="px-3 py-2 text-right text-green-600 amount">{fmt(row.capital)} €</td>
+            <td className="hidden md:table-cell px-3 py-2 text-right text-red-500 amount">{fmt(row.interest)} €</td>
+            <td className="hidden md:table-cell px-3 py-2 text-right text-green-600 amount">{fmt(row.capital)} €</td>
             <td className="px-3 py-2 text-right text-gray-700 font-semibold amount">{fmt(row.remainingCapital)} €</td>
           </tr>
         ))}
@@ -127,7 +127,7 @@ function BalanceHistoryPanel({ debtId, onUpdated }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="flex gap-2 mb-3 items-end flex-wrap">
+        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2 mb-3 sm:items-end flex-wrap">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Date</label>
             <input type="date" value={form.entryDate} onChange={e => setForm(f => ({ ...f, entryDate: e.target.value }))}
@@ -353,8 +353,8 @@ export default function DettePage() {
 
       {/* ── KPIs + Répartition ── */}
       {summary && (
-        <div className="flex gap-4 mb-6 items-stretch">
-          <div className="grid grid-cols-2 gap-4 w-1/2">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 md:w-1/2">
             <KpiCard
               label="Capital restant total"
               value={summary.totalRemainingCapital}
@@ -380,7 +380,7 @@ export default function DettePage() {
           </div>
 
           {summary.byType?.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
+            <div className="bg-white rounded-xl shadow-sm p-5 md:w-1/2 flex flex-col justify-center">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par type</p>
               <div className="flex flex-col gap-2">
                 {summary.byType.map(t => {
