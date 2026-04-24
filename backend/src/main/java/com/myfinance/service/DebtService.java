@@ -9,6 +9,7 @@ import com.myfinance.dto.*;
 import com.myfinance.repository.DebtBalanceEntryRepository;
 import com.myfinance.repository.DebtRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DebtService {
@@ -116,7 +118,9 @@ public class DebtService {
                 .positionId(request.positionId())
                 .build();
 
-        return DebtDto.from(debtRepository.save(debt));
+        DebtDto dto = DebtDto.from(debtRepository.save(debt));
+        log.info("[user:{}] Dette créée #{} [type: {}]", user.getId(), dto.id(), request.type());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -137,7 +141,9 @@ public class DebtService {
         if (request.currency() != null) debt.setCurrency(request.currency());
         debt.setPositionId(request.positionId());
 
-        return DebtDto.from(debtRepository.save(debt));
+        DebtDto dto = DebtDto.from(debtRepository.save(debt));
+        log.info("[user:{}] Dette modifiée #{} [type: {}]", currentUser.getId(), id, request.type());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -145,6 +151,7 @@ public class DebtService {
     public void delete(Long id, User currentUser) {
         getWithOwnershipCheck(id, currentUser);
         debtRepository.deleteById(id);
+        log.info("[user:{}] Dette supprimée #{}", currentUser.getId(), id);
     }
 
     // ── Historique des soldes ──────────────────────────────────
@@ -176,6 +183,7 @@ public class DebtService {
                     debtRepository.save(debt);
                 });
 
+        log.info("[user:{}] Entrée de solde ajoutée #{} [dette #{}]", currentUser.getId(), saved.getId(), debtId);
         return DebtBalanceEntryDto.from(saved);
     }
 
@@ -192,6 +200,7 @@ public class DebtService {
         }
 
         balanceEntryRepository.deleteById(entryId);
+        log.info("[user:{}] Entrée de solde supprimée #{} [dette #{}]", currentUser.getId(), entryId, debtId);
 
         // Recalcule le dernier override actif après suppression
         balanceEntryRepository.findFirstByDebtOrderByEntryDateDesc(debt)

@@ -9,6 +9,7 @@ import com.myfinance.dto.RegistrationRequestDto;
 import com.myfinance.repository.UserRegistrationRequestRepository;
 import com.myfinance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserRegistrationService {
@@ -29,10 +31,12 @@ public class UserRegistrationService {
 
     public RegistrationRequestDto create(CreateRegistrationRequest request) {
         if (userRepository.findByLogin(request.login()).isPresent()) {
+            log.warn("[system] Demande d'inscription refusée - login déjà utilisé par un compte actif");
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Ce login est déjà utilisé par un compte actif.");
         }
         if (registrationRepository.existsByLoginAndStatus(request.login(), RegistrationStatus.PENDING)) {
+            log.warn("[system] Demande d'inscription refusée - demande PENDING déjà existante");
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Une demande est déjà en attente pour ce login.");
         }
@@ -46,7 +50,9 @@ public class UserRegistrationService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return RegistrationRequestDto.from(registrationRepository.save(entity));
+        RegistrationRequestDto dto = RegistrationRequestDto.from(registrationRepository.save(entity));
+        log.info("[system] Demande d'inscription créée #{}", dto.id());
+        return dto;
     }
 
     // ── Lecture (admin) ────────────────────────────────────────
@@ -80,7 +86,9 @@ public class UserRegistrationService {
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewedBy(adminLogin);
 
-        return RegistrationRequestDto.from(registrationRepository.save(request));
+        RegistrationRequestDto dto = RegistrationRequestDto.from(registrationRepository.save(request));
+        log.info("[system] Demande d'inscription #{} approuvée", id);
+        return dto;
     }
 
     // ── Rejet (admin) ──────────────────────────────────────────
@@ -93,7 +101,9 @@ public class UserRegistrationService {
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewedBy(adminLogin);
 
-        return RegistrationRequestDto.from(registrationRepository.save(request));
+        RegistrationRequestDto dto = RegistrationRequestDto.from(registrationRepository.save(request));
+        log.info("[system] Demande d'inscription #{} rejetée", id);
+        return dto;
     }
 
     // ── Helpers ────────────────────────────────────────────────

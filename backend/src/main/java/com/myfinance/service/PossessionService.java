@@ -1,11 +1,13 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.Possession;
+import com.myfinance.domain.PossessionCategoryEnum;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
 import com.myfinance.repository.PossessionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PossessionService {
@@ -54,7 +57,7 @@ public class PossessionService {
                         .multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 
-        Map<com.myfinance.domain.PossessionCategoryEnum, List<PossessionDto>> byCategory =
+        Map<PossessionCategoryEnum, List<PossessionDto>> byCategory =
                 dtos.stream().collect(Collectors.groupingBy(PossessionDto::category));
 
         List<PossessionCategorySummaryDto> categorySummaries = byCategory.entrySet().stream()
@@ -99,7 +102,9 @@ public class PossessionService {
                 .notes(request.notes())
                 .build();
 
-        return PossessionDto.from(possessionRepository.save(possession));
+        PossessionDto dto = PossessionDto.from(possessionRepository.save(possession));
+        log.info("[user:{}] Possession créée #{} [catégorie: {}]", user.getId(), dto.id(), request.category());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -114,7 +119,9 @@ public class PossessionService {
         possession.setEstimatedCurrentValue(request.estimatedCurrentValue());
         possession.setNotes(request.notes());
 
-        return PossessionDto.from(possessionRepository.save(possession));
+        PossessionDto dto = PossessionDto.from(possessionRepository.save(possession));
+        log.info("[user:{}] Possession modifiée #{} [catégorie: {}]", currentUser.getId(), id, request.category());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -122,6 +129,7 @@ public class PossessionService {
     public void delete(Long id, User currentUser) {
         getWithOwnershipCheck(id, currentUser);
         possessionRepository.deleteById(id);
+        log.info("[user:{}] Possession supprimée #{}", currentUser.getId(), id);
     }
 
     // ── Vérification propriété ─────────────────────────────────

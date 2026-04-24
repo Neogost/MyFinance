@@ -7,10 +7,12 @@ import com.myfinance.dto.UpdateSafetyNetRequest;
 import com.myfinance.dto.UserDto;
 import com.myfinance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -36,7 +38,9 @@ public class ProfileService {
             user.setSafetyNetAmount(null);
         }
 
-        return UserDto.from(userRepository.save(user));
+        UserDto dto = UserDto.from(userRepository.save(user));
+        log.info("[user:{}] Matelas de sécurité mis à jour [mode: {}]", currentUser.getId(), request.safetyNetMode());
+        return dto;
     }
 
     public UserDto updatePersonalInfo(User currentUser, UpdatePersonalInfoRequest request) {
@@ -45,7 +49,9 @@ public class ProfileService {
         user.setBirthPlace(request.birthPlace());
         user.setBirthPostalCode(request.birthPostalCode());
         user.setJobTitle(request.jobTitle());
-        return UserDto.from(userRepository.save(user));
+        UserDto dto = UserDto.from(userRepository.save(user));
+        log.info("[user:{}] Informations personnelles mises à jour", currentUser.getId());
+        return dto;
     }
 
     private void validate(UpdateSafetyNetRequest request) {

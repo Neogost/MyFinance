@@ -12,6 +12,7 @@ import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaxSimulatorService {
@@ -114,6 +116,7 @@ public class TaxSimulatorService {
                 ? (totalEstimatedTax / grossTaxableIncome) * 100f
                 : 0f;
 
+        log.info("[user:{}] Simulation fiscale {} - source: {}, parts: {}", user.getId(), year, sourceLabel, parts);
         return new TaxSimulationDto(
                 year,
                 sourceLabel,

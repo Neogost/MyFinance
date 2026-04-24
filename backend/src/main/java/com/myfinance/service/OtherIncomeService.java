@@ -8,12 +8,14 @@ import com.myfinance.dto.OtherIncomeDto;
 import com.myfinance.dto.UpdateOtherIncomeRequest;
 import com.myfinance.repository.OtherIncomeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OtherIncomeService {
@@ -42,7 +44,9 @@ public class OtherIncomeService {
                 .specificTaxRate(request.specificTaxRate())
                 .build();
 
-        return OtherIncomeDto.from(otherIncomeRepository.save(income));
+        OtherIncomeDto dto = OtherIncomeDto.from(otherIncomeRepository.save(income));
+        log.info("[user:{}] Revenu complémentaire créé #{} [type: {}]", user.getId(), dto.id(), request.type());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -57,7 +61,9 @@ public class OtherIncomeService {
         income.setIsTaxable(request.isTaxable() != null ? request.isTaxable() : true);
         income.setSpecificTaxRate(request.specificTaxRate());
 
-        return OtherIncomeDto.from(otherIncomeRepository.save(income));
+        OtherIncomeDto dto = OtherIncomeDto.from(otherIncomeRepository.save(income));
+        log.info("[user:{}] Revenu complémentaire modifié #{} [type: {}]", currentUser.getId(), id, request.type());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -65,6 +71,7 @@ public class OtherIncomeService {
     public void delete(Long id, User currentUser) {
         getIncomeWithOwnershipCheck(id, currentUser);
         otherIncomeRepository.deleteById(id);
+        log.info("[user:{}] Revenu complémentaire supprimé #{}", currentUser.getId(), id);
     }
 
     // ── Vérification propriété ─────────────────────────────────

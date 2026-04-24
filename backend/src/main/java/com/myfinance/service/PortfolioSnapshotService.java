@@ -54,12 +54,16 @@ public class PortfolioSnapshotService {
         LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
         portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(user, startOfMonth, endOfMonth)
                 .ifPresent(existing -> {
+                    log.warn("[user:{}] Snapshot refusé - mois {} {} déjà existant",
+                            user.getId(), startOfMonth.getMonth(), startOfMonth.getYear());
                     throw new ResponseStatusException(HttpStatus.CONFLICT,
                             "Un snapshot existe déjà pour le mois " + startOfMonth.getMonth()
                                     + " " + startOfMonth.getYear());
                 });
 
-        return buildAndSaveSnapshot(user, snapshotDate);
+        PortfolioSnapshotDto dto = buildAndSaveSnapshot(user, snapshotDate);
+        log.info("[user:{}] Snapshot patrimonial créé #{} [{}]", user.getId(), dto.id(), snapshotDate);
+        return dto;
     }
 
     // ── Création groupée (admin) ───────────────────────────────
@@ -133,7 +137,10 @@ public class PortfolioSnapshotService {
         snapshot.setTotalCurrentValueEur(totalCurrentValue);
         snapshot.setTotalCapitalGainEur(totalCurrentValue.subtract(totalInvested));
 
-        return PortfolioSnapshotDto.from(portfolioSnapshotRepository.save(snapshot));
+        PortfolioSnapshotDto dto = PortfolioSnapshotDto.from(portfolioSnapshotRepository.save(snapshot));
+        log.info("[user:{}] Snapshot #{} recalculé [{} position(s)]",
+                currentUser.getId(), id, snapshot.getPositionSnapshots().size());
+        return dto;
     }
 
     // ── Scheduler automatique ──────────────────────────────────

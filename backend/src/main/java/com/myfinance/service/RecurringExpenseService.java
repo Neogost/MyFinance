@@ -7,6 +7,7 @@ import com.myfinance.domain.User;
 import com.myfinance.dto.*;
 import com.myfinance.repository.RecurringExpenseRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecurringExpenseService {
@@ -48,7 +50,10 @@ public class RecurringExpenseService {
                 .notes(request.notes())
                 .build();
 
-        return RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
+        RecurringExpenseDto dto = RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
+        log.info("[user:{}] Dépense récurrente créée #{} [catégorie: {}, fréquence: {}]",
+                user.getId(), dto.id(), request.category(), request.frequency());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -65,7 +70,10 @@ public class RecurringExpenseService {
         expense.setEndDate(request.endDate());
         expense.setNotes(request.notes());
 
-        return RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
+        RecurringExpenseDto dto = RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
+        log.info("[user:{}] Dépense récurrente modifiée #{} [catégorie: {}]",
+                currentUser.getId(), id, request.category());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -73,6 +81,7 @@ public class RecurringExpenseService {
     public void delete(Long id, User currentUser) {
         getExpenseWithOwnershipCheck(id, currentUser);
         recurringExpenseRepository.deleteById(id);
+        log.info("[user:{}] Dépense récurrente supprimée #{}", currentUser.getId(), id);
     }
 
     // ── Résumé capacité d'épargne ─────────────────────────────

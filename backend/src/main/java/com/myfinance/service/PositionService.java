@@ -7,6 +7,7 @@ import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PositionService {
@@ -88,6 +90,8 @@ public class PositionService {
                 .build();
 
         Position saved = positionRepository.save(position);
+        log.info("[user:{}] Position créée #{} [catégorie: {}, label: {}]",
+                user.getId(), saved.getId(), request.category(), request.label());
         return PositionDto.from(saved, List.of(), loadExchangeRates());
     }
 
@@ -113,6 +117,7 @@ public class PositionService {
         position.setIncludeInIncomeProjection(Boolean.TRUE.equals(request.includeInIncomeProjection()));
 
         Position saved = positionRepository.save(position);
+        log.info("[user:{}] Position modifiée #{}", currentUser.getId(), id);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);
         return PositionDto.from(saved, orders, loadExchangeRates());
     }
@@ -154,6 +159,7 @@ public class PositionService {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
         position.setStatus(PositionStatus.CLOSED);
         Position saved = positionRepository.save(position);
+        log.info("[user:{}] Position fermée #{}", currentUser.getId(), id);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);
         return PositionDto.from(saved, orders, loadExchangeRates());
     }
@@ -165,6 +171,7 @@ public class PositionService {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
         positionOrderRepository.deleteByPosition(position);
         positionRepository.delete(position);
+        log.info("[user:{}] Position supprimée #{}", currentUser.getId(), id);
     }
 
     // ── Ordres ─────────────────────────────────────────────────
@@ -204,7 +211,10 @@ public class PositionService {
                 .notes(request.notes())
                 .build();
 
-        return PositionOrderDto.from(positionOrderRepository.save(order));
+        PositionOrderDto dto = PositionOrderDto.from(positionOrderRepository.save(order));
+        log.info("[user:{}] Ordre créé #{} [position #{}, type: {}]",
+                currentUser.getId(), dto.id(), positionId, request.orderType());
+        return dto;
     }
 
     public PositionOrderDto updateOrder(Long positionId, Long orderId, UpdatePositionOrderRequest request, User currentUser) {
@@ -227,13 +237,16 @@ public class PositionService {
         order.setOrderDate(request.orderDate());
         order.setNotes(request.notes());
 
-        return PositionOrderDto.from(positionOrderRepository.save(order));
+        PositionOrderDto dto = PositionOrderDto.from(positionOrderRepository.save(order));
+        log.info("[user:{}] Ordre modifié #{} [position #{}]", currentUser.getId(), orderId, positionId);
+        return dto;
     }
 
     public void deleteOrder(Long positionId, Long orderId, User currentUser) {
         getPositionWithOwnershipCheck(positionId, currentUser);
         getOrderBelongingToPosition(orderId, positionId);
         positionOrderRepository.deleteById(orderId);
+        log.info("[user:{}] Ordre supprimé #{} [position #{}]", currentUser.getId(), orderId, positionId);
     }
 
     // ── Helpers privés ─────────────────────────────────────────

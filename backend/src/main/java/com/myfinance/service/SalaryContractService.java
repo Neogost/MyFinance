@@ -12,6 +12,7 @@ import com.myfinance.repository.ContractBenefitRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SalaryContractService {
@@ -51,6 +53,7 @@ public class SalaryContractService {
         // Un seul contrat actif (endDate = null) par utilisateur
         if (request.endDate() == null
                 && salaryContractRepository.existsByUserAndEndDateIsNull(user)) {
+            log.warn("[user:{}] Création contrat refusée - contrat actif existant pour cet utilisateur", user.getId());
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un contrat actif existe déjà. Clôturez-le avant d'en créer un nouveau.");
         }
@@ -69,7 +72,9 @@ public class SalaryContractService {
                 .employeePrevoyanceRate(request.employeePrevoyanceRate())
                 .build();
 
-        return toDto(salaryContractRepository.save(contract), user);
+        SalaryContractDto dto = toDto(salaryContractRepository.save(contract), user);
+        log.info("[user:{}] Contrat salarial créé #{} [{}]", user.getId(), dto.id(), request.companyName());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -80,6 +85,7 @@ public class SalaryContractService {
         // Si on rend ce contrat actif, vérifie qu'aucun autre ne l'est déjà
         if (request.endDate() == null && contract.getEndDate() != null) {
             if (salaryContractRepository.existsByUserAndEndDateIsNull(contract.getUser())) {
+                log.warn("[user:{}] Réactivation contrat #{} refusée - contrat actif existant", currentUser.getId(), id);
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Un contrat actif existe déjà. Clôturez-le avant de réactiver celui-ci.");
             }
@@ -96,7 +102,9 @@ public class SalaryContractService {
         contract.setIsCadre(request.isCadre());
         contract.setEmployeePrevoyanceRate(request.employeePrevoyanceRate());
 
-        return toDto(salaryContractRepository.save(contract), contract.getUser());
+        SalaryContractDto dto = toDto(salaryContractRepository.save(contract), contract.getUser());
+        log.info("[user:{}] Contrat salarial modifié #{} [{}]", currentUser.getId(), id, request.companyName());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -104,6 +112,7 @@ public class SalaryContractService {
     public void delete(Long id, User currentUser) {
         getContractWithOwnershipCheck(id, currentUser);
         salaryContractRepository.deleteById(id);
+        log.info("[user:{}] Contrat salarial supprimé #{}", currentUser.getId(), id);
     }
 
     // ── Accès interne (utilisé par MonthlyPaySlipService) ─────
@@ -142,6 +151,8 @@ public class SalaryContractService {
                 .map(SalaryRevision::getAnnualGrossSalary)
                 .orElse(contract.getAnnualGrossSalary());
 
+        log.debug("[user:{}] Projection contrat #{} - salaire effectif: {} €, révision active: {}",
+                contractOwner.getId(), contract.getId(), effectiveSalary, activeRevisionId);
         return SalaryContractDto.from(contract, taxParameters, contractOwner, taxSimulatorService,
                 annualBenefits, activeRevisionId, effectiveSalary);
     }

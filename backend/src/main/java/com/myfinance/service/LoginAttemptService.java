@@ -2,12 +2,14 @@ package com.myfinance.service;
 
 import com.myfinance.config.LoginRateLimitProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {
@@ -27,6 +29,15 @@ public class LoginAttemptService {
         tentatives.merge(login,
                 new InfoTentative(1, LocalDateTime.now()),
                 (existant, __) -> new InfoTentative(existant.nbEchecs() + 1, LocalDateTime.now()));
+
+        int nbEchecs = tentatives.get(login).nbEchecs();
+        int max = props.getMaxAttempts();
+        if (nbEchecs == max - 1) {
+            log.warn("[system] Alerte brute-force - {} échec(s) sur un compte [prochain tentative = blocage]", nbEchecs);
+        } else if (nbEchecs >= max) {
+            long duree = dureeBlocageMinutes(nbEchecs);
+            log.warn("[system] Compte bloqué après {} échec(s) - durée: {} min", nbEchecs, duree);
+        }
     }
 
     public boolean estBloque(String login) {

@@ -9,12 +9,14 @@ import com.myfinance.dto.CreateContractBonusRequest;
 import com.myfinance.dto.UpdateContractBonusRequest;
 import com.myfinance.repository.ContractBonusRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ContractBonusService {
@@ -47,7 +49,9 @@ public class ContractBonusService {
                 .paymentMonth(request.type() == BonusTypeEnum.ANNUELLE ? request.paymentMonth() : null)
                 .build();
 
-        return ContractBonusDto.from(contractBonusRepository.save(bonus));
+        ContractBonusDto dto = ContractBonusDto.from(contractBonusRepository.save(bonus));
+        log.info("[user:{}] Prime créée #{} [contrat #{}, type: {}]", currentUser.getId(), dto.id(), contractId, request.type());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -64,7 +68,9 @@ public class ContractBonusService {
         bonus.setPaymentDate(request.type() == BonusTypeEnum.EXCEPTIONNELLE ? request.paymentDate() : null);
         bonus.setPaymentMonth(request.type() == BonusTypeEnum.ANNUELLE ? request.paymentMonth() : null);
 
-        return ContractBonusDto.from(contractBonusRepository.save(bonus));
+        ContractBonusDto dto = ContractBonusDto.from(contractBonusRepository.save(bonus));
+        log.info("[user:{}] Prime modifiée #{} [contrat #{}, type: {}]", currentUser.getId(), bonusId, contractId, request.type());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -73,6 +79,7 @@ public class ContractBonusService {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         getBonusForContract(bonusId, contract);
         contractBonusRepository.deleteById(bonusId);
+        log.info("[user:{}] Prime supprimée #{} [contrat #{}]", currentUser.getId(), bonusId, contractId);
     }
 
     // ── Validation ────────────────────────────────────────────

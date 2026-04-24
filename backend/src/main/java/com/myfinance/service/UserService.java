@@ -7,6 +7,7 @@ import com.myfinance.dto.UpdateUserRequest;
 import com.myfinance.dto.UserDto;
 import com.myfinance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
@@ -59,6 +61,7 @@ public class UserService implements UserDetailsService {
 
     public UserDto create(CreateUserRequest request) {
         if (userRepository.findByLogin(request.login()).isPresent()) {
+            log.warn("[system] Création utilisateur refusée - login déjà utilisé");
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Ce login est déjà utilisé : " + request.login());
         }
@@ -77,7 +80,9 @@ public class UserService implements UserDetailsService {
                 .customProfessionalDeduction(request.customProfessionalDeduction())
                 .build();
 
-        return UserDto.from(userRepository.save(user));
+        UserDto dto = UserDto.from(userRepository.save(user));
+        log.info("[system] Utilisateur créé #{} [rôle: {}]", dto.id(), request.role());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -90,8 +95,11 @@ public class UserService implements UserDetailsService {
         // Vérifie que le nouveau login n'est pas déjà pris par quelqu'un d'autre
         userRepository.findByLogin(request.login())
                 .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> { throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Ce login est déjà utilisé : " + request.login()); });
+                .ifPresent(existing -> {
+                    log.warn("[system] Modification utilisateur #{} refusée - login déjà utilisé", id);
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Ce login est déjà utilisé : " + request.login());
+                });
 
         validerProfilFiscal(request.useFlatRateDeduction(), request.customProfessionalDeduction());
 
@@ -112,7 +120,9 @@ public class UserService implements UserDetailsService {
             user.setCustomProfessionalDeduction(request.customProfessionalDeduction());
         }
 
-        return UserDto.from(userRepository.save(user));
+        UserDto dto = UserDto.from(userRepository.save(user));
+        log.info("[system] Utilisateur modifié #{}", id);
+        return dto;
     }
 
     // ── Validation profil fiscal ───────────────────────────────
@@ -138,6 +148,7 @@ public class UserService implements UserDetailsService {
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+        log.info("[user:{}] Mot de passe modifié", userId);
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -148,5 +159,6 @@ public class UserService implements UserDetailsService {
                     "Utilisateur introuvable : " + id);
         }
         userRepository.deleteById(id);
+        log.info("[system] Utilisateur supprimé #{}", id);
     }
 }

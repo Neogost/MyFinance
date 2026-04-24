@@ -8,12 +8,14 @@ import com.myfinance.dto.MonthlyPaySlipDto;
 import com.myfinance.dto.UpdateMonthlyPaySlipRequest;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MonthlyPaySlipService {
@@ -37,6 +39,8 @@ public class MonthlyPaySlipService {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
 
         if (monthlyPaySlipRepository.existsByContractAndPeriod(contract, request.period())) {
+            log.warn("[user:{}] Bulletin refusé - période {} déjà existante sur contrat #{}",
+                    currentUser.getId(), request.period(), contractId);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un bulletin existe déjà pour la période : " + request.period());
         }
@@ -50,7 +54,10 @@ public class MonthlyPaySlipService {
                 .incomeTaxWithholding(request.incomeTaxWithholding())
                 .build();
 
-        return MonthlyPaySlipDto.from(monthlyPaySlipRepository.save(slip));
+        MonthlyPaySlipDto dto = MonthlyPaySlipDto.from(monthlyPaySlipRepository.save(slip));
+        log.info("[user:{}] Bulletin de paie créé #{} [contrat #{}, période {}]",
+                currentUser.getId(), dto.id(), contractId, request.period());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -63,6 +70,8 @@ public class MonthlyPaySlipService {
         // Si la période change, vérifie qu'elle n'est pas déjà prise
         if (!slip.getPeriod().equals(request.period())
                 && monthlyPaySlipRepository.existsByContractAndPeriod(contract, request.period())) {
+            log.warn("[user:{}] Modification bulletin #{} refusée - période {} déjà existante sur contrat #{}",
+                    currentUser.getId(), slipId, request.period(), contractId);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un bulletin existe déjà pour la période : " + request.period());
         }
@@ -73,7 +82,10 @@ public class MonthlyPaySlipService {
         slip.setNetSalary(request.netSalary());
         slip.setIncomeTaxWithholding(request.incomeTaxWithholding());
 
-        return MonthlyPaySlipDto.from(monthlyPaySlipRepository.save(slip));
+        MonthlyPaySlipDto dto = MonthlyPaySlipDto.from(monthlyPaySlipRepository.save(slip));
+        log.info("[user:{}] Bulletin de paie modifié #{} [contrat #{}, période {}]",
+                currentUser.getId(), slipId, contractId, request.period());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -82,6 +94,7 @@ public class MonthlyPaySlipService {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         getSlipForContract(slipId, contract);
         monthlyPaySlipRepository.deleteById(slipId);
+        log.info("[user:{}] Bulletin de paie supprimé #{} [contrat #{}]", currentUser.getId(), slipId, contractId);
     }
 
     // ── Vérification appartenance bulletin ────────────────────

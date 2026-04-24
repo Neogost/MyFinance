@@ -4,6 +4,7 @@ import com.myfinance.domain.*;
 import com.myfinance.dto.*;
 import com.myfinance.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminSnapshotService {
@@ -72,7 +74,10 @@ public class AdminSnapshotService {
         buildPositionSnapshots(snapshot, request.positions(), userPositionIds);
         computeTotals(snapshot);
 
-        return AdminSnapshotDetailDto.from(portfolioSnapshotRepository.save(snapshot));
+        AdminSnapshotDetailDto dto = AdminSnapshotDetailDto.from(portfolioSnapshotRepository.save(snapshot));
+        log.info("[system] Snapshot admin créé #{} [user:{}, date: {}]",
+                dto.id(), request.userId(), request.snapshotDate());
+        return dto;
     }
 
     // ── Mise à jour ────────────────────────────────────────────
@@ -101,7 +106,10 @@ public class AdminSnapshotService {
         buildPositionSnapshots(snapshot, request.positions(), userPositionIds);
         computeTotals(snapshot);
 
-        return AdminSnapshotDetailDto.from(portfolioSnapshotRepository.save(snapshot));
+        AdminSnapshotDetailDto dto = AdminSnapshotDetailDto.from(portfolioSnapshotRepository.save(snapshot));
+        log.info("[system] Snapshot admin modifié #{} [user:{}, date: {}]",
+                id, request.userId(), request.snapshotDate());
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -110,6 +118,7 @@ public class AdminSnapshotService {
     public void delete(Long id) {
         PortfolioSnapshot snapshot = getSnapshot(id);
         portfolioSnapshotRepository.delete(snapshot);
+        log.info("[system] Snapshot admin supprimé #{}", id);
     }
 
     // ── Helpers privés ─────────────────────────────────────────
@@ -170,6 +179,8 @@ public class AdminSnapshotService {
         portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(user, start, end)
                 .ifPresent(existing -> {
                     if (excludeId == null || !existing.getId().equals(excludeId)) {
+                        log.warn("[system] Snapshot refusé - mois {} {} déjà existant pour user:{}",
+                                start.getMonth(), start.getYear(), user.getId());
                         throw new ResponseStatusException(HttpStatus.CONFLICT,
                                 "Un snapshot existe déjà pour " + start.getMonth() + " " + start.getYear());
                     }

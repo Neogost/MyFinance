@@ -1,0 +1,56 @@
+<configuration>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PROFIL DEV : console colorée uniquement
+       Niveau DEBUG activé sur com.myfinance pour les calculs internes.
+       Aucun fichier persisté — RGPD : les montants en DEBUG ne transitent pas en prod.
+       ═══════════════════════════════════════════════════════ -->
+  <springProfile name="dev">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%-45logger{45}) : %msg%n</pattern>
+      </encoder>
+    </appender>
+
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+    <logger name="com.myfinance"                    level="DEBUG"/>
+    <logger name="org.springframework.security"     level="INFO"/>
+    <logger name="org.hibernate.SQL"                level="WARN"/>
+    <logger name="org.hibernate.orm.jdbc.bind"      level="WARN"/>
+  </springProfile>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PROFIL PROD : console + fichier tournant
+       Niveau INFO sur com.myfinance — aucun montant financier en logs fichier.
+       Rotation quotidienne, 30 jours max (Art. 5.1.e RGPD).
+       ═══════════════════════════════════════════════════════ -->
+  <springProfile name="prod">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %-45logger{45} : %msg%n</pattern>
+      </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>logs/myfinance.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>logs/myfinance.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <maxHistory>30</maxHistory>
+        <totalSizeCap>100MB</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %-45logger{45} : %msg%n</pattern>
+      </encoder>
+    </appender>
+
+    <root level="WARN">
+      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="FILE"/>
+    </root>
+    <logger name="com.myfinance"        level="INFO"/>
+    <logger name="org.springframework"  level="WARN"/>
+  </springProfile>
+
+</configuration>

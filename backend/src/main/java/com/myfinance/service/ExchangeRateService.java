@@ -5,6 +5,7 @@ import com.myfinance.dto.ExchangeRateDto;
 import com.myfinance.dto.UpdateExchangeRateRequest;
 import com.myfinance.repository.ExchangeRateRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExchangeRateService {
@@ -38,12 +40,14 @@ public class ExchangeRateService {
     // ── Mise à jour groupée (upsert par devise) ────────────────
 
     public List<ExchangeRateDto> updateRates(List<UpdateExchangeRateRequest> requests) {
-        return requests.stream().map(req -> {
+        List<ExchangeRateDto> result = requests.stream().map(req -> {
             ExchangeRate er = exchangeRateRepository.findByCurrency(req.currency())
                     .orElse(ExchangeRate.builder().currency(req.currency()).build());
             er.setRate(req.rate());
             er.setLastUpdatedAt(LocalDateTime.now());
             return ExchangeRateDto.from(exchangeRateRepository.save(er));
         }).toList();
+        log.info("[system] Taux de change mis à jour - {} devise(s)", result.size());
+        return result;
     }
 }

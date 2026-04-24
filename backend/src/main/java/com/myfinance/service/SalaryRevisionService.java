@@ -8,12 +8,14 @@ import com.myfinance.dto.SalaryRevisionDto;
 import com.myfinance.dto.UpdateSalaryRevisionRequest;
 import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SalaryRevisionService {
@@ -38,12 +40,16 @@ public class SalaryRevisionService {
 
         // effectiveDate >= contrat.startDate
         if (request.effectiveDate().isBefore(contract.getStartDate())) {
+            log.warn("[user:{}] Révision refusée - date {} antérieure au début du contrat #{} ({})",
+                    currentUser.getId(), request.effectiveDate(), contractId, contract.getStartDate());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "La date de révision ne peut pas être antérieure au début du contrat : " + contract.getStartDate());
         }
 
         // Unicité (contract, effectiveDate)
         if (salaryRevisionRepository.existsByContractAndEffectiveDate(contract, request.effectiveDate())) {
+            log.warn("[user:{}] Révision refusée - date {} déjà existante sur contrat #{}",
+                    currentUser.getId(), request.effectiveDate(), contractId);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Une révision existe déjà pour la date : " + request.effectiveDate());
         }
@@ -55,7 +61,9 @@ public class SalaryRevisionService {
                 .label(request.label())
                 .build();
 
-        return SalaryRevisionDto.from(salaryRevisionRepository.save(revision));
+        SalaryRevisionDto dto = SalaryRevisionDto.from(salaryRevisionRepository.save(revision));
+        log.info("[user:{}] Révision salariale créée #{} [contrat #{}]", currentUser.getId(), dto.id(), contractId);
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -67,6 +75,8 @@ public class SalaryRevisionService {
 
         // effectiveDate >= contrat.startDate
         if (request.effectiveDate().isBefore(contract.getStartDate())) {
+            log.warn("[user:{}] Modification révision #{} refusée - date {} antérieure au début du contrat #{}",
+                    currentUser.getId(), revisionId, request.effectiveDate(), contractId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "La date de révision ne peut pas être antérieure au début du contrat : " + contract.getStartDate());
         }
@@ -74,6 +84,8 @@ public class SalaryRevisionService {
         // Unicité — on exclut la révision courante
         if (!revision.getEffectiveDate().equals(request.effectiveDate())
                 && salaryRevisionRepository.existsByContractAndEffectiveDate(contract, request.effectiveDate())) {
+            log.warn("[user:{}] Modification révision #{} refusée - date {} déjà existante sur contrat #{}",
+                    currentUser.getId(), revisionId, request.effectiveDate(), contractId);
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Une révision existe déjà pour la date : " + request.effectiveDate());
         }
@@ -82,7 +94,9 @@ public class SalaryRevisionService {
         revision.setAnnualGrossSalary(request.annualGrossSalary());
         revision.setLabel(request.label());
 
-        return SalaryRevisionDto.from(salaryRevisionRepository.save(revision));
+        SalaryRevisionDto dto = SalaryRevisionDto.from(salaryRevisionRepository.save(revision));
+        log.info("[user:{}] Révision salariale modifiée #{} [contrat #{}]", currentUser.getId(), revisionId, contractId);
+        return dto;
     }
 
     // ── Suppression ────────────────────────────────────────────
@@ -91,6 +105,7 @@ public class SalaryRevisionService {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         getRevisionForContract(revisionId, contract);
         salaryRevisionRepository.deleteById(revisionId);
+        log.info("[user:{}] Révision salariale supprimée #{} [contrat #{}]", currentUser.getId(), revisionId, contractId);
     }
 
     // ── Vérification appartenance ─────────────────────────────

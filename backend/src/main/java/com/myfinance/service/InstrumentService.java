@@ -13,6 +13,7 @@ import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InstrumentService {
@@ -69,7 +71,9 @@ public class InstrumentService {
                 .boursoramaSymbol(request.boursoramaSymbol())
                 .build();
 
-        return InstrumentDto.from(instrumentRepository.save(instrument));
+        InstrumentDto dto = InstrumentDto.from(instrumentRepository.save(instrument));
+        log.info("[system] Instrument créé #{} [catégorie: {}, nom: {}]", dto.id(), request.category(), request.name());
+        return dto;
     }
 
     // ── Modification ───────────────────────────────────────────
@@ -86,7 +90,9 @@ public class InstrumentService {
         instrument.setStablePrice(Boolean.TRUE.equals(request.stablePrice()));
         instrument.setBoursoramaSymbol(request.boursoramaSymbol());
 
-        return InstrumentDto.from(instrumentRepository.save(instrument));
+        InstrumentDto dto = InstrumentDto.from(instrumentRepository.save(instrument));
+        log.info("[system] Instrument modifié #{} [nom: {}]", id, request.name());
+        return dto;
     }
 
     // ── Prix fixe ─────────────────────────────────────────────
@@ -94,6 +100,7 @@ public class InstrumentService {
     public InstrumentDto updateStablePrice(Long id, boolean stablePrice) {
         Instrument instrument = getOrThrow(id);
         instrument.setStablePrice(stablePrice);
+        log.info("[system] Instrument #{} - prix fixe: {}", id, stablePrice);
         return InstrumentDto.from(instrumentRepository.save(instrument));
     }
 
@@ -105,12 +112,14 @@ public class InstrumentService {
     }
 
     public List<InstrumentDto> updatePrices(List<UpdateInstrumentPriceRequest> requests) {
-        return requests.stream().map(req -> {
+        List<InstrumentDto> result = requests.stream().map(req -> {
             Instrument instrument = getOrThrow(req.instrumentId());
             instrument.setLastPrice(req.lastPrice());
             instrument.setLastPriceUpdatedAt(LocalDateTime.now());
             return InstrumentDto.from(instrumentRepository.save(instrument));
         }).toList();
+        log.info("[system] Cours mis à jour pour {} instrument(s)", result.size());
+        return result;
     }
 
     // ── Allocations manuelles ──────────────────────────────────

@@ -5,6 +5,7 @@ import com.myfinance.domain.PositionStatus;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PatrimoineScoreService {
@@ -72,7 +74,7 @@ public class PatrimoineScoreService {
                 .min(Comparator.comparingDouble(a -> (double) a.score() / a.maxScore()))
                 .orElse(null);
 
-        return new PatrimoineScoreDto(
+        PatrimoineScoreDto result = new PatrimoineScoreDto(
                 totalScore,
                 105,
                 computeProfile(totalScore),
@@ -80,6 +82,9 @@ public class PatrimoineScoreService {
                 weakest != null ? weakest.detail() : null,
                 axes
         );
+        log.info("[user:{}] Score patrimonial calculé: {}/105 [profil: {}]",
+                user.getId(), totalScore, result.profile());
+        return result;
     }
 
     // ── Axe 1 : Diversification (20 pts) ──────────────────────────
