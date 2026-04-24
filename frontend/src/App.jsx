@@ -132,7 +132,7 @@ export default function App() {
         pendingRegistrations={pendingRegistrations}
       />
 
-      <main className="p-8">
+      <main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
         {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} onNavigate={handleNavigate} />}
 
         {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} familyMode={familyMode} />}

@@ -67,8 +67,8 @@ export default function LoginForm({ onSuccess, initialShowRegister = false, onBa
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white rounded-xl shadow-lg p-10 w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 md:p-10 w-full max-w-sm">
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-1">MyFinance</h1>
         <p className="text-center text-gray-500 text-sm mb-8">Connectez-vous à votre espace</p>
 

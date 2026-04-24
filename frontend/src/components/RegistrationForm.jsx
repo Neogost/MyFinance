@@ -72,13 +72,13 @@ export default function RegistrationForm({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white rounded-xl shadow-lg p-10 w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 md:p-10 w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-1">Créer un compte</h1>
         <p className="text-center text-gray-500 text-sm mb-8">Votre demande sera validée par un administrateur</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Prénom *</label>
               <input

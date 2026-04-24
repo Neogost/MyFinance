@@ -39,9 +39,9 @@ export default function LandingPage({ onLogin, onRegister }) {
       </header>
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-indigo-50 to-white py-20 px-6">
+      <section className="bg-gradient-to-br from-indigo-50 to-white py-12 md:py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
             Prenez le contrôle<br className="hidden sm:block" /> de votre patrimoine
           </h1>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
