@@ -106,6 +106,7 @@ frontend/src/
 - API revenus complémentaires : `docs/api/other-incomes.md`
 - API simulateur des impôts : `docs/api/tax-simulator.md`
 - Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
+- Gestion des instruments (architecture) : `docs/architecture/instruments.md`
 - Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
 - Mise à jour automatique des cours et snapshot mensuel : `docs/architecture/market-data-scheduler.md`
 - API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
@@ -204,6 +205,9 @@ frontend/src/
 | `GET` | `/api/instruments/active` | ADMIN | Liste les instruments liés à au moins une position ACTIVE |
 | `PUT` | `/api/instruments/prices` | ADMIN | Mise à jour groupée des cours (lastPrice + lastPriceUpdatedAt) |
 | `PATCH` | `/api/instruments/{id}/stable-price` | ADMIN | Activer / désactiver le prix fixe d'un instrument |
+| `PUT` | `/api/instruments/{id}/allocations` | ADMIN | Remplacer l'allocation géographique (replace complet) |
+| `PUT` | `/api/instruments/{id}/sector-allocations` | ADMIN | Remplacer l'allocation sectorielle (replace complet) |
+| `POST` | `/api/admin/allocations/run` | ADMIN | Déclencher la mise à jour automatique des allocations géographiques |
 
 ### Patrimoine — Positions
 | Méthode | URL | Rôle requis | Description |

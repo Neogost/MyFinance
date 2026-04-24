@@ -34,7 +34,15 @@ Liste les instruments du référentiel. Supporte la recherche par ISIN ou ticker
     "lastPriceUpdatedAt": "2026-04-01T08:00:00",
     "stablePrice": false,
     "boursoramaSymbol": "1rPCAC",
-    "coinGeckoId": null
+    "coinGeckoId": null,
+    "countryAllocation": [
+      { "country": "États-Unis", "percentage": 62.50 },
+      { "country": "Japon",      "percentage": 6.20 }
+    ],
+    "sectorAllocation": [
+      { "sector": "Technologie",  "percentage": 31.00 },
+      { "sector": "Santé",        "percentage": 13.50 }
+    ]
   },
   {
     "id": 2,
@@ -47,7 +55,9 @@ Liste les instruments du référentiel. Supporte la recherche par ISIN ou ticker
     "lastPriceUpdatedAt": "2026-04-01T08:05:00",
     "stablePrice": false,
     "boursoramaSymbol": null,
-    "coinGeckoId": "ethereum"
+    "coinGeckoId": "ethereum",
+    "countryAllocation": [],
+    "sectorAllocation": []
   }
 ]
 ```
@@ -184,6 +194,92 @@ Met à jour le cours de plusieurs instruments en une seule requête. Seuls les i
 | 401 | Non authentifié |
 | 403 | Rôle insuffisant (USER) |
 | 404 | Un `instrumentId` est introuvable |
+
+---
+
+### PUT `/api/instruments/{id}/allocations`
+
+Remplace l'intégralité de l'allocation géographique d'un instrument. Toutes les lignes existantes sont supprimées avant insertion.
+
+**Rôle requis :** `ADMIN`
+
+**Corps de la requête**
+
+```json
+[
+  { "country": "États-Unis", "percentage": 62.50 },
+  { "country": "Japon",      "percentage": 6.20 },
+  { "country": "Royaume-Uni","percentage": 4.10 }
+]
+```
+
+| Champ | Type | Contrainte |
+|-------|------|------------|
+| `country` | `String` | Obligatoire, non vide |
+| `percentage` | `BigDecimal` | Obligatoire |
+
+**Réponse 200** — liste des `InstrumentAllocationDto` persistés
+
+> Les lignes dont `country` est vide ou null sont silencieusement ignorées.
+
+**Erreurs**
+
+| Code | Raison |
+|------|--------|
+| 404 | Instrument introuvable |
+| 403 | Rôle insuffisant (USER) |
+
+---
+
+### PUT `/api/instruments/{id}/sector-allocations`
+
+Remplace l'intégralité de l'allocation sectorielle d'un instrument. Même comportement que `/allocations`.
+
+**Rôle requis :** `ADMIN`
+
+**Corps de la requête**
+
+```json
+[
+  { "sector": "Technologie",   "percentage": 31.00 },
+  { "sector": "Santé",         "percentage": 13.50 },
+  { "sector": "Finance",       "percentage": 12.80 }
+]
+```
+
+| Champ | Type | Contrainte |
+|-------|------|------------|
+| `sector` | `String` | Obligatoire, non vide |
+| `percentage` | `BigDecimal` | Obligatoire |
+
+**Réponse 200** — liste des `InstrumentSectorAllocationDto` persistés
+
+**Erreurs**
+
+| Code | Raison |
+|------|--------|
+| 404 | Instrument introuvable |
+| 403 | Rôle insuffisant (USER) |
+
+---
+
+### POST `/api/admin/allocations/run`
+
+Déclenche manuellement la mise à jour automatique des allocations géographiques pour tous les instruments BOURSE avec `stablePrice = false` et `boursoramaSymbol` renseigné. Scraping Boursorama via `BoursoramaClient`.
+
+**Rôle requis :** `ADMIN`
+
+**Réponse 200**
+
+```json
+{ "instrumentsUpdated": 7 }
+```
+
+| Champ | Description |
+|-------|-------------|
+| `instrumentsUpdated` | Nombre d'instruments dont les allocations ont été mises à jour avec succès |
+
+> Les instruments pour lesquels Boursorama ne retourne aucune donnée sont ignorés (log `WARN`) mais ne font pas échouer la requête.
 
 ---
 
