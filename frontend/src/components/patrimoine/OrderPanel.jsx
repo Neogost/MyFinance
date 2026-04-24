@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react'
 import { getOrders, createOrder, updateOrder, deleteOrder } from '../../api/patrimoine'
 
 const ORDER_TYPE_LABELS = {
-  DEPOSIT:    { label: 'Dépôt',      color: 'bg-green-100 text-green-700'   },
-  WITHDRAWAL: { label: 'Retrait',    color: 'bg-red-100 text-red-700'       },
-  BUY:        { label: 'Achat',      color: 'bg-blue-100 text-blue-700'     },
-  SELL:       { label: 'Vente',      color: 'bg-orange-100 text-orange-700' },
-  INTEREST:   { label: 'Intérêts',   color: 'bg-violet-100 text-violet-700' },
-  DIVIDEND:   { label: 'Dividende',  color: 'bg-indigo-100 text-indigo-700' },
-  AIRDROP:    { label: 'Airdrop',    color: 'bg-teal-100 text-teal-700'     },
+  DEPOSIT:     { label: 'Dépôt',       color: 'bg-green-100 text-green-700'    },
+  WITHDRAWAL:  { label: 'Retrait',     color: 'bg-red-100 text-red-700'        },
+  BUY:         { label: 'Achat',       color: 'bg-blue-100 text-blue-700'      },
+  SELL:        { label: 'Vente',       color: 'bg-orange-100 text-orange-700'  },
+  INTEREST:    { label: 'Intérêts',    color: 'bg-violet-100 text-violet-700'  },
+  DIVIDEND:    { label: 'Dividende',   color: 'bg-indigo-100 text-indigo-700'  },
+  AIRDROP:     { label: 'Airdrop',     color: 'bg-teal-100 text-teal-700'      },
+  ABONDEMENT:  { label: 'Abondement',  color: 'bg-emerald-100 text-emerald-700' },
 }
 
 const ORDER_TYPES_BY_CATEGORY = {
-  BOURSE:        ['BUY', 'SELL', 'DIVIDEND', 'INTEREST'],
+  BOURSE:        ['BUY', 'SELL', 'DIVIDEND', 'INTEREST', 'ABONDEMENT'],
   CRYPTO:        ['BUY', 'SELL', 'INTEREST', 'AIRDROP'],
   IMMO_PAPIER:   ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
   IMMO_PHYSIQUE: ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
@@ -232,7 +233,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   const totalUnits = isBourseOrCrypto
     ? orders.reduce((s, o) => {
         if (o.quantity == null) return s
-        return (o.orderType === 'BUY' || o.orderType === 'AIRDROP') ? s + parseFloat(o.quantity)
+        return (['BUY', 'AIRDROP', 'ABONDEMENT'].includes(o.orderType)) ? s + parseFloat(o.quantity)
              : o.orderType === 'SELL' ? s - parseFloat(o.quantity)
              : s
       }, 0)

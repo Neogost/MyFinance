@@ -133,13 +133,13 @@ public record PositionDto(
                                                             Map<String, BigDecimal> exchangeRates) {
         BigDecimal invested = computeInvested(orders);
 
-        // Calcul des unités : Σ (BUY + AIRDROP).quantity - Σ SELL.quantity
+        // Calcul des unités : Σ (BUY + AIRDROP + ABONDEMENT).quantity - Σ SELL.quantity
         BigDecimal units = orders.stream()
                 .filter(o -> o.getQuantity() != null)
                 .map(o -> switch (o.getOrderType()) {
-                    case BUY, AIRDROP ->  o.getQuantity();
-                    case SELL         -> o.getQuantity().negate();
-                    default           -> BigDecimal.ZERO;
+                    case BUY, AIRDROP, ABONDEMENT ->  o.getQuantity();
+                    case SELL                     -> o.getQuantity().negate();
+                    default                       -> BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

@@ -559,4 +559,43 @@ class PositionServiceTest {
         // Investi = uniquement l'achat (20€), pas l'airdrop
         assertThat(result.computed().investedAmountEur()).isEqualByComparingTo("20.00");
     }
+
+    @Test
+    void findById_bourse_abondementCompteDansUnitesMaisPasDansInvesti() {
+        Position bourse = Position.builder()
+                .id(6L).user(owner)
+                .category(AssetCategory.BOURSE)
+                .label("PEE Entreprise").partner("Amundi")
+                .currency("EUR").fiscalEnvelope(FiscalEnvelope.NONE)
+                .instrument(instrument)
+                .includeInIncomeProjection(false)
+                .status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Achat de 10 parts à 50€ → investi = 500€
+        PositionOrder achat = PositionOrder.builder()
+                .id(1L).position(bourse).orderType(OrderType.BUY)
+                .quantity(new BigDecimal("10")).unitPrice(new BigDecimal("50.00"))
+                .amount(new BigDecimal("500.00")).amountEur(new BigDecimal("500.00"))
+                .orderDate(LocalDate.of(2025, 1, 1)).build();
+
+        // Abondement de 3 parts à 50€ → non comptabilisé dans investi, pur plus-value
+        PositionOrder abondement = PositionOrder.builder()
+                .id(2L).position(bourse).orderType(OrderType.ABONDEMENT)
+                .quantity(new BigDecimal("3")).unitPrice(new BigDecimal("50.00"))
+                .amount(new BigDecimal("150.00")).amountEur(new BigDecimal("150.00"))
+                .orderDate(LocalDate.of(2025, 6, 1)).build();
+
+        when(positionRepository.findById(6L)).thenReturn(Optional.of(bourse));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(bourse))
+                .thenReturn(List.of(abondement, achat));
+
+        PositionDto result = positionService.findById(6L, owner);
+
+        // 10 (achat) + 3 (abondement) = 13 parts
+        assertThat(result.computed().units()).isEqualByComparingTo("13");
+        // Investi = uniquement l'achat (500€), pas l'abondement
+        assertThat(result.computed().investedAmountEur()).isEqualByComparingTo("500.00");
+    }
 }

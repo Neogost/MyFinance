@@ -7,5 +7,6 @@ public enum OrderType {
     WITHDRAWAL,
     INTEREST,
     DIVIDEND,
-    AIRDROP
+    AIRDROP,
+    ABONDEMENT
 }
