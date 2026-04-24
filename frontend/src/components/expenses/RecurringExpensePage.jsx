@@ -154,9 +154,9 @@ export default function RecurringExpensePage() {
 
       {/* ── Résumé + Répartition ── */}
       {summary && (
-        <div className="flex gap-4 mb-6 items-stretch">
-          {/* Bloc 2×2 KPIs — moitié gauche */}
-          <div className="grid grid-cols-2 gap-4 w-1/2">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          {/* Bloc 2×2 KPIs */}
+          <div className="grid grid-cols-2 gap-4 md:w-1/2">
             <SavingsCard
               label="Revenus nets mensuels"
               value={summary.monthlyNetIncome}
@@ -220,9 +220,9 @@ export default function RecurringExpensePage() {
             />
           </div>
 
-          {/* Répartition par catégorie — moitié droite */}
+          {/* Répartition par catégorie */}
           {summary.byCategory?.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col">
+            <div className="bg-white rounded-xl shadow-sm p-5 md:w-1/2 flex flex-col">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Répartition par catégorie</p>
                 <button
@@ -367,16 +367,16 @@ export default function RecurringExpensePage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className="text-sm font-semibold text-gray-900 amount">{fmt(exp.monthlyAmount)} €/mois</span>
-                          <span className="text-xs text-gray-400 ml-2 amount">{fmt(exp.annualAmount)} €/an</span>
+                          <span className="hidden md:inline text-xs text-gray-400 ml-2 amount">{fmt(exp.annualAmount)} €/an</span>
                         </td>
                         {exp.endDate && (
-                          <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
+                          <td className="hidden md:table-cell px-4 py-3 text-xs text-gray-400 whitespace-nowrap">
                             jusqu'au {exp.endDate}
                           </td>
                         )}
-                        {!exp.endDate && <td className="px-4 py-3" />}
+                        {!exp.endDate && <td className="hidden md:table-cell px-4 py-3" />}
                         <td className="px-4 py-3">
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">
                             <button
                               onClick={() => setFormTarget(exp)}
                               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
@@ -403,7 +403,7 @@ export default function RecurringExpensePage() {
 
       {/* ── Total bas de page ── */}
       {filtered.length > 0 && (
-        <div className="mt-4 flex justify-end gap-8 text-sm text-gray-600 bg-white rounded-xl shadow-sm px-6 py-4">
+        <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2 sm:gap-8 text-sm text-gray-600 bg-white rounded-xl shadow-sm px-6 py-4">
           <span>
             Total affiché :
             <strong className="ml-2 text-gray-900 amount">
