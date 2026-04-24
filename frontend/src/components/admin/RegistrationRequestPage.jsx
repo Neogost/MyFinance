@@ -76,9 +76,9 @@ export default function RegistrationRequestPage({ onPendingCountChange }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h2 className="text-xl font-bold text-gray-900">Demandes d'inscription</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {['PENDING', 'APPROVED', 'REJECTED', ''].map(s => (
             <button
               key={s}
@@ -116,32 +116,36 @@ export default function RegistrationRequestPage({ onPendingCountChange }) {
             <thead>
               <tr className="bg-gray-50">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Login</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prénom</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Soumis le</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prénom</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Soumis le</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Traité par</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Traité par</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {requests.map(r => (
                 <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 text-sm font-mono text-gray-800">{r.login}</td>
-                  <td className="px-4 py-3 text-sm text-gray-800">{r.lastName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-800">{r.firstName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(r.createdAt)}</td>
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-mono text-gray-800">{r.login}</p>
+                    <p className="md:hidden text-xs text-gray-400 mt-0.5">{r.firstName} {r.lastName}</p>
+                    <p className="md:hidden text-xs text-gray-400">{formatDate(r.createdAt)}</p>
+                  </td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-800">{r.lastName}</td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-800">{r.firstName}</td>
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{formatDate(r.createdAt)}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_CLS[r.status]}`}>
                       {STATUS_LABELS[r.status]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
+                  <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">
                     {r.reviewedBy ?? '—'}
                   </td>
                   <td className="px-4 py-3">
                     {r.status === 'PENDING' && (
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex flex-col md:flex-row items-end md:justify-end gap-1 md:gap-2">
                         <button
                           onClick={() => handleApprove(r.id)}
                           className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-green-500 hover:text-green-700 transition"

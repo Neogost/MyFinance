@@ -61,9 +61,9 @@ export default function AdminFamilyGroupPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-3 mb-6">
         <h2 className="text-xl font-bold text-gray-900">Regroupements familiaux</h2>
-        <span className="text-sm text-gray-500">{groups.length} groupe{groups.length !== 1 ? 's' : ''}</span>
+        <span className="text-sm text-gray-500 shrink-0">{groups.length} groupe{groups.length !== 1 ? 's' : ''}</span>
       </div>
 
       {error && (
@@ -82,42 +82,41 @@ export default function AdminFamilyGroupPage() {
 
               {/* ── En-tête du groupe ── */}
               <div
-                className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition"
+                className="flex items-start gap-3 px-4 md:px-5 py-3 md:py-4 cursor-pointer hover:bg-gray-50 transition"
                 onClick={() => toggleExpand(group.id)}
               >
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-400 w-4">
-                    {expanded.has(group.id) ? '▼' : '▶'}
-                  </span>
-                  <div>
+                <span className="text-sm font-medium text-gray-400 mt-0.5 shrink-0">
+                  {expanded.has(group.id) ? '▼' : '▶'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <p className="font-semibold text-gray-900">{group.name}</p>
-                    <p className="text-xs text-gray-400">
-                      Owner : {group.owner.firstName} {group.owner.lastName} ({group.owner.login})
-                      {' · '}Créé le {formatDate(group.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">
-                    {group.members?.length ?? 0} membre{(group.members?.length ?? 0) !== 1 ? 's' : ''}
-                  </span>
-                  {group.invitations?.filter(i => i.status === 'PENDING').length > 0 && (
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
-                      {group.invitations.filter(i => i.status === 'PENDING').length} invitation{group.invitations.filter(i => i.status === 'PENDING').length > 1 ? 's' : ''} en attente
+                    <span className="text-xs text-gray-500 shrink-0">
+                      {group.members?.length ?? 0} membre{(group.members?.length ?? 0) !== 1 ? 's' : ''}
                     </span>
-                  )}
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDissolve(group) }}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
-                  >
-                    Supprimer
-                  </button>
+                    {group.invitations?.filter(i => i.status === 'PENDING').length > 0 && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                        {group.invitations.filter(i => i.status === 'PENDING').length} invitation{group.invitations.filter(i => i.status === 'PENDING').length > 1 ? 's' : ''} en attente
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Owner : {group.owner.firstName} {group.owner.lastName}
+                    <span className="hidden sm:inline"> ({group.owner.login})</span>
+                    {' · '}Créé le {formatDate(group.createdAt)}
+                  </p>
                 </div>
+                <button
+                  onClick={e => { e.stopPropagation(); handleDissolve(group) }}
+                  className="shrink-0 px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
+                >
+                  Supprimer
+                </button>
               </div>
 
               {/* ── Détail dépliable ── */}
               {expanded.has(group.id) && (
-                <div className="border-t border-gray-100 px-5 py-4 flex flex-col gap-4">
+                <div className="border-t border-gray-100 px-4 md:px-5 py-4 flex flex-col gap-4">
 
                   {/* Membres */}
                   <div>
@@ -125,12 +124,12 @@ export default function AdminFamilyGroupPage() {
                     <div className="flex flex-col gap-1">
                       {group.members?.map(m => (
                         <div key={m.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <MemberDot memberId={m.id} />
-                            <span className="text-sm text-gray-800">{m.firstName} {m.lastName}</span>
-                            <span className="text-xs text-gray-400">({m.login})</span>
+                            <span className="text-sm text-gray-800 truncate">{m.firstName} {m.lastName}</span>
+                            <span className="hidden sm:inline text-xs text-gray-400 shrink-0">({m.login})</span>
                             {m.id === group.owner.id && (
-                              <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">Owner</span>
+                              <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold shrink-0">Owner</span>
                             )}
                           </div>
                           <button
@@ -150,9 +149,10 @@ export default function AdminFamilyGroupPage() {
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Invitations</p>
                       <div className="flex flex-col gap-1">
                         {group.invitations.map(inv => (
-                          <div key={inv.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm">
-                            <span className="text-gray-700">
-                              {inv.invitedUser.firstName} {inv.invitedUser.lastName} ({inv.invitedUser.login})
+                          <div key={inv.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm gap-2">
+                            <span className="text-gray-700 truncate">
+                              {inv.invitedUser.firstName} {inv.invitedUser.lastName}
+                              <span className="hidden sm:inline text-gray-400"> ({inv.invitedUser.login})</span>
                             </span>
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                               inv.status === 'PENDING'  ? 'bg-amber-100 text-amber-700'  :

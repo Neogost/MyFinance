@@ -113,29 +113,35 @@ export default function AdminInstrumentPage() {
   return (
     <div>
       {/* ── En-tête ── */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Gestion des instruments</h2>
           <p className="text-sm text-gray-500 mt-0.5">{instruments.length} instrument(s) au total</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={handleAllocationUpdate}
             disabled={allocating}
-            className="flex items-center gap-2 px-4 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-100 disabled:opacity-60 transition"
+            className="flex items-center gap-2 px-3 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-100 disabled:opacity-60 transition"
           >
-            {allocating ? <><span className="animate-spin inline-block">⟳</span> Allocations…</> : '🌍 Mettre à jour les allocations'}
+            {allocating
+              ? <><span className="animate-spin inline-block">⟳</span> Allocations…</>
+              : <><span>🌍</span><span className="hidden md:inline">Mettre à jour les allocations</span><span className="md:hidden">Allocations</span></>
+            }
           </button>
           <button
             onClick={handleUpdate}
             disabled={updating}
-            className="flex items-center gap-2 px-4 py-2 border border-indigo-300 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-100 disabled:opacity-60 transition"
+            className="flex items-center gap-2 px-3 py-2 border border-indigo-300 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-100 disabled:opacity-60 transition"
           >
-            {updating ? <><span className="animate-spin inline-block">⟳</span> Mise à jour…</> : '⟳ Mettre à jour les cours'}
+            {updating
+              ? <><span className="animate-spin inline-block">⟳</span> Mise à jour…</>
+              : <><span>⟳</span><span className="hidden md:inline">Mettre à jour les cours</span><span className="md:hidden">Cours</span></>
+            }
           </button>
           <button
             onClick={() => setFormTarget(null)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+            className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
           >
             + Ajouter
           </button>
@@ -189,28 +195,18 @@ export default function AdminInstrumentPage() {
             </div>
           ) : (
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <table className="w-full border-collapse table-fixed">
-                <colgroup>
-                  <col className="w-[28%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[6%]" />
-                </colgroup>
+              <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {label === 'BOURSE' ? 'ISIN' : 'Ticker'}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {label === 'BOURSE' ? 'Boursorama' : 'CoinGecko ID'}
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix actuel</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mis à jour</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix fixe</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mis à jour</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
@@ -224,7 +220,7 @@ export default function AdminInstrumentPage() {
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span
                               title={inst.name}
-                              className={`truncate ${inst.countryAllocation?.length || inst.sectorAllocation?.length ? 'border-b border-dashed border-gray-400 cursor-help' : ''}`}
+                              className={`truncate max-w-[14ch] md:max-w-none ${inst.countryAllocation?.length || inst.sectorAllocation?.length ? 'border-b border-dashed border-gray-400 cursor-help' : ''}`}
                               onMouseEnter={e => handleNameEnter(e, inst)}
                               onMouseLeave={() => setTooltip(null)}
                             >
@@ -235,25 +231,34 @@ export default function AdminInstrumentPage() {
                                 <button
                                   onClick={() => { setTooltip(null); setAllocationTarget(inst) }}
                                   title="Éditer l'allocation géographique"
-                                  className="shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
+                                  className="hidden md:inline shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
                                 >
                                   🌍
                                 </button>
                                 <button
                                   onClick={() => { setTooltip(null); setSectorAllocationTarget(inst) }}
                                   title="Éditer la répartition sectorielle"
-                                  className="shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
+                                  className="hidden md:inline shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
                                 >
                                   🏭
                                 </button>
                               </>
                             )}
                           </div>
+                          <div className="md:hidden flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-xs text-gray-400 font-mono">{inst.isin ?? inst.ticker ?? '—'}</span>
+                            {inst.stablePrice && (
+                              <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">🔒 Fixe</span>
+                            )}
+                            {stale && !inst.stablePrice && (
+                              <span className="text-xs text-orange-500 font-medium">⚠ Cours obsolète</span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 font-mono truncate">
+                        <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500 font-mono truncate">
                           {inst.isin ?? inst.ticker ?? '—'}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono truncate">
+                        <td className="hidden md:table-cell px-4 py-3 text-sm font-mono truncate">
                           {label === 'BOURSE'
                             ? inst.boursoramaSymbol
                               ? <span className="text-indigo-700">{inst.boursoramaSymbol}</span>
@@ -263,10 +268,10 @@ export default function AdminInstrumentPage() {
                               : <span className="text-gray-300">—</span>
                           }
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold text-gray-800">
+                        <td className="px-4 py-3 text-sm text-right font-semibold text-gray-800 whitespace-nowrap">
                           {fmt(inst.lastPrice, inst.currency)}
                         </td>
-                        <td className="px-4 py-3 text-xs">
+                        <td className="hidden md:table-cell px-4 py-3 text-xs">
                           {inst.stablePrice
                             ? <span className="text-gray-400">—</span>
                             : dateStr
@@ -274,12 +279,6 @@ export default function AdminInstrumentPage() {
                                   {stale && '⚠ '}{dateStr}
                                 </span>
                               : <span className="text-gray-300">Jamais</span>
-                          }
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {inst.stablePrice
-                            ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">🔒 Fixe</span>
-                            : <span className="text-gray-300 text-xs">—</span>
                           }
                         </td>
                         <td className="px-4 py-3">

@@ -43,8 +43,8 @@ export default function AdminAllocationModal({ instrument, onSave, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col max-h-[90vh]">
 
         {/* En-tête */}
         <div className="px-6 py-4 border-b border-gray-100">
