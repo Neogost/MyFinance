@@ -8,6 +8,30 @@ const EMPTY_FORM = {
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 const labelCls = 'text-sm font-semibold text-gray-700'
 
+const PASSWORD_RULES = [
+  { test: p => p.length >= 8,   label: '8 caractères minimum' },
+  { test: p => /[A-Z]/.test(p), label: 'Une majuscule' },
+  { test: p => /[a-z]/.test(p), label: 'Une minuscule' },
+  { test: p => /\d/.test(p),    label: 'Un chiffre' },
+]
+
+function PasswordHints({ password }) {
+  if (!password) return null
+  return (
+    <ul className="flex flex-col gap-1 mt-1">
+      {PASSWORD_RULES.map(({ test, label }) => {
+        const ok = test(password)
+        return (
+          <li key={label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+            <span className="font-bold">{ok ? '✓' : '○'}</span>
+            {label}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export default function UserForm({ userToEdit, onSubmit, onCancel }) {
   const isEdit = Boolean(userToEdit)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -44,6 +68,10 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+    if (form.password && PASSWORD_RULES.some(r => !r.test(form.password))) {
+      setError('Le mot de passe ne respecte pas les règles de sécurité.')
+      return
+    }
     setLoading(true)
     try {
       // En édition, on n'envoie le mot de passe que s'il est renseigné
@@ -100,6 +128,7 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
               required={!isEdit}
               className={inputCls}
             />
+            <PasswordHints password={form.password} />
           </div>
 
           <div className="flex flex-col gap-1.5">

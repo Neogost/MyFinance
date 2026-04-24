@@ -11,10 +11,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -41,16 +44,18 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
-    // UserDetailsService + PasswordEncoder sont déclarés comme beans séparément.
-    // Spring Security les détecte automatiquement et construit le DaoAuthenticationProvider.
+    // false en dev (frontend sur port différent) et dans les tests — true en prod
+    @Value("${security.csrf.enabled:true}")
+    private boolean csrfEnabled;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Content-Type", "Accept", "X-XSRF-TOKEN"));
         config.setAllowCredentials(true); // nécessaire pour envoyer le cookie de session
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
@@ -59,13 +64,45 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // CSRF : double-submit cookie (Axios lit XSRF-TOKEN et renvoie X-XSRF-TOKEN)
+        // Désactivé en dev (cross-origin :3000/:8080) et dans les tests
+        if (csrfEnabled) {
+            http.csrf(csrf -> csrf
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                .ignoringRequestMatchers("/api/auth/login", "/api/auth/register") // endpoints publics
+            );
+        } else {
+            http.csrf(csrf -> csrf.disable());
+        }
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable()) // acceptable pour une app locale mono-utilisateur
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(Customizer.withDefaults())
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000)
+                )
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives(
+                        "default-src 'self'; " +
+                        "style-src 'self' 'unsafe-inline'; " +
+                        "script-src 'self'; " +
+                        "img-src 'self' data:; " +
+                        "font-src 'self' data:; " +
+                        "connect-src 'self'; " +
+                        "object-src 'none'; " +
+                        "base-uri 'self'"
+                    )
+                )
+            )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll() // fichiers statiques et routes SPA React
             )
             .formLogin(form -> form
                 .loginProcessingUrl("/api/auth/login")

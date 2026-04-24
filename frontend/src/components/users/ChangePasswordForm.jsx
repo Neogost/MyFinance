@@ -7,6 +7,30 @@ import SafetyNetPanel from '../profile/SafetyNetPanel'
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 const labelCls = 'text-sm font-semibold text-gray-700'
 
+const PASSWORD_RULES = [
+  { test: p => p.length >= 8,   label: '8 caractères minimum' },
+  { test: p => /[A-Z]/.test(p), label: 'Une majuscule' },
+  { test: p => /[a-z]/.test(p), label: 'Une minuscule' },
+  { test: p => /\d/.test(p),    label: 'Un chiffre' },
+]
+
+function PasswordHints({ password }) {
+  if (!password) return null
+  return (
+    <ul className="flex flex-col gap-1 mt-1">
+      {PASSWORD_RULES.map(({ test, label }) => {
+        const ok = test(password)
+        return (
+          <li key={label} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-green-600' : 'text-gray-400'}`}>
+            <span className="font-bold">{ok ? '✓' : '○'}</span>
+            {label}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }) {
   const [form, setForm]       = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [error, setError]     = useState(null)
@@ -21,6 +45,10 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (PASSWORD_RULES.some(r => !r.test(form.newPassword))) {
+      setError('Le nouveau mot de passe ne respecte pas les règles de sécurité.')
+      return
+    }
     if (form.newPassword !== form.confirm) {
       setError('Les deux nouveaux mots de passe ne correspondent pas.')
       return
@@ -80,6 +108,7 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
             required
             className={inputCls}
           />
+          <PasswordHints password={form.newPassword} />
         </div>
 
         <div className="flex flex-col gap-1.5">

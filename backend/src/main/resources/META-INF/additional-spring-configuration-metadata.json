@@ -4,6 +4,12 @@
       "name": "cors.allowed-origins",
       "type": "java.lang.String",
       "description": "Origines autorisées pour les requêtes CORS (séparées par des virgules)."
+    },
+    {
+      "name": "security.csrf.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Active la protection CSRF (double-submit cookie). Désactiver en dev (cross-origin) et dans les tests.",
+      "defaultValue": true
     }
   ]
 }

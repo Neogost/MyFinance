@@ -5,6 +5,7 @@ import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SafetyNetMode;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
+import com.myfinance.service.InstrumentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PatrimoineScoreServiceTest {
 
+    @Mock InstrumentService instrumentService;
     @Mock PositionService positionService;
     @Mock PatrimoineTargetService patrimoineTargetService;
     @Mock DebtService debtService;
@@ -149,6 +151,9 @@ class PatrimoineScoreServiceTest {
     // ── Helpers ────────────────────────────────────────────────────
 
     private void stubDataComplet() {
+        when(instrumentService.loadAllocationsForScore(any()))
+                .thenReturn(new InstrumentService.AllocationsBundle(Map.of(), Map.of()));
+
         PositionComputedDto computed = new PositionComputedDto(
                 BigDecimal.valueOf(40000), BigDecimal.valueOf(50000),
                 BigDecimal.valueOf(10000), null, null);
@@ -185,6 +190,9 @@ class PatrimoineScoreServiceTest {
     }
 
     private void stubDataMinimale() {
+        when(instrumentService.loadAllocationsForScore(any()))
+                .thenReturn(new InstrumentService.AllocationsBundle(Map.of(), Map.of()));
+
         when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
                 .thenReturn(List.of());
         when(patrimoineTargetService.getTargets(user)).thenReturn(Map.of());
