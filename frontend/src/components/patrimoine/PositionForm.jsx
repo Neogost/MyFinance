@@ -377,7 +377,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                     <label className={labelCls}>Partenaire</label>
                     <input name="partner" type="text" value={form.partner}
                       onChange={handleChange}
-                      placeholder={isBourse ? 'ex : SaxoBank - PEA' : isCrypto ? 'ex : Binance' : 'ex : BNP Parisbas'}
+                      placeholder={isBourse ? 'ex : Boursorama' : isCrypto ? 'ex : Binance' : 'ex : BNP Parisbas'}
                       className={inputCls} />
                   </div>
                 )}
@@ -385,7 +385,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                   <label className={labelCls}>Libellé *</label>
                   <input name="label" type="text" value={form.label}
                     onChange={handleChange} required
-                    placeholder={isImmoPhysique ? 'ex : Appartement Cholet' : 'ex : Livret A'}
+                    placeholder={isImmoPhysique ? 'ex : Appartement' : 'ex : Livret A'}
                     className={inputCls} />
                 </div>
               </div>
@@ -442,7 +442,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                     <label className={labelCls}>Adresse</label>
                     <input name="address" type="text" value={form.address}
                       onChange={handleChange}
-                      placeholder="ex : 6 Rue Édouard Branly 49300 Cholet"
+                      placeholder="ex : 1 Avenue de la libération 92000 Paris"
                       className={inputCls} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -458,7 +458,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                       <label className={labelCls}>Valeur estimée (€)</label>
                       <input name="estimatedCurrentValue" type="number" min="0" step="0.01"
                         value={form.estimatedCurrentValue} onChange={handleChange}
-                        placeholder="ex : 115000" className={inputCls} />
+                        placeholder="ex : 200000" className={inputCls} />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">

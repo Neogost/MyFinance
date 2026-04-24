@@ -303,7 +303,7 @@ Liste les positions de l'utilisateur connecté avec les totaux calculés.
   {
     "id": 10,
     "category": "BOURSE",
-    "partner": "SaxoBank - PEA",
+    "partner": "Courtier - PEA",
     "label": "Lyxor PEA Nasdaq-100 UCITS ETF",
     "currency": "EUR",
     "fiscalEnvelope": "PEA",
@@ -327,7 +327,7 @@ Liste les positions de l'utilisateur connecté avec les totaux calculés.
   {
     "id": 20,
     "category": "LIVRET",
-    "partner": "BNP Parisbas",
+    "partner": "Banque",
     "label": "Livret A",
     "currency": "EUR",
     "fiscalEnvelope": "NONE",
@@ -345,8 +345,8 @@ Liste les positions de l'utilisateur connecté avec les totaux calculés.
   {
     "id": 30,
     "category": "LIQUIDITE",
-    "partner": "Swile",
-    "label": "Ticket Restaurant",
+    "partner": "Exemple",
+    "label": "Cheque",
     "currency": "EUR",
     "currentBalance": 525.79,
     "status": "ACTIVE",
@@ -406,8 +406,8 @@ Créer une position.
 ```json
 {
   "category": "BOURSE",
-  "partner": "SaxoBank - PEA",
-  "label": "Lyxor PEA Nasdaq-100 UCITS ETF",
+  "partner": "Courtier - PEA",
+  "label": "ETF MSCI World",
   "currency": "EUR",
   "fiscalEnvelope": "PEA",
   "assetSubType": "ETF",
@@ -422,7 +422,7 @@ Créer une position.
 {
   "category": "CRYPTO",
   "partner": "Binance",
-  "label": "Earn USDC",
+  "label": "USDC",
   "currency": "USD",
   "instrumentId": 5,
   "includeInIncomeProjection": true
@@ -434,8 +434,8 @@ Créer une position.
 ```json
 {
   "category": "IMMO_PAPIER",
-  "partner": "Housers",
-  "label": "TORRES DE PATERNA",
+  "partner": "SCPI",
+  "label": "Nom du Projet",
   "currency": "EUR",
   "fiscalEnvelope": "NONE",
   "commissionRate": 10.0,
@@ -448,11 +448,11 @@ Créer une position.
 ```json
 {
   "category": "IMMO_PHYSIQUE",
-  "label": "Appartement Cholet",
+  "label": "Appartement",
   "currency": "EUR",
   "ownershipType": "NUE_PROPRIETE",
-  "address": "6 Rue Edouard Branly 49300 CHOLET",
-  "estimatedCurrentValue": 115000.00,
+  "address": "1 Avenue de la libération 92000 Paris",
+  "estimatedCurrentValue": 500000.00,
   "acquisitionDate": "2019-06-15",
   "includeInIncomeProjection": false
 }
@@ -463,7 +463,7 @@ Créer une position.
 ```json
 {
   "category": "LIVRET",
-  "partner": "BNP Parisbas",
+  "partner": "Banque",
   "label": "Livret A",
   "currency": "EUR",
   "fiscalEnvelope": "NONE",
@@ -477,8 +477,8 @@ Créer une position.
 ```json
 {
   "category": "LIQUIDITE",
-  "partner": "Swile",
-  "label": "Ticket Restaurant",
+  "partner": "Poche",
+  "label": "Piece",
   "currency": "EUR",
   "currentBalance": 525.79
 }
@@ -533,7 +533,7 @@ Mettre à jour la valeur estimée d'un bien `IMMO_PHYSIQUE`. Non applicable aux 
 
 ```json
 {
-  "estimatedCurrentValue": 120000.00
+  "estimatedCurrentValue": 10000.00
 }
 ```
 
