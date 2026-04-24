@@ -96,32 +96,58 @@ Stratégie retenue : **masquer les colonnes secondaires** sur mobile via `hidden
 Chaque tableau conserve sur mobile uniquement les colonnes essentielles à la lecture et à l'action.
 
 #### Colonnes toujours visibles (mobile)
-- Libellé / nom de l'élément
-- Valeur principale (montant, capital restant, solde)
-- Bouton d'action (éditer / supprimer)
+- Libellé / nom de l'élément (tronqué si nécessaire : `truncate max-w-[10ch] md:max-w-none`)
+- Valeur principale (montant, capital restant, solde) — via composant `<Amount>`
+- Colonne d'actions
 
 #### Colonnes masquées sur mobile (`hidden md:table-cell`)
 - Dates (acquisition, échéance, dernière mise à jour)
-- Identifiants techniques (ISIN, ticker, CoinGecko ID)
-- Valeurs secondaires (variation %, taux, durée résiduelle)
-- Colonnes de détail (établissement, catégorie fiscale, fréquence)
+- Identifiants techniques (ISIN, ticker)
+- Valeurs secondaires (investi, taux, décote, ancienneté)
+- Colonnes de détail (enveloppe fiscale, fiscalité, fréquence)
 
-Exemple de marquage :
 ```jsx
-<th className="hidden md:table-cell">Date d'acquisition</th>
-// ...
-<td className="hidden md:table-cell">{item.acquisitionDate}</td>
+<th className="hidden md:table-cell">Investi</th>
+<td className="hidden md:table-cell">{item.investedAmount}</td>
 ```
+
+#### Boutons d'action dans les tableaux
+Empiler verticalement sur mobile, en ligne sur desktop :
+```jsx
+<div className="flex flex-col md:flex-row items-end md:justify-end gap-1 md:gap-2">
+  <button>Modifier</button>
+  <button>Supprimer</button>
+</div>
+```
+
+#### Colgroup
+Ne pas utiliser `<colgroup>` avec des largeurs fixes dans les tableaux responsifs — les colonnes
+cachées (`display:none`) continuent à réserver de l'espace via `<col>`, causant un scroll
+horizontal parasite. Laisser le navigateur auto-dimensionner les colonnes.
 
 ---
 
-### 5. Formulaires et modals
+### 5. Formulaires et modals — pattern Bottom Drawer
 
-- Les modals passent en **plein écran** sur mobile (`inset-0` ou `w-full h-full`) et en fenêtre
-  centrée sur desktop (`max-w-lg mx-auto`).
-- Les champs en grille (`grid-cols-2`) sont réorganisés en colonne unique (`grid-cols-1 sm:grid-cols-2`).
-- Le bouton de soumission est **pleine largeur** sur mobile (`w-full`).
-- Un bouton "Annuler" est toujours accessible sans scroll (sticky footer dans la modal sur mobile).
+Les modals utilisent le pattern **bottom drawer** sur mobile : elles glissent depuis le bas de
+l'écran, et restent centrées sur desktop. **Ne pas utiliser le plein écran mobile** (UX moins
+naturelle sur iOS/Android).
+
+```jsx
+// Pattern standard pour toute nouvelle modal
+<div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+  <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto p-8">
+    {/* contenu */}
+  </div>
+</div>
+```
+
+Règles :
+- `items-end` sur mobile → `sm:items-center` sur desktop
+- `rounded-t-2xl` sur mobile → `sm:rounded-xl` sur desktop
+- `max-h-[90vh] overflow-y-auto` — obligatoire pour les formulaires longs
+- **`z-60` obligatoire** — la bottom nav est en `z-50`, une modal en `z-50` passerait derrière
+- Les champs en grille (`grid-cols-2`) sont réorganisés en colonne unique (`grid-cols-1 sm:grid-cols-2`)
 
 ---
 
@@ -171,5 +197,51 @@ Exemple de marquage :
 ### Risques
 - La bottom nav duplique partiellement la logique de navigation de `Navigation.jsx` — à factoriser
   proprement pour éviter deux sources de vérité sur les routes accessibles.
-- Les modals plein écran sur mobile nécessitent un scroll interne (`overflow-y-auto`) pour les
-  formulaires longs : à vérifier au cas par cas.
+- Les modals nécessitent un scroll interne (`overflow-y-auto`) pour les formulaires longs :
+  toujours associer `max-h-[90vh] overflow-y-auto` au conteneur intérieur.
+
+---
+
+## Patterns additionnels (phase 2)
+
+### Montants compacts sur mobile — composant `<Amount>`
+
+Ne jamais afficher les montants en dur avec `fmt()` dans les vues mobiles. Utiliser systématiquement
+le composant `<Amount>` qui bascule automatiquement entre format complet (desktop) et compact (mobile) :
+
+```jsx
+// utils.jsx — rendu CSS-only, zero JS overhead
+export function Amount({ value, currency = 'EUR', prefix = '' }) {
+  return (
+    <>
+      <span className="hidden md:inline">{prefix}{fmt(value, currency)}</span>   {/* 10 219,61 € */}
+      <span className="md:hidden">{prefix}{fmtCompact(value, currency)}</span>   {/* 10,2 K€ */}
+    </>
+  )
+}
+```
+
+Règle : `fmtCompact` ne s'applique pas aux prix unitaires (PRU) ni aux taux — garder `fmt()` pour ces cas.
+
+---
+
+### Scroll horizontal parasite
+
+Ajouter `overflow-x-hidden` sur le `<main>` dans `App.jsx` pour bloquer tout débordement horizontal
+causé par des tableaux ou éléments trop larges.
+
+```jsx
+<main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
+```
+
+---
+
+### z-index — règle de priorité
+
+| Élément | z-index |
+|---------|---------|
+| Bottom nav | `z-50` |
+| Modals / drawers | `z-60` |
+| Dropdowns dans modal | `z-10` (relatif à la modal) |
+
+Toute nouvelle modal doit utiliser `z-60` pour passer au-dessus de la bottom nav.
