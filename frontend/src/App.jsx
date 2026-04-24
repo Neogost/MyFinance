@@ -26,10 +26,12 @@ import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
 import { logout, getMe } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
+import LandingPage from './components/LandingPage'
 
 export default function App() {
   const [user,        setUser]        = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [authView,    setAuthView]    = useState('landing') // 'landing' | 'login' | 'register'
   const [currentPage, setCurrentPage] = useState('dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
   const [familyMode,  setFamilyMode]  = useState(false)
@@ -38,7 +40,7 @@ export default function App() {
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
-    setUnauthorizedHandler(() => { setUser(null) })
+    setUnauthorizedHandler(() => { setUser(null); setAuthView('landing') })
     setServerErrorHandler(status => setAppError(status))
 
     getMe()
@@ -64,6 +66,7 @@ export default function App() {
     setUser(null)
     setCurrentPage('dashboard')
     setFamilyMode(false)
+    setAuthView('landing')
   }
 
   function handleGroupChange(group) {
@@ -97,7 +100,21 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginForm onSuccess={setUser} />
+    if (authView === 'landing') {
+      return (
+        <LandingPage
+          onLogin={() => setAuthView('login')}
+          onRegister={() => setAuthView('register')}
+        />
+      )
+    }
+    return (
+      <LoginForm
+        onSuccess={setUser}
+        initialShowRegister={authView === 'register'}
+        onBackToHome={() => setAuthView('landing')}
+      />
+    )
   }
 
   return (

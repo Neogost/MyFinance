@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { login } from '../api/auth'
 import RegistrationForm from './RegistrationForm'
 
-export default function LoginForm({ onSuccess }) {
-  const [showRegister, setShowRegister] = useState(false)
+export default function LoginForm({ onSuccess, initialShowRegister = false, onBackToHome }) {
+  const [showRegister, setShowRegister] = useState(initialShowRegister)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -140,6 +140,17 @@ export default function LoginForm({ onSuccess }) {
             Faire une demande
           </button>
         </p>
+
+        {onBackToHome && (
+          <p className="mt-3 text-center">
+            <button
+              onClick={onBackToHome}
+              className="text-xs text-gray-400 hover:text-gray-600 transition"
+            >
+              ← Retour à l'accueil
+            </button>
+          </p>
+        )}
       </div>
     </div>
   )
