@@ -39,10 +39,12 @@ function sumField(inputs, field) {
   }, 0)
 }
 
-export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved }) {
+export default function ManualSnapshotModal({ users, snapshot, initialUserId, onClose, onSaved }) {
   const isEdit = snapshot != null
 
-  const [selectedUserId, setSelectedUserId] = useState(isEdit ? String(snapshot.userId) : '')
+  const [selectedUserId, setSelectedUserId] = useState(
+    isEdit ? String(snapshot.userId) : (initialUserId ? String(initialUserId) : '')
+  )
   const [snapshotDate,   setSnapshotDate]   = useState(isEdit ? snapshot.snapshotDate : '')
   const [positions,      setPositions]      = useState([])
   const [inputs,         setInputs]         = useState({})  // { [positionId]: { investedAmountEur, currentValueEur, units, unitPriceEur } }
@@ -132,41 +134,34 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
   const hasAnyInput = Object.values(inputs).some(r => r.currentValueEur !== '')
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-4xl flex flex-col max-h-[90vh]">
 
-        {/* En-tête */}
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+        {/* En-tête fixe (hors scroll) */}
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
           <h3 className="text-lg font-bold text-gray-900">
             {isEdit ? 'Modifier le relevé de patrimoine' : 'Ajouter manuellement un Relevé de patrimoine'}
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             Saisissez les montants pour chaque position. Les totaux sont calculés automatiquement.
           </p>
-        </div>
 
-        {/* Corps */}
-        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
-
-          {/* Sélecteur utilisateur + date */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Utilisateur + date */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Utilisateur
               </label>
-              <select
-                value={selectedUserId}
-                onChange={e => setSelectedUserId(e.target.value)}
-                disabled={isEdit}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition disabled:bg-gray-50 disabled:text-gray-500"
-              >
-                <option value="">— Choisir un utilisateur —</option>
-                {users.map(u => (
-                  <option key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName}
-                  </option>
-                ))}
-              </select>
+              {(() => {
+                const u = users.find(u => String(u.id) === String(selectedUserId))
+                return u
+                  ? <p className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800">
+                      {u.firstName} {u.lastName} <span className="text-gray-400">({u.login})</span>
+                    </p>
+                  : <p className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 italic">
+                      Aucun utilisateur sélectionné
+                    </p>
+              })()}
             </div>
 
             <div>
@@ -181,6 +176,10 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
               />
             </div>
           </div>
+        </div>
+
+        {/* Corps scrollable */}
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
           {/* Tableau de saisie des positions */}
           {loadingPos && (
@@ -200,10 +199,10 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                   <tr className="text-xs text-gray-500 uppercase tracking-wide">
                     <th className="text-left px-4 py-3 font-medium">Position</th>
                     <th className="text-right px-3 py-3 font-medium w-36">Investi (€)</th>
-                    <th className="text-right px-3 py-3 font-medium w-36">Valeur actuelle (€) <span className="text-red-500">*</span></th>
+                    <th className="text-right px-3 py-3 font-medium w-36">Valeur (€) <span className="text-red-500">*</span></th>
                     <th className="text-right px-3 py-3 font-medium w-28">Plus-value</th>
-                    <th className="text-right px-3 py-3 font-medium w-28">Unités</th>
-                    <th className="text-right px-3 py-3 font-medium w-28">Prix unit. (€)</th>
+                    <th className="hidden md:table-cell text-right px-3 py-3 font-medium w-28">Unités</th>
+                    <th className="hidden md:table-cell text-right px-3 py-3 font-medium w-28">Prix unit. (€)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -264,7 +263,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                           }
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="hidden md:table-cell px-3 py-3">
                           <input
                             type="number" min="0" step="any" placeholder="—"
                             value={row.units ?? ''}
@@ -274,7 +273,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
                           />
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="hidden md:table-cell px-3 py-3">
                           <input
                             type="number" min="0" step="any" placeholder="—"
                             value={row.unitPriceEur ?? ''}
@@ -290,7 +289,7 @@ export default function ManualSnapshotModal({ users, snapshot, onClose, onSaved 
               </table>
 
               {/* Totaux récapitulatifs */}
-              <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 flex justify-end gap-8 text-sm">
+              <div className="bg-gray-50 border-t border-gray-200 px-4 py-3 flex flex-wrap justify-end gap-4 md:gap-8 text-sm">
                 <div className="text-right">
                   <p className="text-xs text-gray-400 uppercase tracking-wide">Total investi</p>
                   <p className="font-semibold text-gray-900 amount">{fmt(totalInvested)}</p>

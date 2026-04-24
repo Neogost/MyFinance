@@ -2,11 +2,7 @@ import { useState, useEffect } from 'react'
 import { getUsers } from '../../api/users'
 import { getAdminSnapshots, deleteAdminSnapshot } from '../../api/patrimoine'
 import ManualSnapshotModal from './ManualSnapshotModal'
-
-function fmt(value) {
-  if (value == null) return '—'
-  return parseFloat(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €'
-}
+import { Amount } from './utils'
 
 function fmtDate(isoDate) {
   if (!isoDate) return '—'
@@ -70,7 +66,7 @@ export default function AdminSnapshotPage() {
     <div className="max-w-5xl mx-auto space-y-6">
 
       {/* En-tête */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Relevés de patrimoine — Administration</h2>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -79,9 +75,12 @@ export default function AdminSnapshotPage() {
         </div>
         <button
           onClick={() => setModalSnapshot(null)}
-          disabled={loadingUsers}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition flex items-center gap-2">
-          <span>+</span> Ajouter manuellement un Relevé de patrimoine
+          disabled={loadingUsers || !selectedUserId}
+          title={!selectedUserId ? 'Sélectionnez d\'abord un utilisateur' : undefined}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center gap-2 shrink-0">
+          <span>+</span>
+          <span className="hidden md:inline">Ajouter manuellement un Relevé de patrimoine</span>
+          <span className="md:hidden">Ajouter un relevé</span>
         </button>
       </div>
 
@@ -133,9 +132,9 @@ export default function AdminSnapshotPage() {
               <thead className="bg-gray-50">
                 <tr className="text-xs text-gray-500 uppercase tracking-wide">
                   <th className="text-left px-6 py-3 font-medium">Date</th>
-                  <th className="text-right px-4 py-3 font-medium">Investi</th>
+                  <th className="hidden md:table-cell text-right px-4 py-3 font-medium">Investi</th>
                   <th className="text-right px-4 py-3 font-medium">Valeur</th>
-                  <th className="text-right px-4 py-3 font-medium">Plus-value</th>
+                  <th className="hidden md:table-cell text-right px-4 py-3 font-medium">Plus-value</th>
                   <th className="text-right px-6 py-3 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -147,19 +146,19 @@ export default function AdminSnapshotPage() {
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {fmtDate(snap.snapshotDate)}
                       </td>
-                      <td className="px-4 py-4 text-right text-gray-700 amount">
-                        {fmt(snap.totalInvestedEur)}
+                      <td className="hidden md:table-cell px-4 py-4 text-right text-gray-700 amount">
+                        <Amount value={snap.totalInvestedEur} />
                       </td>
                       <td className="px-4 py-4 text-right text-gray-700 amount">
-                        {fmt(snap.totalCurrentValueEur)}
+                        <Amount value={snap.totalCurrentValueEur} />
                       </td>
-                      <td className="px-4 py-4 text-right">
+                      <td className="hidden md:table-cell px-4 py-4 text-right">
                         <span className={`font-semibold amount ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                          {gain >= 0 ? '+' : ''}{fmt(snap.totalCapitalGainEur)}
+                          <Amount value={snap.totalCapitalGainEur} prefix={gain >= 0 ? '+' : ''} />
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col md:flex-row items-end md:justify-end gap-1 md:gap-2">
                           <button
                             onClick={() => setModalSnapshot(snap)}
                             className="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-md text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition">
@@ -192,6 +191,7 @@ export default function AdminSnapshotPage() {
         <ManualSnapshotModal
           users={users}
           snapshot={modalSnapshot}
+          initialUserId={modalSnapshot == null ? selectedUserId : undefined}
           onClose={() => setModalSnapshot(undefined)}
           onSaved={handleSaved}
         />
