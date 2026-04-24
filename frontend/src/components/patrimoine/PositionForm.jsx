@@ -282,8 +282,8 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
   const hasPartner     = !isImmoPhysique
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] flex flex-col">
 
         {/* ── En-tête ── */}
         <div className="px-8 pt-7 pb-4 border-b border-gray-100 shrink-0">

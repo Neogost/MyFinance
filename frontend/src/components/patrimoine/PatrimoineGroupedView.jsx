@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, OWNERSHIP_TYPES } from './constants'
-import { fmt } from './utils'
+import { fmt, Amount } from './utils'
 
 const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
 const OWNERSHIP_LABEL = Object.fromEntries(OWNERSHIP_TYPES.map(({ value, label }) => [value, label]))
@@ -17,27 +17,27 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   const isImmoPhysique = position.category === 'IMMO_PHYSIQUE'
 
   if (confirmClose) return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
       <span className="text-xs text-orange-700">Fermer ?</span>
       <button onClick={() => { setConfirmClose(false); onClose(position) }}
         className="px-2 py-0.5 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Oui</button>
       <button onClick={() => setConfirmClose(false)}
         className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-gray-400">Non</button>
-    </span>
+    </div>
   )
 
   if (confirmDelete) return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
       <span className="text-xs text-red-700">Supprimer ?</span>
       <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
         className="px-2 py-0.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">Oui</button>
       <button onClick={() => setConfirmDelete(false)}
         className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-gray-400">Non</button>
-    </span>
+    </div>
   )
 
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
       {isLiquidite ? (
         <button onClick={() => onUpdateBalance(position)}
           className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
@@ -61,15 +61,15 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
       {!isClosed && (
         <button onClick={() => setConfirmClose(true)}
         disabled={isClosed}
-        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 disabled:invisible">
+        className="hidden md:inline-flex px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-orange-400 hover:text-orange-600 disabled:invisible">
         Fermer
       </button>
       )}
       <button onClick={() => setConfirmDelete(true)}
-        className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-400 hover:text-red-600">
+        className="hidden md:inline-flex px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-400 hover:text-red-600">
         ×
       </button>
-    </span>
+    </div>
   )
 }
 
@@ -96,7 +96,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium text-gray-900">{position.label}</span>
+              <span className="text-sm font-medium text-gray-900 truncate max-w-[10ch] md:max-w-none">{position.label}</span>
               {stale && (
                 <span
                   title={`Cours non mis à jour depuis plus de 30 jours (${new Date(position.instrument.lastPriceUpdatedAt).toLocaleDateString('fr-FR')})`}
@@ -117,7 +117,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
       </td>
 
       {/* Badges : enveloppe + sous-type + propriété (immo) */}
-      <td className="py-2 px-2">
+      <td className="hidden md:table-cell py-2 px-2">
         <div className="flex items-center gap-1 flex-wrap">
           {position.assetSubType && (
             <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
@@ -144,12 +144,12 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
 
       {/* Valeur actuelle */}
       <td className="py-2 px-2 text-right">
-        <span className="text-sm font-bold text-gray-900 amount">{fmt(c.currentValueEur)}</span>
+        <span className="text-sm font-bold text-gray-900 amount"><Amount value={c.currentValueEur} /></span>
       </td>
 
       {/* Investi + PRU */}
-      <td className="py-2 px-2 text-right">
-        <span className="text-sm text-gray-500 amount">{fmt(c.investedAmountEur)}</span>
+      <td className="hidden md:table-cell py-2 px-2 text-right">
+        <span className="text-sm text-gray-500 amount"><Amount value={c.investedAmountEur} /></span>
         {pru !== null && (
           <p className="text-xs text-gray-400 amount">PRU {fmt(pru)}/u</p>
         )}
@@ -160,7 +160,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
         {showGain && (
           <div className="flex flex-col items-end">
             <span className={`text-sm font-semibold amount ${gain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-              {gain >= 0 ? '+' : ''}{fmt(c.capitalGainEur)}
+              <Amount value={c.capitalGainEur} prefix={gain >= 0 ? '+' : ''} />
             </span>
             {gainPct !== null && (
               <span className={`text-xs ${gain >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>
@@ -172,14 +172,14 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
       </td>
 
       {/* Taux annuel */}
-      <td className="py-2 px-2 text-right">
+      <td className="hidden md:table-cell py-2 px-2 text-right">
         {position.annualRate != null && (
           <span className="text-xs font-medium text-gray-500">{position.annualRate} %/an</span>
         )}
       </td>
 
       {/* Actions */}
-      <td className="py-2 pl-2 pr-3 text-right">
+      <td className="py-2 pl-2 pr-3">
         {!readOnly && <ActionButtons
           position={position}
           onEdit={onEdit}
@@ -259,30 +259,20 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                 </div>
                 <span className="text-xs text-gray-400 w-9 text-right whitespace-nowrap">{pct.toFixed(1)} %</span>
               </div>
-              <span className="text-sm font-bold text-gray-700 amount w-28 text-right">{fmt(total)}</span>
+              <span className="text-sm font-bold text-gray-700 amount w-28 text-right"><Amount value={total} /></span>
             </button>
 
             {/* ── Contenu dépliable ── */}
             {!isCollapsed && (
               <table className="w-full">
-                <colgroup>
-                  <col style={{ width: '27%' }} />
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '8%' }} />
-                  <col />
-                </colgroup>
-
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left text-xs text-gray-400 font-normal py-1.5 pl-6 pr-2">Position</th>
-                    <th className="text-left text-xs text-gray-400 font-normal py-1.5 px-2">Enveloppe / Type</th>
+                    <th className="hidden md:table-cell text-left text-xs text-gray-400 font-normal py-1.5 px-2">Enveloppe / Type</th>
                     <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Valeur actuelle</th>
-                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Investi</th>
+                    <th className="hidden md:table-cell text-right text-xs text-gray-400 font-normal py-1.5 px-2">Investi</th>
                     <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Plus-value</th>
-                    <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Taux</th>
+                    <th className="hidden md:table-cell text-right text-xs text-gray-400 font-normal py-1.5 px-2">Taux</th>
                     <th className="py-1.5 px-3" />
                   </tr>
                 </thead>
@@ -309,7 +299,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                               </span>
                               <span className="flex items-center gap-2">
                                 <span className="text-xs text-gray-400">{catPct.toFixed(1)} % du patrimoine</span>
-                                <span className="text-xs font-semibold text-gray-600 amount">{fmt(catVal)}</span>
+                                <span className="text-xs font-semibold text-gray-600 amount"><Amount value={catVal} /></span>
                               </span>
                             </div>
                           </td>
@@ -338,16 +328,16 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total {partner}</span>
                     </td>
                     <td className="py-2 px-2 text-right">
-                      <span className="text-sm font-bold text-gray-900 amount">{fmt(total)}</span>
+                      <span className="text-sm font-bold text-gray-900 amount"><Amount value={total} /></span>
                     </td>
-                    <td className="py-2 px-2 text-right">
-                      <span className="text-sm font-semibold text-gray-500 amount">{fmt(totalInv)}</span>
+                    <td className="hidden md:table-cell py-2 px-2 text-right">
+                      <span className="text-sm font-semibold text-gray-500 amount"><Amount value={totalInv} /></span>
                     </td>
                     <td className="py-2 px-2 text-right">
                       {totalGain !== 0 && (
                         <div className="flex flex-col items-end">
                           <span className={`text-sm font-bold amount ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                            {totalGain >= 0 ? '+' : ''}{fmt(totalGain)}
+                            <Amount value={totalGain} prefix={totalGain >= 0 ? '+' : ''} />
                           </span>
                           {totalGainPct !== null && (
                             <span className={`text-xs ${totalGain >= 0 ? 'text-emerald-500' : 'text-red-400'}`}>

@@ -4,6 +4,26 @@ export function fmt(value, currency = 'EUR') {
   return parseFloat(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + symbol
 }
 
+export function fmtCompact(value, currency = 'EUR') {
+  if (value == null) return '—'
+  const n   = parseFloat(value)
+  const abs = Math.abs(n)
+  const sym = currency === 'EUR' ? '€' : currency
+  const sign = n < 0 ? '-' : ''
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M${sym}`
+  if (abs >= 1_000)     return `${sign}${(abs / 1_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} K${sym}`
+  return `${sign}${abs.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} ${sym}`
+}
+
+export function Amount({ value, currency = 'EUR', prefix = '' }) {
+  return (
+    <>
+      <span className="hidden md:inline">{prefix}{fmt(value, currency)}</span>
+      <span className="md:hidden">{prefix}{fmtCompact(value, currency)}</span>
+    </>
+  )
+}
+
 export function fmtUnits(value) {
   if (value == null) return null
   const n = parseFloat(value)
@@ -12,7 +32,7 @@ export function fmtUnits(value) {
 
 export function Tooltip({ children }) {
   return (
-    <span className="relative group inline-flex items-center ml-1 cursor-default">
+    <span className="relative group hidden md:inline-flex items-center ml-1 cursor-default">
       <span className="text-gray-300 text-xs leading-none">ⓘ</span>
       <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-72 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 leading-relaxed normal-case tracking-normal font-normal">
         {children}

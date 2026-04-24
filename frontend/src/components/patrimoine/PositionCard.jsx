@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS } from './constants'
-import { fmt, fmtUnits } from './utils'
+import { fmt, fmtUnits, Amount } from './utils'
 
 export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, linkedDebt }) {
   const meta   = CATEGORY_META[position.category] ?? {}
@@ -58,17 +58,17 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-0.5">Valeur actuelle</p>
-          <p className="text-base font-bold text-gray-900 amount">{fmt(c.currentValueEur)}</p>
+          <p className="text-base font-bold text-gray-900 amount"><Amount value={c.currentValueEur} /></p>
         </div>
         <div className="bg-gray-50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-0.5">Investi</p>
-          <p className="text-base font-bold text-gray-700 amount">{fmt(c.investedAmountEur)}</p>
+          <p className="text-base font-bold text-gray-700 amount"><Amount value={c.investedAmountEur} /></p>
         </div>
 
         {!isLiquidite && c.capitalGainEur != null && parseFloat(c.capitalGainEur) !== 0 && (
           <div className="bg-gray-50 rounded-lg p-3">
             <p className="text-xs text-gray-400 mb-0.5">Plus-value</p>
-            <p className={`text-sm font-semibold amount ${capitalGainColor}`}>{fmt(c.capitalGainEur)}</p>
+            <p className={`text-sm font-semibold amount ${capitalGainColor}`}><Amount value={c.capitalGainEur} /></p>
           </div>
         )}
 
@@ -98,7 +98,7 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
         {c.monthlyIncomeProjectionEur != null && (
           <div className="bg-emerald-50 rounded-lg p-3">
             <p className="text-xs text-emerald-600 mb-0.5">Projection / mois</p>
-            <p className="text-sm font-semibold text-emerald-700 amount">{fmt(c.monthlyIncomeProjectionEur)}</p>
+            <p className="text-sm font-semibold text-emerald-700 amount"><Amount value={c.monthlyIncomeProjectionEur} /></p>
           </div>
         )}
       </div>
@@ -110,12 +110,12 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
           <div className="col-span-2 bg-red-50 border border-red-100 rounded-lg p-3 -mt-2">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs text-red-400">Crédit lié — {linkedDebt.label}</p>
-              <p className="text-sm font-semibold text-red-600 amount">− {fmt(linkedDebt.remainingCapital)}</p>
+              <p className="text-sm font-semibold text-red-600 amount">− <Amount value={linkedDebt.remainingCapital} /></p>
             </div>
             <div className="flex items-center justify-between border-t border-red-100 pt-1.5">
               <p className="text-xs text-gray-500 font-medium">Valeur nette</p>
               <p className={`text-base font-bold amount ${netValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                {fmt(netValue)}
+                <Amount value={netValue} />
               </p>
             </div>
           </div>

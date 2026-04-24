@@ -97,8 +97,8 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-7 w-full max-w-md">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-7 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-base font-bold text-gray-900 mb-5">
           {isEdit ? 'Modifier le mouvement' : 'Ajouter un mouvement'}
         </h3>
@@ -239,7 +239,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
     : null
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-40">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl max-h-[85vh] flex flex-col">
 
         {/* En-tête */}

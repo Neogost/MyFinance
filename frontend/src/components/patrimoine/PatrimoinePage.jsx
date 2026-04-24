@@ -10,7 +10,7 @@ import { getSalaryContracts } from '../../api/income'
 import { computeSafetyNetTarget } from '../../utils/safetyNet'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { CATEGORY_META, PROJECTION_RATES } from './constants'
-import { fmt, Tooltip } from './utils'
+import { fmt, Amount, Tooltip } from './utils'
 import PositionCard from './PositionCard'
 import { BalanceEditModal, EstimatedValueModal } from './ValueEditModals'
 import PositionForm from './PositionForm'
@@ -334,34 +334,34 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       )}
 
       {/* ── En-tête ── */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Patrimoine</h2>
-        <div className="flex gap-2">
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 shrink-0">Patrimoine</h2>
+        <div className="flex flex-wrap justify-end gap-2">
           {isAdmin && (
             <button onClick={() => setShowSnapshots(true)}
-              className="px-4 py-2 border border-violet-300 text-violet-700 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">
+              className="hidden md:inline-flex px-4 py-2 border border-violet-300 text-violet-700 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">
               Relevés de patrimoine
             </button>
           )}
           {isAdmin && (
             <button onClick={() => setShowExchangeRateUpdate(true)}
-              className="px-4 py-2 border border-teal-300 text-teal-700 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
+              className="hidden md:inline-flex px-4 py-2 border border-teal-300 text-teal-700 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
               Taux de change
             </button>
           )}
           {isAdmin && (
             <button onClick={() => setShowPriceUpdate(true)}
-              className="px-4 py-2 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
+              className="hidden md:inline-flex px-4 py-2 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
               Mettre à jour les cours
             </button>
           )}
           <button onClick={() => setShowStrategy(true)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg text-sm font-semibold hover:bg-gray-50 transition">
-            Stratégie & Objectifs
+            className="px-3 md:px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-50 transition">
+            Stratégie
           </button>
           <button onClick={() => setFormTarget(null)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
-            + Ajouter une position
+            className="px-3 md:px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs md:text-sm font-semibold hover:bg-indigo-700 transition">
+            + Ajouter
           </button>
         </div>
       </div>
@@ -374,7 +374,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
               Patrimoine Brut
               <Tooltip>Somme de l'ensemble des actifs : bourse, crypto, livrets, liquidités, immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-sm font-bold text-gray-900 amount">{fmt(patrimoineBrut)}</p>
+            <p className="text-sm font-bold text-gray-900 amount"><Amount value={patrimoineBrut} /></p>
             {inseeInfo && (
               <p className="text-xs text-gray-400 mt-0.5">
                 D{inseeInfo.rang}/10 · {inseeInfo.tranche.label}
@@ -401,7 +401,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
               Pat. Financier
               <Tooltip>Actifs financiers uniquement : bourse, crypto, livrets et liquidités. Hors immobilier physique et papier.</Tooltip>
             </p>
-            <p className="text-sm font-bold text-gray-700 amount">{fmt(patrimoineFinancier)}</p>
+            <p className="text-sm font-bold text-gray-700 amount"><Amount value={patrimoineFinancier} /></p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-2">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
@@ -418,7 +418,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                 </Tooltip>
               )}
             </p>
-            <p className="text-sm font-bold text-gray-700 amount">{fmt(totalInvesti)}</p>
+            <p className="text-sm font-bold text-gray-700 amount"><Amount value={totalInvesti} /></p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-2">
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
@@ -436,7 +436,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
               )}
             </p>
             <p className={`text-sm font-bold amount ${totalPlusValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-              {fmt(totalPlusValue)}
+              <Amount value={totalPlusValue} />
             </p>
           </div>
           {totalPlusValueYTD != null && (
@@ -473,14 +473,14 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                 </Tooltip>
               </p>
               <p className={`text-sm font-bold amount ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                {totalPlusValueYTD >= 0 ? '+' : ''}{fmt(totalPlusValueYTD)}
+                <Amount value={totalPlusValueYTD} prefix={totalPlusValueYTD >= 0 ? '+' : ''} />
               </p>
             </div>
           )}
           {totalProjection > 0 && (
             <div className="bg-emerald-50 rounded-xl shadow-sm p-2">
               <p className="text-xs text-emerald-600 uppercase tracking-wide mb-1 leading-tight">Revenus / mois</p>
-              <p className="text-sm font-bold text-emerald-700 amount">{fmt(totalProjection)}</p>
+              <p className="text-sm font-bold text-emerald-700 amount"><Amount value={totalProjection} /></p>
             </div>
           )}
           {totalProjectionAnnuelle > 0 && (
@@ -498,8 +498,8 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                   <span className="block mt-2 text-gray-400 text-xs">Taux annuels × valeur actuelle, proratisé sur {daysLeft} j. Estimation indicative.</span>
                 </Tooltip>
               </p>
-              <p className="text-sm font-bold text-amber-700 amount">+{fmt(projectionProrataYTD)}</p>
-              <p className="text-xs text-amber-500 mt-0.5 amount">annuel : +{fmt(totalProjectionAnnuelle)}</p>
+              <p className="text-sm font-bold text-amber-700 amount"><Amount value={projectionProrataYTD} prefix="+" /></p>
+              <p className="text-xs text-amber-500 mt-0.5 amount"><Amount value={totalProjectionAnnuelle} prefix="annuel : +" /></p>
             </div>
           )}
         </div>
@@ -517,7 +517,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                   <span className="text-base">{meta.icon}</span>
                   <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${meta.color}`}>{meta.label}</span>
                 </p>
-                <p className="text-base font-bold text-gray-900 amount">{fmt(value)}</p>
+                <p className="text-base font-bold text-gray-900 amount"><Amount value={value} /></p>
                 {patrimoineBrut > 0 && (
                   <p className="text-xs text-gray-400 mt-0.5">
                     {((value / patrimoineBrut) * 100).toFixed(1)} % du patrimoine
@@ -525,7 +525,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                 )}
                 {showGain && (
                   <p className={`text-xs font-semibold amount mt-0.5 ${gain >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {gain >= 0 ? '+' : ''}{fmt(gain)}
+                    <Amount value={gain} prefix={gain >= 0 ? '+' : ''} />
                     {gainPct !== null && (
                       <span className="ml-1 font-normal opacity-75">
                         ({gainPct >= 0 ? '+' : ''}{gainPct.toFixed(1)} %)
