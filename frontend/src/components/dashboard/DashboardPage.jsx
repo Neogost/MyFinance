@@ -14,6 +14,8 @@ import PatrimoineStrategyRadarChart from './PatrimoineStrategyRadarChart'
 import PatrimoineScoreWidget from './PatrimoineScoreWidget'
 import SafetyNetWidget from './SafetyNetWidget'
 import DetteWidget from './DetteWidget'
+import GeographicExposureWidget from './GeographicExposureWidget'
+import SectorExposureWidget from './SectorExposureWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { getPositions } from '../../api/patrimoine'
 
@@ -231,6 +233,31 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
             <PassifsByCategoryChart />
           </div>
         )}
+
+        {/* Exposition géographique & sectorielle */}
+        <div className="mb-6 grid grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Exposition géographique</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
+            <p className="text-xs text-gray-400 mb-4">
+              Positions BOURSE pondérées par l'allocation géographique de chaque ETF.
+            </p>
+            <GeographicExposureWidget positions={familyPositions} />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-800">Exposition sectorielle</h3>
+              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+            </div>
+            <p className="text-xs text-gray-400 mb-4">
+              Positions BOURSE pondérées par la répartition sectorielle de chaque ETF.
+            </p>
+            <SectorExposureWidget positions={familyPositions} />
+          </div>
+        </div>
 
         {/* Score patrimonial + Radar objectifs + Endettement */}
         <div className="grid grid-cols-4 gap-6">

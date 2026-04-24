@@ -56,7 +56,10 @@ export const getPatrimoineScore = () => api.get('/api/patrimoine/score').then(r 
 
 // ── Admin — Market Data ────────────────────────────────────────
 
-export const runMarketDataUpdate = () => api.post('/api/admin/market-data/run').then(r => r.data)
+export const runMarketDataUpdate  = () => api.post('/api/admin/market-data/run').then(r => r.data)
+export const runAllocationUpdate          = () => api.post('/api/admin/allocations/run').then(r => r.data)
+export const updateInstrumentAllocations       = (id, entries) => api.put(`/api/instruments/${id}/allocations`, entries).then(r => r.data)
+export const updateInstrumentSectorAllocations = (id, entries) => api.put(`/api/instruments/${id}/sector-allocations`, entries).then(r => r.data)
 
 // ── Admin — Snapshots ──────────────────────────────────────────
 

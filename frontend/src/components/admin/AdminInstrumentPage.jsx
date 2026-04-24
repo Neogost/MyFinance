@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { getInstruments, createInstrument, updateInstrument, runMarketDataUpdate } from '../../api/patrimoine'
+import { getInstruments, createInstrument, updateInstrument, runMarketDataUpdate, runAllocationUpdate } from '../../api/patrimoine'
 import AdminInstrumentForm from './AdminInstrumentForm'
+import AdminAllocationModal from './AdminAllocationModal'
+import AdminSectorAllocationModal from './AdminSectorAllocationModal'
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -26,9 +28,15 @@ export default function AdminInstrumentPage() {
   const [formTarget,    setFormTarget]    = useState(undefined)
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState(null)
-  const [updating,      setUpdating]      = useState(false)
-  const [updateReport,  setUpdateReport]  = useState(null)
-  const [updateError,   setUpdateError]   = useState(null)
+  const [updating,         setUpdating]         = useState(false)
+  const [updateReport,     setUpdateReport]     = useState(null)
+  const [updateError,      setUpdateError]      = useState(null)
+  const [allocating,       setAllocating]       = useState(false)
+  const [allocationReport, setAllocationReport] = useState(null)
+  const [allocationError,  setAllocationError]  = useState(null)
+  const [tooltip,          setTooltip]          = useState(null)
+  const [allocationTarget,       setAllocationTarget]       = useState(null)
+  const [sectorAllocationTarget, setSectorAllocationTarget] = useState(null)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -69,6 +77,33 @@ export default function AdminInstrumentPage() {
     }
   }
 
+  async function handleAllocationUpdate() {
+    setAllocating(true)
+    setAllocationReport(null)
+    setAllocationError(null)
+    try {
+      const report = await runAllocationUpdate()
+      setAllocationReport(report)
+      setInstruments(await getInstruments())
+    } catch {
+      setAllocationError('Erreur lors de la mise à jour des allocations.')
+    } finally {
+      setAllocating(false)
+    }
+  }
+
+  function handleNameEnter(e, inst) {
+    if (!inst.countryAllocation?.length && !inst.sectorAllocation?.length) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltip({
+      id:      inst.id,
+      x:       rect.left,
+      y:       rect.bottom + 6,
+      country: inst.countryAllocation ?? [],
+      sector:  inst.sectorAllocation  ?? [],
+    })
+  }
+
   if (loading) return <p className="text-gray-500">Chargement…</p>
   if (error)   return <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
 
@@ -84,6 +119,13 @@ export default function AdminInstrumentPage() {
           <p className="text-sm text-gray-500 mt-0.5">{instruments.length} instrument(s) au total</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleAllocationUpdate}
+            disabled={allocating}
+            className="flex items-center gap-2 px-4 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-100 disabled:opacity-60 transition"
+          >
+            {allocating ? <><span className="animate-spin inline-block">⟳</span> Allocations…</> : '🌍 Mettre à jour les allocations'}
+          </button>
           <button
             onClick={handleUpdate}
             disabled={updating}
@@ -101,6 +143,17 @@ export default function AdminInstrumentPage() {
       </div>
 
       {/* ── Rapport de mise à jour ── */}
+      {allocationError && (
+        <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{allocationError}</p>
+      )}
+      {allocationReport && (
+        <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs">
+          <p className="font-semibold text-emerald-700">
+            Allocations mises à jour : {allocationReport.instrumentsUpdated} instrument(s)
+          </p>
+        </div>
+      )}
+
       {updateError && (
         <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{updateError}</p>
       )}
@@ -167,8 +220,35 @@ export default function AdminInstrumentPage() {
                     const dateStr = fmtDate(inst.lastPriceUpdatedAt)
                     return (
                       <tr key={inst.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                        <td className="px-4 py-3 text-sm text-gray-800 font-medium truncate" title={inst.name}>
-                          {inst.name}
+                        <td className="px-4 py-3 text-sm text-gray-800 font-medium">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              title={inst.name}
+                              className={`truncate ${inst.countryAllocation?.length || inst.sectorAllocation?.length ? 'border-b border-dashed border-gray-400 cursor-help' : ''}`}
+                              onMouseEnter={e => handleNameEnter(e, inst)}
+                              onMouseLeave={() => setTooltip(null)}
+                            >
+                              {inst.name}
+                            </span>
+                            {label === 'BOURSE' && (
+                              <>
+                                <button
+                                  onClick={() => { setTooltip(null); setAllocationTarget(inst) }}
+                                  title="Éditer l'allocation géographique"
+                                  className="shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
+                                >
+                                  🌍
+                                </button>
+                                <button
+                                  onClick={() => { setTooltip(null); setSectorAllocationTarget(inst) }}
+                                  title="Éditer la répartition sectorielle"
+                                  className="shrink-0 text-gray-300 hover:text-indigo-500 transition text-base leading-none"
+                                >
+                                  🏭
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500 font-mono truncate">
                           {inst.isin ?? inst.ticker ?? '—'}
@@ -219,6 +299,62 @@ export default function AdminInstrumentPage() {
           )}
         </div>
       ))}
+
+      {tooltip && (
+        <div
+          style={{ position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 50 }}
+          className="w-60 bg-white border border-gray-200 rounded-lg shadow-xl p-3 text-xs pointer-events-none"
+        >
+          {tooltip.country.length > 0 && (
+            <>
+              <p className="font-semibold text-gray-600 mb-1.5">Géographique</p>
+              <ul className="space-y-0.5 mb-3">
+                {tooltip.country.map((a, i) => (
+                  <li key={i} className="flex justify-between gap-2">
+                    <span className="text-gray-700 truncate">{a.country}</span>
+                    <span className="font-medium text-gray-900 shrink-0">{parseFloat(a.percentage).toFixed(1)} %</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {tooltip.sector.length > 0 && (
+            <>
+              <p className={`font-semibold text-gray-600 mb-1.5 ${tooltip.country.length > 0 ? 'border-t border-gray-100 pt-2' : ''}`}>Sectorielle</p>
+              <ul className="space-y-0.5">
+                {tooltip.sector.map((a, i) => (
+                  <li key={i} className="flex justify-between gap-2">
+                    <span className="text-gray-700 truncate">{a.sector}</span>
+                    <span className="font-medium text-gray-900 shrink-0">{parseFloat(a.percentage).toFixed(1)} %</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+
+      {sectorAllocationTarget && (
+        <AdminSectorAllocationModal
+          instrument={sectorAllocationTarget}
+          onSave={(id, saved) => {
+            setInstruments(is => is.map(i => i.id === id ? { ...i, sectorAllocation: saved } : i))
+            setSectorAllocationTarget(null)
+          }}
+          onCancel={() => setSectorAllocationTarget(null)}
+        />
+      )}
+
+      {allocationTarget && (
+        <AdminAllocationModal
+          instrument={allocationTarget}
+          onSave={(id, saved) => {
+            setInstruments(is => is.map(i => i.id === id ? { ...i, countryAllocation: saved } : i))
+            setAllocationTarget(null)
+          }}
+          onCancel={() => setAllocationTarget(null)}
+        />
+      )}
 
       {formTarget !== undefined && (
         <AdminInstrumentForm

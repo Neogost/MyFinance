@@ -2,7 +2,9 @@ package com.myfinance.controller;
 
 import com.myfinance.domain.AssetCategory;
 import com.myfinance.dto.CreateInstrumentRequest;
+import com.myfinance.dto.InstrumentAllocationDto;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.InstrumentSectorAllocationDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.dto.UpdateStablePriceRequest;
 import com.myfinance.service.InstrumentService;
@@ -71,5 +73,23 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<InstrumentDto> updatePrices(@Valid @RequestBody List<UpdateInstrumentPriceRequest> requests) {
         return instrumentService.updatePrices(requests);
+    }
+
+    /** PUT /api/instruments/{id}/allocations — saisie manuelle de l'allocation géographique (ADMIN) */
+    @PutMapping("/{id}/allocations")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<InstrumentAllocationDto> updateAllocations(
+            @PathVariable Long id,
+            @RequestBody List<InstrumentAllocationDto> entries) {
+        return instrumentService.updateAllocations(id, entries);
+    }
+
+    /** PUT /api/instruments/{id}/sector-allocations — saisie manuelle de l'allocation sectorielle (ADMIN) */
+    @PutMapping("/{id}/sector-allocations")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<InstrumentSectorAllocationDto> updateSectorAllocations(
+            @PathVariable Long id,
+            @RequestBody List<InstrumentSectorAllocationDto> entries) {
+        return instrumentService.updateSectorAllocations(id, entries);
     }
 }

@@ -5,7 +5,9 @@ import com.myfinance.domain.Instrument;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
+import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.InstrumentSectorAllocationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +28,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class InstrumentServiceTest {
 
-    @Mock InstrumentRepository instrumentRepository;
+    @Mock InstrumentRepository                 instrumentRepository;
+    @Mock InstrumentAllocationRepository       allocationRepository;
+    @Mock InstrumentSectorAllocationRepository sectorAllocationRepository;
     @InjectMocks InstrumentService instrumentService;
 
     Instrument etf;

@@ -46,12 +46,12 @@ class InstrumentControllerTest {
         etfDto = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null);
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null, List.of(), List.of());
 
         bitcoinDto = new InstrumentDto(
                 2L, AssetCategory.CRYPTO, null, "BTC",
                 "Bitcoin", "USD",
-                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null);
+                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null, List.of(), List.of());
     }
 
     // ── GET /api/instruments ───────────────────────────────────
@@ -126,7 +126,7 @@ class InstrumentControllerTest {
         InstrumentDto updated = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null);
+                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null, List.of(), List.of());
 
         when(instrumentService.updatePrices(any())).thenReturn(List.of(updated));
 
@@ -164,7 +164,7 @@ class InstrumentControllerTest {
         InstrumentDto stable = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null);
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null, List.of(), List.of());
 
         when(instrumentService.updateStablePrice(1L, true)).thenReturn(stable);
 

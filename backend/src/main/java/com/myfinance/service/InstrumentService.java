@@ -2,23 +2,34 @@ package com.myfinance.service;
 
 import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
+import com.myfinance.domain.InstrumentAllocation;
+import com.myfinance.domain.InstrumentSectorAllocation;
+import com.myfinance.dto.InstrumentSectorAllocationDto;
+import com.myfinance.repository.InstrumentSectorAllocationRepository;
 import com.myfinance.dto.CreateInstrumentRequest;
+import com.myfinance.dto.InstrumentAllocationDto;
 import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
+import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class InstrumentService {
 
-    private final InstrumentRepository instrumentRepository;
+    private final InstrumentRepository                 instrumentRepository;
+    private final InstrumentAllocationRepository       allocationRepository;
+    private final InstrumentSectorAllocationRepository sectorAllocationRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -35,11 +46,12 @@ public class InstrumentService {
             instruments = instrumentRepository.findAll();
         }
 
-        return instruments.stream().map(InstrumentDto::from).toList();
+        return withAllocations(instruments);
     }
 
     public InstrumentDto findById(Long id) {
-        return InstrumentDto.from(getOrThrow(id));
+        Instrument instrument = getOrThrow(id);
+        return withAllocations(List.of(instrument)).get(0);
     }
 
     // ── Création ───────────────────────────────────────────────
@@ -101,7 +113,69 @@ public class InstrumentService {
         }).toList();
     }
 
+    // ── Allocations manuelles ──────────────────────────────────
+
+    @Transactional
+    public List<InstrumentAllocationDto> updateAllocations(Long id, List<InstrumentAllocationDto> entries) {
+        Instrument instrument = getOrThrow(id);
+        allocationRepository.deleteByInstrument(instrument);
+        if (entries.isEmpty()) return List.of();
+
+        List<InstrumentAllocation> allocations = entries.stream()
+                .filter(e -> e.country() != null && !e.country().isBlank())
+                .map(e -> InstrumentAllocation.builder()
+                        .instrument(instrument)
+                        .country(e.country().trim())
+                        .percentage(e.percentage())
+                        .fetchedAt(LocalDateTime.now())
+                        .build())
+                .toList();
+        allocationRepository.saveAll(allocations);
+        return allocations.stream().map(InstrumentAllocationDto::from).toList();
+    }
+
+    @Transactional
+    public List<InstrumentSectorAllocationDto> updateSectorAllocations(Long id, List<InstrumentSectorAllocationDto> entries) {
+        Instrument instrument = getOrThrow(id);
+        sectorAllocationRepository.deleteByInstrument(instrument);
+        if (entries.isEmpty()) return List.of();
+
+        List<InstrumentSectorAllocation> allocations = entries.stream()
+                .filter(e -> e.sector() != null && !e.sector().isBlank())
+                .map(e -> InstrumentSectorAllocation.builder()
+                        .instrument(instrument)
+                        .sector(e.sector().trim())
+                        .percentage(e.percentage())
+                        .fetchedAt(LocalDateTime.now())
+                        .build())
+                .toList();
+        sectorAllocationRepository.saveAll(allocations);
+        return allocations.stream().map(InstrumentSectorAllocationDto::from).toList();
+    }
+
     // ── Helpers ────────────────────────────────────────────────
+
+    private List<InstrumentDto> withAllocations(List<Instrument> instruments) {
+        Map<Long, List<InstrumentAllocationDto>> countryById = allocationRepository
+                .findByInstrumentInOrderByPercentageDesc(instruments)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getInstrument().getId(),
+                        Collectors.mapping(InstrumentAllocationDto::from, Collectors.toList())
+                ));
+        Map<Long, List<InstrumentSectorAllocationDto>> sectorById = sectorAllocationRepository
+                .findByInstrumentInOrderByPercentageDesc(instruments)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getInstrument().getId(),
+                        Collectors.mapping(InstrumentSectorAllocationDto::from, Collectors.toList())
+                ));
+        return instruments.stream()
+                .map(i -> InstrumentDto.from(i,
+                        countryById.getOrDefault(i.getId(), List.of()),
+                        sectorById.getOrDefault(i.getId(), List.of())))
+                .toList();
+    }
 
     private Instrument getOrThrow(Long id) {
         return instrumentRepository.findById(id)
