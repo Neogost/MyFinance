@@ -258,7 +258,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
             Tickets restaurant <span className="font-normal normal-case">(base 19 j/mois)</span>
           </p>
-          <div className="flex gap-6 text-sm">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <div>
               <span className="text-gray-500">Valeur faciale : </span>
               <span className="font-semibold text-gray-800 amount">{contract.mealVoucherAmount?.toFixed(2)} €</span>

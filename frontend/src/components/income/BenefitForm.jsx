@@ -33,8 +33,8 @@ export default function BenefitForm({ benefit, onSubmit, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-gray-900 mb-6">
           {isEdit ? "Modifier l'avantage" : 'Ajouter un avantage en nature'}
         </h2>

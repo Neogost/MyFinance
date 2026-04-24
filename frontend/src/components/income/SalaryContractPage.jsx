@@ -130,9 +130,9 @@ export default function SalaryContractPage() {
       {selected ? (
         <div className="bg-white rounded-xl shadow-sm p-6">
           {/* Infos contractuelles */}
-          <div className="flex items-start justify-between mb-2">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-2">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h3 className="text-base font-bold text-gray-900">
                   <span className='amount'>{selected.companyName ? `${selected.companyName} — ` : ''}</span>Contrat depuis le {selected.startDate}
                 </h3>
@@ -141,20 +141,20 @@ export default function SalaryContractPage() {
                   : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Clôturé le {selected.endDate}</span>
                 }
               </div>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap gap-3 text-sm text-gray-600">
                 <span>Brut annuel : <strong className="text-gray-900 amount">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
                 <span>{selected.paidMonthsPerYear} mois / an</span>
-                <span>{selected.weeklyHours} h / semaine</span>
+                <span>{selected.weeklyHours} h / sem.</span>
                 {selected.isCadre
                   ? <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">Cadre</span>
                   : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Non-cadre</span>
                 }
                 {annualBonuses.length > 0 && (
-                  <span>Primes annuelles : <strong className="text-blue-700 amount">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
+                  <span>Primes : <strong className="text-blue-700 amount">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
                 )}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 shrink-0">
               <button
                 onClick={() => setFormTarget(selected)}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
@@ -247,8 +247,8 @@ export default function SalaryContractPage() {
 
       {/* ── Modal astreintes ── */}
       {showOnCalls && selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-6 w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-bold text-gray-900">Astreintes</h2>
               <button

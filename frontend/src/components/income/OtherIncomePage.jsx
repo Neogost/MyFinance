@@ -125,10 +125,10 @@ export default function OtherIncomePage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Fiscalité</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Fiscalité</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Montant</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -138,12 +138,12 @@ export default function OtherIncomePage() {
                 const { label, color } = TYPE_LABELS[income.type] ?? TYPE_LABELS.AUTRE
                 return (
                   <tr key={income.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(income.date)}</td>
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(income.date)}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-800">{income.label}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-sm text-gray-800 max-w-[10ch] md:max-w-none truncate">{income.label}</td>
+                    <td className="hidden md:table-cell px-4 py-3">
                       {income.isTaxable === false ? (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Non imposable</span>
                       ) : income.specificTaxRate != null ? (
@@ -152,11 +152,11 @@ export default function OtherIncomePage() {
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Barème</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 amount">
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 amount whitespace-nowrap">
                       {income.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">
                         <button onClick={() => setFormTarget(income)} className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
                           Modifier
                         </button>
