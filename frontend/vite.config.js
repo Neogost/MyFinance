@@ -12,4 +12,9 @@ export default defineConfig({
       '/api': 'http://localhost:8080',
     },
   },
+  build: {
+    // En prod, le build est intégré au JAR Spring Boot
+    outDir: '../backend/src/main/resources/static',
+    emptyOutDir: true,
+  },
 })
