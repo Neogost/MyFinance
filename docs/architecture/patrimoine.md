@@ -87,9 +87,26 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
   SELL        — vente / cession
   DEPOSIT     — apport de fonds (ex : versement sur livret)
   WITHDRAWAL  — retrait de fonds
-  INTEREST    — intérêts perçus (crediteur)
+  INTEREST    — intérêts perçus (créditeur)
   DIVIDEND    — dividende perçu
+  AIRDROP     — tokens reçus gratuitement — CRYPTO uniquement
+  ABONDEMENT  — parts offertes par l'employeur (PEE, PERCO, CET) — BOURSE uniquement
 ```
+
+### Impact sur les calculs par type
+
+| Type | `investedAmountEur` | `units` | Catégories |
+|------|:-------------------:|:-------:|------------|
+| `BUY` | + montant | + quantité | BOURSE, CRYPTO |
+| `SELL` | − montant | − quantité | BOURSE, CRYPTO |
+| `DEPOSIT` | + montant | — | LIVRET, IMMO_PAPIER, IMMO_PHYSIQUE |
+| `WITHDRAWAL` | − montant | — | LIVRET, IMMO_PAPIER, IMMO_PHYSIQUE |
+| `INTEREST` | aucun | — | Toutes sauf LIQUIDITE |
+| `DIVIDEND` | aucun | — | BOURSE, CRYPTO |
+| `AIRDROP` | **aucun** | + quantité | CRYPTO |
+| `ABONDEMENT` | **aucun** | + quantité | BOURSE |
+
+> `AIRDROP` et `ABONDEMENT` augmentent le nombre de parts sans augmenter le montant investi. La valeur de ces parts se retrouve donc intégralement dans la **plus-value** (`capitalGainEur = currentValueEur − investedAmountEur`).
 
 ---
 
@@ -221,7 +238,10 @@ investedAmountEur = Σ(BUY.amountEur)
 ### Nombre de parts (`units`) — BOURSE et CRYPTO
 
 ```
-units = Σ(BUY.quantity) - Σ(SELL.quantity)
+units = Σ(BUY.quantity)
+      + Σ(AIRDROP.quantity)
+      + Σ(ABONDEMENT.quantity)
+      - Σ(SELL.quantity)
 ```
 
 ### Valeur actuelle (`currentValueEur`)
@@ -368,6 +388,8 @@ classDiagram
         WITHDRAWAL
         INTEREST
         DIVIDEND
+        AIRDROP
+        ABONDEMENT
     }
 
     class OwnershipType {

@@ -92,16 +92,37 @@ docker buildx build --platform linux/amd64 --provenance=false \
   --output "type=docker,dest=/tmp/myfinance.tar" -t myfinance:latest .
 ```
 
-**2. Transfert vers le NAS :**
+**2. Migrations de base de données (si applicable) :**
+
+> À faire si des scripts sont présents dans `backend/migrations/` depuis le dernier déploiement.
+> SQLite n'étant pas installé sur le NAS, la migration s'effectue en local.
+
+```bash
+# Arrêter le conteneur pour éviter toute corruption
+ssh NAS_USER@NAS_IP "docker stop myfinance"
+
+# Copier la base sur le Mac
+scp NAS_USER@NAS_IP:NAS_PATH/data/myfinance.db /tmp/myfinance-prod.db
+
+# Appliquer chaque script de migration dans l'ordre
+sqlite3 /tmp/myfinance-prod.db < backend/migrations/00X_nom_migration.sql
+
+# Vérifier (optionnel)
+sqlite3 /tmp/myfinance-prod.db ".schema nom_de_la_table"
+
+# Renvoyer la base migrée
+scp /tmp/myfinance-prod.db NAS_USER@NAS_IP:NAS_PATH/data/myfinance.db
+```
+
+**3. Transfert vers le NAS :**
 ```bash
 ssh NAS_USER@NAS_IP "cat > NAS_PATH/myfinance.tar" < /tmp/myfinance.tar
 ssh NAS_USER@NAS_IP "cat > NAS_PATH/docker-compose.yml" < docker-compose.yml
 ```
 
-**3. Déploiement sur le NAS :**
+**4. Déploiement sur le NAS :**
 ```bash
 ssh NAS_USER@NAS_IP
-docker stop myfinance
 docker load -i NAS_PATH/myfinance.tar
 cd NAS_PATH && docker compose up -d
 docker ps | grep myfinance

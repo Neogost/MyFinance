@@ -601,6 +601,22 @@ Ajouter un ordre sur une position.
 }
 ```
 
+**Corps de la requête — Abondement employeur (BOURSE)**
+
+```json
+{
+  "orderType": "ABONDEMENT",
+  "quantity": 3.000000,
+  "unitPrice": 50.00,
+  "amount": 150.00,
+  "orderDate": "2026-06-30",
+  "notes": "Abondement PEE employeur Q2"
+}
+```
+
+> `amount` = `quantity × unitPrice` (valeur de marché des parts offertes au moment de l'attribution).
+> L'abondement **n'augmente pas `investedAmountEur`** — les parts reçues constituent directement de la plus-value.
+
 **Corps de la requête — LIVRET / IMMO_PAPIER (sans quantité)**
 
 ```json
@@ -613,9 +629,22 @@ Ajouter un ordre sur une position.
 }
 ```
 
+**Types d'ordres disponibles par catégorie**
+
+| Type | BOURSE | CRYPTO | LIVRET | IMMO_PAPIER | IMMO_PHYSIQUE |
+|------|:------:|:------:|:------:|:-----------:|:-------------:|
+| `BUY` | ✓ | ✓ | — | — | — |
+| `SELL` | ✓ | ✓ | — | — | — |
+| `DEPOSIT` | — | — | ✓ | ✓ | ✓ |
+| `WITHDRAWAL` | — | — | ✓ | ✓ | ✓ |
+| `INTEREST` | ✓ | ✓ | ✓ | ✓ | — |
+| `DIVIDEND` | ✓ | ✓ | — | — | — |
+| `AIRDROP` | — | ✓ | — | — | — |
+| `ABONDEMENT` | ✓ | — | — | — | — |
+
 **Règles de validation**
 - `orderType` obligatoire
-- `quantity` et `unitPrice` obligatoires pour BOURSE et CRYPTO
+- `quantity` et `unitPrice` obligatoires pour BOURSE et CRYPTO (y compris `AIRDROP` et `ABONDEMENT`)
 - `amount` obligatoire
 - `orderDate` obligatoire
 - `LIQUIDITE` → 400 systématique
