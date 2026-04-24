@@ -101,9 +101,9 @@ export default function PossessionPage() {
 
       {/* ── KPIs + Répartition ── */}
       {summary && (
-        <div className="flex gap-4 mb-6 items-stretch">
+        <div className="flex flex-col md:flex-row gap-4 mb-6 items-stretch">
           {/* 4 KPIs */}
-          <div className="grid grid-cols-2 gap-4 w-1/2">
+          <div className="grid grid-cols-2 gap-4 md:w-1/2">
             <KpiCard
               label="Valeur d'achat totale"
               value={summary.totalPurchasePrice}
@@ -136,7 +136,7 @@ export default function PossessionPage() {
 
           {/* Répartition par catégorie */}
           {summary.byCategory?.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-5 w-1/2 flex flex-col justify-center">
+            <div className="bg-white rounded-xl shadow-sm p-5 md:w-1/2 flex flex-col justify-center">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Répartition par catégorie</p>
               <div className="flex flex-col gap-2 ">
                 {summary.byCategory.map(cat => {
@@ -214,10 +214,10 @@ export default function PossessionPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
                       <th className="px-4 py-2 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">Bien</th>
-                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Prix d'achat</th>
+                      <th className="hidden md:table-cell px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Prix d'achat</th>
                       <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Valeur actuelle</th>
-                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Décote</th>
-                      <th className="px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Ancienneté</th>
+                      <th className="hidden md:table-cell px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Décote</th>
+                      <th className="hidden md:table-cell px-4 py-2 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">Ancienneté</th>
                       <th className="px-4 py-2" />
                     </tr>
                   </thead>
@@ -228,7 +228,7 @@ export default function PossessionPage() {
                           <p className="text-sm font-medium text-gray-800">{p.label}</p>
                           <p className="text-xs text-gray-400">{formatDate(p.purchaseDate)}</p>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600 amount">
+                        <td className="hidden md:table-cell px-4 py-3 text-right text-sm text-gray-600 amount">
                           {fmt(p.purchasePrice)} €
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -239,7 +239,7 @@ export default function PossessionPage() {
                             <span className="ml-1 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Manuel</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="hidden md:table-cell px-4 py-3 text-right">
                           <span className="text-sm text-red-500 font-medium amount">
                             −{fmt(p.cumulatedDepreciation)} €
                           </span>
@@ -247,13 +247,13 @@ export default function PossessionPage() {
                             ({parseFloat(p.depreciationRate).toFixed(1)} %)
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-xs text-gray-500 ">
+                        <td className="hidden md:table-cell px-4 py-3 text-right text-xs text-gray-500">
                           {p.yearsOwned < 1
                             ? `${Math.round(p.yearsOwned * 12)} mois`
                             : `${p.yearsOwned.toFixed(1)} ans`}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">
                             <button
                               onClick={() => setFormTarget(p)}
                               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
