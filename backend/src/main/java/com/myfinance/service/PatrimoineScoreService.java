@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.PositionStatus;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +21,7 @@ public class PatrimoineScoreService {
     private final DebtService debtService;
     private final RecurringExpenseService recurringExpenseService;
     private final PortfolioSnapshotService portfolioSnapshotService;
+    private final InstrumentService instrumentService;
 
     public PatrimoineScoreDto computeScore(User user) {
         List<PositionDto> positions = positionService.findAllByUser(user, null, PositionStatus.ACTIVE);
@@ -42,8 +45,18 @@ public class PatrimoineScoreService {
         double riskValue = valueByCategory.getOrDefault("BOURSE", 0.0)
                 + valueByCategory.getOrDefault("CRYPTO", 0.0);
 
+        // Chargement des allocations géo/sectorielles pour les positions BOURSE
+        List<Long> bourseInstrumentIds = positions.stream()
+                .filter(p -> p.category() == AssetCategory.BOURSE && p.instrument() != null
+                        && p.instrument().id() != null)
+                .map(p -> p.instrument().id())
+                .distinct()
+                .collect(Collectors.toList());
+        InstrumentService.AllocationsBundle allocations =
+                instrumentService.loadAllocationsForScore(bourseInstrumentIds);
+
         List<PatrimoineScoreDto.AxeScoreDto> axes = List.of(
-                scoreDiversification(valueByCategory, totalValue, targets),
+                scoreDiversification(valueByCategory, totalValue, targets, positions, allocations),
                 scoreSafetyNet(user, liquidValue, expenseSummary),
                 scoreEndettement(debtSummary, expenseSummary, totalValue),
                 scoreEpargne(expenseSummary),
@@ -72,7 +85,8 @@ public class PatrimoineScoreService {
     // ── Axe 1 : Diversification (20 pts) ──────────────────────────
 
     private PatrimoineScoreDto.AxeScoreDto scoreDiversification(
-            Map<String, Double> valueByCategory, double totalValue, Map<String, Double> targets) {
+            Map<String, Double> valueByCategory, double totalValue, Map<String, Double> targets,
+            List<PositionDto> positions, InstrumentService.AllocationsBundle allocations) {
         int score = 0;
 
         long countCat = valueByCategory.size();
@@ -101,17 +115,76 @@ public class PatrimoineScoreService {
             else if (onTrack >= 1) score += 1;
         }
 
-        String detail = String.format("%d catégorie(s) active(s) sur 6.", countCat);
+        StringBuilder detail = new StringBuilder();
+        detail.append(String.format("%d catégorie(s) active(s) sur 6.", countCat));
         if (maxCat != null && maxPct > 0.60) {
-            detail += String.format(" %s représente %.0f%% du total (seuil max 60%%).", maxCat, maxPct * 100);
+            detail.append(String.format(" %s représente %.0f%% du total (seuil max 60%%).", maxCat, maxPct * 100));
         } else if (maxCat != null) {
-            detail += String.format(" Concentration max : %s à %.0f%%.", maxCat, maxPct * 100);
+            detail.append(String.format(" Concentration max : %s à %.0f%%.", maxCat, maxPct * 100));
         }
         if (!targets.isEmpty()) {
-            detail += String.format(" %d/%d objectif(s) à mi-chemin ou dépassés.", onTrack, targets.size());
+            detail.append(String.format(" %d/%d objectif(s) à mi-chemin ou dépassés.", onTrack, targets.size()));
         }
 
-        return new PatrimoineScoreDto.AxeScoreDto("DIVERSIFICATION", "Diversification", Math.min(score, 20), 20, detail, false);
+        // Sous-score géographique (+3 pts max, conditionnel)
+        double bourseTotal = valueByCategory.getOrDefault("BOURSE", 0.0);
+        if (bourseTotal > 0 && !allocations.byCountry().isEmpty()) {
+            Map<String, Double> geoExp = new HashMap<>();
+            double covered = 0;
+            for (PositionDto p : positions) {
+                if (p.category() != AssetCategory.BOURSE || p.instrument() == null) continue;
+                double v = posValue(p);
+                if (v <= 0) continue;
+                List<InstrumentAllocationDto> allocs = allocations.byCountry().get(p.instrument().id());
+                if (allocs != null && !allocs.isEmpty()) {
+                    covered += v;
+                    allocs.forEach(a -> geoExp.merge(a.country(), v * a.percentage().doubleValue() / 100, Double::sum));
+                }
+            }
+            if (covered / bourseTotal >= 0.30 && !geoExp.isEmpty()) {
+                double geoTotal = geoExp.values().stream().mapToDouble(Double::doubleValue).sum();
+                double maxCountryPct = geoExp.values().stream().mapToDouble(Double::doubleValue).max().orElse(0) / geoTotal;
+                int geoBonus = 0;
+                if (maxCountryPct <= 0.60) geoBonus += 2;
+                if (geoExp.size() >= 5) geoBonus += 1;
+                score = Math.min(20, score + geoBonus);
+                String topCountry = geoExp.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(e -> String.format("%s (%.0f%%)", e.getKey(), e.getValue() / geoTotal * 100))
+                        .orElse("?");
+                detail.append(String.format(" Géo : %d pays, 1er = %s.", geoExp.size(), topCountry));
+            }
+        }
+
+        // Sous-score sectoriel (+2 pts max, conditionnel)
+        if (bourseTotal > 0 && !allocations.bySector().isEmpty()) {
+            Map<String, Double> secExp = new HashMap<>();
+            double covered = 0;
+            for (PositionDto p : positions) {
+                if (p.category() != AssetCategory.BOURSE || p.instrument() == null) continue;
+                double v = posValue(p);
+                if (v <= 0) continue;
+                List<InstrumentSectorAllocationDto> allocs = allocations.bySector().get(p.instrument().id());
+                if (allocs != null && !allocs.isEmpty()) {
+                    covered += v;
+                    allocs.forEach(a -> secExp.merge(a.sector(), v * a.percentage().doubleValue() / 100, Double::sum));
+                }
+            }
+            if (covered / bourseTotal >= 0.30 && !secExp.isEmpty()) {
+                double secTotal = secExp.values().stream().mapToDouble(Double::doubleValue).sum();
+                long sigSectors = secExp.values().stream().filter(v -> v / secTotal >= 0.01).count();
+                int secBonus = sigSectors >= 5 ? 2 : sigSectors >= 3 ? 1 : 0;
+                score = Math.min(20, score + secBonus);
+                detail.append(String.format(" Secteurs : %d détectés.", sigSectors));
+            }
+        }
+
+        return new PatrimoineScoreDto.AxeScoreDto("DIVERSIFICATION", "Diversification", Math.min(score, 20), 20, detail.toString(), false);
+    }
+
+    private static double posValue(PositionDto p) {
+        return p.computed() != null && p.computed().currentValueEur() != null
+                ? p.computed().currentValueEur().doubleValue() : 0.0;
     }
 
     // ── Axe 2 : Matelas de sécurité (15 pts) ──────────────────────

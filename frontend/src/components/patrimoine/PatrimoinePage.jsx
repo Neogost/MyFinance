@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
   getPositions, createPosition, updatePosition,
   updateBalance, updateEstimatedValue, closePosition, deletePosition,
-  getSnapshots, getReferentiel, getPatrimoineTargets,
+  getSnapshots, getSnapshot, getReferentiel, getPatrimoineTargets,
 } from '../../api/patrimoine'
 import { getDebts } from '../../api/debts'
 import { getExpenseSummary } from '../../api/expenses'
@@ -50,6 +50,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const [error, setError]                     = useState(null)
   const [familyMembers, setFamilyMembers]     = useState([]) // [{ id, firstName, lastName, positions }]
   const [debts, setDebts]                     = useState([])
+  const [ytdSnapshotDetail, setYtdSnapshotDetail] = useState(null)
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
@@ -95,7 +96,13 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
 
   async function fetchSnapshots() {
     try {
-      setSnapshots(await getSnapshots())
+      const snaps = await getSnapshots()
+      setSnapshots(snaps)
+      const jan1 = `${new Date().getFullYear()}-01-01`
+      const ref = snaps
+        .filter(s => s.snapshotDate < jan1)
+        .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0] ?? null
+      if (ref?.id) setYtdSnapshotDetail(await getSnapshot(ref.id))
     } catch {
       // snapshots non critiques, on ignore l'erreur
     }
@@ -272,6 +279,24 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const ytdRefSnapshot  = snapshots
     .filter(s => s.snapshotDate < jan1CurrentYear)
     .sort((a, b) => b.snapshotDate.localeCompare(a.snapshotDate))[0] ?? null
+  const ytdContributions = (() => {
+    if (!ytdRefSnapshot || !ytdSnapshotDetail) return null
+    const snapByPosId = {}
+    ytdSnapshotDetail.positionSnapshots?.forEach(sp => {
+      snapByPosId[sp.position.id] = parseFloat(sp.currentValueEur ?? 0)
+    })
+    return active
+      .map(pos => ({
+        id: pos.id,
+        label: pos.label,
+        category: pos.category,
+        contribution: parseFloat(pos.computed?.currentValueEur ?? 0) - (snapByPosId[pos.id] ?? 0),
+        isNew: snapByPosId[pos.id] == null,
+      }))
+      .filter(c => Math.abs(c.contribution) > 0.5)
+      .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution))
+  })()
+
   const totalPlusValueYTD = ytdRefSnapshot != null
     ? patrimoineBrut - parseFloat(ytdRefSnapshot.totalCurrentValueEur ?? 0)
     : null
@@ -418,7 +443,34 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
             <div className="bg-white rounded-xl shadow-sm p-2">
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-1 flex items-center leading-tight">
                 Plus-value YTD
-                <Tooltip>Évolution de la valeur du patrimoine brut depuis le dernier relevé de l'année précédente ({ytdRefSnapshot.snapshotDate}). Ne tient pas compte des nouveaux versements effectués en {new Date().getFullYear()}.</Tooltip>
+                <Tooltip>
+                  <span className="block font-semibold mb-1">Variation depuis {ytdRefSnapshot.snapshotDate}</span>
+                  <span className="block text-gray-400 text-xs mb-2">Inclut les nouveaux versements effectués en {new Date().getFullYear()}.</span>
+                  {ytdContributions === null ? (
+                    <span className="block text-gray-400 text-xs">Chargement…</span>
+                  ) : ytdContributions.length === 0 ? (
+                    <span className="block text-gray-400 text-xs">Aucune variation significative.</span>
+                  ) : (
+                    <>
+                      {ytdContributions.slice(0, 12).map(c => (
+                        <span key={c.id} className="flex justify-between gap-3 text-xs">
+                          <span className="truncate max-w-[170px]">
+                            {CATEGORY_META[c.category]?.icon} {c.label}{c.isNew ? ' ✦' : ''}
+                          </span>
+                          <span className={`amount shrink-0 ${c.contribution >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                            {c.contribution >= 0 ? '+' : ''}{fmt(c.contribution)}
+                          </span>
+                        </span>
+                      ))}
+                      {ytdContributions.length > 12 && (
+                        <span className="block text-gray-400 text-xs mt-1">et {ytdContributions.length - 12} autres…</span>
+                      )}
+                      {ytdContributions.some(c => c.isNew) && (
+                        <span className="block text-gray-400 text-xs mt-2">✦ Position ouverte cette année</span>
+                      )}
+                    </>
+                  )}
+                </Tooltip>
               </p>
               <p className={`text-sm font-bold amount ${totalPlusValueYTD >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 {totalPlusValueYTD >= 0 ? '+' : ''}{fmt(totalPlusValueYTD)}

@@ -153,6 +153,33 @@ public class InstrumentService {
         return allocations.stream().map(InstrumentSectorAllocationDto::from).toList();
     }
 
+    // ── Scoring patrimonial ────────────────────────────────────
+
+    public record AllocationsBundle(
+            Map<Long, List<InstrumentAllocationDto>> byCountry,
+            Map<Long, List<InstrumentSectorAllocationDto>> bySector) {}
+
+    public AllocationsBundle loadAllocationsForScore(List<Long> instrumentIds) {
+        if (instrumentIds.isEmpty()) return new AllocationsBundle(Map.of(), Map.of());
+        List<Instrument> instruments = instrumentRepository.findAllById(instrumentIds);
+
+        Map<Long, List<InstrumentAllocationDto>> byCountry = allocationRepository
+                .findByInstrumentInOrderByPercentageDesc(instruments)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getInstrument().getId(),
+                        Collectors.mapping(InstrumentAllocationDto::from, Collectors.toList())
+                ));
+        Map<Long, List<InstrumentSectorAllocationDto>> bySector = sectorAllocationRepository
+                .findByInstrumentInOrderByPercentageDesc(instruments)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getInstrument().getId(),
+                        Collectors.mapping(InstrumentSectorAllocationDto::from, Collectors.toList())
+                ));
+        return new AllocationsBundle(byCountry, bySector);
+    }
+
     // ── Helpers ────────────────────────────────────────────────
 
     private List<InstrumentDto> withAllocations(List<Instrument> instruments) {
