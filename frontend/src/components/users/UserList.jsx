@@ -58,8 +58,8 @@ export default function UserList() {
           <thead>
             <tr className="bg-gray-50">
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Login</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prénom</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Prénom</th>
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Rôle</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
@@ -67,27 +67,32 @@ export default function UserList() {
           <tbody>
             {users.map(u => (
               <tr key={u.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                <td className="px-4 py-3 text-sm text-gray-800">{u.login}</td>
-                <td className="px-4 py-3 text-sm text-gray-800">{u.firstName}</td>
-                <td className="px-4 py-3 text-sm text-gray-800">{u.lastName}</td>
+                <td className="px-4 py-3 text-sm text-gray-800">
+                  <p>{u.login}</p>
+                  <p className="md:hidden text-xs text-gray-400">{u.firstName} {u.lastName}</p>
+                </td>
+                <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-800">{u.firstName}</td>
+                <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-800">{u.lastName}</td>
                 <td className="px-4 py-3">
                   <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">
                     {u.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 flex gap-2">
-                  <button
-                    onClick={() => setUserToEdit(u)}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    onClick={() => handleDelete(u)}
-                    className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
-                  >
-                    Supprimer
-                  </button>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col md:flex-row items-end md:justify-end gap-1 md:gap-2">
+                    <button
+                      onClick={() => setUserToEdit(u)}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

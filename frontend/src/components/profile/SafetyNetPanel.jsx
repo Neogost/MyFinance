@@ -80,7 +80,7 @@ export default function SafetyNetPanel({ user, onUpdate }) {
   })()
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-8">
+    <div className="bg-white rounded-xl shadow-sm p-4 md:p-8">
       <h3 className="text-base font-semibold text-gray-800 mb-1">Matelas de sécurité</h3>
       <p className="text-sm text-gray-500 mb-6">
         Définissez votre objectif de réserve de liquidités. Il sera comparé à la somme de vos Livrets et Liquidités.
@@ -89,7 +89,7 @@ export default function SafetyNetPanel({ user, onUpdate }) {
       {/* Sélecteur de mode */}
       <div className="flex flex-col gap-2 mb-5">
         <label className="text-sm font-semibold text-gray-700">Mode de calcul</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {MODES.map(m => (
             <button key={m.value}
               onClick={() => { setMode(m.value); setSuccess(false) }}

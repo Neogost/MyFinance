@@ -149,7 +149,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       && group.owner.login === group.members?.find(m => m.id === group.owner.id)?.login
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col gap-6">
+    <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 flex flex-col gap-6">
       <h3 className="text-base font-bold text-gray-900">Regroupement familial</h3>
 
       {error && (
@@ -161,21 +161,21 @@ export default function FamilyGroupPanel({ onGroupChange }) {
         <div className="flex flex-col gap-2">
           <p className={labelCls}>Invitations reçues</p>
           {invitations.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
+            <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-gray-800">{inv.groupName}</p>
                 <p className="text-xs text-gray-500">Invité par {inv.ownerFirstName} {inv.ownerLastName}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => handleAccept(inv)}
-                  className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
+                  className="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
                 >
                   Accepter
                 </button>
                 <button
                   onClick={() => handleRefuse(inv)}
-                  className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition"
+                  className="flex-1 sm:flex-none px-3 py-1.5 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-400 hover:text-red-600 transition"
                 >
                   Refuser
                 </button>
@@ -217,7 +217,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
         <div className="flex flex-col gap-5">
 
           {/* En-tête groupe */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             {showRename ? (
               <form onSubmit={handleRename} className="flex items-center gap-2 flex-1">
                 <input

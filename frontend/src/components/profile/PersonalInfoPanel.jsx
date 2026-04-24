@@ -38,13 +38,13 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-8">
+    <div className="bg-white rounded-xl shadow-sm p-4 md:p-8">
       <h3 className="text-base font-semibold text-gray-800 mb-1">Informations personnelles</h3>
       <p className="text-sm text-gray-500 mb-6">
         Utilisées pour la déclaration de patrimoine. Aucun de ces champs n'est obligatoire.
       </p>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
           <label className={labelCls}>Commune de naissance</label>
           <input name="birthPlace" type="text" value={form.birthPlace}
