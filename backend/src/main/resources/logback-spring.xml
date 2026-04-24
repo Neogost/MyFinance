@@ -22,6 +22,36 @@
   </springProfile>
 
   <!-- ═══════════════════════════════════════════════════════
+       PROFIL DOCKER : console + fichier tournant dans /logs
+       ═══════════════════════════════════════════════════════ -->
+  <springProfile name="docker">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %-45logger{45} : %msg%n</pattern>
+      </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>/logs/myfinance.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>/logs/myfinance.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <maxHistory>7</maxHistory>
+        <totalSizeCap>50MB</totalSizeCap>
+      </rollingPolicy>
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %-45logger{45} : %msg%n</pattern>
+      </encoder>
+    </appender>
+
+    <root level="WARN">
+      <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="FILE"/>
+    </root>
+    <logger name="com.myfinance"        level="INFO"/>
+    <logger name="org.springframework"  level="WARN"/>
+  </springProfile>
+
+  <!-- ═══════════════════════════════════════════════════════
        PROFIL PROD : console + fichier tournant
        Niveau INFO sur com.myfinance — aucun montant financier en logs fichier.
        Rotation quotidienne, 30 jours max (Art. 5.1.e RGPD).

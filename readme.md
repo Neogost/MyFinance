@@ -70,18 +70,52 @@ npm run dev
 # Accessible sur http://localhost:3000
 ```
 
-## Déploiement sur NAS
+## Déploiement sur NAS (Docker)
 
+Le déploiement utilise Docker via Container Station sur NAS QNAP.
+Les fichiers `deploy.sh` et `docker-compose.yml` ne sont pas versionnés (`.gitignore`) car ils contiennent des informations personnelles (IP, chemins NAS).
+
+### Prérequis NAS
+- Docker et Docker Compose installés (via Container Station)
+- Dossiers créés sur le NAS :
+  ```
+  /NAS_PATH/config/myFinance/data/
+  /NAS_PATH/config/myFinance/logs/
+  ```
+
+### Étapes de mise à jour
+
+**1. Build et export de l'image (sur le Mac) :**
 ```bash
-cd backend
-./mvnw clean package -DskipTests
-java -jar -Dspring.profiles.active=prod target/myFinance-0.0.1-SNAPSHOT.jar
+cd MyFinance/
+docker buildx build --platform linux/amd64 --provenance=false \
+  --output "type=docker,dest=/tmp/myfinance.tar" -t myfinance:latest .
 ```
 
-## Variables d'environnement
+**2. Transfert vers le NAS :**
+```bash
+ssh NAS_USER@NAS_IP "cat > NAS_PATH/myfinance.tar" < /tmp/myfinance.tar
+ssh NAS_USER@NAS_IP "cat > NAS_PATH/docker-compose.yml" < docker-compose.yml
+```
 
-Le fichier `backend/src/main/resources/application-prod.properties` est dans le `.gitignore`.
-Créer ce fichier sur le NAS avant le premier démarrage en prod.
+**3. Déploiement sur le NAS :**
+```bash
+ssh NAS_USER@NAS_IP
+docker stop myfinance
+docker load -i NAS_PATH/myfinance.tar
+cd NAS_PATH && docker compose up -d
+docker ps | grep myfinance
+```
+
+### Variables d'environnement (docker-compose.yml)
+
+| Variable | Description |
+|----------|-------------|
+| `CORS_ALLOWED_ORIGINS` | Domaine d'accès (ex: `https://mondomaine.com`) |
+
+### Logs applicatifs
+
+Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation 7 jours, 50 MB max).
 
 ## Tests
 

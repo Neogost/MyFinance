@@ -83,10 +83,10 @@ docker buildx build --platform linux/amd64 --provenance=false --load -t myfinanc
 docker save myfinance:latest -o ~/Desktop/myfinance.tar
 
 # 2. Déployer
-scp ~/Desktop/myfinance.tar NAS_USER@NAS_IP:/share/Container/config/myFinance/myfinance.tar
+scp ~/Desktop/myfinance.tar NAS_USER@NAS_IP:NAS_PATH/config/myFinance/myfinance.tar
 ssh NAS_USER@NAS_IP "docker stop myfinance \
-  && docker load -i /share/Container/config/myFinance/myfinance.tar \
-  && cd /share/Container/config/myFinance \
+  && docker load -i NAS_PATH/config/myFinance/myfinance.tar \
+  && cd NAS_PATH/config/myFinance \
   && docker compose up -d"
 ```
 
@@ -128,12 +128,12 @@ Le certificat est géré automatiquement par myQNAPcloud (Let's Encrypt, renouve
 
 ## Données persistantes
 
-La base SQLite est stockée dans `/share/Container/config/myFinance/data/myfinance.db` sur le NAS.
+La base SQLite est stockée dans `NAS_PATH/config/myFinance/data/myfinance.db` sur le NAS.
 
 **Sauvegarde :**
 ```bash
 ssh NAS_USER@NAS_IP "docker stop myfinance"
-scp NAS_USER@NAS_IP:/share/Container/config/myFinance/data/myfinance.db ~/Desktop/myfinance-backup-$(date +%Y%m%d).db
+scp NAS_USER@NAS_IP:NAS_PATH/config/myFinance/data/myfinance.db ~/Desktop/myfinance-backup-$(date +%Y%m%d).db
 ssh NAS_USER@NAS_IP "docker start myfinance"
 ```
 

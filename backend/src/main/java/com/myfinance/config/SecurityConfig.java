@@ -6,6 +6,7 @@ import com.myfinance.service.LoginAttemptService;
 import com.myfinance.service.LoginHistoryService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +29,9 @@ import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // active @PreAuthorize sur les controllers
+@EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper;
@@ -131,6 +133,7 @@ public class SecurityConfig {
                 })
                 .failureHandler((request, response, exception) -> {
                     String login = request.getParameter("username");
+                    log.warn("Échec d'authentification — login={} exception={}: {}", login, exception.getClass().getSimpleName(), exception.getMessage());
                     String ip = request.getRemoteAddr();
                     String ua = request.getHeader("User-Agent");
                     if (loginAttemptService != null && login != null && !login.isBlank()) {
