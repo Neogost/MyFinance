@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getInstruments, createInstrument, updateInstrument, runMarketDataUpdate, runAllocationUpdate } from '../../api/patrimoine'
+import { getInstruments, createInstrument, updateInstrument, deleteInstrument, runMarketDataUpdate, runAllocationUpdate } from '../../api/patrimoine'
 import AdminInstrumentForm from './AdminInstrumentForm'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
@@ -37,6 +37,9 @@ export default function AdminInstrumentPage() {
   const [tooltip,          setTooltip]          = useState(null)
   const [allocationTarget,       setAllocationTarget]       = useState(null)
   const [sectorAllocationTarget, setSectorAllocationTarget] = useState(null)
+  const [deleteTarget,           setDeleteTarget]           = useState(null)
+  const [deleting,               setDeleting]               = useState(false)
+  const [deleteError,            setDeleteError]            = useState(null)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -89,6 +92,20 @@ export default function AdminInstrumentPage() {
       setAllocationError('Erreur lors de la mise à jour des allocations.')
     } finally {
       setAllocating(false)
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteInstrument(deleteTarget.id)
+      setInstruments(is => is.filter(i => i.id !== deleteTarget.id))
+      setDeleteTarget(null)
+    } catch {
+      setDeleteError('Erreur lors de la suppression.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -282,12 +299,20 @@ export default function AdminInstrumentPage() {
                           }
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => setFormTarget(inst)}
-                            className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
-                          >
-                            Modifier
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setFormTarget(inst)}
+                              className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
+                            >
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => { setDeleteTarget(inst); setDeleteError(null) }}
+                              className="px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"
+                            >
+                              Supprimer
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -361,6 +386,46 @@ export default function AdminInstrumentPage() {
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
         />
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Supprimer l'instrument</h3>
+            <p className="text-sm text-gray-700 mb-3">
+              Êtes-vous sûr de vouloir supprimer <span className="font-semibold">{deleteTarget.name}</span> ?
+              Cette action est irréversible.
+            </p>
+            {deleteTarget.orderCount > 0 ? (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <span className="font-semibold">⚠ Attention :</span>{' '}
+                {deleteTarget.orderCount} mouvement{deleteTarget.orderCount > 1 ? 's' : ''} associé{deleteTarget.orderCount > 1 ? 's' : ''}{' '}
+                ser{deleteTarget.orderCount > 1 ? 'ont' : 'a'} également supprimé{deleteTarget.orderCount > 1 ? 's' : ''}.
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 mb-4">Aucun mouvement associé.</p>
+            )}
+            {deleteError && (
+              <p className="text-sm text-red-600 mb-3">{deleteError}</p>
+            )}
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteError(null) }}
+                disabled={deleting}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-60 transition"
+              >
+                {deleting ? 'Suppression…' : 'Supprimer définitivement'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

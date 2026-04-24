@@ -4,6 +4,7 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.InstrumentAllocation;
 import com.myfinance.domain.InstrumentSectorAllocation;
+import com.myfinance.domain.Position;
 import com.myfinance.dto.InstrumentSectorAllocationDto;
 import com.myfinance.repository.InstrumentSectorAllocationRepository;
 import com.myfinance.dto.CreateInstrumentRequest;
@@ -12,6 +13,8 @@ import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.PositionRepository;
+import com.myfinance.repository.PositionSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -32,6 +35,8 @@ public class InstrumentService {
     private final InstrumentRepository                 instrumentRepository;
     private final InstrumentAllocationRepository       allocationRepository;
     private final InstrumentSectorAllocationRepository sectorAllocationRepository;
+    private final PositionRepository                   positionRepository;
+    private final PositionSnapshotRepository           positionSnapshotRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -189,9 +194,36 @@ public class InstrumentService {
         return new AllocationsBundle(byCountry, bySector);
     }
 
+    // ── Suppression ────────────────────────────────────────────
+
+    @Transactional
+    public void deleteInstrument(Long id) {
+        Instrument instrument = getOrThrow(id);
+        String name = instrument.getName();
+
+        // Supprimer les snapshots de position avant de supprimer les positions (contrainte FK)
+        List<Position> positions = positionRepository.findByInstrument(instrument);
+        if (!positions.isEmpty()) {
+            positionSnapshotRepository.deleteByPositionIn(positions);
+            positionRepository.deleteAll(positions);
+        }
+
+        // Supprimer les allocations puis l'instrument
+        allocationRepository.deleteByInstrument(instrument);
+        sectorAllocationRepository.deleteByInstrument(instrument);
+        instrumentRepository.delete(instrument);
+
+        log.info("[system] Instrument supprimé #{} [nom: {}, {} position(s) supprimée(s)]",
+                id, name, positions.size());
+    }
+
     // ── Helpers ────────────────────────────────────────────────
 
     private List<InstrumentDto> withAllocations(List<Instrument> instruments) {
+        if (instruments.isEmpty()) return List.of();
+
+        List<Long> ids = instruments.stream().map(Instrument::getId).toList();
+
         Map<Long, List<InstrumentAllocationDto>> countryById = allocationRepository
                 .findByInstrumentInOrderByPercentageDesc(instruments)
                 .stream()
@@ -206,10 +238,17 @@ public class InstrumentService {
                         a -> a.getInstrument().getId(),
                         Collectors.mapping(InstrumentSectorAllocationDto::from, Collectors.toList())
                 ));
+        Map<Long, Long> orderCountById = instrumentRepository.countOrdersByInstrumentIds(ids)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
         return instruments.stream()
                 .map(i -> InstrumentDto.from(i,
                         countryById.getOrDefault(i.getId(), List.of()),
-                        sectorById.getOrDefault(i.getId(), List.of())))
+                        sectorById.getOrDefault(i.getId(), List.of()),
+                        orderCountById.getOrDefault(i.getId(), 0L)))
                 .toList();
     }
 

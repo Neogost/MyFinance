@@ -46,12 +46,12 @@ class InstrumentControllerTest {
         etfDto = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null, List.of(), List.of());
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null, List.of(), List.of(), 0L);
 
         bitcoinDto = new InstrumentDto(
                 2L, AssetCategory.CRYPTO, null, "BTC",
                 "Bitcoin", "USD",
-                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null, List.of(), List.of());
+                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null, List.of(), List.of(), 0L);
     }
 
     // ── GET /api/instruments ───────────────────────────────────
@@ -126,7 +126,7 @@ class InstrumentControllerTest {
         InstrumentDto updated = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null, List.of(), List.of());
+                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null, List.of(), List.of(), 0L);
 
         when(instrumentService.updatePrices(any())).thenReturn(List.of(updated));
 
@@ -164,7 +164,7 @@ class InstrumentControllerTest {
         InstrumentDto stable = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null, List.of(), List.of());
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null, List.of(), List.of(), 0L);
 
         when(instrumentService.updateStablePrice(1L, true)).thenReturn(stable);
 
@@ -193,6 +193,32 @@ class InstrumentControllerTest {
         mockMvc.perform(put("/api/instruments/prices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── DELETE /api/instruments/{id} ───────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void delete_asAdmin_retourne204() throws Exception {
+        mockMvc.perform(delete("/api/instruments/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void delete_instrumentIntrouvable_retourne404() throws Exception {
+        org.mockito.Mockito.doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND))
+                .when(instrumentService).deleteInstrument(99L);
+
+        mockMvc.perform(delete("/api/instruments/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void delete_asUser_retourne403() throws Exception {
+        mockMvc.perform(delete("/api/instruments/1"))
                 .andExpect(status().isForbidden());
     }
 }

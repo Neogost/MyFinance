@@ -21,15 +21,23 @@ public record InstrumentDto(
         String coinGeckoId,
         String boursoramaSymbol,
         List<InstrumentAllocationDto> countryAllocation,
-        List<InstrumentSectorAllocationDto> sectorAllocation
+        List<InstrumentSectorAllocationDto> sectorAllocation,
+        long orderCount
 ) {
     public static InstrumentDto from(Instrument instrument) {
-        return from(instrument, List.of(), List.of());
+        return from(instrument, List.of(), List.of(), 0L);
     }
 
     public static InstrumentDto from(Instrument instrument,
                                      List<InstrumentAllocationDto> countryAllocation,
                                      List<InstrumentSectorAllocationDto> sectorAllocation) {
+        return from(instrument, countryAllocation, sectorAllocation, 0L);
+    }
+
+    public static InstrumentDto from(Instrument instrument,
+                                     List<InstrumentAllocationDto> countryAllocation,
+                                     List<InstrumentSectorAllocationDto> sectorAllocation,
+                                     long orderCount) {
         return new InstrumentDto(
                 instrument.getId(),
                 instrument.getCategory(),
@@ -44,7 +52,8 @@ public record InstrumentDto(
                 instrument.getCoinGeckoId(),
                 instrument.getBoursoramaSymbol(),
                 countryAllocation,
-                sectorAllocation
+                sectorAllocation,
+                orderCount
         );
     }
 }

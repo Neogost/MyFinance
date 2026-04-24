@@ -92,4 +92,12 @@ public class InstrumentController {
             @RequestBody List<InstrumentSectorAllocationDto> entries) {
         return instrumentService.updateSectorAllocations(id, entries);
     }
+
+    /** DELETE /api/instruments/{id} — supprimer un instrument et ses positions (ADMIN) */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        instrumentService.deleteInstrument(id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -5,9 +5,12 @@ import com.myfinance.domain.Instrument;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
+import com.myfinance.domain.Position;
 import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.InstrumentSectorAllocationRepository;
+import com.myfinance.repository.PositionRepository;
+import com.myfinance.repository.PositionSnapshotRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +34,8 @@ class InstrumentServiceTest {
     @Mock InstrumentRepository                 instrumentRepository;
     @Mock InstrumentAllocationRepository       allocationRepository;
     @Mock InstrumentSectorAllocationRepository sectorAllocationRepository;
+    @Mock PositionRepository                   positionRepository;
+    @Mock PositionSnapshotRepository           positionSnapshotRepository;
     @InjectMocks InstrumentService instrumentService;
 
     Instrument etf;
@@ -303,6 +308,43 @@ class InstrumentServiceTest {
         when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> instrumentService.updateStablePrice(99L, true))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── deleteInstrument ──────────────────────────────────────
+
+    @Test
+    void deleteInstrument_sansPosition_supprimeLInstrument() {
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(positionRepository.findByInstrument(etf)).thenReturn(List.of());
+
+        instrumentService.deleteInstrument(1L);
+
+        verify(positionSnapshotRepository, never()).deleteByPositionIn(any());
+        verify(positionRepository, never()).deleteAll(any());
+        verify(instrumentRepository).delete(etf);
+    }
+
+    @Test
+    void deleteInstrument_avecPositions_supprimeSnapshotsPuisPositions() {
+        Position pos = Position.builder().id(10L).instrument(etf).build();
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(positionRepository.findByInstrument(etf)).thenReturn(List.of(pos));
+
+        instrumentService.deleteInstrument(1L);
+
+        verify(positionSnapshotRepository).deleteByPositionIn(List.of(pos));
+        verify(positionRepository).deleteAll(List.of(pos));
+        verify(instrumentRepository).delete(etf);
+    }
+
+    @Test
+    void deleteInstrument_instrumentIntrouvable_leve404() {
+        when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> instrumentService.deleteInstrument(99L))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.NOT_FOUND));

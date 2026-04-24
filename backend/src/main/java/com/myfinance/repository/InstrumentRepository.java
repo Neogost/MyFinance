@@ -62,4 +62,14 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
     List<Instrument> findByCategoryAndStablePriceFalseAndBoursoramaSymbolIsNotNull(AssetCategory category);
 
     List<Instrument> findByCategoryAndStablePriceFalseAndCoinGeckoIdIsNotNull(AssetCategory category);
+
+    /** Nombre d'ordres par instrument (batch) — pour l'affichage du warning de suppression */
+    @Query("""
+            SELECT p.instrument.id, COUNT(po)
+            FROM PositionOrder po
+            JOIN po.position p
+            WHERE p.instrument.id IN :ids
+            GROUP BY p.instrument.id
+            """)
+    List<Object[]> countOrdersByInstrumentIds(@Param("ids") List<Long> ids);
 }
