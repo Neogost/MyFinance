@@ -18,13 +18,13 @@ La section **Complémentaires** regroupe tous les revenus hors salaire : loyers,
 3. Choisissez le type, saisissez le libellé et le montant mensuel
 4. Renseignez les paramètres fiscaux si nécessaire (abattement forfaitaire, régime micro…)
 
-> 📷 `public/docs/revenus/other-income-form.png` — Formulaire d'ajout d'un revenu complémentaire avec les champs type, libellé, montant et options fiscales
+> ![Formulaire d'ajout](public/docs/revenus/other-income-form.png) — Formulaire d'ajout d'un revenu complémentaire avec les champs type, libellé, montant et options fiscales
 
 ## Affichage par catégorie
 
 La page affiche un récapitulatif par type avec le total mensuel et annuel, ainsi que des **badges fiscaux** indiquant le régime d'imposition applicable.
 
-> 📷 `public/docs/revenus/other-income-page.png` — Page des revenus complémentaires avec les badges fiscaux par catégorie et le total global
+> ![Page revenus complémentaires](public/docs/revenus/other-income-page.png) — Page des revenus complémentaires avec les badges fiscaux par catégorie et le total global
 
 ## Impact sur le bilan et les outils
 

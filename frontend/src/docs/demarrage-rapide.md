@@ -33,7 +33,6 @@ Pour une expérience optimale, renseignez les informations dans cet ordre :
 7. **Patrimoine** → créez vos positions financières (bourse, immobilier, livrets…)
 8. **Tableau de bord** → consultez votre synthèse financière complète
 
-> 📷 `public/docs/demarrage-rapide/tableau-de-bord.png` — Vue d'ensemble du tableau de bord après saisie complète avec les widgets patrimoine, FIRE, scoring et dettes
 
 ## Tableau de bord
 
@@ -45,4 +44,4 @@ Le tableau de bord centralise en un coup d'œil :
 - **Widget Dettes** : ratio d'endettement, date de libération, progression par type de crédit
 - **Objectifs & Stratégie** : avancement radar par catégorie de patrimoine
 
-> 📷 `public/docs/demarrage-rapide/dashboard-widgets.png` — Les quatre blocs du tableau de bord : évolution, FIRE, scoring et dettes
+> ![Tableau de bord](public/docs/demarrage-rapide/tableau-de-bord.png) — Vue d'ensemble du tableau de bord après saisie complète avec les widgets patrimoine, FIRE, scoring et dettes
