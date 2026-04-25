@@ -114,6 +114,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator'].includes(currentPage)
   const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations'].includes(currentPage)
+  const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
   function closeMobile() { setMobileMenuOpen(false) }
@@ -213,6 +214,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               )}
             </div>
           )}
+
+          <NavBtn page="documentation" label="Documentation" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
           <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
         </nav>
@@ -336,6 +339,10 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
               </>
             )}
+
+            {/* Documentation */}
+            <MobileSectionTitle>Aide</MobileSectionTitle>
+            <MobileMenuItem label="Documentation" page="documentation" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
 
             {/* Compte */}
             <MobileSectionTitle>Compte</MobileSectionTitle>

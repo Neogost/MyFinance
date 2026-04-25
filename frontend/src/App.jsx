@@ -27,6 +27,8 @@ import DettePage from './components/debts/DettePage'
 import { logout, getMe } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 import LandingPage from './components/LandingPage'
+import DocumentationPage from './components/documentation/DocumentationPage'
+import logo from './assets/logo.png'
 
 export default function App() {
   const [user,        setUser]        = useState(null)
@@ -102,11 +104,33 @@ export default function App() {
   }
 
   if (!user) {
+    if (currentPage === 'documentation' && authView === 'landing') {
+      return (
+        <ErrorBoundary>
+          <div className="min-h-screen bg-gray-100">
+            <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-3 bg-white shadow-sm">
+              <img src={logo} alt="MyFinance" className="h-8 md:h-12 w-auto" />
+              <button
+                onClick={() => setAuthView('login')}
+                className="px-4 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition"
+              >
+                Connexion
+              </button>
+            </header>
+            <main className="p-4 md:p-8 pb-8 overflow-x-hidden">
+              <DocumentationPage user={null} />
+            </main>
+          </div>
+        </ErrorBoundary>
+      )
+    }
+
     if (authView === 'landing') {
       return (
         <LandingPage
           onLogin={() => setAuthView('login')}
           onRegister={() => setAuthView('register')}
+          onDocumentation={() => { window.location.hash = 'documentation'; setCurrentPage('documentation') }}
         />
       )
     }
@@ -174,6 +198,8 @@ export default function App() {
         {currentPage === 'admin-registrations' && user.role === 'ADMIN' && (
           <RegistrationRequestPage onPendingCountChange={setPendingRegistrations} />
         )}
+
+        {currentPage === 'documentation' && <DocumentationPage user={user} />}
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>
