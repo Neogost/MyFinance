@@ -119,21 +119,13 @@ export default function DetteWidget({ onNavigate }) {
           <h3 className="text-base font-semibold text-gray-800">Endettement</h3>
           <p className="text-xs text-gray-400 mt-0.5">Capital restant dû, charge mensuelle et avancement du remboursement.</p>
         </div>
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate('debts')}
-            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium shrink-0 mt-0.5"
-          >
-            Voir mes dettes →
-          </button>
-        )}
       </div>
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gray-50 rounded-lg px-4 py-3">
           <p className="text-xs text-gray-400 mb-1">Capital restant dû</p>
-          <p className="text-base font-bold text-red-600">{fmt(totalCapital)}</p>
+          <p className="text-base font-bold text-red-600 amount">{fmt(totalCapital)}</p>
           {ratioDette != null && (
             <p className={`text-xs mt-0.5 font-medium ${ratioDetteColor}`}>
               {ratioDette.toFixed(1)} % du patrimoine
@@ -142,7 +134,7 @@ export default function DetteWidget({ onNavigate }) {
         </div>
         <div className="bg-gray-50 rounded-lg px-4 py-3">
           <p className="text-xs text-gray-400 mb-1">Mensualité totale</p>
-          <p className="text-base font-bold text-gray-800">{fmtDec(totalMensualite)}</p>
+          <p className="text-base font-bold text-gray-800 amount">{fmtDec(totalMensualite)}</p>
           {ratioSalaire != null ? (
             <p className={`text-xs mt-0.5 font-medium ${ratioSalaireColor}`}>
               {ratioSalaire.toFixed(1)} % du salaire net
@@ -171,7 +163,7 @@ export default function DetteWidget({ onNavigate }) {
             <p className="text-xs font-medium text-amber-700">Intérêts restants estimés</p>
             <p className="text-xs text-amber-500 mt-0.5">Coût du crédit restant à payer (hors assurance)</p>
           </div>
-          <p className="text-sm font-bold text-amber-700 shrink-0">{fmt(Math.round(totalRemainingInterest))}</p>
+          <p className="text-sm font-bold text-amber-700 shrink-0 amount">{fmt(Math.round(totalRemainingInterest))}</p>
         </div>
       )}
 
@@ -205,7 +197,7 @@ export default function DetteWidget({ onNavigate }) {
                   {t.label}{t.count > 1 ? ` (${t.count})` : ''}
                 </p>
                 <div className="flex items-center gap-3 text-xs text-gray-400 shrink-0">
-                  <span>{fmt(Math.round(t.remaining))} restant</span>
+                  <span className="amount">{fmt(Math.round(t.remaining))} restant</span>
                   <span className="font-semibold text-gray-600">{t.pct.toFixed(1)} %</span>
                 </div>
               </div>

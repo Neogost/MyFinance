@@ -146,9 +146,12 @@ export default function SalaryAnnualBarChart() {
       <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }} barCategoryGap="35%">
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
         <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6b7280' }} />
-        <YAxis 
-          tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
-          tick={{ fontSize: 11, fill: '#6b7280' }}
+        <YAxis
+          tick={({ x, y, payload }) => (
+            <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={11} className="amount">
+              {`${(payload.value / 1000).toFixed(0)}k`}
+            </text>
+          )}
           width={45}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f9fafb' }} />

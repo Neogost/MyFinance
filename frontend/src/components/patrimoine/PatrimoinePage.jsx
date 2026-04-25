@@ -377,7 +377,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
             <p className="text-sm font-bold text-gray-900 amount"><Amount value={patrimoineBrut} /></p>
             {inseeInfo && (
               <p className="text-xs text-gray-400 mt-0.5">
-                D{inseeInfo.rang}/10 · {inseeInfo.tranche.label}
+                <span className="amount">D{inseeInfo.rang}/10</span> · {inseeInfo.tranche.label}
                 <Tooltip>
                   <span className="block font-semibold mb-1">Référentiel INSEE — {inseeInfo.tranche.label}</span>
                   <span className="block text-gray-400 text-xs mb-2">{referentiel.source}</span>

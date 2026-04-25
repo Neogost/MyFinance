@@ -179,8 +179,11 @@ export default function PatrimoineEvolutionChart() {
             tickCount={6}
           />
           <YAxis
-            tickFormatter={mode === 'percent' ? v => `${v.toFixed(0)} %` : v => `${(v / 1000).toFixed(0)}k`}
-            tick={{ fontSize: 11, fill: '#6b7280' }}
+            tick={({ x, y, payload }) => (
+              <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={11} className="amount">
+                {mode === 'percent' ? `${payload.value.toFixed(0)} %` : `${(payload.value / 1000).toFixed(0)}k`}
+              </text>
+            )}
             width={48}
             domain={mode === 'percent' ? [0, 100] : [0, 'auto']}
           />
