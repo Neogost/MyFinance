@@ -1,11 +1,15 @@
-export default function ContactPage({ onLogin }) {
+import logo from '../assets/logo.png'
+
+export default function ContactPage({ onLogin, onHome }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
       {/* ── Header ── */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-xl font-bold text-indigo-600">MyFinance</span>
+          <button onClick={onHome} className="hover:opacity-80 transition">
+            <img src={logo} alt="MyFinance" className="h-10 w-auto" />
+          </button>
           <button
             onClick={onLogin}
             className="px-4 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition"
@@ -32,16 +36,16 @@ export default function ContactPage({ onLogin }) {
                 👤
               </div>
               <div>
-                <p className="font-bold text-gray-900 text-lg">Votre prénom Nom</p>
-                <p className="text-sm text-gray-500">Votre titre / rôle</p>
+                <p className="font-bold text-gray-900 text-lg">Kévin DESMAY</p>
+                <p className="text-sm text-gray-500">Agile Master, Coach TEDxNantes, Jury Professionnel, Boursicoteur</p>
               </div>
             </div>
 
             <p className="text-gray-700 leading-relaxed">
-              [Présentez-vous ici : qui vous êtes, votre parcours, vos centres d'intérêt.]
+              Depuis petit je suis passionné et curieux des éléments qui m'entourent. En 2017, j'ai commencer a m'intéresser a l'investissement via les cryptomonnaies et le Crownfunding immobilier. C'est à ce moment là que j'ai commencé à creuser les différents concept autour de l'indépendances financière et comment faire travailler l'argent pour moi.
             </p>
             <p className="text-gray-700 leading-relaxed">
-              [Expliquez pourquoi vous avez créé MyFinance : besoin personnel, passion pour la gestion financière, etc.]
+              A cette époque, la seule solution viable que j'ai trouvé pour suivre mon patrimoine était de faire un fichier Excel, qui avec le temps est vite devenu complexe. J'ai opté plusieurs fois à faire une application et mon amour pour le Frontend à eux raison de moi. En 2026, je tente donc via Claude Code de relancer ce projet et donne naissance à ... MyFinance.
             </p>
           </div>
 
@@ -49,7 +53,8 @@ export default function ContactPage({ onLogin }) {
           <div className="bg-white rounded-2xl border border-gray-200 p-8">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Pourquoi MyFinance ?</h2>
             <p className="text-gray-700 leading-relaxed">
-              [Décrivez la genèse du projet : quel problème vous souhaitiez résoudre, pourquoi les solutions existantes ne vous convenaient pas.]
+              Avec MyFinance, je souhaitais pouvoir gérer mon patrimoine de manière simple, rapide et efficace... et pourquoi pas, permettre à d'autres personnes de faire de même. 
+              L'application gère un certains nombre d'aspect de votre gestion de patrimoine, comme le suivi de vos actifs, la visualisation de l'évolution de votre patrimoine, la gestion de vos revenues, vos dépenses, et vos dettes. Elle met a disposition un certain nombre d'outil pour vous projetez dans l'avenir... qu'il soit fructueux via le simulateur d'intéret composées ou dramatique avec le simulateur de crise financière. Bref, MyFinance regroupe tout les outils que je rêvais d'avoir au même endroit pour facilité mon suivi de mon patrimoine.
             </p>
           </div>
 
@@ -59,11 +64,21 @@ export default function ContactPage({ onLogin }) {
             <div className="space-y-3 text-sm text-gray-700">
               <div className="flex items-center gap-3">
                 <span className="text-lg">✉️</span>
-                <span>[votre.email@exemple.com]</span>
+                <a href="mailto:kevin.desmay+myfinance@gmail.com" className="text-indigo-600 hover:underline">
+                  kevin.desmay+myfinance@gmail.com
+                </a>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-lg">🔗</span>
-                <span>[Lien LinkedIn ou autre réseau]</span>
+                <a href="https://www.linkedin.com/in/kevin-desmay/" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                  LinkedIn
+                </a>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🔗</span>
+                <a href="https://github.com/Neogost" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                  GitHub
+                </a>
               </div>
             </div>
           </div>

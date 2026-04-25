@@ -110,7 +110,7 @@ export default function App() {
         <ErrorBoundary>
           <div className="min-h-screen bg-gray-100">
             <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-3 bg-white shadow-sm">
-              <img src={logo} alt="MyFinance" className="h-8 md:h-12 w-auto" />
+              <img src={logo} alt="MyFinance" className="h-8 md:h-12 w-auto cursor-pointer" onClick={() => { window.location.hash = ''; setCurrentPage('dashboard') }} />
               <button
                 onClick={() => setAuthView('login')}
                 className="px-4 py-1.5 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition"
@@ -127,7 +127,7 @@ export default function App() {
     }
 
     if (currentPage === 'contact' && authView === 'landing') {
-      return <ContactPage onLogin={() => setAuthView('login')} />
+      return <ContactPage onLogin={() => setAuthView('login')} onHome={() => { window.location.hash = ''; setCurrentPage('dashboard') }} />
     }
 
     if (authView === 'landing') {
@@ -135,7 +135,7 @@ export default function App() {
         <LandingPage
           onLogin={() => setAuthView('login')}
           onRegister={() => setAuthView('register')}
-          onDocumentation={() => { window.location.hash = 'documentation'; setCurrentPage('documentation') }}
+          onDocumentation={(docId) => { if (docId) sessionStorage.setItem('doc-page', docId); window.location.hash = 'documentation'; setCurrentPage('documentation') }}
           onContact={() => { window.location.hash = 'contact'; setCurrentPage('contact') }}
         />
       )

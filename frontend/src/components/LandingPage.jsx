@@ -1,10 +1,12 @@
+import logo from '../assets/logo.png'
+
 const FEATURES = [
-  { icon: '📊', title: 'Patrimoine',   desc: 'Suivez vos investissements boursiers, crypto, immobilier et épargne en un seul endroit.' },
-  { icon: '💶', title: 'Revenus',      desc: 'Gérez vos contrats salariaux, primes, avantages et revenus complémentaires.' },
-  { icon: '📉', title: 'Dépenses',     desc: 'Analysez vos dépenses récurrentes et identifiez votre capacité d\'épargne mensuelle.' },
-  { icon: '🏦', title: 'Dettes',       desc: 'Suivez vos crédits avec tableaux d\'amortissement et projection du capital restant.' },
-  { icon: '🧾', title: 'Impôts',       desc: 'Simulez votre imposition et optimisez vos déclarations fiscales en temps réel.' },
-  { icon: '📈', title: 'Simulateurs',  desc: 'Projetez vos investissements, planifiez votre indépendance financière et testez des scénarios.' },
+  { icon: '📊', title: 'Patrimoine',  desc: 'Suivez vos investissements boursiers, crypto, immobilier et épargne en un seul endroit.', docId: 'patrimoine-positions' },
+  { icon: '💶', title: 'Revenus',     desc: 'Gérez vos contrats salariaux, primes, avantages et revenus complémentaires.',              docId: 'revenus-salariat' },
+  { icon: '📉', title: 'Dépenses',    desc: 'Analysez vos dépenses récurrentes et identifiez votre capacité d\'épargne mensuelle.',      docId: 'depenses' },
+  { icon: '🏦', title: 'Dettes',      desc: 'Suivez vos crédits avec tableaux d\'amortissement et projection du capital restant.',       docId: 'dettes' },
+  { icon: '🧾', title: 'Impôts',      desc: 'Simulez votre imposition et optimisez vos déclarations fiscales en temps réel.',            docId: 'outils-simulateur-impots' },
+  { icon: '📈', title: 'Simulateurs', desc: 'Projetez vos investissements, planifiez votre indépendance financière et testez des scénarios.', docId: 'outils-bilan-financier' },
 ]
 
 const STEPS = [
@@ -20,7 +22,7 @@ export default function LandingPage({ onLogin, onRegister, onDocumentation, onCo
       {/* ── Header ── */}
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="text-xl font-bold text-indigo-600">MyFinance</span>
+          <img src={logo} alt="MyFinance" className="h-10 w-auto" />
           <div className="flex items-center gap-3">
             <button
               onClick={onDocumentation}
@@ -84,11 +86,16 @@ export default function LandingPage({ onLogin, onRegister, onDocumentation, onCo
           <p className="text-gray-500 text-center mb-10">Une suite complète d'outils pour piloter vos finances au quotidien.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map(f => (
-              <div key={f.title} className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition">
+              <button
+                key={f.title}
+                onClick={() => onDocumentation(f.docId)}
+                className="bg-gray-50 rounded-xl p-6 hover:shadow-md hover:bg-indigo-50 text-left transition group"
+              >
                 <div className="text-3xl mb-3">{f.icon}</div>
-                <h3 className="font-semibold text-gray-900 mb-1">{f.title}</h3>
+                <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-indigo-700 transition">{f.title}</h3>
                 <p className="text-sm text-gray-500">{f.desc}</p>
-              </div>
+                <p className="text-xs text-indigo-500 mt-3 font-medium opacity-0 group-hover:opacity-100 transition">Voir la documentation →</p>
+              </button>
             ))}
           </div>
         </div>
