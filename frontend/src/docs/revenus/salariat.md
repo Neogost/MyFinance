@@ -12,7 +12,7 @@ Un seul contrat peut être **actif** à la fois. Il définit le salaire brut de 
 2. Cliquez sur **Nouveau contrat**
 3. Renseignez l'entreprise, le salaire brut annuel et les paramètres de temps de travail
 
-> ![Formulaire de création](public/docs/revenus/salary-form.png) — Formulaire de création d'un contrat salarial avec les champs entreprise, salaire brut et paramètres temps de travail
+> ![Formulaire de création](/docs/revenus/salary-form.png) — Formulaire de création d'un contrat salarial avec les champs entreprise, salaire brut et paramètres temps de travail
 
 ## Projections calculées
 
@@ -27,19 +27,19 @@ Pour chaque contrat, MyFinance calcule automatiquement 4 niveaux de rémunérati
 
 > Pour que le **Net d'impôt** soit calculé, votre profil fiscal doit être renseigné (nombre de parts, options d'abattement).
 
-> ![Grille de projection](public/docs/revenus/salary-projections.png) — Grille de projections avec les 4 niveaux en colonnes et les périodes (annuel, mensuel, journalier, horaire) en lignes
+> ![Grille de projection](/docs/revenus/salary-projections.png) — Grille de projections avec les 4 niveaux en colonnes et les périodes (annuel, mensuel, journalier, horaire) en lignes
 
 ## Révisions salariales
 
 Enregistrez l'historique de vos augmentations via l'onglet **Révisions**. La révision active (la plus récente avec une date d'effet ≤ aujourd'hui) est utilisée dans les projections et le simulateur d'impôts.
 
-> ![Paneau des révisions](public/docs/revenus/salary-revisions.png) — Panneau des révisions salariales avec la liste chronologique et la révision active mise en évidence
+> ![Paneau des révisions](/docs/revenus/salary-revisions.png) — Panneau des révisions salariales avec la liste chronologique et la révision active mise en évidence
 
 ## Bulletins de paie réels
 
 L'onglet **Bulletins** permet de saisir les valeurs réelles de chaque fiche de paie (net imposable et net perçu mensuels). Utile pour comparer la réalité aux projections.
 
-> ![Listes des bulletins de paie](public/docs/revenus/pay-slips.png) — Liste des bulletins de paie avec les colonnes mois, net imposable et net perçu
+> ![Listes des bulletins de paie](/docs/revenus/pay-slips.png) — Liste des bulletins de paie avec les colonnes mois, net imposable et net perçu
 
 ## Primes
 
@@ -49,7 +49,7 @@ L'onglet **Primes** gère deux types :
 
 Les primes sont intégrées dans le calcul de l'impôt estimé via le simulateur.
 
-> ![Listes des primes](public/docs/revenus/bonuses.png) — Panneau des primes avec les types EXCEPTIONNELLE et ANNUELLE
+> ![Listes des primes](/docs/revenus/bonuses.png) — Panneau des primes avec les types EXCEPTIONNELLE et ANNUELLE
 
 ## Avantages en nature
 

@@ -6,15 +6,15 @@ MyFinance est une application personnelle de gestion financière. Ce guide vous 
 
 Connectez-vous avec vos identifiants. Votre session reste active pendant 12 heures. En cas de trop nombreuses tentatives échouées, le compte est temporairement verrouillé (protection anti-brute force).
 
-> ![Écran de connexion](public/docs/demarrage-rapide/login.png) — Écran de connexion avec champs identifiant et mot de passe
+> ![Écran de connexion](/docs/demarrage-rapide/login.png) — Écran de connexion avec champs identifiant et mot de passe
 
 ## Navigation
 
 La navigation principale se trouve en haut de l'écran sur desktop. Sur mobile, un menu bas donne accès aux sections les plus utilisées, et le bouton **Plus** ouvre un panneau complet.
 
-> ![Bare de navigation Desktop](public/docs/demarrage-rapide/navigation-desktop.png) — Barre de navigation desktop avec les menus déroulants (Revenus, Outils, Administration)
+> ![Bare de navigation Desktop](/docs/demarrage-rapide/navigation-desktop.png) — Barre de navigation desktop avec les menus déroulants (Revenus, Outils, Administration)
 
-> ![Bare de navigation Mobile](public/docs/demarrage-rapide/navigation-mobile.png) — Barre de navigation mobile avec le bouton Plus et le panneau coulissant
+> ![Bare de navigation Mobile](/docs/demarrage-rapide/navigation-mobile.png) — Barre de navigation mobile avec le bouton Plus et le panneau coulissant
 
 ## Masquer les valeurs
 
@@ -44,4 +44,4 @@ Le tableau de bord centralise en un coup d'œil :
 - **Widget Dettes** : ratio d'endettement, date de libération, progression par type de crédit
 - **Objectifs & Stratégie** : avancement radar par catégorie de patrimoine
 
-> ![Tableau de bord](public/docs/demarrage-rapide/tableau-de-bord.png) — Vue d'ensemble du tableau de bord après saisie complète avec les widgets patrimoine, FIRE, scoring et dettes
+> ![Tableau de bord](/docs/demarrage-rapide/tableau-de-bord.png) — Vue d'ensemble du tableau de bord après saisie complète avec les widgets patrimoine, FIRE, scoring et dettes

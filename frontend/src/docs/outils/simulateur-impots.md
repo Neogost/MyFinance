@@ -16,7 +16,7 @@ Le simulateur agrège automatiquement :
 3. **Revenus complémentaires** : revenus sélectionnés (LOCATIF, DIVIDENDE, AUTRE)
 4. **Astreintes / gardes** : montant saisi manuellement dans le simulateur
 
-> ![Formulaire de simulation](public/docs/outils/tax-simulator-form.png) — Interface du simulateur avec les sélecteurs de source salariale et de revenus complémentaires
+> ![Formulaire de simulation](/docs/outils/tax-simulator-form.png) — Interface du simulateur avec les sélecteurs de source salariale et de revenus complémentaires
 
 ## Résultat
 
@@ -28,7 +28,7 @@ Le simulateur affiche :
 - **Taux marginal d'imposition** (TMI)
 - **Taux moyen d'imposition**
 
-> ![Resultat de simulation](public/docs/outils/tax-simulator-result.png) — Résultat de la simulation avec le détail par tranche et les indicateurs de taux
+> ![Resultat de simulation](/docs/outils/tax-simulator-result.png) — Résultat de la simulation avec le détail par tranche et les indicateurs de taux
 
 ## Barème IRPP
 

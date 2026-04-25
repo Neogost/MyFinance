@@ -28,7 +28,7 @@ Un **mouvement** (ou ordre) trace l'historique d'une position : achat, vente, d�
 
 > Le montant saisie doit être dans la même monnaie que le type de devise saisie sur la position associé. Le système gère lui même les conversions entre les monnaies vers l'euro en cas de compte en devise étrangeaire.
 
-> ![Formulaire d'ajout d'un Mouvement](public/docs/patrimoine/order-form.png) — Formulaire d'ajout de mouvement avec les champs type, date, montant, quantité et taux de change
+> ![Formulaire d'ajout d'un Mouvement](/docs/patrimoine/order-form.png) — Formulaire d'ajout de mouvement avec les champs type, date, montant, quantité et taux de change
 
 ## Calcul de la valeur et de la plus-value
 
@@ -43,13 +43,13 @@ Rendement (%)    = plus-value / montant investi × 100
 
 Les AIRDROP, ABONDEMENT, INTEREST et DIVIDEND ne sont **pas** inclus dans le montant investi.
 
-> ![Position et son résumé](public/docs/patrimoine/position-resume.png) — Ligne de position avec valeur actuelle, montant investi, plus-value et rendement en %
+> ![Position et son résumé](/docs/patrimoine/position-resume.png) — Ligne de position avec valeur actuelle, montant investi, plus-value et rendement en %
 
 ## Modifier ou supprimer un mouvement
 
 Chaque mouvement peut être **modifié** ou **supprimé** depuis le panneau d'historique. La valeur de la position est recalculée instantanément.
 
-> ![Position et ses mouvements associés](public/docs/patrimoine/position-detail.png) — Panneau d'historique des mouvements avec les boutons modifier et supprimer par ligne
+> ![Position et ses mouvements associés](/docs/patrimoine/position-detail.png) — Panneau d'historique des mouvements avec les boutons modifier et supprimer par ligne
 
 ## Mise à jour du cours (LIQUIDITE)
 

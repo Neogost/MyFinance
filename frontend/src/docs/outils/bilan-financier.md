@@ -15,7 +15,7 @@ Le bilan est composé de deux colonnes :
 - Dépenses récurrentes par catégorie
 - Impôt mensuel estimé (`impôt annuel / 12`)
 
-> ![Page bilan](public/docs/outils/bilan-financier-page.png) — Page du bilan financier avec les deux colonnes Revenus et Dépenses, le delta R-D et le taux d'épargne
+> ![Page bilan](/docs/outils/bilan-financier-page.png) — Page du bilan financier avec les deux colonnes Revenus et Dépenses, le delta R-D et le taux d'épargne
 
 ## Indicateurs clés
 
@@ -33,7 +33,7 @@ Ratio = Total Actif ÷ Dépenses annuelles
 ```
 Exprimé en **années** : combien d'années vos actifs couvrent-ils vos dépenses sans revenu.
 
-> ![Couverture de sécurité](public/docs/outils/bilan-couverture.png) — Bloc indigo du ratio de couverture patrimoniale avec le nombre d'années
+> ![Couverture de sécurité](/docs/outils/bilan-couverture.png) — Bloc indigo du ratio de couverture patrimoniale avec le nombre d'années
 
 ### Projection FIRE
 Basée sur la règle des 4 % :
@@ -42,7 +42,7 @@ Objectif FIRE = Dépenses annuelles × 25
 ```
 Affiche une barre de progression, les années restantes estimées et le rendement pondéré du patrimoine.
 
-> ![Indicateur d'indépendance financière](public/docs/outils/bilan-fire.png) — Bloc violet de la projection FIRE avec la barre de progression et les hypothèses de calcul
+> ![Indicateur d'indépendance financière](/docs/outils/bilan-fire.png) — Bloc violet de la projection FIRE avec la barre de progression et les hypothèses de calcul
 
 ## Toggle Mensuel / Annuel
 

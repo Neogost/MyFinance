@@ -15,13 +15,13 @@ Un **relevé** (snapshot) est une photographie datée de votre patrimoine. Il en
 
 Un relevé existant peut être **recalculé** avec les prix actuels des instruments, en conservant sa date d'origine. Utile si les cours ont été mis à jour après la prise du relevé.
 
-> ![Recalculer une snapshot](public/docs/patrimoine/snapshot-recalculate.png) — Bouton recalculer sur un relevé existant dans le panneau, exclusivement Administrateur
+> ![Recalculer une snapshot](/docs/patrimoine/snapshot-recalculate.png) — Bouton recalculer sur un relevé existant dans le panneau, exclusivement Administrateur
 
 ## Gestion admin des relevés
 
 Les administrateurs ont accès à une page dédiée (**Administration → Gestion des relevés**) qui permet de créer, modifier ou supprimer manuellement des relevés pour n'importe quel utilisateur.
 
-> ![Page admin gestion des relevés](public/docs/patrimoine/admin-snapshot-page.png) — Page admin de gestion des relevés avec le sélecteur d'utilisateur et le formulaire de saisie manuelle
+> ![Page admin gestion des relevés](/docs/patrimoine/admin-snapshot-page.png) — Page admin de gestion des relevés avec le sélecteur d'utilisateur et le formulaire de saisie manuelle
 
 > Si des utilisateurs sont intéressés, cette fonctionnalités pourrait être ajouter sur la vue patrimoine individuel.
 
@@ -29,4 +29,4 @@ Les administrateurs ont accès à une page dédiée (**Administration → Gestio
 
 Le graphique du tableau de bord affiche les relevés sous forme d'**aires empilées par catégorie** (IMMO_PHYSIQUE, BOURSE, CRYPTO, LIVRET…). Un point "Aujourd'hui" est ajouté automatiquement depuis les positions actives.
 
-> ![Tableau de bord historisant le patrimoine](public/docs/patrimoine/evolution-chart.png) — Graphique d'évolution en aires empilées avec le point live "Aujourd'hui" et le toggle valeur absolue / répartition %
+> ![Tableau de bord historisant le patrimoine](/docs/patrimoine/evolution-chart.png) — Graphique d'évolution en aires empilées avec le point live "Aujourd'hui" et le toggle valeur absolue / répartition %

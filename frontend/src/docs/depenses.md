@@ -27,13 +27,13 @@ Chaque dépense peut être **mensuelle** ou **annuelle**. Les dépenses annuelle
 3. Choisissez la catégorie, la fréquence et saisissez le montant
 4. Un **aperçu en temps réel** affiche le montant mensuel et annuel projeté
 
-> ![Formulaire d'ajout](public/docs/depenses/expense-form.png) — Formulaire d'ajout de dépense avec l'aperçu de projection en temps réel
+> ![Formulaire d'ajout](/docs/depenses/expense-form.png) — Formulaire d'ajout de dépense avec l'aperçu de projection en temps réel
 
 ## Colocation
 
 Pour les dépenses partagées (loyer en colocation, factures communes), renseignez le **pourcentage à votre charge** (ex : 50 %). Le montant projeté est automatiquement ajusté.
 
-> ![Depenses partagées](public/docs/depenses/expense-form-colocation.png) — Formulaire avec le curseur de pourcentage de colocation et l'indicateur de partage
+> ![Depenses partagées](/docs/depenses/expense-form-colocation.png) — Formulaire avec le curseur de pourcentage de colocation et l'indicateur de partage
 
 ## Tableau de bord des dépenses
 
@@ -42,7 +42,7 @@ La page affiche :
 - **Répartition par catégorie** : barres de progression avec montant et pourcentage
 - **Liste groupée** par catégorie avec les dépenses actives et suspendues
 
-> ![Vue d'ensemble et KPI](public/docs/depenses/expenses-page.png) — Page des dépenses avec les KPIs, les barres de répartition et la liste groupée par catégorie
+> ![Vue d'ensemble et KPI](/docs/depenses/expenses-page.png) — Page des dépenses avec les KPIs, les barres de répartition et la liste groupée par catégorie
 
 ## Capacité d'épargne
 
