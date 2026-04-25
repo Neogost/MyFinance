@@ -28,6 +28,7 @@ import { logout, getMe } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 import LandingPage from './components/LandingPage'
 import DocumentationPage from './components/documentation/DocumentationPage'
+import ContactPage from './components/ContactPage'
 import logo from './assets/logo.png'
 
 export default function App() {
@@ -125,12 +126,17 @@ export default function App() {
       )
     }
 
+    if (currentPage === 'contact' && authView === 'landing') {
+      return <ContactPage onLogin={() => setAuthView('login')} />
+    }
+
     if (authView === 'landing') {
       return (
         <LandingPage
           onLogin={() => setAuthView('login')}
           onRegister={() => setAuthView('register')}
           onDocumentation={() => { window.location.hash = 'documentation'; setCurrentPage('documentation') }}
+          onContact={() => { window.location.hash = 'contact'; setCurrentPage('contact') }}
         />
       )
     }
