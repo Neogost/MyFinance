@@ -9,4 +9,6 @@ import java.util.List;
 public interface PossessionRepository extends JpaRepository<Possession, Long> {
 
     List<Possession> findByUserOrderByCategoryAscLabelAsc(User user);
+
+    void deleteByUser(User user);
 }

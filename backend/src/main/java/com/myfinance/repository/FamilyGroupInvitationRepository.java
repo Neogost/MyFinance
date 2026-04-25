@@ -19,4 +19,6 @@ public interface FamilyGroupInvitationRepository extends JpaRepository<FamilyGro
             FamilyGroup group, User invitedUser, InvitationStatus status);
 
     void deleteByGroup(FamilyGroup group);
+
+    void deleteByInvitedUser(User invitedUser);
 }

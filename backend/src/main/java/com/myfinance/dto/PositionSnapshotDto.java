@@ -15,6 +15,7 @@ public record PositionSnapshotDto(
         BigDecimal unitPriceEur
 ) {
     public static PositionSnapshotDto from(PositionSnapshot snap) {
+        if (snap.getPosition() == null) return null;
         return new PositionSnapshotDto(
                 snap.getId(),
                 new PositionRefDto(

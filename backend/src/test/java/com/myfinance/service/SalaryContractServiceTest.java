@@ -268,7 +268,8 @@ class SalaryContractServiceTest {
 
         salaryContractService.delete(1L, owner);
 
-        verify(salaryContractRepository).deleteById(1L);
+        verify(salaryRevisionRepository).deleteByContract(activeContract);
+        verify(salaryContractRepository).delete(activeContract);
     }
 
     @Test
@@ -280,7 +281,7 @@ class SalaryContractServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
 
-        verify(salaryContractRepository, never()).deleteById(any());
+        verify(salaryContractRepository, never()).delete(any());
     }
 
     @Test
@@ -289,6 +290,7 @@ class SalaryContractServiceTest {
 
         salaryContractService.delete(1L, admin);
 
-        verify(salaryContractRepository).deleteById(1L);
+        verify(salaryRevisionRepository).deleteByContract(activeContract);
+        verify(salaryContractRepository).delete(activeContract);
     }
 }

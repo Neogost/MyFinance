@@ -149,8 +149,9 @@ public class DebtService {
     // ── Suppression ────────────────────────────────────────────
 
     public void delete(Long id, User currentUser) {
-        getWithOwnershipCheck(id, currentUser);
-        debtRepository.deleteById(id);
+        Debt debt = getWithOwnershipCheck(id, currentUser);
+        balanceEntryRepository.deleteByDebt(debt);
+        debtRepository.delete(debt);
         log.info("[user:{}] Dette supprimée #{}", currentUser.getId(), id);
     }
 

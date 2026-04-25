@@ -233,7 +233,8 @@ class DebtServiceTest {
 
         debtService.delete(1L, owner);
 
-        verify(debtRepository).deleteById(1L);
+        verify(balanceEntryRepository).deleteByDebt(debt);
+        verify(debtRepository).delete(debt);
     }
 
     @Test
@@ -245,7 +246,7 @@ class DebtServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
 
-        verify(debtRepository, never()).deleteById(any());
+        verify(debtRepository, never()).delete(any());
     }
 
     // ── balance entries ────────────────────────────────────────

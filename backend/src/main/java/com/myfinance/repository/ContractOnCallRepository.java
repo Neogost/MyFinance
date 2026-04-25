@@ -9,4 +9,6 @@ import java.util.List;
 public interface ContractOnCallRepository extends JpaRepository<ContractOnCall, Long> {
 
     List<ContractOnCall> findByContractOrderByIdAsc(SalaryContract contract);
+
+    void deleteByContract(SalaryContract contract);
 }

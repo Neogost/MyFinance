@@ -6,6 +6,7 @@ import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
+import com.myfinance.repository.PositionSnapshotRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,7 @@ class PositionServiceTest {
 
     @Mock PositionRepository positionRepository;
     @Mock PositionOrderRepository positionOrderRepository;
+    @Mock PositionSnapshotRepository positionSnapshotRepository;
     @Mock InstrumentRepository instrumentRepository;
     @Mock ExchangeRateRepository exchangeRateRepository;
     @InjectMocks PositionService positionService;

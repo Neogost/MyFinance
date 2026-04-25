@@ -1,11 +1,11 @@
 package com.myfinance.service;
 
-import com.myfinance.domain.User;
+import com.myfinance.domain.*;
 import com.myfinance.dto.ChangePasswordRequest;
 import com.myfinance.dto.CreateUserRequest;
 import com.myfinance.dto.UpdateUserRequest;
 import com.myfinance.dto.UserDto;
-import com.myfinance.repository.UserRepository;
+import com.myfinance.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -23,8 +24,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final UserRepository                 userRepository;
+    private final PasswordEncoder                passwordEncoder;
+    private final FamilyGroupRepository          familyGroupRepository;
+    private final FamilyGroupInvitationRepository familyGroupInvitationRepository;
+    private final PortfolioSnapshotRepository    portfolioSnapshotRepository;
+    private final PositionRepository             positionRepository;
+    private final PositionSnapshotRepository     positionSnapshotRepository;
+    private final SalaryContractRepository       salaryContractRepository;
+    private final SalaryRevisionRepository       salaryRevisionRepository;
+    private final ContractOnCallRepository       contractOnCallRepository;
+    private final DebtRepository                 debtRepository;
+    private final DebtBalanceEntryRepository     debtBalanceEntryRepository;
+    private final OtherIncomeRepository          otherIncomeRepository;
+    private final RecurringExpenseRepository     recurringExpenseRepository;
+    private final PossessionRepository           possessionRepository;
+    private final PatrimoineTargetRepository     patrimoineTargetRepository;
+    private final UserBudgetRepository           userBudgetRepository;
 
     // ── Spring Security ────────────────────────────────────────
 
@@ -153,12 +169,55 @@ public class UserService implements UserDetailsService {
 
     // ── Suppression ────────────────────────────────────────────
 
+    @Transactional
     public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Utilisateur introuvable : " + id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Utilisateur introuvable : " + id));
+
+        // 1. Groupe familial : dissoudre si owner, quitter si membre
+        familyGroupRepository.findByOwner(user).ifPresent(group -> {
+            List<User> members = userRepository.findByFamilyGroup(group);
+            members.forEach(m -> m.setFamilyGroup(null));
+            userRepository.saveAll(members);
+            familyGroupInvitationRepository.deleteByGroup(group);
+            familyGroupRepository.delete(group);
+        });
+        familyGroupInvitationRepository.deleteByInvitedUser(user);
+
+        // 2. Relevés patrimoniaux (cascade → PositionSnapshot)
+        portfolioSnapshotRepository.deleteAll(
+                portfolioSnapshotRepository.findByUserOrderBySnapshotDateDesc(user));
+
+        // 3. Positions (snapshots orphelins d'abord, puis cascade → PositionOrder)
+        List<Position> positions = positionRepository.findByUserOrderByCreatedAtDesc(user);
+        if (!positions.isEmpty()) {
+            positionSnapshotRepository.deleteByPositionIn(positions);
+            positionRepository.deleteAll(positions);
         }
-        userRepository.deleteById(id);
-        log.info("[system] Utilisateur supprimé #{}", id);
+
+        // 4. Contrats salariaux (révisions et astreintes d'abord ; cascade → bulletins, primes, avantages)
+        List<SalaryContract> contracts = salaryContractRepository.findByUserOrderByStartDateDesc(user);
+        contracts.forEach(c -> {
+            contractOnCallRepository.deleteByContract(c);
+            salaryRevisionRepository.deleteByContract(c);
+        });
+        salaryContractRepository.deleteAll(contracts);
+
+        // 5. Dettes (historique soldes d'abord)
+        List<Debt> debts = debtRepository.findByUserOrderByTypeAscLabelAsc(user);
+        debts.forEach(d -> debtBalanceEntryRepository.deleteByDebt(d));
+        debtRepository.deleteAll(debts);
+
+        // 6. Entités simples
+        otherIncomeRepository.deleteByUser(user);
+        recurringExpenseRepository.deleteByUser(user);
+        possessionRepository.deleteByUser(user);
+        patrimoineTargetRepository.deleteByUser(user);
+        userBudgetRepository.deleteByUser(user);
+
+        // 7. Suppression effective
+        userRepository.delete(user);
+        log.info("[system] Utilisateur supprimé #{} (données en cascade supprimées)", id);
     }
 }

@@ -11,5 +11,7 @@ public interface PositionSnapshotRepository extends JpaRepository<PositionSnapsh
 
     List<PositionSnapshot> findByPortfolioSnapshot(PortfolioSnapshot portfolioSnapshot);
 
+    void deleteByPosition(Position position);
+
     void deleteByPositionIn(List<Position> positions);
 }

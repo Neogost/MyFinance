@@ -5,6 +5,7 @@ import com.myfinance.domain.PortfolioSnapshot;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 public record PortfolioSnapshotDto(
         Long id,
@@ -30,6 +31,7 @@ public record PortfolioSnapshotDto(
     public static PortfolioSnapshotDto from(PortfolioSnapshot snapshot) {
         List<PositionSnapshotDto> posSnapDtos = snapshot.getPositionSnapshots().stream()
                 .map(PositionSnapshotDto::from)
+                .filter(Objects::nonNull)
                 .toList();
 
         return new PortfolioSnapshotDto(

@@ -19,4 +19,6 @@ public interface SalaryRevisionRepository extends JpaRepository<SalaryRevision, 
 
     // Vérification unicité (contract, effectiveDate)
     boolean existsByContractAndEffectiveDate(SalaryContract contract, LocalDate effectiveDate);
+
+    void deleteByContract(SalaryContract contract);
 }

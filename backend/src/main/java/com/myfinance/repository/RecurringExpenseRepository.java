@@ -9,4 +9,6 @@ import java.util.List;
 public interface RecurringExpenseRepository extends JpaRepository<RecurringExpense, Long> {
 
     List<RecurringExpense> findByUserOrderByCategoryAscLabelAsc(User user);
+
+    void deleteByUser(User user);
 }

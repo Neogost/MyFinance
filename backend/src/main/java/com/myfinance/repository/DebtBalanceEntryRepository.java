@@ -12,4 +12,6 @@ public interface DebtBalanceEntryRepository extends JpaRepository<DebtBalanceEnt
     List<DebtBalanceEntry> findByDebtOrderByEntryDateDesc(Debt debt);
 
     Optional<DebtBalanceEntry> findFirstByDebtOrderByEntryDateDesc(Debt debt);
+
+    void deleteByDebt(Debt debt);
 }

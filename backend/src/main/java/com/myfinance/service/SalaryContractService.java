@@ -110,8 +110,9 @@ public class SalaryContractService {
     // ── Suppression ────────────────────────────────────────────
 
     public void delete(Long id, User currentUser) {
-        getContractWithOwnershipCheck(id, currentUser);
-        salaryContractRepository.deleteById(id);
+        SalaryContract contract = getContractWithOwnershipCheck(id, currentUser);
+        salaryRevisionRepository.deleteByContract(contract);
+        salaryContractRepository.delete(contract);
         log.info("[user:{}] Contrat salarial supprimé #{}", currentUser.getId(), id);
     }
 

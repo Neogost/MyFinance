@@ -13,4 +13,6 @@ public interface OtherIncomeRepository extends JpaRepository<OtherIncome, Long> 
 
     // Revenus d'un utilisateur pour une plage de dates (utilisé par le simulateur)
     List<OtherIncome> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
+
+    void deleteByUser(User user);
 }

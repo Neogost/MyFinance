@@ -1,11 +1,10 @@
 package com.myfinance.service;
 
-import com.myfinance.domain.RoleEnum;
-import com.myfinance.domain.User;
+import com.myfinance.domain.*;
 import com.myfinance.dto.CreateUserRequest;
 import com.myfinance.dto.UpdateUserRequest;
 import com.myfinance.dto.UserDto;
-import com.myfinance.repository.UserRepository;
+import com.myfinance.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,8 +27,23 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock UserRepository userRepository;
-    @Mock PasswordEncoder passwordEncoder;
+    @Mock UserRepository                  userRepository;
+    @Mock PasswordEncoder                 passwordEncoder;
+    @Mock FamilyGroupRepository           familyGroupRepository;
+    @Mock FamilyGroupInvitationRepository familyGroupInvitationRepository;
+    @Mock PortfolioSnapshotRepository     portfolioSnapshotRepository;
+    @Mock PositionRepository              positionRepository;
+    @Mock PositionSnapshotRepository      positionSnapshotRepository;
+    @Mock SalaryContractRepository        salaryContractRepository;
+    @Mock SalaryRevisionRepository        salaryRevisionRepository;
+    @Mock ContractOnCallRepository        contractOnCallRepository;
+    @Mock DebtRepository                  debtRepository;
+    @Mock DebtBalanceEntryRepository      debtBalanceEntryRepository;
+    @Mock OtherIncomeRepository           otherIncomeRepository;
+    @Mock RecurringExpenseRepository      recurringExpenseRepository;
+    @Mock PossessionRepository            possessionRepository;
+    @Mock PatrimoineTargetRepository      patrimoineTargetRepository;
+    @Mock UserBudgetRepository            userBudgetRepository;
     @InjectMocks UserService userService;
 
     User user;
@@ -199,24 +213,35 @@ class UserServiceTest {
     // ── delete ─────────────────────────────────────────────────
 
     @Test
-    void delete_supprimeLutilisateur_siExistant() {
-        when(userRepository.existsById(1L)).thenReturn(true);
+    void delete_supprimeLutilisateur_avecCascadeComplete() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(familyGroupRepository.findByOwner(user)).thenReturn(Optional.empty());
+        when(portfolioSnapshotRepository.findByUserOrderBySnapshotDateDesc(user)).thenReturn(List.of());
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
+        when(salaryContractRepository.findByUserOrderByStartDateDesc(user)).thenReturn(List.of());
+        when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
 
         userService.delete(1L);
 
-        verify(userRepository).deleteById(1L);
+        verify(familyGroupInvitationRepository).deleteByInvitedUser(user);
+        verify(otherIncomeRepository).deleteByUser(user);
+        verify(recurringExpenseRepository).deleteByUser(user);
+        verify(possessionRepository).deleteByUser(user);
+        verify(patrimoineTargetRepository).deleteByUser(user);
+        verify(userBudgetRepository).deleteByUser(user);
+        verify(userRepository).delete(user);
     }
 
     @Test
     void delete_leve404_siIntrouvable() {
-        when(userRepository.existsById(99L)).thenReturn(false);
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.delete(99L))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.NOT_FOUND));
 
-        verify(userRepository, never()).deleteById(any());
+        verify(userRepository, never()).delete(any(User.class));
     }
 
     // ── loadUserByUsername ─────────────────────────────────────

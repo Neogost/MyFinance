@@ -6,6 +6,7 @@ import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
+import com.myfinance.repository.PositionSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class PositionService {
 
     private final PositionRepository positionRepository;
     private final PositionOrderRepository positionOrderRepository;
+    private final PositionSnapshotRepository positionSnapshotRepository;
     private final InstrumentRepository instrumentRepository;
     private final ExchangeRateRepository exchangeRateRepository;
 
@@ -169,6 +171,7 @@ public class PositionService {
     @Transactional
     public void delete(Long id, User currentUser) {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
+        positionSnapshotRepository.deleteByPosition(position);
         positionOrderRepository.deleteByPosition(position);
         positionRepository.delete(position);
         log.info("[user:{}] Position supprimée #{}", currentUser.getId(), id);
