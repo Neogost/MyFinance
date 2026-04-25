@@ -195,6 +195,17 @@ function MobilePageSelector({ tree, selectedId, onSelect }) {
   )
 }
 
+function findNodeById(nodes, id) {
+  for (const n of nodes) {
+    if (n.id === id) return n
+    if (n.children) {
+      const found = findNodeById(n.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
 // ── Page principale ────────────────────────────────────────────────
 export default function DocumentationPage({ user = null }) {
   const visibleTree = useMemo(() =>
@@ -204,7 +215,10 @@ export default function DocumentationPage({ user = null }) {
     [user?.role]
   )
 
-  const [selectedNode, setSelectedNode] = useState(() => findFirstLeaf(visibleTree))
+  const [selectedNode, setSelectedNode] = useState(() => {
+    const savedId = sessionStorage.getItem('doc-page')
+    return (savedId && findNodeById(visibleTree, savedId)) ?? findFirstLeaf(visibleTree)
+  })
   const [content, setContent]           = useState(null)
   const [loading, setLoading]           = useState(false)
 
@@ -220,7 +234,7 @@ export default function DocumentationPage({ user = null }) {
   function handleSelect(node) {
     if (!node.load) return
     setSelectedNode(node)
-    // Scroll vers le haut du contenu sur mobile
+    sessionStorage.setItem('doc-page', node.id)
     document.getElementById('doc-content')?.scrollTo({ top: 0 })
   }
 

@@ -29,9 +29,11 @@ function formatDate(iso) {
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 const labelCls = 'text-xs font-semibold text-gray-600'
 
+const TODAY = new Date().toISOString().slice(0, 10)
+
 const EMPTY_ORDER = {
   orderType: 'DEPOSIT', quantity: '', unitPrice: '',
-  amount: '', orderDate: '', notes: '',
+  amount: '', orderDate: TODAY, notes: '',
 }
 
 // ── Formulaire d'ordre ─────────────────────────────────────────
