@@ -33,7 +33,7 @@ export default function ContactPage({ onLogin, onHome }) {
           <div className="bg-white rounded-2xl border border-gray-200 p-8 space-y-4">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-2xl">
-                👤
+                <img src="/avatar.jpeg" alt="Kévin DESMAY" className="w-16 h-16 rounded-full object-cover" />
               </div>
               <div>
                 <p className="font-bold text-gray-900 text-lg">Kévin DESMAY</p>
