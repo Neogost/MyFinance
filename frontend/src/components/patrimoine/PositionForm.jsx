@@ -425,14 +425,23 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                 </div>
               )}
 
-              {/* IMMO_PAPIER : taux de commission */}
+              {/* IMMO_PAPIER : type de part + taux de commission */}
               {isImmoPapier && (
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Taux de commission plateforme (%)</label>
-                  <input name="commissionRate" type="number" min="0" step="0.01"
-                    value={form.commissionRate} onChange={handleChange}
-                    placeholder="ex : 10.0" className={inputCls} />
-                </div>
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelCls}>Type de part</label>
+                    <select name="ownershipType" value={form.ownershipType} onChange={handleChange} className={inputCls}>
+                      <option value="PLEINE_PROPRIETE">Pleine propriété</option>
+                      <option value="NUE_PROPRIETE">Nue-propriété</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelCls}>Taux de commission plateforme (%)</label>
+                    <input name="commissionRate" type="number" min="0" step="0.01"
+                      value={form.commissionRate} onChange={handleChange}
+                      placeholder="ex : 10.0" className={inputCls} />
+                  </div>
+                </>
               )}
 
               {/* IMMO_PHYSIQUE : adresse + type propriété + valeur estimée */}
