@@ -13,7 +13,8 @@ api.interceptors.response.use(
   response => response,
   error => {
     const status = error.response?.status
-    if (status === 401 && _onUnauthorized) {
+    const isLoginEndpoint = error.config?.url?.includes('/api/auth/login')
+    if (status === 401 && _onUnauthorized && !isLoginEndpoint) {
       _onUnauthorized()
     } else if (status >= 500 && _onServerError) {
       _onServerError(status)
