@@ -4,6 +4,7 @@ import {
   updateSalaryContract, deleteSalaryContract, getBonuses, getBenefits, getOnCalls,
 } from '../../api/income'
 import SalaryContractForm from './SalaryContractForm'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import ProjectionGrid from './ProjectionGrid'
 import PaySlipPanel from './PaySlipPanel'
 import BonusPanel from './BonusPanel'
@@ -25,6 +26,8 @@ export default function SalaryContractPage() {
   const [annualBonuses, setAnnualBonuses] = useState([])
   const [benefits, setBenefits] = useState([])
   const [onCalls, setOnCalls] = useState([])
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting]         = useState(false)
 
   useEffect(() => { fetchContracts() }, [])
 
@@ -83,12 +86,17 @@ export default function SalaryContractPage() {
     setFormTarget(undefined)
   }
 
-  async function handleDelete(contract) {
-    if (!confirm(`Supprimer le contrat débutant le ${contract.startDate} ? Les bulletins associés seront aussi supprimés.`)) return
-    await deleteSalaryContract(contract.id)
-    const remaining = contracts.filter(c => c.id !== contract.id)
-    setContracts(remaining)
-    setSelected(remaining[0] ?? null)
+  async function handleDeleteConfirm() {
+    setDeleting(true)
+    try {
+      await deleteSalaryContract(deleteTarget.id)
+      const remaining = contracts.filter(c => c.id !== deleteTarget.id)
+      setContracts(remaining)
+      setSelected(remaining[0] ?? null)
+      setDeleteTarget(null)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
@@ -168,7 +176,7 @@ export default function SalaryContractPage() {
                 Astreintes
               </button>
               <button
-                onClick={() => handleDelete(selected)}
+                onClick={() => setDeleteTarget(selected)}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-red-500 hover:text-red-600 transition"
               >
                 Supprimer
@@ -272,6 +280,22 @@ export default function SalaryContractPage() {
           contract={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer le contrat ${deleteTarget.companyName ? `« ${deleteTarget.companyName} »` : `débutant le ${deleteTarget.startDate}`} ?`}
+          description="Cette action est irréversible."
+          warnings={[
+            'Tous les bulletins de paie associés',
+            'Toutes les révisions salariales',
+            'Toutes les primes et avantages en nature',
+            'Toutes les astreintes',
+          ]}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={deleting}
         />
       )}
     </div>

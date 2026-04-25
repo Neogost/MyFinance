@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getDebts, getDebtsSummary, createDebt, updateDebt, deleteDebt, getBalanceEntries, addBalanceEntry, deleteBalanceEntry } from '../../api/debts'
 import DebtForm from './DebtForm'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 const TYPE_META = {
   IMMOBILIER:   { label: 'Immobilier',            color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
@@ -288,9 +289,11 @@ export default function DettePage() {
   const [debts,      setDebts]      = useState([])
   const [summary,    setSummary]    = useState(null)
   const [formTarget, setFormTarget] = useState(undefined)
-  const [filter,     setFilter]     = useState('ALL')
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [filter,       setFilter]       = useState('ALL')
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting,     setDeleting]     = useState(false)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -317,10 +320,15 @@ export default function DettePage() {
     await fetchAll()
   }
 
-  async function handleDelete(debt) {
-    if (!confirm(`Supprimer « ${debt.label} » ?`)) return
-    await deleteDebt(debt.id)
-    await fetchAll()
+  async function handleDeleteConfirm() {
+    setDeleting(true)
+    try {
+      await deleteDebt(deleteTarget.id)
+      await fetchAll()
+      setDeleteTarget(null)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const filtered = filter === 'ALL' ? debts : debts.filter(d => d.type === filter)
@@ -446,7 +454,7 @@ export default function DettePage() {
                     key={debt.id}
                     debt={debt}
                     onEdit={setFormTarget}
-                    onDelete={handleDelete}
+                    onDelete={setDeleteTarget}
                     onUpdated={fetchAll}
                   />
                 ))}
@@ -461,6 +469,19 @@ export default function DettePage() {
           debt={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer « ${deleteTarget.label} » ?`}
+          description="Cette action est irréversible."
+          warnings={[
+            'Tout l\'historique des mises à jour manuelles du capital',
+          ]}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={deleting}
         />
       )}
     </div>

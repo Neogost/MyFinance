@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { getUsers, createUser, updateUser, deleteUser } from '../../api/users'
 import UserForm from './UserForm'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 export default function UserList() {
   const [users, setUsers]           = useState([])
-  const [userToEdit, setUserToEdit] = useState(null)   // null = fermé, objet vide = création
+  const [userToEdit, setUserToEdit] = useState(null)
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting]         = useState(false)
 
   useEffect(() => { fetchUsers() }, [])
 
@@ -32,10 +35,15 @@ export default function UserList() {
     setUserToEdit(null)
   }
 
-  async function handleDelete(user) {
-    if (!confirm(`Supprimer l'utilisateur « ${user.login} » ?`)) return
-    await deleteUser(user.id)
-    setUsers(us => us.filter(u => u.id !== user.id))
+  async function handleDeleteConfirm() {
+    setDeleting(true)
+    try {
+      await deleteUser(deleteTarget.id)
+      setUsers(us => us.filter(u => u.id !== deleteTarget.id))
+      setDeleteTarget(null)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (loading) return <p className="text-gray-500">Chargement…</p>
@@ -87,7 +95,7 @@ export default function UserList() {
                       Modifier
                     </button>
                     <button
-                      onClick={() => handleDelete(u)}
+                      onClick={() => setDeleteTarget(u)}
                       className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
                     >
                       Supprimer
@@ -105,6 +113,23 @@ export default function UserList() {
           userToEdit={userToEdit?.id ? userToEdit : null}
           onSubmit={handleSubmit}
           onCancel={() => setUserToEdit(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer ${deleteTarget.firstName} ${deleteTarget.lastName} ?`}
+          description="Cette action est irréversible."
+          warnings={[
+            'Contrats salariaux, bulletins de paie, primes, avantages',
+            'Positions, ordres et relevés de patrimoine',
+            'Dettes et historique des soldes',
+            'Dépenses récurrentes, possessions, revenus complémentaires',
+            'Groupe familial dissous si propriétaire',
+          ]}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={deleting}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS } from './constants'
 import { fmt, fmtUnits, Amount } from './utils'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, linkedDebt }) {
   const meta   = CATEGORY_META[position.category] ?? {}
@@ -181,17 +182,16 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
             </>
           )}
           {confirmDelete && (
-            <>
-              <span className="px-2 py-1 text-xs text-red-700">Supprimer définitivement ?</span>
-              <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
-                className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">
-                Confirmer
-              </button>
-              <button onClick={() => setConfirmDelete(false)}
-                className="px-2 py-1 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-gray-400 transition">
-                Annuler
-              </button>
-            </>
+            <DeleteConfirmModal
+              title={`Supprimer « ${position.label} » ?`}
+              description="Cette action est irréversible."
+              warnings={[
+                'Tous les mouvements (ordres) associés à cette position',
+                'Toutes les lignes de relevés de patrimoine liées à cette position',
+              ]}
+              onConfirm={() => { setConfirmDelete(false); onDelete(position) }}
+              onCancel={() => setConfirmDelete(false)}
+            />
           )}
         </div>
       )}
