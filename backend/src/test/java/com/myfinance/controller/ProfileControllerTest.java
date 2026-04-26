@@ -101,7 +101,7 @@ class ProfileControllerTest {
     @Test
     @WithMockCustomUser
     void updatePersonalInfo_retourne200() throws Exception {
-        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest("Paris", "75001", "Ingénieur logiciel");
+        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest("Kévin", "Dupont", null, "Paris", "75001", "Ingénieur logiciel");
         when(profileService.updatePersonalInfo(any(), any()))
                 .thenReturn(dtoPersonal("Paris", "75001", "Ingénieur logiciel"));
 

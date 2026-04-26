@@ -132,10 +132,12 @@ class ProfileServiceTest {
 
     @Test
     void updatePersonalInfo_enregistreLesChamps() {
-        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest("Paris", "75001", "Ingénieur logiciel");
+        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest("Kévin", "Dupont", null, "Paris", "75001", "Ingénieur logiciel");
 
         UserDto result = profileService.updatePersonalInfo(user, req);
 
+        assertThat(result.firstName()).isEqualTo("Kévin");
+        assertThat(result.lastName()).isEqualTo("Dupont");
         assertThat(result.birthPlace()).isEqualTo("Paris");
         assertThat(result.birthPostalCode()).isEqualTo("75001");
         assertThat(result.jobTitle()).isEqualTo("Ingénieur logiciel");
@@ -146,7 +148,7 @@ class ProfileServiceTest {
         user.setBirthPlace("Lyon");
         user.setJobTitle("Développeur");
 
-        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest(null, null, null);
+        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest(null, null, null, null, null, null);
         UserDto result = profileService.updatePersonalInfo(user, req);
 
         assertThat(result.birthPlace()).isNull();
