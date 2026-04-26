@@ -1,21 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-
-// Pattern commun défini localement dans PossessionPage, DettePage, RecurringExpensePage.
-function KpiCard({ label, value, unit = '€', color, sub }) {
-  function fmt(n) {
-    return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—'
-  }
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1">
-      <p className="text-xs text-gray-400 tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold amount ${color ?? 'text-gray-900'}`}>
-        {value != null ? `${fmt(value)} ${unit}` : '—'}
-      </p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-    </div>
-  )
-}
+import KpiCard from '../../../components/common/KpiCard'
 
 describe('KpiCard — pattern commun (3 pages)', () => {
   // ── Rendu de base ──────────────────────────────────────────────────────────
