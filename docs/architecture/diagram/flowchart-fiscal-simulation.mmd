@@ -1,0 +1,97 @@
+flowchart TD
+
+    %% ── Entrées ──────────────────────────────────────────────────
+    subgraph SALARY["💼 Source salariale (choix utilisateur)"]
+        S1["PROJECTION_CONTRAT\n= annualNetImposable du contrat actif\n(revision active si date ≤ today)"]
+        S2["BULLETINS_REELS\n= Σ taxableNetSalary des bulletins\nsur les 12 derniers mois"]
+    end
+
+    subgraph OTHER["📋 Revenus complémentaires (sélection)"]
+        O1["Revenus au barème IRPP\n(isTaxable=true, specificTaxRate=null)\nex : LOCATIF, AIDE_SOCIALE, DIVIDENDE"]
+        O2["Revenus à taux fixe\n(specificTaxRate ≠ null)\nex : DIVIDENDE flat tax 30 %"]
+        O3["Revenus non imposables\n(isTaxable=false)\nex : aides exonérées"]
+    end
+
+    subgraph PROFILE["🧾 Profil fiscal — User"]
+        P1["fiscalParts\n(quotient familial)"]
+        P2["useFlatRateDeduction = true\nAbattement forfaitaire 10 %\n(min 504 € · max 13 522 €)"]
+        P3["useFlatRateDeduction = false\ncustomProfessionalDeduction\n(frais réels calculés par ProfileService)"]
+    end
+
+    %% ── Calcul de la déduction professionnelle ───────────────────
+    subgraph DEDUCT["⚙️ Déduction professionnelle"]
+        D1{"useFlatRateDeduction ?"}
+        D2["Abattement = salaire × 10 %\nplafonné [504 € – 13 522 €]"]
+        D3["Déduction = customProfessionalDeduction\n(frais réels détaillés)"]
+        D4["professionalDeduction\n(max des deux si comparaison active)"]
+    end
+
+    %% ── Calcul du revenu net imposable ──────────────────────────
+    subgraph IMPOSABLE["📐 Revenu net imposable (barème)"]
+        R1["salaryIncome\n(selon source choisie)"]
+        R2["otherIncomeInBareme\n= Σ revenus isTaxable=true, specificTaxRate=null"]
+        R3["grossTaxableIncome\n= salaryIncome + otherIncomeInBareme"]
+        R4["netTaxableIncome\n= grossTaxableIncome − professionalDeduction"]
+    end
+
+    %% ── Application du barème IRPP ───────────────────────────────
+    subgraph BAREME["📊 Barème IRPP 2025 (par part)"]
+        B1["Tranche 0 %\n≤ 11 497 €"]
+        B2["Tranche 11 %\n11 497 € – 29 315 €"]
+        B3["Tranche 30 %\n29 315 € – 83 823 €"]
+        B4["Tranche 41 %\n83 823 € – 180 294 €"]
+        B5["Tranche 45 %\n> 180 294 €"]
+        B6["revenuParPart\n= netTaxableIncome ÷ fiscalParts"]
+        B7["impôtParPart\n= Σ impôts dans chaque tranche"]
+        B8["baremeEstimatedTax\n= impôtParPart × fiscalParts"]
+    end
+
+    %% ── Revenus à taxation séparée ───────────────────────────────
+    subgraph SEPARATE["💶 Taxation séparée"]
+        T1["otherIncomeSeparatelyTaxed\n= Σ revenus avec specificTaxRate"]
+        T2["separateTaxAmount\n= Σ (revenu × specificTaxRate ÷ 100)"]
+    end
+
+    %% ── Résultat final ───────────────────────────────────────────
+    subgraph RESULT["✅ TaxSimulationDto — Résultat"]
+        RES1["totalEstimatedTax\n= baremeEstimatedTax + separateTaxAmount"]
+        RES2["effectiveTaxRate\n= totalEstimatedTax ÷ grossTaxableIncome × 100"]
+        RES3["year, salaryIncomeSource, deductionType\n(champs descriptifs)"]
+    end
+
+    %% ── Flux ─────────────────────────────────────────────────────
+    S1 --> R1
+    S2 --> R1
+    O1 --> R2
+    O2 --> T1
+    O3 -.->|ignoré| RES3
+
+    R1 --> R3
+    R2 --> R3
+    R3 --> R4
+
+    P2 --> D1
+    P3 --> D1
+    D1 -->|true| D2
+    D1 -->|false| D3
+    D2 --> D4
+    D3 --> D4
+    D4 --> R4
+
+    R4 --> B6
+    P1 --> B6
+    B6 --> B1
+    B6 --> B2
+    B6 --> B3
+    B6 --> B4
+    B6 --> B5
+    B1 & B2 & B3 & B4 & B5 --> B7
+    B7 --> B8
+    P1 --> B8
+
+    T1 --> T2
+
+    B8 --> RES1
+    T2 --> RES1
+    RES1 --> RES2
+    R3 --> RES2

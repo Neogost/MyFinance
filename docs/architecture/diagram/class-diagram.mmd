@@ -1,7 +1,14 @@
 classDiagram
 
-    %% ── Utilisateurs ──────────────────────────────────────────
+    %% ══════════════════════════════════════════════════════════════
+    %% MyFinance — Diagramme de classes complet
+    %% Mis à jour à partir des entités JPA et DTOs réels (domain/*.java)
+    %% ══════════════════════════════════════════════════════════════
+
+    %% ── Utilisateurs & Sécurité ────────────────────────────────
+
     class User {
+        <<entity>>
         +Long id
         +String firstName
         +String lastName
@@ -12,21 +19,110 @@ classDiagram
         +Float fiscalParts
         +Boolean useFlatRateDeduction
         +Float customProfessionalDeduction
+        +Integer realExpensesTransportKm
+        +Integer realExpensesTransportCv
+        +Boolean realExpensesTransportElectric
+        +Float realExpensesPublicTransport
+        +Float realExpensesMeals
+        +Float realExpensesClothing
+        +Float realExpensesTraining
+        +Float realExpensesEquipment
+        +Float realExpensesPhone
+        +Float realExpensesDoubleResidence
+        +Float realExpensesOther
+        +Integer realExpensesTeleworkDays
+        +Float realExpensesTeleworkEmployerDaily
+        +String birthPlace
+        +String birthPostalCode
+        +String jobTitle
+        +SafetyNetMode safetyNetMode
+        +Double safetyNetMonths
+        +Double safetyNetAmount
+        +FamilyGroup familyGroup
     }
 
     class RoleEnum {
+        <<enumeration>>
         USER
         ADMIN
     }
 
-    class FamilyGroup {
-        +Long id
-        +String name
+    class SafetyNetMode {
+        <<enumeration>>
+        MONTHS_EXPENSES
+        MONTHS_SALARY
+        FIXED_AMOUNT
     }
 
-    %% ── Revenus salariaux — vue théorique ─────────────────────
-    class SalaryContract {
+    class FamilyGroup {
+        <<entity>>
         +Long id
+        +String name
+        +User owner
+        +LocalDateTime createdAt
+    }
+
+    class FamilyGroupInvitation {
+        <<entity>>
+        +Long id
+        +FamilyGroup group
+        +User invitedUser
+        +InvitationStatus status
+        +LocalDateTime createdAt
+        +LocalDateTime respondedAt
+    }
+
+    class InvitationStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        REFUSED
+    }
+
+    class LoginEvent {
+        <<entity>>
+        +Long id
+        +String login
+        +LoginEventType eventType
+        +String ipAddress
+        +String userAgent
+        +Integer failureCount
+        +LocalDateTime timestamp
+    }
+
+    class LoginEventType {
+        <<enumeration>>
+        SUCCESS
+        FAILURE
+        BLOCKED
+    }
+
+    class UserRegistrationRequest {
+        <<entity>>
+        +Long id
+        +String login
+        +String firstName
+        +String lastName
+        +String hashedPassword
+        +RegistrationStatus status
+        +LocalDateTime createdAt
+        +LocalDateTime reviewedAt
+        +String reviewedBy
+    }
+
+    class RegistrationStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        REJECTED
+    }
+
+    %% ── Revenus salariaux ──────────────────────────────────────
+
+    class SalaryContract {
+        <<entity>>
+        +Long id
+        +User user
         +String companyName
         +LocalDate startDate
         +LocalDate endDate
@@ -39,39 +135,19 @@ classDiagram
         +Float employeePrevoyanceRate
     }
 
-    class SalaryProjectionDto {
-        <<DTO — calculé, non persisté>>
-        +Float annualSuperGross
-        +Float monthlySuperGross
-        +Float dailySuperGross
-        +Float hourlySuperGross
-        +Float annualNetImposable
-        +Float monthlyGrossSalary
-        +Float monthlyNetImposable
-        +Float annualWorkingHours
-        +Float hourlyGrossSalary
-        +Float hourlyNetImposable
-        +Float dailyGrossSalary
-        +Float dailyNetImposable
-        +Float employeeMonthlyMealVoucherCost
-        +Float employerMonthlyMealVoucherCost
-        +Float annualNetAfterTax
-        +Float monthlyNetAfterTax
-        +Float dailyNetAfterTax
-        +Float hourlyNetAfterTax
-    }
-
-    %% ── Historique salarial ───────────────────────────────────
     class SalaryRevision {
+        <<entity>>
         +Long id
+        +SalaryContract contract
         +LocalDate effectiveDate
         +Float annualGrossSalary
         +String label
     }
 
-    %% ── Revenus salariaux — bulletins réels ───────────────────
     class MonthlyPaySlip {
+        <<entity>>
         +Long id
+        +SalaryContract contract
         +LocalDate period
         +Float grossSalary
         +Float taxableNetSalary
@@ -79,9 +155,71 @@ classDiagram
         +Float incomeTaxWithholding
     }
 
-    %% ── Revenus non salariés ──────────────────────────────────
-    class OtherIncome {
+    class ContractBonus {
+        <<entity>>
         +Long id
+        +SalaryContract contract
+        +String label
+        +Float grossAmount
+        +BonusTypeEnum type
+        +LocalDate paymentDate
+        +Integer paymentMonth
+    }
+
+    class ContractBenefit {
+        <<entity>>
+        +Long id
+        +SalaryContract contract
+        +String label
+        +Float monthlyAmount
+    }
+
+    class ContractOnCall {
+        <<entity>>
+        +Long id
+        +SalaryContract contract
+        +Float weeklyFlatRate
+        +Integer estimatedWeeksPerYear
+    }
+
+    class BonusTypeEnum {
+        <<enumeration>>
+        EXCEPTIONNELLE
+        ANNUELLE
+    }
+
+    class SalaryContractDto {
+        <<record — calculé, non persisté>>
+        +Float annualSuperGross
+        +Float monthlySuperGross
+        +Float dailySuperGross
+        +Float hourlySuperGross
+        +Float annualGrossSalary
+        +Float monthlyGrossSalary
+        +Float dailyGrossSalary
+        +Float hourlyGrossSalary
+        +Float annualNetImposable
+        +Float monthlyNetImposable
+        +Float dailyNetImposable
+        +Float hourlyNetImposable
+        +Float annualNetAfterTax
+        +Float monthlyNetAfterTax
+        +Float dailyNetAfterTax
+        +Float hourlyNetAfterTax
+        +Float monthlyEstimatedTax
+        +Float monthlyBenefits
+        +Float baseGrossSalary
+        +Float annualWorkingHours
+        +Float employeeMonthlyMealVoucherCost
+        +Float employerMonthlyMealVoucherCost
+    }
+
+    %% ── Revenus complémentaires ────────────────────────────────
+
+    class OtherIncome {
+        <<entity>>
+        +Long id
+        +User user
         +OtherIncomeTypeEnum type
         +String label
         +Float amount
@@ -90,9 +228,18 @@ classDiagram
         +Float specificTaxRate
     }
 
-    %% ── Simulateur des impôts ─────────────────────────────────
+    class OtherIncomeTypeEnum {
+        <<enumeration>>
+        LOCATIF
+        DIVIDENDE
+        AIDE_SOCIALE
+        AUTRE
+    }
+
+    %% ── Simulateur fiscal (DTO calculé) ────────────────────────
+
     class TaxSimulationDto {
-        <<DTO — calculé, non persisté>>
+        <<record — calculé, non persisté>>
         +Integer year
         +String salaryIncomeSource
         +Float salaryIncome
@@ -109,15 +256,91 @@ classDiagram
         +Float effectiveTaxRate
     }
 
-    class OtherIncomeTypeEnum {
-        LOCATIF
-        DIVIDENDE
-        AIDE_SOCIALE
-        AUTRE
+    %% ── Instruments financiers (référentiel partagé) ───────────
+
+    class Instrument {
+        <<entity — partagé tous utilisateurs>>
+        +Long id
+        +AssetCategory category
+        +String isin
+        +String ticker
+        +String name
+        +String currency
+        +BigDecimal lastPrice
+        +LocalDateTime lastPriceUpdatedAt
+        +boolean stablePrice
+        +String marketSymbol
+        +String coinGeckoId
+        +String boursoramaSymbol
     }
 
-    %% ── Patrimoine ───────────────────────────────────────────
+    class InstrumentAllocation {
+        <<entity>>
+        +Long id
+        +Instrument instrument
+        +String country
+        +BigDecimal percentage
+        +LocalDateTime fetchedAt
+    }
+
+    class InstrumentSectorAllocation {
+        <<entity>>
+        +Long id
+        +Instrument instrument
+        +String sector
+        +BigDecimal percentage
+        +LocalDateTime fetchedAt
+    }
+
+    class ExchangeRate {
+        <<entity — partagé tous utilisateurs>>
+        +Long id
+        +String currency
+        +BigDecimal rate
+        +LocalDateTime lastUpdatedAt
+    }
+
+    %% ── Patrimoine — Positions ─────────────────────────────────
+
+    class Position {
+        <<entity>>
+        +Long id
+        +User user
+        +AssetCategory category
+        +String partner
+        +String label
+        +String currency
+        +FiscalEnvelope fiscalEnvelope
+        +Instrument instrument
+        +AssetSubType assetSubType
+        +OwnershipType ownershipType
+        +String address
+        +BigDecimal estimatedCurrentValue
+        +LocalDate acquisitionDate
+        +BigDecimal acquisitionPrice
+        +BigDecimal commissionRate
+        +BigDecimal annualRate
+        +BigDecimal currentBalance
+        +Boolean includeInIncomeProjection
+        +PositionStatus status
+        +LocalDateTime createdAt
+    }
+
+    class PositionOrder {
+        <<entity>>
+        +Long id
+        +Position position
+        +OrderType orderType
+        +BigDecimal quantity
+        +BigDecimal unitPrice
+        +BigDecimal amount
+        +BigDecimal amountEur
+        +LocalDate orderDate
+        +String notes
+    }
+
     class AssetCategory {
+        <<enumeration>>
         BOURSE
         CRYPTO
         IMMO_PAPIER
@@ -127,13 +350,19 @@ classDiagram
     }
 
     class FiscalEnvelope {
+        <<enumeration>>
         CTO
         PEA
         AV
+        FLAT_TAX
+        PEE_PERCO
+        PER
+        AUTRE
         NONE
     }
 
     class AssetSubType {
+        <<enumeration>>
         ETF
         ACTION
         OBLIGATION
@@ -145,12 +374,14 @@ classDiagram
     }
 
     class OwnershipType {
+        <<enumeration>>
         PLEINE_PROPRIETE
         NUE_PROPRIETE
         USUFRUIT
     }
 
     class OrderType {
+        <<enumeration>>
         BUY
         SELL
         DEPOSIT
@@ -158,68 +389,32 @@ classDiagram
         INTEREST
         DIVIDEND
         AIRDROP
+        ABONDEMENT
     }
 
-    class Instrument {
-        +Long id
-        +AssetCategory category
-        +String isin
-        +String ticker
-        +String name
-        +String currency
-        +BigDecimal lastPrice
-        +LocalDateTime lastPriceUpdatedAt
+    class PositionStatus {
+        <<enumeration>>
+        ACTIVE
+        CLOSED
     }
 
-    class Position {
-        +Long id
-        +AssetCategory category
-        +String partner
-        +String label
-        +String currency
-        +FiscalEnvelope fiscalEnvelope
-        +AssetSubType assetSubType
-        +OwnershipType ownershipType
-        +String address
-        +BigDecimal estimatedCurrentValue
-        +LocalDate acquisitionDate
-        +BigDecimal annualRate
-        +BigDecimal commissionRate
-        +BigDecimal currentBalance
-        +Boolean includeInIncomeProjection
-        +PositionStatus status
-        +LocalDateTime createdAt
-    }
-
-    class PositionOrder {
-        +Long id
-        +OrderType orderType
-        +BigDecimal quantity
-        +BigDecimal unitPrice
-        +BigDecimal amount
-        +BigDecimal amountEur
-        +LocalDate orderDate
-        +String notes
-    }
-
-    class ExchangeRate {
-        +Long id
-        +String currency
-        +BigDecimal rate
-        +LocalDateTime lastUpdatedAt
-    }
+    %% ── Patrimoine — Snapshots mensuels ────────────────────────
 
     class PortfolioSnapshot {
+        <<entity>>
         +Long id
+        +User user
         +LocalDate snapshotDate
         +BigDecimal totalInvestedEur
         +BigDecimal totalCurrentValueEur
         +BigDecimal totalCapitalGainEur
-        +String exchangeRatesJson
     }
 
     class PositionSnapshot {
+        <<entity>>
         +Long id
+        +PortfolioSnapshot portfolioSnapshot
+        +Position position
         +BigDecimal investedAmountEur
         +BigDecimal currentValueEur
         +BigDecimal capitalGainEur
@@ -227,33 +422,187 @@ classDiagram
         +BigDecimal unitPriceEur
     }
 
-    %% ── Relations utilisateurs ────────────────────────────────
+    %% ── Passifs ────────────────────────────────────────────────
+
+    class Possession {
+        <<entity>>
+        +Long id
+        +User user
+        +PossessionCategoryEnum category
+        +String label
+        +BigDecimal purchasePrice
+        +LocalDate purchaseDate
+        +BigDecimal estimatedCurrentValue
+        +String notes
+        +LocalDateTime createdAt
+    }
+
+    class PossessionCategoryEnum {
+        <<enumeration>>
+        VEHICULE
+        INFORMATIQUE
+        ELECTROMENAGER
+        MOBILIER
+        COLLECTION
+        LOISIRS
+        AUTRE
+    }
+
+    class Debt {
+        <<entity>>
+        +Long id
+        +User user
+        +DebtTypeEnum type
+        +String label
+        +String lender
+        +LocalDate startDate
+        +LocalDate endDate
+        +BigDecimal initialCapital
+        +BigDecimal annualRate
+        +BigDecimal insuranceRate
+        +BigDecimal monthlyPayment
+        +BigDecimal remainingCapitalOverride
+        +String currency
+        +Long positionId
+        +LocalDateTime createdAt
+    }
+
+    class DebtBalanceEntry {
+        <<entity>>
+        +Long id
+        +Debt debt
+        +LocalDate entryDate
+        +BigDecimal balance
+        +String note
+        +LocalDateTime createdAt
+    }
+
+    class DebtTypeEnum {
+        <<enumeration>>
+        IMMOBILIER
+        ETUDIANT
+        VEHICULE
+        CONSOMMATION
+        AUTRE
+    }
+
+    %% ── Dépenses récurrentes & Budgets ─────────────────────────
+
+    class RecurringExpense {
+        <<entity>>
+        +Long id
+        +User user
+        +ExpenseCategoryEnum category
+        +String label
+        +Float amount
+        +FrequencyEnum frequency
+        +Float sharePercentage
+        +LocalDate startDate
+        +LocalDate endDate
+        +String notes
+    }
+
+    class UserBudget {
+        <<entity>>
+        +Long id
+        +User user
+        +ExpenseCategoryEnum category
+        +Float monthlyLimit
+    }
+
+    class ExpenseCategoryEnum {
+        <<enumeration>>
+        LOGEMENT
+        TRANSPORT
+        ASSURANCES
+        ABONNEMENTS
+        SANTE
+        FAMILLE
+        ALIMENTATION
+        EPARGNE
+        AUTRE
+    }
+
+    class FrequencyEnum {
+        <<enumeration>>
+        MONTHLY
+        ANNUAL
+    }
+
+    %% ── Objectifs patrimoniaux ─────────────────────────────────
+
+    class PatrimoineTarget {
+        <<entity>>
+        +Long id
+        +User user
+        +String category
+        +Double targetAmountEur
+    }
+
+    %% ══════════════════════════════════════════════════════════════
+    %% Relations
+    %% ══════════════════════════════════════════════════════════════
+
+    %% Utilisateurs & Groupes
     User --> RoleEnum : role
+    User --> SafetyNetMode : safetyNetMode
     User "0..*" --> "0..1" FamilyGroup : appartient à
     FamilyGroup "1" --> "1" User : owner
+    FamilyGroupInvitation --> FamilyGroup : group
+    FamilyGroupInvitation --> User : invitedUser
+    FamilyGroupInvitation --> InvitationStatus : status
+    LoginEvent --> LoginEventType : eventType
+    UserRegistrationRequest --> RegistrationStatus : status
 
-    %% ── Relations revenus salariaux ───────────────────────────
+    %% Revenus salariaux
     User "1" o-- "0..*" SalaryContract : salaryContracts
-    SalaryContract ..> SalaryProjectionDto : calcule
     SalaryContract "1" o-- "0..*" SalaryRevision : revisions
     SalaryContract "1" o-- "0..*" MonthlyPaySlip : paySlips
+    SalaryContract "1" o-- "0..*" ContractBonus : bonuses
+    SalaryContract "1" o-- "0..*" ContractBenefit : benefits
+    SalaryContract "1" o-- "0..*" ContractOnCall : onCalls
+    ContractBonus --> BonusTypeEnum : type
+    SalaryContract ..> SalaryContractDto : calcule
+    User ..> TaxSimulationDto : simule
 
-    %% ── Relations revenus non salariés ───────────────────────
+    %% Revenus complémentaires
     User "1" o-- "0..*" OtherIncome : otherIncomes
     OtherIncome --> OtherIncomeTypeEnum : type
 
-    %% ── Relations simulateur des impôts ───────────────────────
-    User ..> TaxSimulationDto : simule
+    %% Instruments
+    Instrument --> AssetCategory : category
+    Instrument "1" o-- "0..*" InstrumentAllocation : allocations
+    Instrument "1" o-- "0..*" InstrumentSectorAllocation : sectorAllocations
 
-    %% ── Relations patrimoine ──────────────────────────────────
+    %% Positions
     User "1" o-- "0..*" Position : positions
-    User "1" o-- "0..*" PortfolioSnapshot : snapshots
     Position --> AssetCategory : category
     Position --> FiscalEnvelope : fiscalEnvelope
     Position --> AssetSubType : assetSubType
     Position --> OwnershipType : ownershipType
-    Position "1" o-- "0..*" PositionOrder : orders
+    Position --> PositionStatus : status
     Position "0..*" --> "0..1" Instrument : instrument
+    Position "1" o-- "0..*" PositionOrder : orders
     PositionOrder --> OrderType : orderType
+
+    %% Snapshots
+    User "1" o-- "0..*" PortfolioSnapshot : snapshots
     PortfolioSnapshot "1" o-- "0..*" PositionSnapshot : positionSnapshots
-    PositionSnapshot "0..*" --> "1" Position : position
+    PositionSnapshot --> Position : position
+
+    %% Passifs
+    User "1" o-- "0..*" Possession : possessions
+    Possession --> PossessionCategoryEnum : category
+    User "1" o-- "0..*" Debt : debts
+    Debt --> DebtTypeEnum : type
+    Debt "1" o-- "0..*" DebtBalanceEntry : balanceEntries
+
+    %% Dépenses & Budgets
+    User "1" o-- "0..*" RecurringExpense : recurringExpenses
+    RecurringExpense --> ExpenseCategoryEnum : category
+    RecurringExpense --> FrequencyEnum : frequency
+    User "1" o-- "0..*" UserBudget : budgets
+    UserBudget --> ExpenseCategoryEnum : category
+
+    %% Objectifs
+    User "1" o-- "0..*" PatrimoineTarget : targets

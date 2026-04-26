@@ -1,41 +1,68 @@
-stateDiagram 
-    %% state
-    state "Choisi un type de position" as chooseType
-    state "Type de position" as if_typeOfPosition 
+stateDiagram-v2
 
-    state "Saisie un titre" as chooseTitle
-    state "Saisie une valeur" as chooseValue
-    state "Saisie une quantité" as chooseQuantity
-    state "Liste des ISBN existants" as listOfExistingISBN
-    state "Saisie un nouveau ISBN" as setISBN
-    state "Liste des Token existants" as listOfExistingToken
-    state "Saisie un nouveau Token" as setToken
-    state "Date d'exécution" as chooseDateExecution
-    state "Verification des données saisies" as verifyData
-    state "Sauvegarde de la position" as saveData
-    state "Erreur de saisies" as errorFromUser
+    %% ── États communs ────────────────────────────────────────────
+    state "Page Patrimoine" as page
+    state "Formulaire — Étape 1\nChoix de la catégorie" as step1
+    state chooseCategory <<choice>>
+    state validResult <<choice>>
+    state instrumentFound <<choice>>
 
+    state "Validation\n(champs obligatoires selon catégorie)" as validate
+    state "Erreur de validation" as error
+    state "Position créée" as saved
 
-    [*] --> chooseType
-    chooseType --> if_typeOfPosition
-    if_typeOfPosition --> listOfExistingISBN: type = Bourse
-    listOfExistingISBN --> setISBN : Création d'un ISBN
-    listOfExistingISBN --> chooseTitle : Réutilisation d'un ISBN existant
-    setISBN --> chooseTitle
+    %% ── Étape 2 selon catégorie ──────────────────────────────────
+    state "BOURSE — Étape 2\nRecherche par ISIN\nEnveloppe fiscale (CTO/PEA/AV…)\nSous-type (ETF/ACTION…)\nPartenaire / Libellé" as bourseStep2
 
-    if_typeOfPosition --> listOfExistingToken : type = Crypto-monnaie
-    listOfExistingToken --> setToken : Création d'un Token
-    listOfExistingToken --> chooseTitle : Réutilisation d'un Token existant
-    setToken --> chooseTitle
+    state "CRYPTO — Étape 2\nRecherche par ticker\nEnveloppe fiscale\nPartenaire / Libellé" as cryptoStep2
 
-    if_typeOfPosition --> chooseTitle : type = Autresx
-    chooseTitle --> chooseValue
-    chooseValue --> chooseQuantity
-    chooseQuantity --> chooseDateExecution
-    chooseDateExecution --> verifyData
-    verifyData --> saveData : OK
-    verifyData --> errorFromUser : KO
-    
-    
-     saveData--> [*]
-     errorFromUser--> chooseType
+    state "IMMO_PHYSIQUE — Étape 2\nLibellé · Adresse\nType de propriété (PLEINE/NUE/USUFRUIT)\nValeur estimée actuelle\nDate + prix d'acquisition" as immoStep2
+
+    state "IMMO_PAPIER — Étape 2\nPartenaire · Libellé\nEnveloppe fiscale\nTaux de commission (%)" as immoPapierStep2
+
+    state "LIVRET — Étape 2\nPartenaire · Libellé\nTaux annuel (%)\nEnveloppe fiscale (LIVRET/PEE_PERCO…)" as livretStep2
+
+    state "LIQUIDITE — Étape 2\nPartenaire · Libellé\nSolde actuel (€)" as liquiditeStep2
+
+    %% ── Instrument introuvable ───────────────────────────────────
+    state "Aucun résultat\n→ Créer un instrument\n(nom, devise, ISIN ou ticker,\nboursoramaSymbol)" as createInstrument
+
+    %% ── Flux principal ───────────────────────────────────────────
+    [*]       --> page
+    page      --> step1          : Bouton « + Ajouter une position »
+    step1     --> chooseCategory
+
+    chooseCategory --> bourseStep2     : BOURSE
+    chooseCategory --> cryptoStep2     : CRYPTO
+    chooseCategory --> immoStep2       : IMMO_PHYSIQUE
+    chooseCategory --> immoPapierStep2 : IMMO_PAPIER
+    chooseCategory --> livretStep2     : LIVRET
+    chooseCategory --> liquiditeStep2  : LIQUIDITE
+
+    %% Recherche instrument BOURSE / CRYPTO
+    bourseStep2 --> instrumentFound
+    cryptoStep2 --> instrumentFound
+    instrumentFound --> createInstrument : Aucun résultat
+    instrumentFound --> validate         : Instrument sélectionné
+
+    createInstrument --> validate
+
+    %% Catégories sans instrument
+    immoStep2       --> validate
+    immoPapierStep2 --> validate
+    livretStep2     --> validate
+    liquiditeStep2  --> validate
+
+    %% Résultat de validation
+    validate --> validResult
+    validResult --> saved : OK → POST /api/positions
+    validResult --> error : Champs manquants ou incohérents
+
+    error --> bourseStep2     : retour BOURSE
+    error --> cryptoStep2     : retour CRYPTO
+    error --> immoStep2       : retour IMMO_PHYSIQUE
+    error --> immoPapierStep2 : retour IMMO_PAPIER
+    error --> livretStep2     : retour LIVRET
+    error --> liquiditeStep2  : retour LIQUIDITE
+
+    saved --> page

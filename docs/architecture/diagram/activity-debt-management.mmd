@@ -1,0 +1,73 @@
+stateDiagram-v2
+
+    %% ── États ────────────────────────────────────────────────────
+    state "Page Dettes" as page
+    state "Liste des dettes\n(groupées par type)" as listDebts
+    state "Formulaire — Création" as formCreate
+    state "Formulaire — Modification" as formEdit
+    state "Validation\n(capital > 0, taux > 0, endDate > startDate)" as validate
+    state "Erreur de validation" as error
+    state "Sauvegarde" as save
+
+    state modeChoice <<choice>>
+    state actionChoice <<choice>>
+    state validResult <<choice>>
+    state deleteConfirm <<choice>>
+
+    %% ── Mode de suivi du capital ─────────────────────────────────
+    state "Mode PROJECTION AUTO\nCapital restant calculé :\nB(n) = P×(1+r)^n − M×((1+r)^n−1)/r\n(basé sur startDate + mensualité)" as autoMode
+
+    state "Mode OVERRIDE MANUEL\nCapital restant = dernière entrée\ndans debt_balance_entries" as manualMode
+
+    state "Tableau d'amortissement\n12 prochaines mensualités\n(capital, intérêts, assurance,\ncapital restant)" as schedule
+
+    state "Ajout d'une mise à jour\ndu capital restant\n(entryDate + balance)\n→ recalcule remainingCapitalOverride" as addBalanceEntry
+
+    state "Suppression d'entrée\n→ recharge la dernière entrée active\ncomme remainingCapitalOverride" as deleteBalanceEntry
+
+    state "Confirmation de suppression\nde la dette" as confirmDelete
+    state "Suppression de la dette\n(cascade balance_entries)" as deleteDebt
+
+    state "Lien vers une position IMMO_PHYSIQUE\n(autocomplétion sur positions actives)\n→ affichage valeur nette = valeur − capital restant\ndans PatrimoinePage" as linkImmo
+
+    %% ── Flux principal ───────────────────────────────────────────
+    [*]       --> page
+    page      --> listDebts
+
+    listDebts --> actionChoice
+    actionChoice --> formCreate    : Ajouter une dette
+    actionChoice --> formEdit      : Modifier une dette
+    actionChoice --> confirmDelete : Supprimer une dette
+    actionChoice --> schedule      : Voir le tableau d'amortissement
+
+    formCreate --> linkImmo        : Type IMMOBILIER (optionnel)
+    linkImmo   --> validate
+    formCreate --> validate        : Autres types
+
+    formEdit   --> validate
+
+    validate --> validResult
+    validResult --> save  : OK → POST ou PUT /api/debts
+    validResult --> error : KO
+
+    error --> formCreate : retour création
+    error --> formEdit   : retour modification
+
+    save --> modeChoice
+    modeChoice --> autoMode   : remainingCapitalOverride = null
+    modeChoice --> manualMode : remainingCapitalOverride ≠ null
+
+    autoMode   --> schedule
+    manualMode --> addBalanceEntry : Saisir une mise à jour manuelle
+
+    addBalanceEntry   --> manualMode  : POST /api/debts/{id}/balance-entries
+    deleteBalanceEntry --> manualMode : DELETE → recalcul override actif
+
+    manualMode --> deleteBalanceEntry : Supprimer une entrée
+
+    schedule --> listDebts
+
+    confirmDelete --> deleteConfirm
+    deleteConfirm --> deleteDebt : confirmé
+    deleteConfirm --> listDebts  : annulé
+    deleteDebt    --> listDebts

@@ -1,0 +1,372 @@
+erDiagram
+
+    %% ══════════════════════════════════════════════════════════════
+    %% MyFinance — Schéma complet de la base de données SQLite
+    %% Généré à partir des entités JPA (domain/*.java)
+    %% Convention : toutes les relations sont MANY-TO-ONE sauf mention contraire
+    %% ══════════════════════════════════════════════════════════════
+
+    %% ── Utilisateurs & Regroupement familial ─────────────────────
+
+    users {
+        bigint   id                              PK
+        varchar  firstName
+        varchar  lastName
+        date     birthDate
+        varchar  login                           UK
+        varchar  password
+        varchar  role                            "USER | ADMIN"
+        float    fiscalParts
+        boolean  useFlatRateDeduction
+        float    customProfessionalDeduction
+        integer  realExpensesTransportKm
+        integer  realExpensesTransportCv
+        boolean  realExpensesTransportElectric
+        float    realExpensesPublicTransport
+        float    realExpensesMeals
+        float    realExpensesClothing
+        float    realExpensesTraining
+        float    realExpensesEquipment
+        float    realExpensesPhone
+        float    realExpensesDoubleResidence
+        float    realExpensesOther
+        integer  realExpensesTeleworkDays
+        float    realExpensesTeleworkEmployerDaily
+        varchar  birthPlace
+        varchar  birthPostalCode
+        varchar  jobTitle
+        varchar  safetyNetMode                  "MONTHS_EXPENSES | MONTHS_SALARY | FIXED_AMOUNT"
+        double   safetyNetMonths
+        double   safetyNetAmount
+        bigint   family_group_id                FK
+    }
+
+    family_group {
+        bigint    id         PK
+        varchar   name
+        bigint    owner_id   FK
+        timestamp createdAt
+    }
+
+    family_group_invitation {
+        bigint    id              PK
+        bigint    group_id        FK
+        bigint    invited_user_id FK
+        varchar   status          "PENDING | ACCEPTED | REFUSED"
+        timestamp createdAt
+        timestamp respondedAt
+    }
+
+    user_registration_requests {
+        bigint    id             PK
+        varchar   login          UK
+        varchar   firstName
+        varchar   lastName
+        varchar   hashedPassword
+        varchar   status         "PENDING | APPROVED | REJECTED"
+        timestamp createdAt
+        timestamp reviewedAt
+        varchar   reviewedBy
+    }
+
+    login_events {
+        bigint    id           PK
+        varchar   login
+        varchar   eventType    "SUCCESS | FAILURE | BLOCKED"
+        varchar   ipAddress
+        varchar   userAgent
+        integer   failureCount
+        timestamp timestamp
+    }
+
+    %% ── Revenus salariaux ────────────────────────────────────────
+
+    salary_contracts {
+        bigint  id                      PK
+        bigint  user_id                 FK
+        varchar companyName
+        date    startDate
+        date    endDate
+        float   annualGrossSalary
+        integer paidMonthsPerYear
+        float   weeklyHours
+        float   mealVoucherAmount
+        float   mealVoucherEmployeeRate
+        boolean isCadre
+        float   employeePrevoyanceRate
+    }
+
+    salary_revisions {
+        bigint  id               PK
+        bigint  contract_id      FK
+        date    effectiveDate
+        float   annualGrossSalary
+        varchar label
+    }
+
+    monthly_pay_slips {
+        bigint id                   PK
+        bigint contract_id          FK
+        date   period               "unique(contract_id, period)"
+        float  grossSalary
+        float  taxableNetSalary
+        float  netSalary
+        float  incomeTaxWithholding
+    }
+
+    contract_bonuses {
+        bigint  id           PK
+        bigint  contract_id  FK
+        varchar label
+        float   grossAmount
+        varchar type         "EXCEPTIONNELLE | ANNUELLE"
+        date    paymentDate
+        integer paymentMonth
+    }
+
+    contract_benefits {
+        bigint  id            PK
+        bigint  contract_id   FK
+        varchar label
+        float   monthlyAmount
+    }
+
+    contract_on_calls {
+        bigint  id                    PK
+        bigint  contract_id           FK
+        float   weeklyFlatRate
+        integer estimatedWeeksPerYear
+    }
+
+    %% ── Revenus complémentaires ──────────────────────────────────
+
+    other_incomes {
+        bigint  id               PK
+        bigint  user_id          FK
+        varchar type             "LOCATIF | DIVIDENDE | AIDE_SOCIALE | AUTRE"
+        varchar label
+        float   amount
+        date    date
+        boolean isTaxable
+        float   specificTaxRate
+    }
+
+    %% ── Instruments financiers (référentiel partagé) ─────────────
+
+    instruments {
+        bigint    id                  PK
+        varchar   category            "BOURSE | CRYPTO"
+        varchar   isin                UK
+        varchar   ticker              UK
+        varchar   name
+        varchar   currency
+        decimal   lastPrice
+        timestamp lastPriceUpdatedAt
+        boolean   stablePrice
+        varchar   marketSymbol
+        varchar   coinGeckoId
+        varchar   boursoramaSymbol
+    }
+
+    instrument_allocations {
+        bigint    id            PK
+        bigint    instrument_id FK
+        varchar   country
+        decimal   percentage
+        timestamp fetchedAt
+    }
+
+    instrument_sector_allocations {
+        bigint    id            PK
+        bigint    instrument_id FK
+        varchar   sector
+        decimal   percentage
+        timestamp fetchedAt
+    }
+
+    %% ── Patrimoine — Positions ───────────────────────────────────
+
+    positions {
+        bigint    id                       PK
+        bigint    user_id                  FK
+        bigint    instrument_id            FK
+        varchar   category                 "BOURSE | CRYPTO | IMMO_PAPIER | IMMO_PHYSIQUE | LIVRET | LIQUIDITE"
+        varchar   partner
+        varchar   label
+        varchar   currency
+        varchar   fiscalEnvelope           "CTO | PEA | AV | FLAT_TAX | PEE_PERCO | PER | AUTRE | NONE"
+        varchar   assetSubType             "ETF | ACTION | OBLIGATION | FOREX | WARRANT | FONDS_EUROS | TRACKERS | SCPI"
+        varchar   ownershipType            "PLEINE_PROPRIETE | NUE_PROPRIETE | USUFRUIT"
+        varchar   address
+        decimal   estimatedCurrentValue
+        date      acquisitionDate
+        decimal   acquisitionPrice
+        decimal   commissionRate
+        decimal   annualRate
+        decimal   currentBalance
+        boolean   includeInIncomeProjection
+        varchar   status                   "ACTIVE | CLOSED"
+        timestamp createdAt
+    }
+
+    position_orders {
+        bigint  id         PK
+        bigint  position_id FK
+        varchar orderType  "BUY | SELL | DEPOSIT | WITHDRAWAL | INTEREST | DIVIDEND | AIRDROP | ABONDEMENT"
+        decimal quantity
+        decimal unitPrice
+        decimal amount
+        decimal amountEur
+        date    orderDate
+        varchar notes
+    }
+
+    %% ── Patrimoine — Snapshots mensuels ──────────────────────────
+
+    portfolio_snapshots {
+        bigint  id                  PK
+        bigint  user_id             FK
+        date    snapshotDate
+        decimal totalInvestedEur
+        decimal totalCurrentValueEur
+        decimal totalCapitalGainEur
+    }
+
+    position_snapshots {
+        bigint  id                    PK
+        bigint  portfolio_snapshot_id FK
+        bigint  position_id           FK
+        decimal investedAmountEur
+        decimal currentValueEur
+        decimal capitalGainEur
+        decimal units
+        decimal unitPriceEur
+    }
+
+    %% ── Passifs ──────────────────────────────────────────────────
+
+    possessions {
+        bigint    id                    PK
+        bigint    user_id              FK
+        varchar   category             "VEHICULE | INFORMATIQUE | ELECTROMENAGER | MOBILIER | COLLECTION | LOISIRS | AUTRE"
+        varchar   label
+        decimal   purchasePrice
+        date      purchaseDate
+        decimal   estimatedCurrentValue
+        text      notes
+        timestamp createdAt
+    }
+
+    debts {
+        bigint    id                      PK
+        bigint    user_id                 FK
+        varchar   type                    "IMMOBILIER | ETUDIANT | VEHICULE | CONSOMMATION | AUTRE"
+        varchar   label
+        varchar   lender
+        date      startDate
+        date      endDate
+        decimal   initialCapital
+        decimal   annualRate
+        decimal   insuranceRate
+        decimal   monthlyPayment
+        decimal   remainingCapitalOverride
+        varchar   currency
+        bigint    positionId
+        timestamp createdAt
+    }
+
+    debt_balance_entries {
+        bigint    id         PK
+        bigint    debt_id    FK
+        date      entryDate
+        decimal   balance
+        text      note
+        timestamp createdAt
+    }
+
+    %% ── Dépenses récurrentes & Budgets ───────────────────────────
+
+    recurring_expenses {
+        bigint  id              PK
+        bigint  user_id         FK
+        varchar category        "LOGEMENT | TRANSPORT | ASSURANCES | ABONNEMENTS | SANTE | FAMILLE | ALIMENTATION | EPARGNE | AUTRE"
+        varchar label
+        float   amount
+        varchar frequency       "MONTHLY | ANNUAL"
+        float   sharePercentage
+        date    startDate
+        date    endDate
+        text    notes
+    }
+
+    user_budgets {
+        bigint id           PK
+        bigint user_id      FK "unique(user_id, category)"
+        varchar category    "LOGEMENT | TRANSPORT | ASSURANCES | ABONNEMENTS | SANTE | FAMILLE | ALIMENTATION | EPARGNE | AUTRE"
+        float  monthlyLimit
+    }
+
+    %% ── Objectifs & Scoring patrimoniaux ─────────────────────────
+
+    patrimoine_targets {
+        bigint id              PK
+        bigint user_id         FK "unique(user_id, category)"
+        varchar category
+        double  targetAmountEur
+    }
+
+    %% ── Taux de change (référentiel partagé) ─────────────────────
+
+    exchange_rates {
+        bigint    id            PK
+        varchar   currency      UK "ISO 4217 — convention : amountEur = amountNatif / rate"
+        decimal   rate
+        timestamp lastUpdatedAt
+    }
+
+    %% ══════════════════════════════════════════════════════════════
+    %% Relations
+    %% ══════════════════════════════════════════════════════════════
+
+    %% Regroupement familial
+    users                         }o--o|  family_group              : "appartient à (nullable)"
+    family_group                  ||--||  users                     : "owner"
+    family_group_invitation       }o--||  family_group              : "group"
+    family_group_invitation       }o--||  users                     : "invitedUser"
+
+    %% Revenus salariaux
+    salary_contracts              }o--||  users                     : "user"
+    salary_revisions              }o--||  salary_contracts          : "contract"
+    monthly_pay_slips             }o--||  salary_contracts          : "contract"
+    contract_bonuses              }o--||  salary_contracts          : "contract"
+    contract_benefits             }o--||  salary_contracts          : "contract"
+    contract_on_calls             }o--||  salary_contracts          : "contract"
+
+    %% Revenus complémentaires
+    other_incomes                 }o--||  users                     : "user"
+
+    %% Instruments & allocations
+    instrument_allocations        }o--||  instruments               : "instrument"
+    instrument_sector_allocations }o--||  instruments               : "instrument"
+
+    %% Positions & ordres
+    positions                     }o--||  users                     : "user"
+    positions                     }o--o|  instruments               : "instrument (nullable)"
+    position_orders               }o--||  positions                 : "position"
+
+    %% Snapshots
+    portfolio_snapshots           }o--||  users                     : "user"
+    position_snapshots            }o--||  portfolio_snapshots       : "portfolioSnapshot"
+    position_snapshots            }o--o|  positions                 : "position (NotFound=IGNORE)"
+
+    %% Passifs
+    possessions                   }o--||  users                     : "user"
+    debts                         }o--||  users                     : "user"
+    debt_balance_entries          }o--||  debts                     : "debt"
+
+    %% Dépenses & budgets
+    recurring_expenses            }o--||  users                     : "user"
+    user_budgets                  }o--||  users                     : "user"
+
+    %% Objectifs
+    patrimoine_targets            }o--||  users                     : "user"

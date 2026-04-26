@@ -1,0 +1,100 @@
+sequenceDiagram
+
+    %% ── Acteurs ──────────────────────────────────────────────────
+    actor Trigger as Déclencheur
+    participant Scheduler as MarketDataScheduler<br/>(cron 1er du mois 2h00)
+    participant SVC as MarketDataService
+    participant BGECKO as CoinGeckoClient
+    participant BSRAMA as BoursoramaClient
+    participant ECB as EcbRateClient
+    participant DB as InstrumentRepository<br/>+ ExchangeRateService
+    participant SNAP as PortfolioSnapshotService
+
+    Note over Trigger: Déclenchement automatique<br/>(scheduler prod uniquement)<br/>ou manuel via<br/>POST /api/admin/market-data/run
+
+    Trigger ->> Scheduler: runMonthlyUpdate()
+    Scheduler ->> SVC: runFullUpdate()
+
+    %% ── Étape 1 : Résolution IDs CoinGecko ──────────────────────
+    rect rgb(235, 245, 255)
+        Note over SVC, BGECKO: Étape 1 — Résolution des IDs CoinGecko manquants
+        SVC ->> DB: findAll CRYPTO sans coinGeckoId
+        DB -->> SVC: instruments[]
+
+        loop Pour chaque CRYPTO sans coinGeckoId
+            SVC ->> BGECKO: GET /search?query={ticker}
+            alt ID trouvé
+                BGECKO -->> SVC: { id: "bitcoin" }
+                SVC ->> DB: instrument.coinGeckoId = "bitcoin"
+            else Introuvable
+                BGECKO -->> SVC: aucun résultat
+                Note over SVC: Log WARN — ajouté à errors[]
+            end
+        end
+    end
+
+    %% ── Étape 2 : Mise à jour des cours ─────────────────────────
+    rect rgb(235, 255, 240)
+        Note over SVC, BSRAMA: Étape 2 — Mise à jour des cours
+        SVC ->> DB: findAll BOURSE (boursoramaSymbol ≠ null, stablePrice = false)
+
+        loop Pour chaque instrument BOURSE
+            SVC ->> BSRAMA: GET boursorama.com/cours/{boursoramaSymbol}/
+            alt Prix extrait (sélecteur CSS)
+                BSRAMA -->> SVC: lastPrice (format FR : "30,8419")
+                SVC ->> DB: instrument.lastPrice = parsed<br/>instrument.lastPriceUpdatedAt = now()
+            else Scraping échoué
+                Note over SVC: Log ERROR — compté dans instrumentsFailed
+            end
+        end
+
+        SVC ->> DB: findAll CRYPTO (coinGeckoId ≠ null, stablePrice = false)
+        SVC ->> BGECKO: GET /simple/price?ids={bitcoin,ethereum,...}&vs_currencies=eur,usd
+        Note over BGECKO: Un seul appel groupé<br/>(préserve le quota 50 req/min)
+        BGECKO -->> SVC: { bitcoin: { eur: 85000 }, ... }
+
+        loop Pour chaque CRYPTO
+            alt Prix présent dans la réponse
+                SVC ->> DB: instrument.lastPrice = prix EUR<br/>instrument.lastPriceUpdatedAt = now()
+            else Absent
+                Note over SVC: Log ERROR — compté dans instrumentsFailed
+            end
+        end
+    end
+
+    %% ── Étape 3 : Taux de change ─────────────────────────────────
+    rect rgb(255, 248, 220)
+        Note over SVC, ECB: Étape 3 — Mise à jour des taux de change
+        SVC ->> ECB: GET frankfurter.app/latest?from=EUR
+        alt Succès
+            ECB -->> SVC: { USD: 1.08, GBP: 0.86, CHF: 0.96, ... }
+            SVC ->> DB: ExchangeRateService.updateRates(rates)
+            Note over DB: Upsert par devise (currency unique)<br/>lastUpdatedAt = now()
+        else Echec
+            ECB -->> SVC: erreur réseau / réponse vide
+            Note over SVC: Log ERROR — ratesUpdated = 0
+        end
+    end
+
+    %% ── Étape 4 : Snapshot patrimonial ──────────────────────────
+    rect rgb(255, 235, 235)
+        Note over SVC, SNAP: Étape 4 — Snapshot mensuel pour tous les utilisateurs
+        SVC ->> SNAP: createForAllUsers(today)
+
+        loop Pour chaque utilisateur actif
+            SNAP ->> DB: Vérifie snapshot existant ce mois
+            alt Snapshot déjà existant
+                Note over SNAP: Ignoré — compté dans snapshotsSkipped
+            else Pas de snapshot
+                SNAP ->> DB: Charge positions ACTIVE + prix actuels + taux de change
+                SNAP ->> DB: INSERT PortfolioSnapshot + PositionSnapshot[]
+                Note over SNAP: totalCurrentValueEur = Σ(units × lastPrice / rate)
+            end
+        end
+    end
+
+    %% ── Rapport final ────────────────────────────────────────────
+    SVC -->> Scheduler: MarketDataReportDto {<br/>  instrumentsResolved, instrumentsUpdated, instrumentsFailed,<br/>  ratesUpdated,<br/>  snapshotsCreated, snapshotsSkipped, snapshotsFailed,<br/>  errors[], executedAt<br/>}
+    Scheduler -->> Trigger: 200 OK + rapport (si appel manuel)
+
+    Note over Scheduler: Log : "[MàJ] Terminé — N cours MàJ | N taux | N snapshots"
