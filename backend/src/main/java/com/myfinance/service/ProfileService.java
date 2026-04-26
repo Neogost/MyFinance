@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.config.BaremeKilometriqueProperties;
 import com.myfinance.domain.SafetyNetMode;
 import com.myfinance.domain.User;
 import com.myfinance.dto.UpdateFiscalProfileRequest;
@@ -19,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProfileService {
 
     private final UserRepository userRepository;
+    private final BaremeKilometriqueProperties baremeProps;
 
     public UserDto updateSafetyNet(User currentUser, UpdateSafetyNetRequest request) {
         validate(request);
@@ -47,11 +49,42 @@ public class ProfileService {
     public UserDto updateFiscalProfile(User currentUser, UpdateFiscalProfileRequest request) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+
         user.setFiscalParts(request.fiscalParts());
         user.setUseFlatRateDeduction(request.useFlatRateDeduction());
-        user.setCustomProfessionalDeduction(
-                Boolean.FALSE.equals(request.useFlatRateDeduction()) ? request.customProfessionalDeduction() : null
-        );
+
+        if (Boolean.FALSE.equals(request.useFlatRateDeduction())) {
+            user.setRealExpensesTransportKm(request.realExpensesTransportKm());
+            user.setRealExpensesTransportCv(request.realExpensesTransportCv());
+            user.setRealExpensesTransportElectric(request.realExpensesTransportElectric());
+            user.setRealExpensesPublicTransport(request.realExpensesPublicTransport());
+            user.setRealExpensesMeals(request.realExpensesMeals());
+            user.setRealExpensesClothing(request.realExpensesClothing());
+            user.setRealExpensesTraining(request.realExpensesTraining());
+            user.setRealExpensesEquipment(request.realExpensesEquipment());
+            user.setRealExpensesPhone(request.realExpensesPhone());
+            user.setRealExpensesDoubleResidence(request.realExpensesDoubleResidence());
+            user.setRealExpensesOther(request.realExpensesOther());
+            user.setRealExpensesTeleworkDays(request.realExpensesTeleworkDays());
+            user.setRealExpensesTeleworkEmployerDaily(request.realExpensesTeleworkEmployerDaily());
+            user.setCustomProfessionalDeduction(computeTotalRealExpenses(request));
+        } else {
+            user.setRealExpensesTransportKm(null);
+            user.setRealExpensesTransportCv(null);
+            user.setRealExpensesTransportElectric(null);
+            user.setRealExpensesPublicTransport(null);
+            user.setRealExpensesMeals(null);
+            user.setRealExpensesClothing(null);
+            user.setRealExpensesTraining(null);
+            user.setRealExpensesEquipment(null);
+            user.setRealExpensesPhone(null);
+            user.setRealExpensesDoubleResidence(null);
+            user.setRealExpensesOther(null);
+            user.setRealExpensesTeleworkDays(null);
+            user.setRealExpensesTeleworkEmployerDaily(null);
+            user.setCustomProfessionalDeduction(null);
+        }
+
         UserDto dto = UserDto.from(userRepository.save(user));
         log.info("[user:{}] Profil fiscal mis à jour", currentUser.getId());
         return dto;
@@ -69,6 +102,51 @@ public class ProfileService {
         UserDto dto = UserDto.from(userRepository.save(user));
         log.info("[user:{}] Informations personnelles mises à jour", currentUser.getId());
         return dto;
+    }
+
+    private static final float TELEWORK_DAILY_RATE = 2.50f;
+
+    private float computeTeleworkAllowance(Integer days, Float employerDaily) {
+        if (days == null || days <= 0) return 0f;
+        float employerRate = employerDaily != null ? employerDaily : 0f;
+        return Math.round(days * Math.max(0f, TELEWORK_DAILY_RATE - employerRate));
+    }
+
+    private float computeKilometriqueAllowance(Integer km, Integer cv, Boolean electric) {
+        if (km == null || km <= 0 || cv == null) return 0f;
+
+        BaremeKilometriqueProperties.VoitureBareme voiture = baremeProps.getVoitures().stream()
+                .filter(v -> cv <= v.getCvMax())
+                .findFirst()
+                .orElseGet(() -> baremeProps.getVoitures().get(baremeProps.getVoitures().size() - 1));
+
+        BaremeKilometriqueProperties.Tranche tranche = voiture.getTranches().stream()
+                .filter(t -> t.getKmMax() == null || km <= t.getKmMax())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Barème kilométrique incomplet pour CV=" + cv + " km=" + km));
+
+        float amount = km * (float) tranche.getTaux() + (float) tranche.getForfait();
+        if (Boolean.TRUE.equals(electric)) {
+            amount *= (float) baremeProps.getMultiplicateurElectrique();
+        }
+        return Math.round(amount);
+    }
+
+    private float computeTotalRealExpenses(UpdateFiscalProfileRequest req) {
+        return computeKilometriqueAllowance(req.realExpensesTransportKm(), req.realExpensesTransportCv(), req.realExpensesTransportElectric())
+                + nvl(req.realExpensesPublicTransport())
+                + nvl(req.realExpensesMeals())
+                + computeTeleworkAllowance(req.realExpensesTeleworkDays(), req.realExpensesTeleworkEmployerDaily())
+                + nvl(req.realExpensesClothing())
+                + nvl(req.realExpensesTraining())
+                + nvl(req.realExpensesEquipment())
+                + nvl(req.realExpensesPhone())
+                + nvl(req.realExpensesDoubleResidence())
+                + nvl(req.realExpensesOther());
+    }
+
+    private float nvl(Float f) {
+        return f != null ? f : 0f;
     }
 
     private void validate(UpdateSafetyNetRequest request) {

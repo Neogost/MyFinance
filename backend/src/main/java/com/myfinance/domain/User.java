@@ -53,7 +53,24 @@ public class User implements UserDetails {
 
     private Boolean useFlatRateDeduction; // true = abattement 10%, false = frais réels
 
-    private Float customProfessionalDeduction; // Montant frais réels (€), si useFlatRateDeduction = false
+    private Float customProfessionalDeduction; // Total frais réels calculé (€), si useFlatRateDeduction = false
+
+    // ── Frais réels — Détail par catégorie ─────────────────────
+    // Calculé par ProfileService.computeTotalRealExpenses() → stocké dans customProfessionalDeduction.
+
+    private Integer realExpensesTransportKm;       // km domicile-travail aller-retour annuel
+    private Integer realExpensesTransportCv;       // CV fiscal : 3, 4, 5, 6, 7 (7 = 7 CV et plus)
+    private Boolean realExpensesTransportElectric; // véhicule électrique (×1.20 sur le barème)
+    private Float   realExpensesPublicTransport;   // abonnements transport en commun (€/an)
+    private Float   realExpensesMeals;             // frais de repas (€/an)
+    private Float   realExpensesClothing;          // vêtements professionnels spécifiques (€/an)
+    private Float   realExpensesTraining;          // formation professionnelle (€/an)
+    private Float   realExpensesEquipment;         // matériel et fournitures pro (€/an)
+    private Float   realExpensesPhone;             // téléphone/internet — part pro (€/an)
+    private Float   realExpensesDoubleResidence;   // double résidence (€/an)
+    private Float   realExpensesOther;             // autres frais justifiés (€/an)
+    private Integer realExpensesTeleworkDays;      // jours de télétravail par an
+    private Float   realExpensesTeleworkEmployerDaily; // remboursement employeur télétravail (€/jour)
 
     // ── Déclaration de patrimoine ──────────────────────────────
 

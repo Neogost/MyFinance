@@ -20,6 +20,7 @@ export async function getMe() {
   return data
 }
 
-export const updateSafetyNet    = (data) => api.put('/api/profile/safety-net',    data).then(r => r.data)
-export const updatePersonalInfo = (data) => api.put('/api/profile/personal-info', data).then(r => r.data)
-export const updateFiscalProfile = (data) => api.put('/api/profile/fiscal',       data).then(r => r.data)
+export const updateSafetyNet        = (data) => api.put('/api/profile/safety-net',    data).then(r => r.data)
+export const updatePersonalInfo     = (data) => api.put('/api/profile/personal-info', data).then(r => r.data)
+export const updateFiscalProfile    = (data) => api.put('/api/profile/fiscal',        data).then(r => r.data)
+export const getBaremeKilometrique  = ()     => api.get('/api/fiscal/bareme-kilometrique').then(r => r.data)

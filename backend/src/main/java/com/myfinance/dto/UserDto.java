@@ -22,7 +22,20 @@ public record UserDto(
         Double safetyNetAmount,
         String birthPlace,
         String birthPostalCode,
-        String jobTitle
+        String jobTitle,
+        Integer realExpensesTransportKm,
+        Integer realExpensesTransportCv,
+        Boolean realExpensesTransportElectric,
+        Float realExpensesPublicTransport,
+        Float realExpensesMeals,
+        Float realExpensesClothing,
+        Float realExpensesTraining,
+        Float realExpensesEquipment,
+        Float realExpensesPhone,
+        Float realExpensesDoubleResidence,
+        Float realExpensesOther,
+        Integer realExpensesTeleworkDays,
+        Float realExpensesTeleworkEmployerDaily
 ) {
     public static UserDto from(User user) {
         return new UserDto(
@@ -41,7 +54,20 @@ public record UserDto(
                 user.getSafetyNetAmount(),
                 user.getBirthPlace(),
                 user.getBirthPostalCode(),
-                user.getJobTitle()
+                user.getJobTitle(),
+                user.getRealExpensesTransportKm(),
+                user.getRealExpensesTransportCv(),
+                user.getRealExpensesTransportElectric(),
+                user.getRealExpensesPublicTransport(),
+                user.getRealExpensesMeals(),
+                user.getRealExpensesClothing(),
+                user.getRealExpensesTraining(),
+                user.getRealExpensesEquipment(),
+                user.getRealExpensesPhone(),
+                user.getRealExpensesDoubleResidence(),
+                user.getRealExpensesOther(),
+                user.getRealExpensesTeleworkDays(),
+                user.getRealExpensesTeleworkEmployerDaily()
         );
     }
 }

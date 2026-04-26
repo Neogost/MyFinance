@@ -1,0 +1,75 @@
+## Barème kilométrique fiscal — Voitures automobiles
+## Source : Bulletin Officiel des Finances Publiques (BOFiP), arrêté annuel.
+## Mettre à jour ce fichier après chaque loi de finances (parution en mars de l'année N pour les revenus N-1).
+## Formule : montant = km × taux + forfait
+
+bareme-kilometrique:
+  annee: 2024
+  avertissement: "Barème 2024 pour les revenus 2024. À mettre à jour après chaque loi de finances."
+  multiplicateur-electrique: 1.20
+
+  voitures:
+    - cv-max: 3
+      label: "3 CV et moins"
+      tranches:
+        - km-max: 3000
+          taux: 0.529
+          forfait: 0.0
+        - km-max: 6000
+          taux: 0.316
+          forfait: 643.0
+        - km-max: ~
+          taux: 0.423
+          forfait: 0.0
+
+    - cv-max: 4
+      label: "4 CV"
+      tranches:
+        - km-max: 3000
+          taux: 0.606
+          forfait: 0.0
+        - km-max: 6000
+          taux: 0.340
+          forfait: 798.0
+        - km-max: ~
+          taux: 0.450
+          forfait: 0.0
+
+    - cv-max: 5
+      label: "5 CV"
+      tranches:
+        - km-max: 3000
+          taux: 0.636
+          forfait: 0.0
+        - km-max: 6000
+          taux: 0.357
+          forfait: 837.0
+        - km-max: ~
+          taux: 0.478
+          forfait: 0.0
+
+    - cv-max: 6
+      label: "6 CV"
+      tranches:
+        - km-max: 3000
+          taux: 0.665
+          forfait: 0.0
+        - km-max: 6000
+          taux: 0.374
+          forfait: 876.0
+        - km-max: ~
+          taux: 0.505
+          forfait: 0.0
+
+    - cv-max: 99
+      label: "7 CV et plus"
+      tranches:
+        - km-max: 3000
+          taux: 0.697
+          forfait: 0.0
+        - km-max: 6000
+          taux: 0.392
+          forfait: 915.0
+        - km-max: ~
+          taux: 0.531
+          forfait: 0.0

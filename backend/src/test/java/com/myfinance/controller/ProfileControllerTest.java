@@ -37,12 +37,14 @@ class ProfileControllerTest {
 
     private UserDto dto(SafetyNetMode mode, Double months, Double amount) {
         return new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
-                null, null, null, null, mode, months, amount, null, null, null);
+                null, null, null, null, mode, months, amount, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     private UserDto dtoPersonal(String birthPlace, String birthPostalCode, String jobTitle) {
         return new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
-                null, null, null, null, null, null, null, birthPlace, birthPostalCode, jobTitle);
+                null, null, null, null, null, null, null, birthPlace, birthPostalCode, jobTitle,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     // ── PUT /api/profile/safety-net ────────────────────────────

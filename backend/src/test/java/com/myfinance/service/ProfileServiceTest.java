@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.config.BaremeKilometriqueProperties;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SafetyNetMode;
 import com.myfinance.domain.User;
@@ -29,6 +30,7 @@ import org.mockito.quality.Strictness;
 class ProfileServiceTest {
 
     @Mock UserRepository userRepository;
+    @Mock BaremeKilometriqueProperties baremeProps;
     @InjectMocks ProfileService profileService;
 
     User user;

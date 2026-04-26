@@ -43,7 +43,8 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        userDto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER, 1.0f, true, null, null, null, null, null, null, null, null);
+        userDto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER, 1.0f, true, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     // ── GET /api/users ─────────────────────────────────────────
@@ -148,7 +149,8 @@ class UserControllerTest {
     void update_avecCorpsValide_retourne200() throws Exception {
         UpdateUserRequest request = new UpdateUserRequest(
                 "Marie", "Martin", null, "marie.martin", null, RoleEnum.USER, null, null, null);
-        UserDto updated = new UserDto(1L, "marie.martin", "Marie", "Martin", null, RoleEnum.USER, null, null, null, null, null, null, null, null, null, null);
+        UserDto updated = new UserDto(1L, "marie.martin", "Marie", "Martin", null, RoleEnum.USER, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         when(userService.update(eq(1L), any(UpdateUserRequest.class))).thenReturn(updated);
 
