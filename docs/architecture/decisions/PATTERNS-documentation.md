@@ -311,7 +311,42 @@ Déplacer la fonctionnalité de "À venir" vers "Implémenté" une fois livrée,
 
 ---
 
-## 4. Conventions transversales
+## 4. Mise à jour de documentation existante
+
+Quand une tâche modifie du code existant (pas un nouveau module), appliquer cette grille :
+
+### 4.1 Champ ajouté ou modifié sur une entité
+
+1. `docs/architecture/<module>.md` → section **Modèle de données** : ajouter la ligne dans le tableau, préciser nullable/non-null, décrire le comportement
+2. `docs/architecture/diagram/er-diagram.mmd` → ajouter la colonne dans la table concernée
+3. `docs/architecture/diagram/class-diagram.mmd` → ajouter le champ dans la classe concernée
+4. `docs/api/<module>.md` → mettre à jour l'exemple JSON de réponse et le tableau des champs si exposé dans un DTO
+
+### 4.2 Endpoint ajouté, modifié ou supprimé
+
+1. `docs/api/<module>.md` → ajouter/modifier/supprimer la section `## METHOD /api/chemin`
+2. `CLAUDE.md` → section "Endpoints backend existants" : ajouter/modifier la ligne dans le tableau correspondant
+
+### 4.3 Règle de gestion modifiée
+
+1. `docs/architecture/<module>.md` → section **Règles métier** : corriger la règle impactée
+2. Si la règle concerne un calcul → vérifier et mettre à jour les formules dans la doc et les diagrammes `.mmd` associés
+
+### 4.4 Nouvelle fonctionnalité dans un module existant
+
+1. `docs/architecture/<module>.md` → ajouter une section dédiée (sous-section numérotée)
+2. `docs/api/<module>.md` → documenter les nouveaux endpoints
+3. `CLAUDE.md` → endpoints + statut du projet
+4. `docs/architecture/overview.md` → mettre à jour la liste des fonctionnalités
+5. Si le flux est complexe → créer ou mettre à jour un diagramme `.mmd`
+
+### 4.5 Tests modifiés
+
+- Si le nombre total de tests a changé → mettre à jour le count dans `readme.md` (section Tests)
+
+---
+
+## 5. Conventions transversales
 
 | Convention | Règle |
 |------------|-------|

@@ -12,6 +12,33 @@ Ces fichiers contiennent les squelettes de code à suivre. Tout nouveau module d
 
 ---
 
+## ✅ Checklist de fin de tâche — obligatoire
+
+Avant de considérer une tâche comme terminée, vérifier chaque point applicable.
+
+### Tests unitaires
+
+- Nouvelle méthode de service → test ajouté dans `*ServiceTest` (`@ExtendWith(MockitoExtension.class)`)
+- Nouveau endpoint controller → test ajouté dans `*ControllerTest` (`@WebMvcTest`)
+- Comportement existant modifié → tests impactés mis à jour (pas de test cassé silencieux)
+- Exécuter `./mvnw test` et vérifier BUILD SUCCESS
+- Si le nombre total de tests a changé → mettre à jour le count dans `readme.md`
+
+### Documentation
+
+| Modification | Fichiers à mettre à jour |
+|-------------|--------------------------|
+| Nouveau champ sur une entité | `docs/architecture/<module>.md` (section modèle) · `er-diagram.mmd` · `class-diagram.mmd` |
+| Nouvel endpoint ou endpoint modifié | `docs/api/<module>.md` · table "Endpoints backend existants" dans `CLAUDE.md` |
+| Nouvelle fonctionnalité livrée | `docs/architecture/overview.md` · section "Statut du projet" dans `CLAUDE.md` |
+| Nouvelle règle de gestion | `docs/architecture/<module>.md` (section règles métier) |
+| Nouveau flux complexe | Envisager un diagramme `.mmd` dans `docs/architecture/diagram/` |
+| Module entièrement nouveau | Créer `docs/architecture/<module>.md` + `docs/api/<module>.md` · référencer dans `CLAUDE.md` + `readme.md` |
+
+> Ces deux points (tests + docs) sont **non négociables** : une fonctionnalité sans test ni documentation n'est pas terminée.
+
+---
+
 ## Description
 Application web personnelle de gestion d'investissements financiers,
 hébergée sur NAS QNAP en réseau local (pas d'accès utilisateur depuis l'extérieur).
@@ -22,7 +49,7 @@ visualiser l'évolution dans le temps et mettre à jour les cours automatiquemen
 - **Backend** : Java 17, Spring Boot 3.5, Maven
 - **Base de données** : SQLite (fichier local `backend/data/myfinance-dev.db`)
 - **Frontend** : React + Vite, Tailwind CSS v4 (styles), Recharts (graphiques), Axios (appels API)
-- **Mise à jour des cours** : Yahoo Finance API via tâches @Scheduled Spring
+- **Mise à jour des cours** : Boursorama (BOURSE, scraping Jsoup) + CoinGecko API (CRYPTO) + Frankfurter/ECB (taux de change) via tâches `@Scheduled` Spring
 - **Documentation API** : Swagger UI via springdoc-openapi (`/swagger-ui.html`)
 
 ## Structure du projet (monorepo)
@@ -93,23 +120,32 @@ frontend/src/
 
 ## Documentation associée
 - Fonctionnalités détaillées : `docs/architecture/overview.md`
-- Gestion des utilisateurs et droits : `docs/architecture/userManagement.md`
+- Gestion des utilisateurs, inscription, matelas de sécurité : `docs/architecture/user-management.md`
 - Gestion des revenus (entités, formules, accès) : `docs/architecture/salary.md`
 - Simulateur des impôts (algorithme, barème, config) : `docs/architecture/tax-simulator.md`
+- Schéma de base de données (ER diagram complet) : `docs/architecture/diagram/er-diagram.mmd`
 - Modèle de données (diagramme de classes) : `docs/architecture/diagram/class-diagram.mmd`
+- Calcul salarial complet (superGross → net d'impôt) : `docs/architecture/diagram/flowchart-salary-calculation.mmd`
+- Simulation fiscale IRPP (barème, déductions, taux séparés) : `docs/architecture/diagram/flowchart-fiscal-simulation.mmd`
+- Scheduler marché (Boursorama + CoinGecko + ECB + snapshot) : `docs/architecture/diagram/sequence-market-data-scheduler.mmd`
+- Gestion des dettes (projection auto vs override manuel) : `docs/architecture/diagram/activity-debt-management.mmd`
+- Ajout d'une position (wizard 6 catégories) : `docs/architecture/diagram/activity-asset-management-add-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
 - Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
 - API authentification : `docs/api/authentication.md`
 - API tableau de bord : `docs/api/dashboard.md`
 - API utilisateurs : `docs/api/users.md`
+- API profil (safety-net, fiscal, personal-info) : `docs/api/profile.md`
 - API contrats salariaux et bulletins : `docs/api/salary-contracts.md`
 - API revenus complémentaires : `docs/api/other-incomes.md`
 - API simulateur des impôts : `docs/api/tax-simulator.md`
+- API référentiel fiscal (barème kilométrique) : `docs/api/fiscal-referentiel.md`
+- API version de l'application : `docs/api/app-info.md`
 - Gestion du patrimoine (architecture) : `docs/architecture/patrimoine.md`
-- Gestion des instruments (architecture) : `docs/architecture/instruments.md`
-- Mise à jour manuelle des cours d'instruments : `docs/architecture/instrument-price-update.md`
-- Mise à jour automatique des cours et snapshot mensuel : `docs/architecture/market-data-scheduler.md`
-- API patrimoine (positions, ordres, snapshots) : `docs/api/patrimoine.md`
+- Instruments, cours, taux de change et scheduler (architecture) : `docs/architecture/instruments.md`
+- API patrimoine — instruments, positions, ordres : `docs/api/patrimoine-positions.md`
+- API patrimoine — snapshots et données marché : `docs/api/patrimoine-snapshots.md`
+- API patrimoine — outils (score, objectifs, référentiel INSEE) : `docs/api/patrimoine-outils.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
 - Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/compound-interest-simulator.md`
@@ -118,6 +154,8 @@ frontend/src/
 - API historique des connexions : `docs/api/login-history.md`
 - Regroupement familial (architecture) : `docs/architecture/family-group.md`
 - API regroupement familial : `docs/api/family-group.md`
+- API demandes d'inscription : `docs/api/registration-requests.md`
+- API échange-rates : `docs/api/exchange-rates.md`
 - Gestion des dettes (architecture) : `docs/architecture/dettes.md`
 - API dettes : `docs/api/debts.md`
 
@@ -130,6 +168,21 @@ frontend/src/
 | `POST` | `/api/auth/logout` | Authentifié | Déconnexion |
 | `GET` | `/api/auth/me` | Authentifié | Utilisateur courant |
 | `PUT` | `/api/auth/password` | Authentifié | Changement de son propre mot de passe |
+| `POST` | `/api/auth/register` | Public | Soumettre une demande d'inscription |
+
+### Inscriptions (admin)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/admin/registrations` | ADMIN | Lister les demandes (filtrable par `?status=`) |
+| `POST` | `/api/admin/registrations/{id}/approve` | ADMIN | Approuver une demande (crée le compte) |
+| `POST` | `/api/admin/registrations/{id}/reject` | ADMIN | Rejeter une demande |
+
+### Profil utilisateur (self-service)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `PUT` | `/api/profile/safety-net` | Authentifié | Mettre à jour le matelas de sécurité |
+| `PUT` | `/api/profile/fiscal` | Authentifié | Mettre à jour le profil fiscal (parts, abattement, frais réels) |
+| `PUT` | `/api/profile/personal-info` | Authentifié | Mettre à jour les infos personnelles (déclaration patrimoine) |
 
 ### Utilisateurs
 | Méthode | URL | Rôle requis | Description |
@@ -181,6 +234,14 @@ frontend/src/
 | `PUT` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Authentifié | Modifier un avantage |
 | `DELETE` | `/api/salary-contracts/{id}/benefits/{benefitId}` | Authentifié | Supprimer un avantage |
 
+### Astreintes (ContractOnCall)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/salary-contracts/{id}/on-calls` | Authentifié | Liste des astreintes d'un contrat |
+| `POST` | `/api/salary-contracts/{id}/on-calls` | Authentifié | Ajouter une astreinte (forfait hebdomadaire × semaines/an) |
+| `PUT` | `/api/salary-contracts/{id}/on-calls/{onCallId}` | Authentifié | Modifier une astreinte |
+| `DELETE` | `/api/salary-contracts/{id}/on-calls/{onCallId}` | Authentifié | Supprimer une astreinte |
+
 ### Revenus complémentaires
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -207,6 +268,7 @@ frontend/src/
 | `PATCH` | `/api/instruments/{id}/stable-price` | ADMIN | Activer / désactiver le prix fixe d'un instrument |
 | `PUT` | `/api/instruments/{id}/allocations` | ADMIN | Remplacer l'allocation géographique (replace complet) |
 | `PUT` | `/api/instruments/{id}/sector-allocations` | ADMIN | Remplacer l'allocation sectorielle (replace complet) |
+| `DELETE` | `/api/instruments/{id}` | ADMIN | Supprimer un instrument et ses positions |
 | `POST` | `/api/admin/allocations/run` | ADMIN | Déclencher la mise à jour automatique des allocations géographiques |
 
 ### Patrimoine — Positions
@@ -217,6 +279,7 @@ frontend/src/
 | `POST` | `/api/positions` | Authentifié | Créer une position (LIVRET, LIQUIDITE, …) |
 | `PUT` | `/api/positions/{id}` | Authentifié | Modifier une position |
 | `PUT` | `/api/positions/{id}/balance` | Authentifié | Mettre à jour le solde (LIQUIDITE uniquement) |
+| `PUT` | `/api/positions/{id}/estimated-value` | Authentifié | Mettre à jour la valeur estimée (IMMO_PHYSIQUE uniquement) |
 | `PUT` | `/api/positions/{id}/close` | Authentifié | Fermer une position |
 | `DELETE` | `/api/positions/{id}` | Authentifié | Supprimer une position (cascade ordres) |
 
@@ -287,6 +350,37 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `GET` | `/api/patrimoine/score` | Authentifié | Score patrimonial 0-105 avec détail par axe (`PatrimoineScoreDto`) |
 
+### Positionnement INSEE
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/patrimoine/referentiel` | Authentifié | Référentiel seuils par décile et tranche d'âge (INSEE 2021-2022) |
+
+### Budgets par catégorie
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/expense-budgets` | Authentifié | Plafonds mensuels par catégorie de dépense |
+| `PUT` | `/api/expense-budgets` | Authentifié | Enregistrer tous les budgets (remplacement complet) |
+
+### Référentiel fiscal
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/fiscal/bareme-kilometrique` | Authentifié | Barème kilométrique fiscal en vigueur (voitures) |
+
+### Tableau de bord
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/dashboard/salary-evolution` | Authentifié | Évolution salariale (tous bulletins triés par période) |
+
+### Données de marché (admin)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `POST` | `/api/admin/market-data/run` | ADMIN | Déclencher manuellement la mise à jour des cours + snapshot mensuel |
+
+### Version de l'application
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/version` | Authentifié | Version déployée de l'application |
+
 ### Passifs (grandes possessions)
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -344,6 +438,41 @@ frontend/src/
 - Endpoints admin protégés par `@PreAuthorize("hasRole('ADMIN')")`
 - Les controleurs ou services doivent être couvert par des Tests unitaires
 
+## Gestion des versions
+
+Le projet suit le **versionnage sémantique** (`MAJOR.MINOR.PATCH`).
+
+**Convention :**
+| Type | Quand |
+|------|-------|
+| PATCH (`1.2.X`) | Correction de bug, amélioration mineure, tests |
+| MINOR (`1.X.0`) | Nouvelle fonctionnalité, nouvel écran, nouvel endpoint |
+| MAJOR (`X.0.0`) | Refonte, migration de base non triviale, rupture d'API |
+
+**Checklist avant chaque release :**
+```bash
+# 1. Mettre à jour backend/pom.xml : <version>1.2.1</version> → <version>1.3.0</version>
+
+# 2. Commiter
+git add backend/pom.xml
+git commit -m "chore(release): bump version to 1.3.0"
+
+# 3. Tagger et pousser
+git tag v1.3.0
+git push origin main && git push origin v1.3.0
+
+# 4. Déployer
+./deploy.sh
+```
+
+**Comment la version circule :**
+- `backend/pom.xml` → `mvn package` → `META-INF/build-info.properties` (via goal `build-info` du `spring-boot-maven-plugin`)
+- `BuildProperties` bean Spring → `GET /api/version` → frontend
+- Affichage : footer desktop (toutes les pages) + bas du menu mobile
+
+**Règle :** le tag git et `<version>` dans `pom.xml` doivent toujours correspondre.
+Procédure complète : `docs/deployment/docker-deployment.md`
+
 ## Commandes utiles
 ```bash
 # Lancer le backend en développement
@@ -359,12 +488,12 @@ cd backend
 cd backend
 ./mvnw test
 
-# Lancer sur le NAS
-java -jar -Dspring.profiles.active=prod backend/target/myFinance-0.0.1-SNAPSHOT.jar
-
 # Lancer le frontend en développement
 cd frontend
 npm run dev
+
+# Déployer en production (après bump de version et tag)
+./deploy.sh
 ```
 
 ## Points d'attention
@@ -378,7 +507,7 @@ npm run dev
 
 ## Utilisation de la documentation
 - Toujours consulter `docs/api/` avant de modifier un controller
-- Se référer à `docs/architecture/diagram/class-diagram.mmd` pour toute modification des entités JPA
+- Se référer à `docs/architecture/diagram/er-diagram.mmd` pour toute modification des entités JPA (schéma DB complet)
 - Ne pas inventer de structure de données non documentée
 
 ## Statut du projet
@@ -589,9 +718,9 @@ npm run dev
   - `docker-compose.yml` avec volume SQLite persisté sur le NAS
   - Profil Spring `docker` : HTTP port 8080, SQLite `/data/myfinance.db`, scheduler activé
   - `.dockerignore` optimisé
-  - Script `deploy.sh` pour les mises à jour (build → export → transfer → reload)
+  - Script `deploy.sh` pour les mises à jour (build → export → transfer → reload) — voir `docs/deployment/docker-deployment.md` pour la checklist de release avec gestion de version
   - Documentation : `docs/deployment/docker-deployment.md`
   - Accès internet via proxy inverse QNAP + myQNAPcloud (HTTPS port 4443, SSL Let's Encrypt auto)
 
 **À venir :**
-- Regroupement familial (`FamilyGroup`) — implémentation (spécification prête)
+- (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

@@ -16,12 +16,13 @@ Application web personnelle de gestion financière, hébergée sur NAS QNAP en r
 | Dettes | ✅ | Amortissement automatique, suivi manuel du capital restant, tableau d'échéances |
 | Scoring patrimonial | ✅ | Score 0–105 pts en 6 axes, profil FRAGILE→OPTIMISE, widget tableau de bord |
 | Simulateur d'impôts | ✅ | IRPP avec revenus salariaux + complémentaires + astreintes |
+| Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement, section investissement locatif |
+| Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net (actifs, possessions, dettes) |
+| Simulateur d'intérêts composés | ✅ | Projection d'épargne avec versements périodiques et rendement cible |
 | Bilan financier | ✅ | Actif/passif, ratio de couverture patrimoniale, projection FIRE |
+| Déclaration de patrimoine | ✅ | Synthèse complète exportable en PDF (via impression navigateur) |
 | Tableau de bord | ✅ | Évolution patrimoine, widget FIRE, scoring, dettes, objectifs (Recharts) |
-| Mise à jour des cours | ✅ | Mise à jour manuelle groupée (admin), prix fixe par instrument |
-| Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement |
-| Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net |
-| Déclaration de patrimoine | ✅ | Synthèse complète avec export PDF |
+| Mise à jour des cours | ✅ | Scheduler automatique mensuel (Boursorama + CoinGecko + ECB) + déclenchement manuel admin |
 
 ## Stack technique
 
@@ -143,29 +144,60 @@ Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation
 ```bash
 cd backend
 ./mvnw test
-# 561 tests unitaires (services + controllers)
+# 630 tests unitaires (services + controllers)
 ```
 
 ## Documentation
 
+### Architecture
+
 | Document | Description |
 |----------|-------------|
-| `docs/architecture/overview.md` | Architecture générale et diagrammes |
-| `docs/architecture/salary.md` | Revenus salariaux, formules de calcul, astreintes |
-| `docs/architecture/tax-simulator.md` | Simulateur d'impôts, algorithme IRPP |
-| `docs/architecture/patrimoine.md` | Patrimoine : positions, ordres, snapshots |
-| `docs/architecture/patrimoine-scoring.md` | Scoring patrimonial : axes, seuils, profils |
+| `docs/architecture/overview.md` | Architecture générale, fonctionnalités, statut |
+| `docs/architecture/user-management.md` | Utilisateurs, rôles, droits, inscription, matelas de sécurité |
+| `docs/architecture/security.md` | Authentification, anti brute-force, sessions |
+| `docs/architecture/salary.md` | Revenus salariaux : formules, astreintes, projections |
+| `docs/architecture/tax-simulator.md` | Simulateur d'impôts, algorithme IRPP, barème |
+| `docs/architecture/patrimoine.md` | Positions, ordres, enveloppes fiscales, snapshots |
+| `docs/architecture/instruments.md` | Instruments, cours (manuels + automatiques), taux de change, scheduler |
+| `docs/architecture/patrimoine-strategy.md` | Objectifs cibles par catégorie d'actif |
+| `docs/architecture/patrimoine-scoring.md` | Score 0–105 pts, 6 axes, profils |
+| `docs/architecture/patrimoine-declaration.md` | Déclaration de patrimoine, export PDF |
+| `docs/architecture/admin-snapshot-management.md` | Gestion admin des relevés de patrimoine |
 | `docs/architecture/recurring-expenses.md` | Dépenses récurrentes, capacité d'épargne |
-| `docs/architecture/dettes.md` | Dettes : amortissement, suivi manuel |
-| `docs/architecture/bilan-financier.md` | Bilan financier personnel |
-| `docs/architecture/dashboard.md` | Tableau de bord, widgets |
-| `docs/architecture/login-history.md` | Historique des connexions |
-| `docs/architecture/family-group.md` | Regroupement familial |
-| `docs/api/authentication.md` | API authentification |
-| `docs/api/users.md` | API utilisateurs |
-| `docs/api/salary-contracts.md` | API contrats salariaux et bulletins |
-| `docs/api/other-incomes.md` | API revenus complémentaires |
-| `docs/api/patrimoine.md` | API patrimoine (positions, ordres, snapshots) |
-| `docs/api/recurring-expenses.md` | API dépenses récurrentes |
-| `docs/api/debts.md` | API dettes |
-| `docs/architecture/decisions/` | Décisions d'architecture (ADR) |
+| `docs/architecture/passifs.md` | Possessions, décote automatique par catégorie |
+| `docs/architecture/dettes.md` | Dettes : amortissement, suivi manuel, tableau |
+| `docs/architecture/bilan-financier.md` | Bilan financier personnel, ratio FIRE |
+| `docs/architecture/dashboard.md` | Tableau de bord, widgets Recharts |
+| `docs/architecture/safety-net.md` | Matelas de sécurité, modes de calcul |
+| `docs/architecture/family-group.md` | Regroupement familial, invitations |
+| `docs/architecture/login-history.md` | Historique des connexions, événements |
+| `docs/architecture/loan-simulator.md` | Simulateur d'emprunt, investissement locatif |
+| `docs/architecture/crisis-simulator.md` | Simulateur de crise, impact choc de marché |
+| `docs/architecture/compound-interest-simulator.md` | Simulateur d'intérêts composés |
+| `docs/architecture/decisions/` | Décisions d'architecture (ADR) et patterns |
+
+### API
+
+| Document | Description |
+|----------|-------------|
+| `docs/api/authentication.md` | Login, logout, me, changement de mot de passe |
+| `docs/api/users.md` | CRUD utilisateurs (admin) |
+| `docs/api/profile.md` | Profil self-service : safety-net, fiscal, infos personnelles |
+| `docs/api/salary-contracts.md` | Contrats, bulletins, primes, avantages, astreintes |
+| `docs/api/other-incomes.md` | Revenus complémentaires |
+| `docs/api/tax-simulator.md` | Simulation IRPP |
+| `docs/api/fiscal-referentiel.md` | Barème kilométrique fiscal |
+| `docs/api/patrimoine-positions.md` | Instruments, positions, ordres |
+| `docs/api/patrimoine-snapshots.md` | Snapshots et déclenchement scheduler |
+| `docs/api/patrimoine-outils.md` | Score, objectifs, référentiel INSEE |
+| `docs/api/exchange-rates.md` | Taux de change (admin) |
+| `docs/api/recurring-expenses.md` | Dépenses récurrentes |
+| `docs/api/possessions.md` | Grandes possessions (passifs) |
+| `docs/api/debts.md` | Dettes, tableau d'amortissement, historique |
+| `docs/api/family-group.md` | Regroupement familial, invitations |
+| `docs/api/registration-requests.md` | Demandes d'inscription (admin) |
+| `docs/api/admin-snapshots.md` | Gestion admin des relevés (admin) |
+| `docs/api/login-history.md` | Historique des connexions (admin) |
+| `docs/api/dashboard.md` | Évolution salariale (tableau de bord) |
+| `docs/api/app-info.md` | Version de l'application |
