@@ -23,6 +23,13 @@
   </head>
 
   <body>
+    <script>
+      (function() {
+        var stored = localStorage.getItem('darkMode')
+        var dark = stored === 'true' || (stored === null && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+      })()
+    </script>
     <noscript>Cette application nécessite JavaScript pour fonctionner.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

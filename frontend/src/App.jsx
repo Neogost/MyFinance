@@ -37,6 +37,11 @@ export default function App() {
   const [authView,    setAuthView]    = useState('landing') // 'landing' | 'login' | 'register'
   const [currentPage, setCurrentPage] = useState(() => window.location.hash.slice(1) || 'dashboard')
   const [hideValues,  setHideValues]  = useState(() => localStorage.getItem('hideValues') === 'true')
+  const [darkMode,    setDarkMode]    = useState(() => {
+    const stored = localStorage.getItem('darkMode')
+    if (stored !== null) return stored === 'true'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
   const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
@@ -59,11 +64,20 @@ export default function App() {
       .finally(() => setAuthLoading(false))
   }, [])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+    localStorage.setItem('darkMode', String(darkMode))
+  }, [darkMode])
+
   function toggleHideValues() {
     setHideValues(v => {
       localStorage.setItem('hideValues', String(!v))
       return !v
     })
+  }
+
+  function toggleDarkMode() {
+    setDarkMode(v => !v)
   }
 
   async function handleLogout() {
@@ -161,6 +175,8 @@ export default function App() {
         onLogout={handleLogout}
         hideValues={hideValues}
         onToggleHideValues={toggleHideValues}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
         familyMode={familyMode}
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
         pendingRegistrations={pendingRegistrations}

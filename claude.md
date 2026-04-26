@@ -722,5 +722,14 @@ npm run dev
   - Documentation : `docs/deployment/docker-deployment.md`
   - Accès internet via proxy inverse QNAP + myQNAPcloud (HTTPS port 4443, SSL Let's Encrypt auto)
 
+- **Mode nuit (dark mode)** :
+  - Classe `dark` sur `<html>` activée via `localStorage` ou `prefers-color-scheme` au démarrage
+  - Script inline dans `index.html` appliqué avant le premier rendu React (anti-flash)
+  - Variables CSS Tailwind v4 (`--color-*`) surchargées dans `html.dark` — aucun composant modifié
+  - Neutre : gris inversés (`--color-white` → fond carte sombre, `--color-gray-100` → fond page, `--color-gray-900` → texte clair)
+  - Teintes colorées adoucies en dark (indigo, violet, red, green, teal, orange, blue, emerald, amber, pink, purple)
+  - Toggle lune/soleil dans la barre de navigation (desktop et mobile), à côté du bouton masquage des valeurs
+  - État géré dans `App.jsx` (`useState` + `useEffect`), persisté en `localStorage`
+
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

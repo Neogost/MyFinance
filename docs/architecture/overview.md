@@ -105,6 +105,9 @@ mindmap
         Gestion des groupes familiaux
         Mise à jour automatique des cours (scheduler)
         Version de l'application
+    Interface
+        Mode nuit (dark mode)
+        Masquage des valeurs
 ```
 
 ---
@@ -312,6 +315,20 @@ Consultation et modération des groupes familiaux (dissolution, retrait de membr
 
 ---
 
+### 3.10 Préférences d'interface
+
+Deux préférences utilisateur persistées dans `localStorage`, activables depuis la barre de navigation (desktop et mobile).
+
+#### Mode nuit
+
+Bascule l'ensemble de l'interface en thème sombre via une classe `dark` posée sur `<html>`. Les couleurs sont définies par des variables CSS (`--color-*`) surchargées dans `html.dark` — aucun composant ne nécessite de modification. Initialisé depuis `localStorage` ou `prefers-color-scheme` si aucune préférence n'est sauvegardée. Un script inline dans `index.html` applique la classe avant le premier rendu React pour éviter le flash de blanc.
+
+#### Masquage des valeurs
+
+Classe `hide-values` sur le conteneur principal. Tous les éléments portant la classe `.amount` passent en `blur(6px)`, révélables au survol. Utilisé pour dissimuler les données financières à l'écran sans déconnecter.
+
+---
+
 ## 4. Décisions d'architecture (ADR)
 
 Les décisions techniques structurantes sont documentées dans [`docs/architecture/decisions/`](decisions/README.md).
@@ -358,3 +375,5 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Déclaration de patrimoine (PDF) | Implémenté |
 | Simulateur de crise | Implémenté |
 | Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
+| Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |
+| Masquage des valeurs financières (blur, révélable au survol) | Implémenté |

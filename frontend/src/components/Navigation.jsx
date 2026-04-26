@@ -31,6 +31,22 @@ function EyeIcon({ hidden }) {
   )
 }
 
+function DarkModeIcon({ dark }) {
+  return dark ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  )
+}
+
 function HomeIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -105,7 +121,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null }) {
   const [incomeOpen,     setIncomeOpen]     = useState(false)
   const [toolsOpen,      setToolsOpen]      = useState(false)
   const [adminOpen,      setAdminOpen]      = useState(false)
@@ -226,6 +242,10 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             className={`p-1.5 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
           </button>
+          <button onClick={onToggleDarkMode} title={darkMode ? 'Passer en mode clair' : 'Passer en mode nuit'}
+            className={`p-1.5 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+            <DarkModeIcon dark={darkMode} />
+          </button>
           {user.familyGroupId && (
             <button onClick={onToggleFamilyMode}
               title={familyMode ? 'Mode Foyer actif — cliquer pour désactiver' : 'Activer le Mode Foyer'}
@@ -245,6 +265,10 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <button onClick={onToggleHideValues}
             className={`p-2 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
+          </button>
+          <button onClick={onToggleDarkMode}
+            className={`p-2 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
+            <DarkModeIcon dark={darkMode} />
           </button>
           {user.familyGroupId && (
             <button onClick={onToggleFamilyMode}
