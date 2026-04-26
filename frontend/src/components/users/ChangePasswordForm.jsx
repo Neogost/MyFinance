@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { changePassword } from '../../api/users'
 import FamilyGroupPanel from '../profile/FamilyGroupPanel'
+import FiscalProfilePanel from '../profile/FiscalProfilePanel'
 import PersonalInfoPanel from '../profile/PersonalInfoPanel'
 import SafetyNetPanel from '../profile/SafetyNetPanel'
 
@@ -143,6 +144,7 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
       </div>
 
       <PersonalInfoPanel user={user} onUpdate={onUserUpdate} />
+      <FiscalProfilePanel user={user} onUpdate={onUserUpdate} />
       <FamilyGroupPanel onGroupChange={onGroupChange} />
       <SafetyNetPanel user={user} onUpdate={onUserUpdate} />
     </div>

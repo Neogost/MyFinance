@@ -1,6 +1,7 @@
 package com.myfinance.controller;
 
 import com.myfinance.domain.User;
+import com.myfinance.dto.UpdateFiscalProfileRequest;
 import com.myfinance.dto.UpdatePersonalInfoRequest;
 import com.myfinance.dto.UpdateSafetyNetRequest;
 import com.myfinance.dto.UserDto;
@@ -32,6 +33,16 @@ public class ProfileController {
             @RequestBody UpdateSafetyNetRequest request,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updateSafetyNet(currentUser, request));
+    }
+
+    @Operation(summary = "Mettre à jour le profil fiscal")
+    @ApiResponse(responseCode = "200", description = "Profil fiscal mis à jour",
+        content = @Content(schema = @Schema(implementation = UserDto.class)))
+    @PutMapping("/fiscal")
+    public ResponseEntity<UserDto> updateFiscalProfile(
+            @RequestBody UpdateFiscalProfileRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(profileService.updateFiscalProfile(currentUser, request));
     }
 
     @Operation(summary = "Mettre à jour les informations personnelles")
