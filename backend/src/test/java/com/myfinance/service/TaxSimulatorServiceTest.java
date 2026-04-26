@@ -393,6 +393,38 @@ class TaxSimulatorServiceTest {
     }
 
     @Test
+    void estimerImpotSurSalaire_bracketsVides_retourneNull() {
+        when(taxParameters.getBrackets()).thenReturn(List.of());
+
+        assertThat(taxSimulatorService.estimerImpotSurSalaire(30000f, user)).isNull();
+    }
+
+    @Test
+    void estimerImpotSurSalaire_netImposableNegatif_retourneZeroImpot() {
+        when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
+        when(taxParameters.getBrackets()).thenReturn(brackets);
+
+        // Math.max(0, -5000 - abattement) = 0 → impôt = 0
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(-5000f, user);
+
+        assertThat(impot).isNotNull();
+        assertThat(impot).isEqualTo(0f);
+    }
+
+    @Test
+    void estimerImpotSurSalaire_abattementSuperieurAuRevenu_retourneZeroImpot() {
+        when(taxParameters.getFlatRateDeduction()).thenReturn(flatRate);
+        when(taxParameters.getBrackets()).thenReturn(brackets);
+
+        // netImposable=200 → abattement=min(max(20, 504), 13522)=504 > 200
+        // revenuNetImposable = max(0, 200-504) = 0 → impôt = 0
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(200f, user);
+
+        assertThat(impot).isNotNull();
+        assertThat(impot).isEqualTo(0f);
+    }
+
+    @Test
     void estimerImpotSurSalaire_avecDeuxParts() {
         User deuxParts = User.builder().id(4L).role(RoleEnum.USER)
                 .fiscalParts(2.0f)

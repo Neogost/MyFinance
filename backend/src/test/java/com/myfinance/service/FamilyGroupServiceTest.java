@@ -206,6 +206,29 @@ class FamilyGroupServiceTest {
     // ── sendInvitation ─────────────────────────────────────────
 
     @Test
+    void removeMember_ownerSuiMeme_leve400() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+
+        assertThatThrownBy(() -> familyGroupService.removeMember(1L, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void sendInvitation_suiMeme_leve400() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(userRepository.findByLogin("kevin")).thenReturn(Optional.of(owner));
+
+        assertThatThrownBy(() -> familyGroupService.sendInvitation(
+                new SendInvitationRequest("kevin"), owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
     void sendInvitation_leve404_siLoginInconnu() {
         when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("inconnu")).thenReturn(Optional.empty());

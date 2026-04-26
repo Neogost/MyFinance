@@ -5,6 +5,7 @@ import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SafetyNetMode;
+import com.myfinance.dto.UpdateFiscalProfileRequest;
 import com.myfinance.dto.UpdatePersonalInfoRequest;
 import com.myfinance.dto.UpdateSafetyNetRequest;
 import com.myfinance.dto.UserDto;
@@ -119,6 +120,54 @@ class ProfileControllerTest {
     @Test
     void updatePersonalInfo_sansAuthentification_retourne401() throws Exception {
         mockMvc.perform(put("/api/profile/personal-info")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── PUT /api/profile/fiscal ────────────────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void updateFiscalProfile_fraisReels_retourne200() throws Exception {
+        UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
+                1.0f, false,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
+        UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
+                1.0f, false, 1400f, null, null, null, null, null, null, null,
+                null, null, null, 600f, null, null, null, 300f, null, null, null, null, null);
+        when(profileService.updateFiscalProfile(any(), any())).thenReturn(dto);
+
+        mockMvc.perform(put("/api/profile/fiscal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.useFlatRateDeduction").value(false))
+                .andExpect(jsonPath("$.customProfessionalDeduction").value(1400.0));
+    }
+
+    @Test
+    @WithMockCustomUser
+    void updateFiscalProfile_forfaitaire_retourne200() throws Exception {
+        UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
+                2.0f, true,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
+        UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
+                2.0f, true, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
+        when(profileService.updateFiscalProfile(any(), any())).thenReturn(dto);
+
+        mockMvc.perform(put("/api/profile/fiscal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.useFlatRateDeduction").value(true))
+                .andExpect(jsonPath("$.customProfessionalDeduction").doesNotExist());
+    }
+
+    @Test
+    void updateFiscalProfile_sansAuthentification_retourne401() throws Exception {
+        mockMvc.perform(put("/api/profile/fiscal")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isUnauthorized());

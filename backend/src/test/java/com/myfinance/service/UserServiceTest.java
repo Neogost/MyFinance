@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.*;
+import com.myfinance.dto.ChangePasswordRequest;
 import com.myfinance.dto.CreateUserRequest;
 import com.myfinance.dto.UpdateUserRequest;
 import com.myfinance.dto.UserDto;
@@ -121,6 +122,37 @@ class UserServiceTest {
     }
 
     @Test
+    void create_useFlatRateNull_defaultVraiEtSauvegarde() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER,
+                null, null, null); // useFlatRateDeduction=null → doit defaulter à true
+
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("password")).thenReturn("hashed");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userService.create(request);
+
+        verify(userRepository).save(argThat(u -> Boolean.TRUE.equals(u.getUseFlatRateDeduction())));
+    }
+
+    @Test
+    void create_fraisReelsSansDeduction_leve400() {
+        CreateUserRequest request = new CreateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER,
+                1.0f, false, null); // frais réels sans montant → 400
+
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.create(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void create_leve409_siLoginDejaUtilise() {
         CreateUserRequest request = new CreateUserRequest(
                 "Jean", "Dupont", null, "jean.dupont", "password", RoleEnum.USER, null, null, null);
@@ -167,6 +199,23 @@ class UserServiceTest {
         userService.update(1L, request);
 
         verify(passwordEncoder).encode("nouveau_mdp");
+    }
+
+    @Test
+    void update_fraisReelsSansDeduction_leve400() {
+        UpdateUserRequest request = new UpdateUserRequest(
+                "Jean", "Dupont", null, "jean.dupont", null, RoleEnum.USER,
+                1.0f, false, null); // frais réels sans montant → 400
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userService.update(1L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -260,5 +309,65 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.loadUserByUsername("inconnu"))
                 .isInstanceOf(UsernameNotFoundException.class);
+    }
+
+    // ── findEntityById ─────────────────────────────────────────
+
+    @Test
+    void findEntityById_retourneLentite_siTrouvee() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        User result = userService.findEntityById(1L);
+
+        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getLogin()).isEqualTo("jean.dupont");
+    }
+
+    @Test
+    void findEntityById_leve404_siInexistant() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findEntityById(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── changePassword ─────────────────────────────────────────
+
+    @Test
+    void changePassword_avecSucces_encodeEtSauvegarde() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("ancien", "hashed_password")).thenReturn(true);
+        when(passwordEncoder.encode("Nouveau1")).thenReturn("nouveau_hash");
+
+        userService.changePassword(1L, new ChangePasswordRequest("ancien", "Nouveau1"));
+
+        verify(userRepository).save(argThat(u -> "nouveau_hash".equals(u.getPassword())));
+    }
+
+    @Test
+    void changePassword_userInexistant_leve404() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.changePassword(99L,
+                new ChangePasswordRequest("ancien", "Nouveau1")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void changePassword_motDePasseActuelIncorrect_leve401() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("mauvais", "hashed_password")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword(1L,
+                new ChangePasswordRequest("mauvais", "Nouveau1")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.UNAUTHORIZED));
+
+        verify(userRepository, never()).save(any());
     }
 }

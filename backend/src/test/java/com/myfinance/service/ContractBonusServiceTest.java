@@ -173,6 +173,38 @@ class ContractBonusServiceTest {
     }
 
     @Test
+    void update_leve400_siExceptionnelleSansPaymentDate() {
+        UpdateContractBonusRequest request = new UpdateContractBonusRequest(
+                "Prime exceptionnelle", 1000f, BonusTypeEnum.EXCEPTIONNELLE, null, null);
+
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
+        when(contractBonusRepository.findById(11L)).thenReturn(Optional.of(bonusExceptionnel));
+
+        assertThatThrownBy(() -> contractBonusService.update(1L, 11L, request, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(contractBonusRepository, never()).save(any());
+    }
+
+    @Test
+    void update_leve400_siAnnuelleSansPaymentMonth() {
+        UpdateContractBonusRequest request = new UpdateContractBonusRequest(
+                "13ème mois", 3750f, BonusTypeEnum.ANNUELLE, null, null);
+
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
+        when(contractBonusRepository.findById(10L)).thenReturn(Optional.of(bonusAnnuel));
+
+        assertThatThrownBy(() -> contractBonusService.update(1L, 10L, request, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(contractBonusRepository, never()).save(any());
+    }
+
+    @Test
     void update_leve404_siPrimeNappartientPasAuContrat() {
         SalaryContract autreContrat = SalaryContract.builder().id(99L).user(owner)
                 .startDate(LocalDate.of(2020, 1, 1)).endDate(null)
