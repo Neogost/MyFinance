@@ -15,6 +15,18 @@
       "name": "myfinance.admin.initial-password",
       "type": "java.lang.String",
       "description": "Mot de passe initial du compte admin créé au premier démarrage si la base est vide. Obligatoire (variable d'environnement MYFINANCE_ADMIN_INITIAL_PASSWORD ou property Spring) — le démarrage échoue si absent."
+    },
+    {
+      "name": "security.registration.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Nombre maximum de demandes d'inscription autorisées par IP dans la fenêtre de temps.",
+      "defaultValue": 5
+    },
+    {
+      "name": "security.registration.window-minutes",
+      "type": "java.lang.Integer",
+      "description": "Durée de la fenêtre glissante de rate-limit /register, en minutes.",
+      "defaultValue": 60
     }
   ]
 }

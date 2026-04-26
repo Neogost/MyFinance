@@ -13,8 +13,14 @@ Navigateur
     │
     └─ HTTPS :8443
            │
-           ├─ LoginRateLimitFilter  (@Order HIGHEST_PRECEDENCE)
+           ├─ RemoteIpValve Tomcat (profils docker/prod)
+           │       │  X-Forwarded-For → request.getRemoteAddr()
+           │
+           ├─ LoginRateLimitFilter           (@Order HIGHEST_PRECEDENCE)
            │       │  compte verrouillé → 429 immédiat (avant Spring Security)
+           │
+           ├─ RegistrationRateLimitFilter    (@Order HIGHEST_PRECEDENCE + 1)
+           │       │  IP rate-limitée sur /api/auth/register → 429
            │
            ├─ Spring Security FilterChain (SecurityConfig)
            │       ├─ CORS
@@ -218,6 +224,62 @@ security.login.max-lock-minutes=10
   "secondesRestantes": 287
 }
 ```
+
+---
+
+## Rate-limit de l'endpoint public `/api/auth/register`
+
+### Composants
+
+| Composant | Rôle |
+|-----------|------|
+| `RegistrationRateLimitService` | Compte les tentatives par IP en mémoire (`ConcurrentHashMap`) sur une fenêtre glissante |
+| `RegistrationRateLimitFilter` | Filtre Servlet `@Order(HIGHEST_PRECEDENCE + 1)`, bloque avant Spring Security et avant le service métier |
+| `RegistrationRateLimitProperties` | Paramètres `security.registration.max-attempts` et `security.registration.window-minutes` |
+
+### Pourquoi un rate-limit dédié
+
+L'endpoint `/api/auth/register` est public et chaque appel hash un mot de passe avec BCrypt (~100 ms). Sans protection, deux risques :
+- **DoS CPU** : un attaquant peut épuiser les threads en envoyant des centaines de requêtes parallèles.
+- **Saturation de la table** `user_registration_requests` (chaque demande PENDING y est persistée).
+
+Les valeurs par défaut (5 tentatives / 60 min / IP) tolèrent les retry légitimes d'un utilisateur (faute de frappe, hésitation) mais coupent net tout flood automatisé.
+
+### Réponse HTTP 429
+
+```json
+{
+  "message": "Trop de demandes. Réessayez dans 1 h.",
+  "secondesRestantes": 3540
+}
+```
+
+### Limitations connues
+
+- **Stockage en mémoire** : le compteur est réinitialisé au redémarrage du conteneur. Acceptable pour l'usage personnel ; à migrer vers Redis si l'app passe à plusieurs instances.
+- **IP-based** : un attaquant disposant de plusieurs IPs (botnet, Tor) peut contourner. À compléter par un captcha (hCaptcha / Cloudflare Turnstile) si l'app devient publique sans validation manuelle.
+
+---
+
+## Reverse proxy et récupération des vraies IPs
+
+### Problème
+
+L'application est déployée derrière un proxy QNAP (Application Portal / myQNAPcloud). Sans configuration spécifique, `request.getRemoteAddr()` retourne l'IP du proxy (typiquement une IP de bridge Docker comme `172.29.0.1`), pas celle du client final. Conséquences :
+- L'historique de connexion (`LoginEvent`) est inutilisable pour la détection d'attaques.
+- Le rate-limit IP du `/register` est inopérant (toutes les requêtes paraissent venir d'une même IP).
+
+### Solution
+
+`ForwardedHeadersConfig` (profils `docker` et `prod` uniquement) ajoute une `RemoteIpValve` Tomcat qui lit les en-têtes `X-Forwarded-For` et `X-Forwarded-Proto` envoyés par le proxy et met à jour `request.getRemoteAddr()` avec la vraie IP du client.
+
+### Sécurité de la config
+
+`RemoteIpValve` ne fait par défaut confiance qu'aux IPs internes RFC 1918 (`10/8`, `172.16/12`, `192.168/16`) et au loopback. Comme le conteneur Spring n'est pas exposé directement sur internet (seul le proxy QNAP l'est), faire confiance à l'en-tête `X-Forwarded-For` est sûr.
+
+### Action requise côté QNAP
+
+Vérifier que le reverse proxy QNAP envoie bien `X-Forwarded-For`. Sur la plupart des installations nginx-based (Application Portal, myQNAPcloud), c'est par défaut. Pour vérifier après déploiement : un login depuis un téléphone en 4G doit faire apparaître l'IP publique de l'opérateur dans `LoginEvent.ipAddress` (pas `172.x` ni `127.0.0.1`).
 
 ---
 

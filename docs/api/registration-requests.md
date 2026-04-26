@@ -25,6 +25,7 @@ Règles de validation :
 |------|-------------|
 | `202 Accepted` | Demande prise en compte — corps : `{ "message": "..." }` |
 | `400 Bad Request` | Validation du corps échouée |
+| `429 Too Many Requests` | Rate-limit IP atteint — corps : `{ "message": "...", "secondesRestantes": 3540 }` |
 
 **Réponse 202 (corps) :**
 ```json
