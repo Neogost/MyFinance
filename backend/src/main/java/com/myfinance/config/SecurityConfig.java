@@ -2,6 +2,7 @@ package com.myfinance.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.domain.User;
+import com.myfinance.dto.UserDto;
 import com.myfinance.service.LoginAttemptService;
 import com.myfinance.service.LoginHistoryService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,7 +24,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -121,15 +121,7 @@ public class SecurityConfig {
                     User user = (User) authentication.getPrincipal();
                     response.setStatus(HttpServletResponse.SC_OK);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    Map<String, Object> payload = new HashMap<>();
-                    payload.put("id",            user.getId());
-                    payload.put("login",         user.getLogin());
-                    payload.put("firstName",     user.getFirstName());
-                    payload.put("lastName",      user.getLastName());
-                    payload.put("role",          user.getRole());
-                    payload.put("birthDate",     user.getBirthDate());
-                    payload.put("familyGroupId", user.getFamilyGroup() != null ? user.getFamilyGroup().getId() : null);
-                    objectMapper.writeValue(response.getWriter(), payload);
+                    objectMapper.writeValue(response.getWriter(), UserDto.from(user));
                 })
                 .failureHandler((request, response, exception) -> {
                     String login = request.getParameter("username");

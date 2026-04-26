@@ -6,6 +6,9 @@ const labelCls = 'text-sm font-semibold text-gray-700'
 
 export default function PersonalInfoPanel({ user, onUpdate }) {
   const [form, setForm] = useState({
+    firstName:       user.firstName       ?? '',
+    lastName:        user.lastName        ?? '',
+    birthDate:       user.birthDate       ?? '',
     birthPlace:      user.birthPlace      ?? '',
     birthPostalCode: user.birthPostalCode ?? '',
     jobTitle:        user.jobTitle        ?? '',
@@ -20,10 +23,17 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
   }
 
   async function handleSave() {
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError('Le prénom et le nom sont obligatoires.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
       const updated = await updatePersonalInfo({
+        firstName:       form.firstName.trim(),
+        lastName:        form.lastName.trim(),
+        birthDate:       form.birthDate       || null,
         birthPlace:      form.birthPlace      || null,
         birthPostalCode: form.birthPostalCode || null,
         jobTitle:        form.jobTitle        || null,
@@ -41,10 +51,40 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
     <div className="bg-white rounded-xl shadow-sm p-4 md:p-8">
       <h3 className="text-base font-semibold text-gray-800 mb-1">Informations personnelles</h3>
       <p className="text-sm text-gray-500 mb-6">
-        Utilisées pour la déclaration de patrimoine. Aucun de ces champs n'est obligatoire.
+        Utilisées pour la déclaration de patrimoine et l'affichage de votre profil.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Prénom *</label>
+          <input name="firstName" type="text" value={form.firstName}
+            onChange={handleChange} placeholder="Kévin"
+            className={inputCls} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Nom *</label>
+          <input name="lastName" type="text" value={form.lastName}
+            onChange={handleChange} placeholder="Dupont"
+            className={inputCls} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Date de naissance</label>
+          <input name="birthDate" type="date" value={form.birthDate}
+            onChange={handleChange}
+            className={inputCls} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className={labelCls}>Poste actuel</label>
+          <input name="jobTitle" type="text" value={form.jobTitle}
+            onChange={handleChange} placeholder="ex : Ingénieur logiciel"
+            className={inputCls} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div className="flex flex-col gap-1.5">
           <label className={labelCls}>Commune de naissance</label>
           <input name="birthPlace" type="text" value={form.birthPlace}
@@ -57,13 +97,6 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
             onChange={handleChange} placeholder="75001"
             className={inputCls} />
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1.5 mb-5">
-        <label className={labelCls}>Poste actuel</label>
-        <input name="jobTitle" type="text" value={form.jobTitle}
-          onChange={handleChange} placeholder="ex : Ingénieur logiciel"
-          className={inputCls} />
       </div>
 
       {error   && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>}
