@@ -9,7 +9,7 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 
 | Phase | État | Description |
 |-------|------|-------------|
-| Phase 0 | ⏳ En cours | Tests unitaires frontend (filet de sécurité avant tout refacto) |
+| Phase 0 | ✅ Terminée | 492 tests Vitest — utils, formulaires, panels, pages CRUD, graphiques, infrastructure |
 | Phase 1 | 🔲 À faire | Quick wins — utils, constantes, composants communs |
 | Phase 2 | 🔲 À faire | Hooks réutilisables + pages volumineuses |
 | Phase 3 | 🔲 Optionnel | Architecture avancée |
