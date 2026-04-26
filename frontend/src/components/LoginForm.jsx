@@ -57,7 +57,7 @@ export default function LoginForm({ onSuccess, initialShowRegister = false, onBa
       if (err.response?.status === 429) {
         const secondes = err.response.data?.secondesRestantes ?? 300
         setLockoutSecondes(secondes)
-        setError(err.response.data?.message ?? 'Trop de tentatives. Compte temporairement bloqué.')
+        setError(err.response.data?.message ?? 'Trop de tentatives depuis votre connexion. Réessayez plus tard.')
       } else {
         setError('Identifiants incorrects')
       }

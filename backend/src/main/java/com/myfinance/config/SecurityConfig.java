@@ -5,6 +5,7 @@ import com.myfinance.domain.User;
 import com.myfinance.dto.UserDto;
 import com.myfinance.service.LoginAttemptService;
 import com.myfinance.service.LoginHistoryService;
+import com.myfinance.service.LoginIpAttemptService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,9 @@ public class SecurityConfig {
     // Optionnel pour rester compatible avec les @WebMvcTest qui n'incluent pas les @Service
     @Autowired(required = false)
     private LoginAttemptService loginAttemptService;
+
+    @Autowired(required = false)
+    private LoginIpAttemptService loginIpAttemptService;
 
     @Autowired(required = false)
     private LoginHistoryService loginHistoryService;
@@ -128,26 +132,38 @@ public class SecurityConfig {
                     log.warn("Échec d'authentification — login={} exception={}: {}", login, exception.getClass().getSimpleName(), exception.getMessage());
                     String ip = request.getRemoteAddr();
                     String ua = request.getHeader("User-Agent");
+
+                    // Incrémente les compteurs (par login + par IP). Le verrou par-login
+                    // n'est PAS exposé via 429 pour empêcher l'énumération de comptes :
+                    // l'attaquant ne peut pas distinguer « compte existant verrouillé » de
+                    // « identifiants incorrects ». Le 429 est réservé au rate-limit IP,
+                    // qui blâme la source de l'attaque sans révéler l'existence d'un compte.
+                    Integer nbEchecs = null;
                     if (loginAttemptService != null && login != null && !login.isBlank()) {
                         loginAttemptService.enregistrerEchec(login);
-                        int nbEchecs = loginAttemptService.getNbEchecs(login);
-                        if (loginHistoryService != null) {
-                            loginHistoryService.logFailure(login, ip, ua, nbEchecs);
-                        }
-                        if (loginAttemptService.estBloque(login)) {
-                            long secondes = loginAttemptService.secondesRestantes(login);
-                            response.setStatus(429);
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            objectMapper.writeValue(response.getWriter(), Map.of(
-                                    "message", "Compte bloqué après trop de tentatives. Réessayez dans "
-                                               + formaterDuree(secondes) + ".",
-                                    "secondesRestantes", secondes
-                            ));
-                            return;
-                        }
-                    } else if (loginHistoryService != null && login != null && !login.isBlank()) {
-                        loginHistoryService.logFailure(login, ip, ua, null);
+                        nbEchecs = loginAttemptService.getNbEchecs(login);
                     }
+                    if (loginIpAttemptService != null) {
+                        loginIpAttemptService.enregistrerEchec(ip);
+                    }
+                    if (loginHistoryService != null && login != null && !login.isBlank()) {
+                        loginHistoryService.logFailure(login, ip, ua, nbEchecs);
+                    }
+
+                    // Si l'IP vient de basculer au-dessus du seuil, on retourne 429
+                    // immédiatement (sans attendre la requête suivante).
+                    if (loginIpAttemptService != null && loginIpAttemptService.estBloque(ip)) {
+                        long secondes = loginIpAttemptService.secondesRestantes(ip);
+                        response.setStatus(429);
+                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                        objectMapper.writeValue(response.getWriter(), Map.of(
+                                "message", "Trop de tentatives depuis votre connexion. Réessayez dans "
+                                           + formaterDuree(secondes) + ".",
+                                "secondesRestantes", secondes
+                        ));
+                        return;
+                    }
+
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     objectMapper.writeValue(response.getWriter(),

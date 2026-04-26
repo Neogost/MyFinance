@@ -181,10 +181,27 @@ Les fichiers avec extension (`/assets/main.js`, `/favicon.svg`…) sont servis d
 
 | Composant | Rôle |
 |-----------|------|
-| `LoginAttemptService` | Compte les échecs par login en mémoire (`ConcurrentHashMap`), calcule la durée de blocage |
+| `LoginAttemptService` | Compte les échecs **par login** en mémoire (`ConcurrentHashMap`), calcule la durée de blocage exponentielle |
+| `LoginIpAttemptService` | Compte les échecs **par IP** en mémoire, fenêtre glissante (rate-limit secondaire pour limiter le balayage massif) |
 | `LoginRateLimitFilter` | Filtre Servlet `@Order(HIGHEST_PRECEDENCE)`, bloque avant Spring Security |
-| `SecurityConfig` failure handler | Incrémente le compteur à chaque échec d'authentification |
-| `SecurityConfig` success handler | Réinitialise le compteur après une connexion réussie |
+| `SecurityConfig` failure handler | Incrémente les compteurs (login + IP) à chaque échec d'authentification |
+| `SecurityConfig` success handler | Réinitialise le compteur par-login après une connexion réussie |
+
+### Anti-énumération de comptes
+
+Le verrou par-login est **interne** : il empêche bien les attaques de credential stuffing sur un compte précis, mais sa réponse au client est volontairement banalisée pour ne pas révéler l'existence du compte.
+
+| Situation | Code | Réponse |
+|-----------|------|---------|
+| IP rate-limitée | `429` | `{ "message": "Trop de tentatives depuis votre connexion...", "secondesRestantes": ... }` |
+| Login verrouillé (interne) | `401` | `{ "message": "Identifiants incorrects" }` (réponse identique à un mot de passe erroné) |
+| Mot de passe erroné | `401` | `{ "message": "Identifiants incorrects" }` |
+
+Conséquence : un attaquant ne peut plus distinguer « compte existant verrouillé » de « identifiants incorrects ». Le `429` est réservé au rate-limit IP, qui blâme la source de l'attaque sans révéler quel compte est ciblé.
+
+### Anti-DoS-par-login
+
+Sans le rate-limit IP, un attaquant pouvait verrouiller délibérément un compte légitime (ex : `admin`) en envoyant 5 mauvais mots de passe. Avec le rate-limit IP (par défaut 20 échecs / 60 min / IP), la fenêtre d'attaque par IP est rapidement fermée et l'attaquant ne peut plus alimenter le compteur du compte ciblé. La combinaison limite drastiquement le DoS-par-login depuis une seule source.
 
 ### Durée de blocage exponentielle
 
@@ -205,10 +222,14 @@ Avec les valeurs par défaut prod (`base=5 min`, `max=80 min`) :
 ### Paramétrage par profil
 
 ```properties
-# Prod (défauts)
+# Verrou par-login — exponentiel, surfacé en 401 silencieux (pas en 429)
 security.login.max-attempts=5
 security.login.base-lock-minutes=5
 security.login.max-lock-minutes=80
+
+# Rate-limit IP (fenêtre fixe) — surfacé en 429
+security.login.ip.max-attempts=20
+security.login.ip.window-minutes=60
 
 # Dev (seuils réduits pour les tests)
 security.login.max-attempts=3
@@ -216,12 +237,12 @@ security.login.base-lock-minutes=1
 security.login.max-lock-minutes=10
 ```
 
-### Réponse HTTP 429
+### Réponse HTTP 429 (rate-limit IP uniquement)
 
 ```json
 {
-  "message": "Compte bloqué après trop de tentatives. Réessayez dans 5 min.",
-  "secondesRestantes": 287
+  "message": "Trop de tentatives depuis votre connexion. Réessayez dans 1 h.",
+  "secondesRestantes": 3540
 }
 ```
 

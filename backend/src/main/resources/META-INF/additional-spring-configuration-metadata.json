@@ -27,6 +27,18 @@
       "type": "java.lang.Integer",
       "description": "Durée de la fenêtre glissante de rate-limit /register, en minutes.",
       "defaultValue": 60
+    },
+    {
+      "name": "security.login.ip.max-attempts",
+      "type": "java.lang.Integer",
+      "description": "Nombre maximum d'échecs de connexion par IP dans la fenêtre (rate-limit IP sur /login).",
+      "defaultValue": 20
+    },
+    {
+      "name": "security.login.ip.window-minutes",
+      "type": "java.lang.Integer",
+      "description": "Durée de la fenêtre glissante de rate-limit IP /login, en minutes.",
+      "defaultValue": 60
     }
   ]
 }
