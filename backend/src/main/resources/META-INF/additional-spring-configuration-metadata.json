@@ -10,6 +10,11 @@
       "type": "java.lang.Boolean",
       "description": "Active la protection CSRF (double-submit cookie). Désactiver en dev (cross-origin) et dans les tests.",
       "defaultValue": true
+    },
+    {
+      "name": "myfinance.admin.initial-password",
+      "type": "java.lang.String",
+      "description": "Mot de passe initial du compte admin créé au premier démarrage si la base est vide. Obligatoire (variable d'environnement MYFINANCE_ADMIN_INITIAL_PASSWORD ou property Spring) — le démarrage échoue si absent."
     }
   ]
 }
