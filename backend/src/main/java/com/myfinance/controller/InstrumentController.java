@@ -9,10 +9,12 @@ import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.dto.UpdateStablePriceRequest;
 import com.myfinance.service.InstrumentService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/instruments")
 @RequiredArgsConstructor
+@Validated
 public class InstrumentController {
 
     private final InstrumentService instrumentService;
@@ -80,7 +83,8 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<InstrumentAllocationDto> updateAllocations(
             @PathVariable Long id,
-            @RequestBody List<InstrumentAllocationDto> entries) {
+            @Size(max = 200, message = "Au maximum 200 entrées d'allocation géographique")
+            @Valid @RequestBody List<InstrumentAllocationDto> entries) {
         return instrumentService.updateAllocations(id, entries);
     }
 
@@ -89,7 +93,8 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<InstrumentSectorAllocationDto> updateSectorAllocations(
             @PathVariable Long id,
-            @RequestBody List<InstrumentSectorAllocationDto> entries) {
+            @Size(max = 50, message = "Au maximum 50 entrées d'allocation sectorielle")
+            @Valid @RequestBody List<InstrumentSectorAllocationDto> entries) {
         return instrumentService.updateSectorAllocations(id, entries);
     }
 

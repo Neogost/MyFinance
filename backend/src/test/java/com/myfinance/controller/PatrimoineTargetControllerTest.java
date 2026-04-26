@@ -87,4 +87,40 @@ class PatrimoineTargetControllerTest {
                         .content("{}"))
                 .andExpect(status().isUnauthorized());
     }
+
+    // ── Validation H5 — bornes sur la Map ─────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_plusDe20Categories_retourne400() throws Exception {
+        java.util.Map<String, Double> trop = new java.util.HashMap<>();
+        for (int i = 0; i < 21; i++) trop.put("CAT_" + i, 1000.0);
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(trop)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_montantNegatif_retourne400() throws Exception {
+        Map<String, Double> targets = Map.of("BOURSE", -100.0);
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(targets)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_montantTropEleve_retourne400() throws Exception {
+        Map<String, Double> targets = Map.of("BOURSE", 1_000_000_001.0);
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(targets)))
+                .andExpect(status().isBadRequest());
+    }
 }

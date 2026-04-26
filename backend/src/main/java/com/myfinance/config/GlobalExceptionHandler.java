@@ -1,6 +1,7 @@
 package com.myfinance.config;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(f -> f.getField() + " " + f.getDefaultMessage())
+                .findFirst()
+                .orElse("Requête invalide");
+        return ResponseEntity.badRequest().body(Map.of("error", message));
+    }
+
+    // Échec de validation method-level (@Validated + @Size sur paramètre, etc.) → 400
+    // Notamment levé pour les contraintes sur Map/List @RequestBody dans les controllers @Validated.
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .map(v -> v.getMessage())
                 .findFirst()
                 .orElse("Requête invalide");
         return ResponseEntity.badRequest().body(Map.of("error", message));

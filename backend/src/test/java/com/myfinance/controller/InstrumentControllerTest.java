@@ -221,4 +221,59 @@ class InstrumentControllerTest {
         mockMvc.perform(delete("/api/instruments/1"))
                 .andExpect(status().isForbidden());
     }
+
+    // ── Validation H5 — bornes sur les Lists d'allocations ────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateAllocations_plusDe200Entrees_retourne400() throws Exception {
+        java.util.List<com.myfinance.dto.InstrumentAllocationDto> trop = new java.util.ArrayList<>();
+        for (int i = 0; i < 201; i++) {
+            trop.add(new com.myfinance.dto.InstrumentAllocationDto("Pays" + i, new BigDecimal("0.5")));
+        }
+
+        mockMvc.perform(put("/api/instruments/1/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(trop)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateAllocations_pourcentageHorsBornes_retourne400() throws Exception {
+        // 150 % > 100 → invalide
+        java.util.List<com.myfinance.dto.InstrumentAllocationDto> entries = java.util.List.of(
+                new com.myfinance.dto.InstrumentAllocationDto("France", new BigDecimal("150")));
+
+        mockMvc.perform(put("/api/instruments/1/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(entries)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateAllocations_paysVide_retourne400() throws Exception {
+        java.util.List<com.myfinance.dto.InstrumentAllocationDto> entries = java.util.List.of(
+                new com.myfinance.dto.InstrumentAllocationDto("", new BigDecimal("50")));
+
+        mockMvc.perform(put("/api/instruments/1/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(entries)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void updateSectorAllocations_plusDe50Entrees_retourne400() throws Exception {
+        java.util.List<com.myfinance.dto.InstrumentSectorAllocationDto> trop = new java.util.ArrayList<>();
+        for (int i = 0; i < 51; i++) {
+            trop.add(new com.myfinance.dto.InstrumentSectorAllocationDto("Secteur" + i, new BigDecimal("0.5")));
+        }
+
+        mockMvc.perform(put("/api/instruments/1/sector-allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(trop)))
+                .andExpect(status().isBadRequest());
+    }
 }
