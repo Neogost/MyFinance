@@ -152,10 +152,12 @@ describe('OtherIncomePage — pattern CRUD', () => {
 
   // ── Création ──────────────────────────────────────────────────────────────
 
-  it('crée un revenu et l\'ajoute à la liste (optimistic update)', async () => {
-    getOtherIncomes.mockResolvedValue([])
+  it('crée un revenu et l\'affiche après refetch', async () => {
     const created = { id: 10, type: 'AUTRE', label: 'Revenu test', amount: 500, date: '2025-06-01' }
     createOtherIncome.mockResolvedValue(created)
+    getOtherIncomes
+      .mockResolvedValueOnce([])          // chargement initial
+      .mockResolvedValue([created])       // refetch après création
 
     render(<OtherIncomePage />)
     await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
@@ -190,10 +192,12 @@ describe('OtherIncomePage — pattern CRUD', () => {
 
   // ── Modification ──────────────────────────────────────────────────────────
 
-  it('met à jour un revenu dans la liste (optimistic update)', async () => {
-    getOtherIncomes.mockResolvedValue(INCOMES)
+  it('met à jour un revenu et l\'affiche après refetch', async () => {
     const updated = { ...INCOMES[0], label: 'Revenu test' }
     updateOtherIncome.mockResolvedValue(updated)
+    getOtherIncomes
+      .mockResolvedValueOnce(INCOMES)           // chargement initial
+      .mockResolvedValue([updated, INCOMES[1]]) // refetch après modification
 
     render(<OtherIncomePage />)
     await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
@@ -210,8 +214,10 @@ describe('OtherIncomePage — pattern CRUD', () => {
   // ── Suppression ───────────────────────────────────────────────────────────
 
   it('supprime un revenu après confirmation dans la modale', async () => {
-    getOtherIncomes.mockResolvedValue(INCOMES)
     deleteOtherIncome.mockResolvedValue()
+    getOtherIncomes
+      .mockResolvedValueOnce(INCOMES)        // chargement initial
+      .mockResolvedValue(INCOMES.slice(1))   // refetch après suppression
 
     render(<OtherIncomePage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())

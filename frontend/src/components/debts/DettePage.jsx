@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getDebts, getDebtsSummary, createDebt, updateDebt, deleteDebt, getBalanceEntries, addBalanceEntry, deleteBalanceEntry } from '../../api/debts'
+import { useCrud } from '../../hooks/useCrud'
 import DebtForm from './DebtForm'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { fmt, fmtPct, formatDate } from '../../utils/formatting.js'
@@ -259,50 +260,25 @@ function DebtRow({ debt, onEdit, onDelete, onUpdated }) {
 }
 
 export default function DettePage() {
-  const [debts,      setDebts]      = useState([])
-  const [summary,    setSummary]    = useState(null)
-  const [formTarget, setFormTarget] = useState(undefined)
-  const [filter,       setFilter]       = useState('ALL')
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
-  const [deleting,     setDeleting]     = useState(false)
+  const [summary, setSummary] = useState(null)
+  const [filter,  setFilter]  = useState('ALL')
 
-  useEffect(() => { fetchAll() }, [])
-
-  async function fetchAll() {
-    try {
-      setLoading(true)
+  const {
+    items: debts, loading, error,
+    formTarget, setFormTarget,
+    deleteTarget, setDeleteTarget,
+    deleting, handleSubmit, handleDelete, confirmDelete, refresh,
+  } = useCrud({
+    fetchAll:     async () => {
       const [d, s] = await Promise.all([getDebts(), getDebtsSummary()])
-      setDebts(d)
       setSummary(s)
-    } catch {
-      setError('Impossible de charger les dettes.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleSubmit(payload) {
-    if (formTarget?.id) {
-      await updateDebt(formTarget.id, payload)
-    } else {
-      await createDebt(payload)
-    }
-    setFormTarget(undefined)
-    await fetchAll()
-  }
-
-  async function handleDeleteConfirm() {
-    setDeleting(true)
-    try {
-      await deleteDebt(deleteTarget.id)
-      await fetchAll()
-      setDeleteTarget(null)
-    } finally {
-      setDeleting(false)
-    }
-  }
+      return d
+    },
+    create:       createDebt,
+    update:       updateDebt,
+    remove:       deleteDebt,
+    errorMessage: 'Impossible de charger les dettes.',
+  })
 
   const filtered = filter === 'ALL' ? debts : debts.filter(d => d.type === filter)
 
@@ -428,7 +404,7 @@ export default function DettePage() {
                     debt={debt}
                     onEdit={setFormTarget}
                     onDelete={setDeleteTarget}
-                    onUpdated={fetchAll}
+                    onUpdated={refresh}
                   />
                 ))}
               </div>
@@ -452,7 +428,7 @@ export default function DettePage() {
           warnings={[
             'Tout l\'historique des mises à jour manuelles du capital',
           ]}
-          onConfirm={handleDeleteConfirm}
+          onConfirm={confirmDelete}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}
         />

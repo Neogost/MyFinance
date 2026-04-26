@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getOtherIncomes, createOtherIncome, updateOtherIncome, deleteOtherIncome } from '../../api/income'
 import OtherIncomeForm from './OtherIncomeForm'
 import { formatDate } from '../../utils/formatting.js'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
+import { useCrud } from '../../hooks/useCrud'
 
 const TYPE_LABELS = {
   LOCATIF:      { label: 'Locatif',       color: 'bg-blue-100 text-blue-700' },
@@ -12,44 +13,20 @@ const TYPE_LABELS = {
 }
 
 export default function OtherIncomePage() {
-  const [incomes, setIncomes]     = useState([])
-  const [formTarget, setFormTarget] = useState(undefined)
-  const [filter, setFilter]       = useState('ALL')
-  const [loading, setLoading]     = useState(true)
-  const [error,        setError]        = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [filter, setFilter] = useState('ALL')
 
-  useEffect(() => { fetchIncomes() }, [])
-
-  async function fetchIncomes() {
-    try {
-      setLoading(true)
-      setIncomes(await getOtherIncomes())
-    } catch {
-      setError('Impossible de charger les revenus.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleSubmit(payload) {
-    if (formTarget?.id) {
-      const updated = await updateOtherIncome(formTarget.id, payload)
-      setIncomes(is => is.map(i => i.id === updated.id ? updated : i))
-    } else {
-      const created = await createOtherIncome(payload)
-      setIncomes(is => [created, ...is])
-    }
-    setFormTarget(undefined)
-  }
-
-  function handleDelete(income) { setDeleteTarget(income) }
-
-  async function confirmDelete() {
-    await deleteOtherIncome(deleteTarget.id)
-    setIncomes(is => is.filter(i => i.id !== deleteTarget.id))
-    setDeleteTarget(null)
-  }
+  const {
+    items: incomes, loading, error,
+    formTarget, setFormTarget,
+    deleteTarget, setDeleteTarget,
+    handleSubmit, handleDelete, confirmDelete,
+  } = useCrud({
+    fetchAll:     getOtherIncomes,
+    create:       createOtherIncome,
+    update:       updateOtherIncome,
+    remove:       deleteOtherIncome,
+    errorMessage: 'Impossible de charger les revenus.',
+  })
 
   const filtered = filter === 'ALL' ? incomes : incomes.filter(i => i.type === filter)
 

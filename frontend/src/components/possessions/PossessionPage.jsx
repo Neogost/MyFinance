@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { getPossessions, getPossessionsSummary, createPossession, updatePossession, deletePossession } from '../../api/possessions'
 import PossessionForm from './PossessionForm'
 import { fmt, formatDate } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
+import { useCrud } from '../../hooks/useCrud'
 
 const CATEGORY_META = {
   VEHICULE:       { label: 'Véhicule',                 color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
@@ -17,46 +18,25 @@ const CATEGORY_META = {
 
 
 export default function PossessionPage() {
-  const [possessions, setPossessions] = useState([])
-  const [summary,     setSummary]     = useState(null)
-  const [formTarget,  setFormTarget]  = useState(undefined)
-  const [filter,      setFilter]      = useState('ALL')
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [summary, setSummary] = useState(null)
+  const [filter,  setFilter]  = useState('ALL')
 
-  useEffect(() => { fetchAll() }, [])
-
-  async function fetchAll() {
-    try {
-      setLoading(true)
+  const {
+    items: possessions, loading, error,
+    formTarget, setFormTarget,
+    deleteTarget, setDeleteTarget,
+    handleSubmit, handleDelete, confirmDelete,
+  } = useCrud({
+    fetchAll:     async () => {
       const [poss, sum] = await Promise.all([getPossessions(), getPossessionsSummary()])
-      setPossessions(poss)
       setSummary(sum)
-    } catch {
-      setError('Impossible de charger les possessions.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleSubmit(payload) {
-    if (formTarget?.id) {
-      await updatePossession(formTarget.id, payload)
-    } else {
-      await createPossession(payload)
-    }
-    setFormTarget(undefined)
-    await fetchAll()
-  }
-
-  function handleDelete(p) { setDeleteTarget(p) }
-
-  async function confirmDelete() {
-    await deletePossession(deleteTarget.id)
-    setDeleteTarget(null)
-    await fetchAll()
-  }
+      return poss
+    },
+    create:       createPossession,
+    update:       updatePossession,
+    remove:       deletePossession,
+    errorMessage: 'Impossible de charger les possessions.',
+  })
 
   const filtered = filter === 'ALL' ? possessions : possessions.filter(p => p.category === filter)
 
@@ -275,6 +255,7 @@ export default function PossessionPage() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
+
     </div>
   )
 }
