@@ -11,7 +11,7 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 |-------|------|-------------|
 | Phase 0 | ✅ Terminée | 492 tests Vitest — utils, formulaires, panels, pages CRUD, graphiques, infrastructure |
 | Phase 1 | ✅ Terminée | Quick wins — ~250 LOC supprimées, 0 régression, 492 tests verts |
-| Phase 2 | 🔲 À faire | Hooks réutilisables + pages volumineuses |
+| Phase 2 | ✅ Terminée | useCrud (TDD) + migrations PossessionPage/OtherIncomePage/DettePage + PatrimoinePage découpée |
 | Phase 3 | 🔲 Optionnel | Architecture avancée |
 
 ---
@@ -34,22 +34,10 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 
 ~~3 versions locales~~ → `src/components/common/KpiCard.jsx` (label, value, unit, color, sub, labelTooltip)
 
-### 5. Pattern CRUD — ~100 lignes × 11 pages
+### 5. Pattern CRUD — ✅ partiellement résolu (Phase 2)
 
-Structure identique dans SalaryContractPage, OtherIncomePage, RecurringExpensePage, PossessionPage, DettePage, AdminFamilyGroupPage…
-
-```js
-const [items, setItems] = useState([])
-const [formTarget, setFormTarget] = useState(undefined)
-const [loading, setLoading] = useState(true)
-const [error, setError] = useState(null)
-
-useEffect(() => { fetchAll() }, [])
-
-async function fetchAll() { try { setLoading(true); ... } catch { setError(...) } finally { setLoading(false) } }
-async function handleSubmit(payload) { if (formTarget?.id) { /* update */ } else { /* create */ } }
-async function handleDelete(item) { if (!confirm(`Supprimer « ${item.label} » ?`)) return; ... }
-```
+~~Structure identique dans 11 pages~~ → `useCrud` migré sur PossessionPage, OtherIncomePage, DettePage.  
+Reste : RecurringExpensePage (budgets parallèles trop complexes), SalaryContractPage (architecture onglets + `selected`), AdminFamilyGroupPage.
 
 ### 6. `confirm()` natif — ✅ partiellement résolu (Phase 1)
 
@@ -69,7 +57,7 @@ Reste : panels (BonusPanel, BenefitPanel, OnCallPanel, RevisionPanel, PaySlipPan
 | `LoanSimulatorPage.jsx` | 1 410 | Saisie + calcul + affichage + amortissement + export |
 | `CompoundInterestSimulatorPage.jsx` | 993 | Modes standard/inversé + graphiques |
 | `CrisisSimulatorPage.jsx` | 760 | Scénarios multiples + calculs + UI |
-| `PatrimoinePage.jsx` | 716 | Positions + snapshots + modales + stratégie |
+| `PatrimoinePage.jsx` | ~~716~~ → 663 | `PatrimoineActionBar` + `PatrimoineFilters` extraits (Phase 2) |
 | `PatrimoineDeclarationPage.jsx` | 533 | Synthèse + 5 sections + agrégation |
 | `PositionForm.jsx` | 542 | Wizard 6 catégories + création instrument à la volée |
 
@@ -146,54 +134,26 @@ frontend/src/
 
 ---
 
-## Phase 2 — Hooks et découpage (2–3 jours)
+## Phase 2 — Hooks et découpage ✅ Terminée
 
-**Prérequis :** Phase 1 terminée.
+**Réalisé le 2026-04-26.** Gain réel : **-143 LOC** sur les pages, 504/504 tests verts, 0 régression. `FormInput` et `useAsyncForm` évalués et non retenus (complexité > gain sur ce projet).
 
-### 2.1 `src/hooks/useCrud.js` — hook CRUD générique
+### 2.1 `src/hooks/useCrud.js` ✅
 
-```js
-// Signature
-export function useCrud({ getAll, create, update, remove }) {
-  // Retourne : { items, formTarget, setFormTarget, loading, error, handleSubmit, handleDelete, refresh }
-}
-```
+- [x] Tests TDD écrits en premier (12 tests)
+- [x] Hook implémenté : `fetchAll` en closure, `fetchAllRef` anti-stale-closure, `refresh` exposé
+- [x] Migré : OtherIncomePage (-17 LOC), PossessionPage (-22 LOC), DettePage (-51 LOC)
+- Non migré : RecurringExpensePage (budgets parallèles), SalaryContractPage (onglets + sous-ressources) — trop spécialisés
 
-- [ ] Écrire les tests du hook (TDD)
-- [ ] Implémenter le hook
-- [ ] Migrer : OtherIncomePage, RecurringExpensePage, PossessionPage
-- [ ] Migrer : DettePage, SalaryContractPage, AdminFamilyGroupPage
-- **Gain estimé :** **-800 LOC** (80 lignes × 10 pages)
+### 2.2 `FormInput` et `useAsyncForm` — non retenus
 
-### 2.2 `src/components/common/FormInput.jsx`
+Gain théorique disproportionné par rapport à la complexité ajoutée pour un projet mono-développeur. Formulaires déjà lisibles post-Phase 1.
 
-```jsx
-export default function FormInput({ label, name, type = 'text', value, onChange, placeholder, required, min, step, tooltip }) { ... }
-```
+### 2.3 Découpage `PatrimoinePage.jsx` (716 → 663 lignes) ✅
 
-- [ ] Créer le composant
-- [ ] Migrer les formulaires principaux (OtherIncomeForm, RecurringExpenseForm, PossessionForm, DebtForm)
-- **Gain estimé :** -150 LOC
-
-### 2.3 `src/hooks/useAsyncForm.js` — boilerplate formulaires
-
-```js
-export function useAsyncForm(initialState, onSubmit) {
-  // Retourne : { form, setForm, error, loading, handleChange, handleSubmit, reset }
-}
-```
-
-- [ ] Implémenter
-- [ ] Migrer les formulaires à fort boilerplate
-- **Gain estimé :** -400 LOC
-
-### 2.4 Refactoriser `PatrimoinePage.jsx` (716 → ~400 lignes)
-
-- [ ] Extraire `<PositionFilters />` (filtres + toggles de vue)
-- [ ] Extraire `<PatrimoineHeader />` (statistiques globales + YTD)
-- [ ] Extraire `<SnapshotHistory />` (tableau + déclenchement)
-- [ ] Extraire `<StrategyObjectives />` (radar + modale stratégie)
-- **Gain estimé :** Meilleure testabilité, 4 responsabilités séparées
+- [x] `PatrimoineActionBar` extrait (titre + boutons admin + Stratégie + Ajouter)
+- [x] `PatrimoineFilters` extrait (filtres catégorie + checkbox fermées + toggle vue)
+- Section Synthèse (190 lignes, 20+ variables calculées) conservée — extraction nécessiterait un hook dédié (Phase 3)
 
 ---
 
@@ -228,6 +188,8 @@ export function useAsyncForm(initialState, onSubmit) {
 | `src/utils/constants.js` | Utils | 9+ fichiers | ✅ Phase 1 |
 | `src/components/common/formStyles.js` | Styles | 20+ formulaires | ✅ Phase 1 |
 | `src/components/common/KpiCard.jsx` | Composant | 4+ pages | ✅ Phase 1 |
-| `src/components/common/FormInput.jsx` | Composant | 20+ formulaires | 🔲 Phase 2 |
-| `src/hooks/useCrud.js` | Hook | **11 pages** | 🔲 Phase 2 |
-| `src/hooks/useAsyncForm.js` | Hook | 20+ formulaires | 🔲 Phase 2 |
+| `src/hooks/useCrud.js` | Hook | PossessionPage, OtherIncomePage, DettePage | ✅ Phase 2 |
+| `src/components/patrimoine/PatrimoineActionBar.jsx` | Composant | PatrimoinePage | ✅ Phase 2 |
+| `src/components/patrimoine/PatrimoineFilters.jsx` | Composant | PatrimoinePage | ✅ Phase 2 |
+| `src/components/common/FormInput.jsx` | Composant | — | ❌ Non retenu |
+| `src/hooks/useAsyncForm.js` | Hook | — | ❌ Non retenu |
