@@ -381,6 +381,13 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `GET` | `/api/version` | Authentifié | Version déployée de l'application |
 
+### Simulations d'emprunt
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/loan-simulations` | Authentifié | Liste les simulations sauvegardées (triées par date desc) |
+| `POST` | `/api/loan-simulations` | Authentifié | Sauvegarder une simulation (nom + paramètres JSON) |
+| `DELETE` | `/api/loan-simulations/{id}` | Authentifié | Supprimer une simulation (ownership vérifié) |
+
 ### Passifs (grandes possessions)
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -721,6 +728,14 @@ npm run dev
   - Script `deploy.sh` pour les mises à jour (build → export → transfer → reload) — voir `docs/deployment/docker-deployment.md` pour la checklist de release avec gestion de version
   - Documentation : `docs/deployment/docker-deployment.md`
   - Accès internet via proxy inverse QNAP + myQNAPcloud (HTTPS port 4443, SSL Let's Encrypt auto)
+
+- **Simulations d'emprunt persistées en base** :
+  - Entité `LoanSimulation` (table `loan_simulations`) : user, name, savedAt, parametersJson (TEXT — blob JSON des ~40 paramètres)
+  - `GET/POST/DELETE /api/loan-simulations` — ownership vérifié, admin peut supprimer toutes
+  - Frontend : migration `localStorage` → API dans `LoanSimulatorPage.jsx` ; chargement au montage, sauvegarde async avec état `saving`, suppression optimiste
+  - Paramètres regroupés dans `sim.parameters` (vs ancienne structure plate)
+  - Tests : `LoanSimulationServiceTest` (6 tests) + `LoanSimulationControllerTest` (8 tests) + `LoanSimulatorPage.test.jsx` (9 tests frontend)
+  - Documentation : `docs/api/loan-simulations.md`, `docs/architecture/tools/loan-simulator.md` mis à jour
 
 - **Mode nuit (dark mode)** :
   - Classe `dark` sur `<html>` activée via `localStorage` ou `prefers-color-scheme` au démarrage

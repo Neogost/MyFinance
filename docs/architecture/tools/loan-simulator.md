@@ -106,9 +106,9 @@ Permet de calculer le **coût mensuel total réel** du projet (crédit + charges
 
 | Paramètre | Stockage | Description |
 |-----------|----------|-------------|
-| `savedSimulations` | `localStorage` clé `loan_simulations` | Tableau de snapshots nommés |
+| `savedSimulations` | Base de données — endpoint `/api/loan-simulations` | Tableau de simulations nommées, persistées par utilisateur |
 
-Chaque snapshot est un objet `{ name, date, ...allStateValues }` sérialisé en JSON. L'utilisateur peut sauvegarder, charger et supprimer des simulations par nom. Les données sont purement locales (aucun backend).
+Chaque simulation est un objet `{ id, name, savedAt, parameters }` où `parameters` contient l'intégralité des paramètres de saisie. L'utilisateur peut sauvegarder, charger et supprimer des simulations par nom. Les données sont associées au compte utilisateur et persistent entre les sessions.
 
 ---
 
@@ -472,9 +472,9 @@ TAEG estimé     Durée effective
 
 ### 4.12 Sauvegarde de simulation
 
-Un bouton "Sauvegarder" en en-tête ouvre une modal demandant un nom. Après saisie, un snapshot complet de tous les paramètres est persisté dans `localStorage` (clé `loan_simulations`).
+Un bouton "Sauvegarder" en en-tête ouvre une modal demandant un nom. Après saisie, un snapshot complet de tous les paramètres est envoyé via `POST /api/loan-simulations` et persisté en base de données.
 
-Un bouton "Charger" affiche la liste des simulations sauvegardées. Un clic restaure tous les paramètres ; un bouton de suppression retire l'entrée du localStorage.
+Un bouton "Mes simulations" affiche la liste des simulations sauvegardées (chargée au montage via `GET /api/loan-simulations`). Un clic sur "Charger" restaure tous les paramètres depuis `sim.parameters` ; un bouton de suppression appelle `DELETE /api/loan-simulations/{id}` puis met à jour la liste localement.
 
 ### 4.13 Export PDF
 
@@ -592,12 +592,12 @@ const [rentIncreaseRate, setRentIncreaseRate]        = useState(1)
 const [investmentReturnRate, setInvestmentReturnRate] = useState(5)
 const [rentBuyHorizon, setRentBuyHorizon]            = useState(20)
 
-// Sauvegarde localStorage
-const LOAN_STORAGE_KEY = 'loan_simulations'
-const [savedSimulations, setSavedSimulations] = useState(() => { /* init depuis localStorage */ })
+// Sauvegarde en base de données
+const [savedSimulations, setSavedSimulations] = useState([])  // chargé via GET /api/loan-simulations
 const [showSaveModal, setShowSaveModal]       = useState(false)
 const [saveName, setSaveName]                 = useState('')
 const [showLoadPanel, setShowLoadPanel]       = useState(false)
+const [saving, setSaving]                     = useState(false)
 
 // Co-emprunteurs (revenus)
 const [additionalIncomes, setAdditionalIncomes] = useState([])

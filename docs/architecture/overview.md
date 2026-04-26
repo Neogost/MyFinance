@@ -375,5 +375,6 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Déclaration de patrimoine (PDF) | Implémenté |
 | Simulateur de crise | Implémenté |
 | Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
+| Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
 | Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |
 | Masquage des valeurs financières (blur, révélable au survol) | Implémenté |
