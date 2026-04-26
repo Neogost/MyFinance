@@ -238,6 +238,10 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (hasInstrument && !instrument) {
+      setError('Veuillez sélectionner un instrument avant de valider.')
+      return
+    }
     setError(null)
     setLoading(true)
     try {
@@ -525,7 +529,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                     className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition">
                     Annuler
                   </button>
-                  <button type="submit" disabled={loading}
+                  <button type="submit" disabled={loading || (hasInstrument && !instrument)}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
                     {loading ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer'}
                   </button>
