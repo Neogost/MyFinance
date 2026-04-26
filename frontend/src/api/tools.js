@@ -11,3 +11,7 @@ export function simulateTax({ year, salarySource, includedIncomes } = {}) {
 export function simulateTaxForUser(userId) {
   return api.get(`/api/tax-simulator/users/${userId}`).then(r => r.data)
 }
+
+export const getLoanSimulations   = ()     => api.get('/api/loan-simulations').then(r => r.data)
+export const createLoanSimulation = (data) => api.post('/api/loan-simulations', data).then(r => r.data)
+export const deleteLoanSimulation = (id)   => api.delete(`/api/loan-simulations/${id}`)

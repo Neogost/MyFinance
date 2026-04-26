@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { simulateTax, simulateTaxForUser } from '../../api/tools'
+import { simulateTax, simulateTaxForUser, getLoanSimulations, createLoanSimulation, deleteLoanSimulation } from '../../api/tools'
 import { getUsers } from '../../api/users'
 import { getMyGroupMembers } from '../../api/familyGroup'
 import {
-  LOAN_STORAGE_KEY,
   fmt,
 } from './loanSimulatorUtils'
 import { NumInput, AmountPctInput, Section, PropertyTypeToggle } from './LoanSimulatorInputs'
@@ -101,12 +100,11 @@ export default function LoanSimulatorPage({ user }) {
   const tableBodyRef = useRef(null)
 
   // Simulations sauvegardées
-  const [savedSimulations, setSavedSimulations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LOAN_STORAGE_KEY) || '[]') } catch { return [] }
-  })
+  const [savedSimulations, setSavedSimulations] = useState([])
   const [showSaveModal, setShowSaveModal]   = useState(false)
   const [saveName, setSaveName]             = useState('')
   const [showLoadPanel, setShowLoadPanel]   = useState(false)
+  const [saving, setSaving]                 = useState(false)
 
   useEffect(() => {
     setIncomeLoading(true)
@@ -132,12 +130,13 @@ export default function LoanSimulatorPage({ user }) {
   }, [showMonthly, showTable])
 
   useEffect(() => {
-    localStorage.setItem(LOAN_STORAGE_KEY, JSON.stringify(savedSimulations))
-  }, [savedSimulations])
+    getLoanSimulations()
+      .then(setSavedSimulations)
+      .catch(() => {})
+  }, [])
 
-  function getSimulationSnapshot(name) {
+  function getSimulationParameters() {
     return {
-      id: Date.now(), name, savedAt: new Date().toISOString(),
       propertyPrice, surface, propertyType,
       agencyFees, agencyFeesMode, dossierFees, dossierFeesMode,
       guaranteeFees, guaranteeFeesMode, brokerageFees, brokerageFeesMode,
@@ -153,64 +152,72 @@ export default function LoanSimulatorPage({ user }) {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     const trimmed = saveName.trim()
     if (!trimmed) return
-    setSavedSimulations(prev => [getSimulationSnapshot(trimmed), ...prev])
-    setSaveName('')
-    setShowSaveModal(false)
+    setSaving(true)
+    try {
+      const created = await createLoanSimulation({ name: trimmed, parameters: getSimulationParameters() })
+      setSavedSimulations(prev => [created, ...prev])
+      setSaveName('')
+      setShowSaveModal(false)
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleLoad(sim) {
-    setPropertyPrice(sim.propertyPrice ?? 250000)
-    setSurface(sim.surface ?? 0)
-    setPropertyType(sim.propertyType ?? 'ancien')
-    setAgencyFees(sim.agencyFees ?? 0); setAgencyFeesMode(sim.agencyFeesMode ?? 'percent')
-    setDossierFees(sim.dossierFees ?? 1000); setDossierFeesMode(sim.dossierFeesMode ?? 'amount')
-    setGuaranteeFees(sim.guaranteeFees ?? 1); setGuaranteeFeesMode(sim.guaranteeFeesMode ?? 'percent')
-    setBrokerageFees(sim.brokerageFees ?? 0); setBrokerageFeesMode(sim.brokerageFeesMode ?? 'amount')
-    setLoanAmount(sim.loanAmount ?? 200000)
-    setPersonalContrib(sim.personalContrib ?? 30000)
-    setLoanDuration(sim.loanDuration ?? 20)
-    setAnnualRate(sim.annualRate ?? 3.5)
-    setInsuranceRate(sim.insuranceRate ?? 0.20)
-    setInsuranceBase(sim.insuranceBase ?? 'initial')
-    setParticipants(sim.participants ?? [{ id: 1, name: 'Emprunteur 1', percent: 100 }])
-    setPtzEnabled(sim.ptzEnabled ?? false)
-    setPtzAmount(sim.ptzAmount ?? 30000)
-    setPtzDuration(sim.ptzDuration ?? 15)
-    setPtzDeferral(sim.ptzDeferral ?? 5)
-    setEarlyRepayments(sim.earlyRepayments ?? [])
-    setPropertyTax(sim.propertyTax ?? 0)
-    setCondoFees(sim.condoFees ?? 0)
-    setShowComparison(sim.showComparison ?? false)
-    setCompDuration(sim.compDuration ?? 25)
-    setCompRate(sim.compRate ?? 3.0)
-    setShowResale(sim.showResale ?? false)
-    setResaleYear(sim.resaleYear ?? 10)
-    setResalePrice(sim.resalePrice ?? 0)
-    setResaleAgencyFeesPct(sim.resaleAgencyFeesPct ?? 5)
-    setPropertyAppreciation(sim.propertyAppreciation ?? 2)
-    setShowRentComparison(sim.showRentComparison ?? false)
-    setMonthlyRent(sim.monthlyRent ?? 1200)
-    setRentIncreaseRate(sim.rentIncreaseRate ?? 2)
-    setInvestmentReturnRate(sim.investmentReturnRate ?? 5)
-    setRentBuyHorizon(sim.rentBuyHorizon ?? 20)
-    setRentalVacancyRate(sim.rentalVacancyRate ?? 8)
-    setRentalGestionRate(sim.rentalGestionRate ?? 0)
-    setRentalPnoInsurance(sim.rentalPnoInsurance ?? 0)
-    setRentalAccountingFees(sim.rentalAccountingFees ?? 0)
-    setRentalGliEnabled(sim.rentalGliEnabled ?? false)
-    setRentalGliRate(sim.rentalGliRate ?? 2.5)
-    setRentalAnnualWorks(sim.rentalAnnualWorks ?? 0)
-    setRentalFurnitureVal(sim.rentalFurnitureVal ?? 0)
-    setRentalTmi(sim.rentalTmi ?? 30)
-    setIncomeOverride(sim.incomeOverride ?? '')
-    setAdditionalIncomes(sim.additionalIncomes ?? [])
+    const p = sim.parameters
+    setPropertyPrice(p.propertyPrice ?? 250000)
+    setSurface(p.surface ?? 0)
+    setPropertyType(p.propertyType ?? 'ancien')
+    setAgencyFees(p.agencyFees ?? 0); setAgencyFeesMode(p.agencyFeesMode ?? 'percent')
+    setDossierFees(p.dossierFees ?? 1000); setDossierFeesMode(p.dossierFeesMode ?? 'amount')
+    setGuaranteeFees(p.guaranteeFees ?? 1); setGuaranteeFeesMode(p.guaranteeFeesMode ?? 'percent')
+    setBrokerageFees(p.brokerageFees ?? 0); setBrokerageFeesMode(p.brokerageFeesMode ?? 'amount')
+    setLoanAmount(p.loanAmount ?? 200000)
+    setPersonalContrib(p.personalContrib ?? 30000)
+    setLoanDuration(p.loanDuration ?? 20)
+    setAnnualRate(p.annualRate ?? 3.5)
+    setInsuranceRate(p.insuranceRate ?? 0.20)
+    setInsuranceBase(p.insuranceBase ?? 'initial')
+    setParticipants(p.participants ?? [{ id: 1, name: 'Emprunteur 1', percent: 100 }])
+    setPtzEnabled(p.ptzEnabled ?? false)
+    setPtzAmount(p.ptzAmount ?? 30000)
+    setPtzDuration(p.ptzDuration ?? 15)
+    setPtzDeferral(p.ptzDeferral ?? 5)
+    setEarlyRepayments(p.earlyRepayments ?? [])
+    setPropertyTax(p.propertyTax ?? 0)
+    setCondoFees(p.condoFees ?? 0)
+    setShowComparison(p.showComparison ?? false)
+    setCompDuration(p.compDuration ?? 25)
+    setCompRate(p.compRate ?? 3.0)
+    setShowResale(p.showResale ?? false)
+    setResaleYear(p.resaleYear ?? 10)
+    setResalePrice(p.resalePrice ?? 0)
+    setResaleAgencyFeesPct(p.resaleAgencyFeesPct ?? 5)
+    setPropertyAppreciation(p.propertyAppreciation ?? 2)
+    setShowRentComparison(p.showRentComparison ?? false)
+    setMonthlyRent(p.monthlyRent ?? 1200)
+    setRentIncreaseRate(p.rentIncreaseRate ?? 2)
+    setInvestmentReturnRate(p.investmentReturnRate ?? 5)
+    setRentBuyHorizon(p.rentBuyHorizon ?? 20)
+    setRentalVacancyRate(p.rentalVacancyRate ?? 8)
+    setRentalGestionRate(p.rentalGestionRate ?? 0)
+    setRentalPnoInsurance(p.rentalPnoInsurance ?? 0)
+    setRentalAccountingFees(p.rentalAccountingFees ?? 0)
+    setRentalGliEnabled(p.rentalGliEnabled ?? false)
+    setRentalGliRate(p.rentalGliRate ?? 2.5)
+    setRentalAnnualWorks(p.rentalAnnualWorks ?? 0)
+    setRentalFurnitureVal(p.rentalFurnitureVal ?? 0)
+    setRentalTmi(p.rentalTmi ?? 30)
+    setIncomeOverride(p.incomeOverride ?? '')
+    setAdditionalIncomes(p.additionalIncomes ?? [])
     setShowLoadPanel(false)
   }
 
-  function handleDeleteSaved(id) {
+  async function handleDeleteSaved(id) {
+    await deleteLoanSimulation(id)
     setSavedSimulations(prev => prev.filter(s => s.id !== id))
   }
 
@@ -354,9 +361,9 @@ export default function LoanSimulatorPage({ user }) {
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                 Annuler
               </button>
-              <button onClick={handleSave} disabled={!saveName.trim()}
+              <button onClick={handleSave} disabled={!saveName.trim() || saving}
                 className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition">
-                Sauvegarder
+                {saving ? 'Enregistrement…' : 'Sauvegarder'}
               </button>
             </div>
           </div>
@@ -380,7 +387,7 @@ export default function LoanSimulatorPage({ user }) {
                         <p className="text-sm font-medium text-gray-800 truncate">{sim.name}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           {new Date(sim.savedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          {' · '}{sim.loanAmount?.toLocaleString('fr-FR')} € sur {sim.loanDuration} ans à {sim.annualRate} %
+                          {' · '}{sim.parameters?.loanAmount?.toLocaleString('fr-FR')} € sur {sim.parameters?.loanDuration} ans à {sim.parameters?.annualRate} %
                         </p>
                       </div>
                       <button onClick={() => handleLoad(sim)}
