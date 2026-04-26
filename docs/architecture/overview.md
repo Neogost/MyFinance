@@ -6,15 +6,16 @@ Vue d'ensemble de l'application **MyFinance** et index de la documentation.
 
 ## 1. Description générale
 
-Application web personnelle de gestion financière, hébergée sur NAS QNAP en réseau local.
+Application web personnelle de gestion financière, hébergée sur NAS QNAP via Docker (accès HTTPS via proxy inverse myQNAPcloud).
 
 | Composant | Technologie |
 |-----------|-------------|
 | Frontend | React 19 + Vite + Tailwind CSS v4 + Recharts |
 | Backend | Spring Boot 3.5 / Java 17 + Spring Security |
-| Base de données | SQLite (fichier local) |
+| Base de données | SQLite (fichier local — profils `dev` et `docker`) |
 | Documentation API | Springdoc OpenAPI — Swagger UI : `/swagger-ui.html` |
 | Authentification | Session cookie HTTP (BCrypt, pas de JWT) |
+| Déploiement | Docker multi-stage, profil `docker`, HTTPS via reverse proxy QNAP |
 
 ---
 
@@ -26,55 +27,66 @@ mindmap
     Authentification
         Login / Logout
         Changement de mot de passe
+        Demande d'inscription
         Historique des connexions
         Protection brute-force
     Profil
         Informations personnelles
+        Profil fiscal (parts, frais réels)
         Matelas de sécurité
         Regroupement familial
     Tableau de bord
         Évolution salariale
-        Répartition du patrimoine
-        Plus-values par catégorie
-        Widget matelas de sécurité
-        Projection FIRE
+        Évolution du patrimoine
+        Widget FIRE
+        Widget Dettes
+        Widget Scoring patrimonial
     Revenus
         Contrats salariaux
-            Projections brut / net fiscal / net d'impôt
+            Super brut / Brut / Net imposable / Net d'impôt
             Bulletins de paie réels
             Révisions salariales
-            Primes
+            Primes (EXCEPTIONNELLE / ANNUELLE)
             Avantages en nature
+            Astreintes
         Revenus complémentaires
             Locatif
             Dividendes
             Aides sociales
+            Autre
     Dépenses récurrentes
         Saisie mensuelle ou annuelle
-        Répartition colocation
+        Répartition colocation (sharePercentage)
+        Budgets par catégorie
         Capacité d'épargne
     Passifs
-        Véhicules
+        Véhicule
         Informatique
         Électroménager
         Mobilier
         Collection
         Loisirs
+        Autre
     Dettes
         Emprunt immobilier (lié à un bien IMMO_PHYSIQUE)
         Prêt étudiant
         Crédit véhicule
         Crédit consommation
+        Autre
         Taux assurance emprunteur
+        Historique des mises à jour manuelles
     Patrimoine
-        Bourse
+        Bourse (ETF, Actions, Obligations, FOREX, Warrants, Trackers, SCPI, Fonds euros)
         Crypto-monnaie
         Immobilier papier
         Immobilier physique
         Livrets
         Liquidités
-        Relevés mensuels
-        Stratégie & objectifs
+        Allocations géographiques et sectorielles
+        Relevés mensuels (snapshots)
+        Stratégie et objectifs par catégorie
+        Scoring patrimonial
+        Positionnement INSEE par décile
     Outils
         Simulateur d'impôts IRPP
         Bilan financier personnel
@@ -84,11 +96,15 @@ mindmap
         Simulateur de crise
     Administration
         Gestion des utilisateurs
+        Demandes d'inscription
         Mise à jour des cours instruments
+        Allocations géographiques ETF
         Gestion des taux de change
         Gestion manuelle des relevés
         Historique des connexions
         Gestion des groupes familiaux
+        Mise à jour automatique des cours (scheduler)
+        Version de l'application
 ```
 
 ---
@@ -97,13 +113,15 @@ mindmap
 
 ### 3.1 Authentification & gestion des utilisateurs
 
-Authentification par session cookie. Deux rôles : `USER` (accès à ses propres données) et `ADMIN` (accès global + fonctionnalités d'administration). Protection brute-force avec durée de blocage exponentielle.
+Authentification par session cookie. Deux rôles : `USER` (accès à ses propres données) et `ADMIN` (accès global + fonctionnalités d'administration). Protection brute-force avec durée de blocage exponentielle. Système de demandes d'inscription soumis à validation admin.
 
 | Documentation | Lien |
 |---------------|------|
 | Architecture | [`docs/architecture/userManagement.md`](userManagement.md) |
+| Architecture sécurité | [`docs/architecture/security.md`](security.md) |
 | API authentification | [`docs/api/authentication.md`](../api/authentication.md) |
 | API utilisateurs | [`docs/api/users.md`](../api/users.md) |
+| API inscriptions | [`docs/api/registration-requests.md`](../api/registration-requests.md) |
 
 ---
 
@@ -111,13 +129,13 @@ Authentification par session cookie. Deux rôles : `USER` (accès à ses propres
 
 #### Matelas de sécurité
 
-Réserve de liquidités que l'utilisateur configure selon trois modes : montant fixe, N mois de dépenses, ou N mois de salaire. Visualisé via un widget tableau de bord et un indicateur sur les cartes LIVRET/LIQUIDITE du patrimoine.
+Réserve de liquidités configurée selon trois modes : montant fixe (`FIXED_AMOUNT`), N mois de dépenses (`MONTHS_EXPENSES`), ou N mois de salaire (`MONTHS_SALARY`). Visualisé via un widget tableau de bord et un indicateur sur les cartes LIVRET/LIQUIDITE du patrimoine.
 
 → [`docs/architecture/safety-net.md`](safety-net.md)
 
 #### Regroupement familial
 
-Permet à plusieurs utilisateurs de former un foyer pour visualiser leur patrimoine et leurs données de manière agrégée. Système d'invitations owner → membre, toggle "Mode Foyer" dans la navigation.
+Permet à plusieurs utilisateurs de former un foyer pour visualiser leur patrimoine de manière agrégée. Système d'invitations owner → membre, toggle "Mode Foyer" dans la navigation.
 
 → [`docs/architecture/family-group.md`](family-group.md) — API : [`docs/api/family-group.md`](../api/family-group.md)
 
@@ -125,7 +143,7 @@ Permet à plusieurs utilisateurs de former un foyer pour visualiser leur patrimo
 
 ### 3.3 Tableau de bord
 
-Page d'accueil après connexion. Synthèse visuelle des finances : évolution salariale, valorisation du patrimoine par catégorie et par devise, plus-values YTD, widget matelas de sécurité, projection FIRE (règle des 4 %).
+Page d'accueil après connexion. Synthèse visuelle : évolution salariale, évolution du patrimoine en aires empilées par catégorie (avec point "Aujourd'hui"), widget FIRE (règle des 4 %), widget Dettes (KPIs + ratio endettement), widget Scoring patrimonial (6 axes).
 
 | Documentation | Lien |
 |---------------|------|
@@ -140,11 +158,11 @@ Deux sous-modules accessibles depuis le menu **Revenus**.
 
 #### Revenus salariaux
 
-Un contrat salarial génère des **projections automatiques** sur quatre niveaux : super brut → brut → net imposable → net d'impôt. Des bulletins de paie réels permettent de comparer réel et théorique. L'historique salarial est suivi via les révisions de contrat.
+Un contrat salarial génère des **projections automatiques** sur quatre niveaux : super brut → brut → net imposable → net d'impôt. Des bulletins de paie réels permettent de comparer réel et théorique. L'historique salarial est suivi via les révisions de contrat. Les primes, avantages en nature et astreintes sont modélisés comme des éléments rattachés au contrat.
 
 #### Revenus complémentaires
 
-Tout revenu hors salaire (locatif, dividendes, aides sociales, autre), utilisé dans le simulateur d'impôts et la capacité d'épargne.
+Tout revenu hors salariat (locatif, dividendes, aides sociales, autre), utilisé dans le simulateur d'impôts et la capacité d'épargne.
 
 | Documentation | Lien |
 |---------------|------|
@@ -156,7 +174,7 @@ Tout revenu hors salaire (locatif, dividendes, aides sociales, autre), utilisé 
 
 ### 3.5 Dépenses récurrentes
 
-Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. Répartition en pourcentage pour les dépenses partagées (colocation). La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
+Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. Répartition en pourcentage pour les dépenses partagées (colocation). Budgets mensuels cibles par catégorie. La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
 
 | Documentation | Lien |
 |---------------|------|
@@ -167,7 +185,7 @@ Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. R�
 
 ### 3.6 Passifs (Grandes possessions)
 
-Recensement des biens matériels (voiture, informatique, mobilier…). Décote exponentielle automatique par catégorie ou valeur saisie manuellement. Contribue au **patrimoine net** dans le bilan et la déclaration.
+Recensement des biens matériels (voiture, informatique, mobilier…). Décote exponentielle automatique par catégorie ou valeur saisie manuellement (`estimatedCurrentValue` non nul → mode override). Contribue au **patrimoine net** dans le bilan et la déclaration.
 
 | Documentation | Lien |
 |---------------|------|
@@ -178,7 +196,7 @@ Recensement des biens matériels (voiture, informatique, mobilier…). Décote e
 
 ### 3.6b Dettes
 
-Recensement des dettes financières (emprunt immobilier, prêt étudiant, crédit véhicule, crédit à la consommation). Chaque dette porte un taux d'intérêt annuel et un **taux d'assurance emprunteur** pour calculer le coût mensuel total. Un emprunt immobilier peut être **lié à une position `IMMO_PHYSIQUE`** pour afficher la valeur nette du bien (valeur estimée − capital restant dû). Le total des dettes entre dans le calcul du **patrimoine net**, du **bilan financier** et du **simulateur de crise**.
+Recensement des dettes financières (emprunt immobilier, prêt étudiant, crédit véhicule, crédit consommation). Deux modes de suivi du capital : projection automatique par formule d'amortissement, ou override manuel via l'historique des mises à jour (`DebtBalanceEntry`). Un emprunt immobilier peut être **lié à une position `IMMO_PHYSIQUE`** pour afficher la valeur nette du bien. Le total des dettes entre dans le patrimoine net, le bilan financier et le simulateur de crise.
 
 | Documentation | Lien |
 |---------------|------|
@@ -189,23 +207,30 @@ Recensement des dettes financières (emprunt immobilier, prêt étudiant, crédi
 
 ### 3.7 Patrimoine
 
-Suivi de l'ensemble des actifs financiers en six catégories. Modèle **Position → Ordres** avec valorisation en temps réel. Relevés mensuels pour historiser l'évolution.
+Suivi de l'ensemble des actifs financiers en six catégories. Modèle **Position → Ordres** avec valorisation en temps réel. Allocations géographiques et sectorielles par instrument. Relevés mensuels pour historiser l'évolution. Positionnement par décile INSEE (Enquête Patrimoine 2021-2022).
 
 | Catégorie | Mécanisme de valorisation |
 |-----------|--------------------------|
-| Bourse, Crypto | Quantité × prix marché |
-| Livret, Immo papier | Montant investi + intérêts cumulés |
+| Bourse, Crypto | Quantité × prix marché (converti en EUR via taux de change) |
+| Livret, Immo papier | Montant investi + intérêts/dividendes cumulés |
 | Immo physique | Valeur estimée saisie manuellement |
 | Liquidités | Solde saisi manuellement |
 
 #### Stratégie & objectifs patrimoniaux
 
-Objectifs cibles par catégorie persistés en base. Barres de progression sur chaque carte de résumé (en cours / atteint / dépassé).
+Objectifs cibles par catégorie persistés en base (`PatrimoineTarget`). Barres de progression sur chaque carte de résumé.
+
+#### Scoring patrimonial
+
+Score de cohérence calculé en 6 axes (Diversification, Matelas, Endettement, Épargne, Âge/risque, Progression) + bonus objectifs. Maximum 105 points. Profils : FRAGILE / PRUDENT / EQUILIBRE / DYNAMIQUE / OPTIMISE.
 
 | Documentation | Lien |
 |---------------|------|
-| Architecture | [`docs/architecture/patrimoine.md`](patrimoine.md) |
-| Stratégie | [`docs/architecture/patrimoine-strategy.md`](patrimoine-strategy.md) |
+| Architecture patrimoine | [`docs/architecture/patrimoine.md`](patrimoine.md) |
+| Architecture instruments | [`docs/architecture/instruments.md`](instruments.md) |
+| Architecture scoring | [`docs/architecture/patrimoine-scoring.md`](patrimoine-scoring.md) |
+| Architecture stratégie | [`docs/architecture/patrimoine-strategy.md`](patrimoine-strategy.md) |
+| Architecture scoring | [`docs/architecture/patrimoine-scoring.md`](patrimoine-scoring.md) |
 | API | [`docs/api/patrimoine.md`](../api/patrimoine.md) |
 
 ---
@@ -214,7 +239,7 @@ Objectifs cibles par catégorie persistés en base. Barres de progression sur ch
 
 #### Simulateur d'impôts (IRPP)
 
-Estimation de l'impôt sur le revenu à partir du profil fiscal. Choix de la source salariale et sélection des revenus complémentaires.
+Estimation de l'impôt sur le revenu à partir du profil fiscal. Choix de la source salariale (`PROJECTION_CONTRAT` ou `BULLETINS_REELS`) et sélection des revenus complémentaires.
 
 → [`docs/architecture/tax-simulator.md`](tax-simulator.md) — API : [`docs/api/tax-simulator.md`](../api/tax-simulator.md)
 
@@ -254,11 +279,23 @@ Applique les taux de chute historiques de crises majeures (2008, dot-com, COVID,
 
 Accessibles uniquement au rôle `ADMIN`.
 
+#### Gestion des utilisateurs
+
+CRUD complet sur les comptes utilisateurs. Validation des demandes d'inscription.
+
+→ [`docs/architecture/userManagement.md`](userManagement.md) — API : [`docs/api/users.md`](../api/users.md)
+
 #### Mise à jour manuelle des cours
 
-Mise à jour du `lastPrice` des instruments actifs. Toggle prix fixe pour les instruments à cours stable.
+Mise à jour du `lastPrice` des instruments actifs. Toggle prix fixe pour les instruments à cours stable. Allocations géographiques et sectorielles saisies manuellement.
 
 → [`docs/architecture/instrument-price-update.md`](instrument-price-update.md)
+
+#### Mise à jour automatique des cours (scheduler)
+
+Scheduler Spring (`@Scheduled`, 1er du mois à 2h) : Boursorama (BOURSE), CoinGecko (CRYPTO), Frankfurter/ECB (taux de change), suivi d'un snapshot mensuel pour tous les utilisateurs. Déclenchement manuel via `POST /api/admin/market-data/run`.
+
+→ [`docs/architecture/market-data-scheduler.md`](market-data-scheduler.md)
 
 #### Gestion des taux de change
 
@@ -274,7 +311,7 @@ CRUD complet sur les relevés de patrimoine de n'importe quel utilisateur. Utili
 
 #### Historique des connexions
 
-Consultation paginée des événements de connexion (SUCCESS / FAILURE / BLOCKED) avec filtres par login, type et date. Permet de détecter les tentatives d'intrusion.
+Consultation paginée des événements de connexion (SUCCESS / FAILURE / BLOCKED) avec filtres par login, type et date.
 
 → [`docs/architecture/login-history.md`](login-history.md) — API : [`docs/api/login-history.md`](../api/login-history.md)
 
@@ -294,3 +331,41 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 |-----|-------|
 | [ADR-001](decisions/ADR-001-architecture-generale.md) | Architecture générale (monorepo, SQLite, session cookie) |
 | [ADR-002](decisions/ADR-002-tailwind-css.md) | Choix de Tailwind CSS v4 |
+| [ADR-003](decisions/ADR-003-logging-strategy.md) | Stratégie de logging |
+| [ADR-004](decisions/ADR-004-responsive-mobile.md) | Responsive mobile |
+
+---
+
+## 5. Statut des fonctionnalités
+
+| Fonctionnalité | Statut |
+|----------------|--------|
+| Authentification (session cookie, BCrypt, login/logout/me, password change) | Implémenté |
+| Protection brute-force (blocage exponentiel, historique des connexions) | Implémenté |
+| Demandes d'inscription (public → validation ADMIN) | Implémenté |
+| Gestion des utilisateurs CRUD (ADMIN) | Implémenté |
+| Profil utilisateur (informations personnelles, profil fiscal, frais réels détaillés) | Implémenté |
+| Matelas de sécurité (FIXED_AMOUNT / MONTHS_EXPENSES / MONTHS_SALARY) | Implémenté |
+| Regroupement familial (invitations, mode foyer, modération admin) | Implémenté |
+| Tableau de bord (évolution salariale, patrimoine, FIRE, dettes, scoring) | Implémenté |
+| Contrats salariaux (projections 4 niveaux, révisions, bulletins, primes, avantages, astreintes) | Implémenté |
+| Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) | Implémenté |
+| Dépenses récurrentes (9 catégories, colocation, budgets) | Implémenté |
+| Passifs / possessions (7 catégories, décote automatique, override) | Implémenté |
+| Dettes (5 types, amortissement, override manuel, historique) | Implémenté |
+| Patrimoine — positions et ordres (6 catégories, 8 types d'ordres) | Implémenté |
+| Patrimoine — allocations géographiques et sectorielles | Implémenté |
+| Patrimoine — taux de change (ADMIN) | Implémenté |
+| Patrimoine — snapshots utilisateur et admin | Implémenté |
+| Patrimoine — stratégie & objectifs par catégorie | Implémenté |
+| Patrimoine — scoring (6 axes, 105 pts max) | Implémenté |
+| Patrimoine — positionnement INSEE par décile | Implémenté |
+| Mise à jour automatique des cours (Boursorama, CoinGecko, Frankfurter) | Implémenté |
+| Simulateur d'impôts IRPP | Implémenté |
+| Référentiel fiscal (barème kilométrique) | Implémenté |
+| Bilan financier personnel | Implémenté |
+| Simulateur d'intérêts composés | Implémenté |
+| Simulateur d'emprunt immobilier | Implémenté |
+| Déclaration de patrimoine (PDF) | Implémenté |
+| Simulateur de crise | Implémenté |
+| Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |

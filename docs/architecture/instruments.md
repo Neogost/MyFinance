@@ -1,202 +1,132 @@
-# Gestion des instruments financiers — Architecture
+# Instruments financiers, cours et taux de change — Architecture
 
-Référentiel partagé des instruments financiers (actions, ETF, crypto) permettant de valoriser les positions du portefeuille. Un instrument est indépendant de l'utilisateur : il est créé par l'admin et partagé entre tous les utilisateurs.
+Référentiel partagé des instruments financiers (actions, ETF, crypto), mise à jour des cours (manuelle et automatique) et gestion des taux de change.
 
 ---
 
 ## Vue d'ensemble
 
-Un `Instrument` représente un titre financier identifiable (ISIN pour la bourse, ticker pour la crypto). Il porte le dernier cours connu (`lastPrice`) et deux tables de composition optionnelles : **allocation géographique** (`InstrumentAllocation`) et **allocation sectorielle** (`InstrumentSectorAllocation`). Ces allocations sont utilisées par le scoring patrimonial.
-
 ```
-Instrument
-  ├── lastPrice / lastPriceUpdatedAt  ← mis à jour automatiquement ou manuellement
-  ├── stablePrice                      ← prix fixe (fonds euros, stablecoins)
-  ├── boursoramaSymbol / coinGeckoId   ← sources de prix automatiques
+Instrument (référentiel global)
+  ├── lastPrice / lastPriceUpdatedAt  ← mis à jour par le scheduler ou manuellement (admin)
+  ├── stablePrice                      ← prix fixe : fonds euros, stablecoins
+  ├── boursoramaSymbol                 ← BOURSE : saisi manuellement par l'admin
+  ├── coinGeckoId                      ← CRYPTO : résolu automatiquement depuis le ticker
   ├── InstrumentAllocation (0..*)      ← répartition géographique en %
   └── InstrumentSectorAllocation (0..*)← répartition sectorielle en %
+
+ExchangeRate (référentiel global)
+  └── rate = nombre d'unités de la devise pour 1 EUR
+      amountEur = amountNatif / rate
 ```
 
-> **Choix de conception :** l'instrument est un référentiel global, non lié à un utilisateur. Plusieurs utilisateurs peuvent posséder des positions sur le même instrument — les cours sont mis à jour une seule fois pour tous.
+> L'instrument est un **référentiel global** non lié à un utilisateur. Plusieurs utilisateurs peuvent posséder des positions sur le même instrument — les cours sont mis à jour une seule fois pour tous.
 
 ---
 
 ## 1. Catégories d'instruments
 
-Un instrument appartient à l'une des deux catégories de l'enum `AssetCategory` utilisées pour les instruments :
-
 | Valeur | Description | Identifiant unique | Source de prix |
-|--------|-----------|--------------------|----------------|
-| `BOURSE` | Actions, ETF, fonds | ISIN (obligatoire, unique) | Boursorama (symbole `boursoramaSymbol`) |
-| `CRYPTO` | Cryptomonnaies | Ticker (obligatoire, unique) | CoinGecko (identifiant `coinGeckoId`) |
+|--------|-------------|-------------------|----------------|
+| `BOURSE` | Actions, ETF, fonds | ISIN (obligatoire, unique) | Boursorama (`boursoramaSymbol`) |
+| `CRYPTO` | Cryptomonnaies | Ticker (obligatoire, unique) | CoinGecko (`coinGeckoId`) |
 
-> **Remarque :** les autres valeurs de `AssetCategory` (IMMO_PAPIER, IMMO_PHYSIQUE, LIVRET, LIQUIDITE) s'appliquent aux positions mais ne nécessitent pas d'instrument.
+> Les autres valeurs de `AssetCategory` (IMMO_PAPIER, IMMO_PHYSIQUE, LIVRET, LIQUIDITE) s'appliquent aux positions mais ne nécessitent pas d'instrument.
 
 ---
 
 ## 2. Modèle de données
 
-### 2.1 Entité — `Instrument`
+### 2.1 Entité `Instrument` — table `instruments`
 
-Table SQLite : `instruments`
-
-| Champ | Type Java | Colonne SQLite | Description |
-|-------|-----------|----------------|-------------|
-| `id` | `Long` | `id` | Identifiant auto-incrémenté |
-| `category` | `AssetCategory` | `category` | BOURSE ou CRYPTO |
-| `isin` | `String` | `isin` | Code ISIN (nullable, unique) — obligatoire pour BOURSE |
-| `ticker` | `String` | `ticker` | Symbole / trigramme (nullable, unique) — obligatoire pour CRYPTO |
-| `name` | `String` | `name` | Nom affiché (non null) |
-| `currency` | `String` | `currency` | Devise native ISO (ex : `EUR`, `USD`) |
-| `lastPrice` | `BigDecimal` | `last_price` | Dernier cours connu (nullable) |
-| `lastPriceUpdatedAt` | `LocalDateTime` | `last_price_updated_at` | Date de mise à jour du cours (nullable) |
-| `stablePrice` | `boolean` | `stable_price` | Vrai si le prix est fixe (défaut : false) |
-| `marketSymbol` | `String` | `market_symbol` | Symbole Twelve Data — résolu automatiquement, BOURSE uniquement (nullable) |
-| `coinGeckoId` | `String` | `coin_gecko_id` | Identifiant CoinGecko — résolu automatiquement depuis le ticker, CRYPTO uniquement (nullable) |
-| `boursoramaSymbol` | `String` | `boursorama_symbol` | Symbole Boursorama — saisi manuellement par l'admin, BOURSE uniquement (nullable) |
+| Champ | Type Java | Description |
+|-------|-----------|-------------|
+| `id` | `Long` | Identifiant auto-incrémenté |
+| `category` | `AssetCategory` | BOURSE ou CRYPTO |
+| `isin` | `String` | Code ISIN (nullable, unique) — obligatoire pour BOURSE |
+| `ticker` | `String` | Symbole / trigramme (nullable, unique) — obligatoire pour CRYPTO |
+| `name` | `String` | Nom affiché (non null) |
+| `currency` | `String` | Devise native ISO (ex : `EUR`, `USD`) |
+| `lastPrice` | `BigDecimal` | Dernier cours connu (nullable) |
+| `lastPriceUpdatedAt` | `LocalDateTime` | Date de mise à jour du cours (nullable) |
+| `stablePrice` | `boolean` | Prix fixe — désactive l'obsolescence et la mise à jour auto (défaut : false) |
+| `marketSymbol` | `String` | Champ hérité (Twelve Data) — non utilisé par les services actuels (nullable) |
+| `coinGeckoId` | `String` | Identifiant CoinGecko — résolu automatiquement depuis le ticker (CRYPTO, nullable) |
+| `boursoramaSymbol` | `String` | Symbole Boursorama — saisi manuellement par l'admin (BOURSE, nullable) |
 
 **Règles :**
 - `isin` est unique parmi tous les instruments BOURSE.
 - `ticker` est unique parmi tous les instruments CRYPTO.
-- `stablePrice = true` désactive les indicateurs d'obsolescence et la mise à jour automatique pour cet instrument (utilisé pour les fonds euros et les stablecoins).
+- `stablePrice = true` exclut l'instrument de toute mise à jour de cours et masque l'indicateur d'obsolescence.
 
 ---
 
-### 2.2 Entité — `InstrumentAllocation`
+### 2.2 Entité `InstrumentAllocation` — table `instrument_allocations`
 
-Table SQLite : `instrument_allocations`
+Allocation géographique d'un instrument (ex : 60 % États-Unis, 15 % Europe).
 
-Allocation géographique d'un instrument (ex : 60 % États-Unis, 15 % Europe…).
+| Champ | Type Java | Description |
+|-------|-----------|-------------|
+| `id` | `Long` | Identifiant |
+| `instrument` | `Instrument` | FK — instrument parent |
+| `country` | `String` | Nom du pays |
+| `percentage` | `BigDecimal` | Pourcentage (precision 5, scale 2) |
+| `fetchedAt` | `LocalDateTime` | Date de récupération |
 
-| Champ | Type Java | Colonne SQLite | Description |
-|-------|-----------|----------------|-------------|
-| `id` | `Long` | `id` | Identifiant auto-incrémenté |
-| `instrument` | `Instrument` | `instrument_id` (FK) | Instrument parent |
-| `country` | `String` | `country` | Nom du pays (non null) |
-| `percentage` | `BigDecimal` | `percentage` | Pourcentage (precision 5, scale 2) |
-| `fetchedAt` | `LocalDateTime` | `fetched_at` | Date de récupération des données |
-
-**Règle :** lors de chaque mise à jour, toutes les lignes existantes pour l'instrument sont supprimées avant insertion (replace complet).
+**Règle :** chaque mise à jour supprime toutes les lignes existantes avant insertion (replace complet).
 
 ---
 
-### 2.3 Entité — `InstrumentSectorAllocation`
+### 2.3 Entité `InstrumentSectorAllocation` — table `instrument_sector_allocations`
 
-Table SQLite : `instrument_sector_allocations`
+Allocation sectorielle d'un instrument (ex : 30 % Technologie, 20 % Finance).
 
-Allocation sectorielle d'un instrument (ex : 30 % Technologie, 20 % Finance…).
-
-| Champ | Type Java | Colonne SQLite | Description |
-|-------|-----------|----------------|-------------|
-| `id` | `Long` | `id` | Identifiant auto-incrémenté |
-| `instrument` | `Instrument` | `instrument_id` (FK) | Instrument parent |
-| `sector` | `String` | `sector` | Nom du secteur (non null) |
-| `percentage` | `BigDecimal` | `percentage` | Pourcentage (precision 5, scale 2) |
-| `fetchedAt` | `LocalDateTime` | `fetched_at` | Date de récupération des données |
+| Champ | Type Java | Description |
+|-------|-----------|-------------|
+| `id` | `Long` | Identifiant |
+| `instrument` | `Instrument` | FK — instrument parent |
+| `sector` | `String` | Nom du secteur |
+| `percentage` | `BigDecimal` | Pourcentage (precision 5, scale 2) |
+| `fetchedAt` | `LocalDateTime` | Date de récupération |
 
 ---
 
-### 2.4 Diagramme de classes
+### 2.4 Entité `ExchangeRate` — table `exchange_rates`
 
-```mermaid
-classDiagram
-    class Instrument {
-        +Long id
-        +AssetCategory category
-        +String isin
-        +String ticker
-        +String name
-        +String currency
-        +BigDecimal lastPrice
-        +LocalDateTime lastPriceUpdatedAt
-        +boolean stablePrice
-        +String boursoramaSymbol
-        +String coinGeckoId
-    }
-    class InstrumentAllocation {
-        +Long id
-        +String country
-        +BigDecimal percentage
-        +LocalDateTime fetchedAt
-    }
-    class InstrumentSectorAllocation {
-        +Long id
-        +String sector
-        +BigDecimal percentage
-        +LocalDateTime fetchedAt
-    }
-    class AssetCategory {
-        BOURSE
-        CRYPTO
-    }
-    Instrument --> AssetCategory : category
-    Instrument "1" o-- "0..*" InstrumentAllocation : allocations
-    Instrument "1" o-- "0..*" InstrumentSectorAllocation : sectorAllocations
-```
+Taux de change d'une devise étrangère par rapport à l'EUR.
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `currency` | `String` | Code ISO 4217 (`USD`, `GBP`, `CHF`…) — unique |
+| `rate` | `BigDecimal` | Nombre d'unités de la devise pour 1 EUR |
+| `lastUpdatedAt` | `LocalDateTime` | Date de mise à jour (nullable) |
+
+**Convention :** `rate = 1.08` pour USD signifie `1 EUR = 1.08 USD`. La conversion est `amountEur = amountNatif / rate`.
+
+La devise EUR n'est pas stockée — une position en EUR ne requiert aucune conversion.
 
 ---
 
 ## 3. DTOs
 
-### `InstrumentDto`
-
-Record retourné par tous les endpoints de lecture. Les champs `countryAllocation` et `sectorAllocation` sont inclus uniquement lors des appels passant par `withAllocations()` (GET liste et GET par id) ; ils sont vides (`[]`) lors des réponses de mise à jour de prix.
-
-| Champ | Type | Description |
-|-------|------|-------------|
-| `id` | `Long` | Identifiant |
-| `category` | `AssetCategory` | BOURSE ou CRYPTO |
-| `isin` | `String` | nullable |
-| `ticker` | `String` | nullable |
-| `name` | `String` | Nom affiché |
-| `currency` | `String` | Devise native |
-| `lastPrice` | `BigDecimal` | nullable avant première mise à jour |
-| `lastPriceUpdatedAt` | `LocalDateTime` | nullable |
-| `stablePrice` | `boolean` | Prix fixe |
-| `marketSymbol` | `String` | nullable |
-| `coinGeckoId` | `String` | nullable |
-| `boursoramaSymbol` | `String` | nullable |
-| `countryAllocation` | `List<InstrumentAllocationDto>` | Répartition géographique (peut être vide) |
-| `sectorAllocation` | `List<InstrumentSectorAllocationDto>` | Répartition sectorielle (peut être vide) |
-
-### `InstrumentAllocationDto`
-
-Record : `{ country: String, percentage: BigDecimal }`
-
-### `InstrumentSectorAllocationDto`
-
-Record : `{ sector: String, percentage: BigDecimal }`
-
-### `CreateInstrumentRequest`
-
-| Champ | Type | Obligatoire | Contraintes |
-|-------|------|-------------|-------------|
-| `category` | `AssetCategory` | ✓ | `@NotNull` |
-| `name` | `String` | ✓ | `@NotBlank` |
-| `currency` | `String` | ✓ | `@NotBlank` |
-| `isin` | `String` | — | Obligatoire si `category = BOURSE`, doit être unique |
-| `ticker` | `String` | — | Obligatoire si `category = CRYPTO`, doit être unique |
-| `stablePrice` | `Boolean` | — | Défaut `false` si absent |
-| `boursoramaSymbol` | `String` | — | BOURSE uniquement |
-
-### `UpdateInstrumentPriceRequest`
-
-| Champ | Type | Contrainte |
-|-------|------|------------|
-| `instrumentId` | `Long` | Obligatoire |
-| `lastPrice` | `BigDecimal` | Obligatoire, strictement positif |
-
-### `UpdateStablePriceRequest`
-
-| Champ | Type | Contrainte |
-|-------|------|------------|
-| `stablePrice` | `Boolean` | `@NotNull` |
+| DTO | Description |
+|-----|-------------|
+| `InstrumentDto` | Lecture : id, category, isin, ticker, name, currency, lastPrice, lastPriceUpdatedAt, stablePrice, countryAllocation, sectorAllocation |
+| `InstrumentAllocationDto` | `{ country, percentage }` |
+| `InstrumentSectorAllocationDto` | `{ sector, percentage }` |
+| `CreateInstrumentRequest` | category, name, currency, isin?, ticker?, stablePrice?, boursoramaSymbol? |
+| `UpdateInstrumentPriceRequest` | `{ instrumentId, lastPrice }` — lastPrice strictement positif |
+| `UpdateStablePriceRequest` | `{ stablePrice: Boolean }` — `@NotNull` |
+| `ExchangeRateDto` | `{ id, currency, rate, lastUpdatedAt }` |
+| `UpdateExchangeRateRequest` | `{ currency, rate }` — rate strictement positif |
+| `MarketDataReportDto` | Rapport du scheduler : instrumentsResolved, instrumentsUpdated, instrumentsFailed, ratesUpdated, snapshotsCreated, snapshotsSkipped, snapshotsFailed, errors, executedAt |
 
 ---
 
 ## 4. API REST
 
-Préfixe : `/api/instruments`
+### Instruments
 
 | Méthode | URL | Rôle | Description |
 |---------|-----|------|-------------|
@@ -204,12 +134,26 @@ Préfixe : `/api/instruments`
 | `GET` | `/api/instruments/{id}` | Authentifié | Détail d'un instrument |
 | `POST` | `/api/instruments` | Authentifié | Créer un instrument |
 | `PUT` | `/api/instruments/{id}` | Authentifié | Modifier un instrument |
+| `DELETE` | `/api/instruments/{id}` | ADMIN | Supprimer un instrument et ses positions |
 | `GET` | `/api/instruments/active` | ADMIN | Instruments liés à au moins une position ACTIVE |
 | `PUT` | `/api/instruments/prices` | ADMIN | Mise à jour groupée des cours |
 | `PATCH` | `/api/instruments/{id}/stable-price` | ADMIN | Activer / désactiver le prix fixe |
 | `PUT` | `/api/instruments/{id}/allocations` | ADMIN | Remplacer l'allocation géographique |
 | `PUT` | `/api/instruments/{id}/sector-allocations` | ADMIN | Remplacer l'allocation sectorielle |
-| `POST` | `/api/admin/allocations/run` | ADMIN | Déclencher la mise à jour automatique des allocations |
+
+### Allocations et données marché
+
+| Méthode | URL | Rôle | Description |
+|---------|-----|------|-------------|
+| `POST` | `/api/admin/allocations/run` | ADMIN | Déclencher la mise à jour automatique des allocations géographiques |
+| `POST` | `/api/admin/market-data/run` | ADMIN | Déclencher manuellement le scheduler complet (cours + taux + snapshot) |
+
+### Taux de change
+
+| Méthode | URL | Rôle | Description |
+|---------|-----|------|-------------|
+| `GET` | `/api/exchange-rates` | ADMIN | Liste tous les taux configurés (triés par devise) |
+| `PUT` | `/api/exchange-rates` | ADMIN | Mise à jour groupée (upsert par devise) |
 
 ---
 
@@ -218,170 +162,200 @@ Préfixe : `/api/instruments`
 ```
 com.myfinance
 ├── domain/
-│   ├── Instrument.java                    (@Entity)
-│   ├── InstrumentAllocation.java          (@Entity)
-│   └── InstrumentSectorAllocation.java    (@Entity)
+│   ├── Instrument.java
+│   ├── InstrumentAllocation.java
+│   ├── InstrumentSectorAllocation.java
+│   └── ExchangeRate.java
 ├── repository/
-│   ├── InstrumentRepository.java
+│   ├── InstrumentRepository.java          findAllWithActivePositions()
 │   ├── InstrumentAllocationRepository.java
-│   └── InstrumentSectorAllocationRepository.java
+│   ├── InstrumentSectorAllocationRepository.java
+│   └── ExchangeRateRepository.java        findByCurrency(), findAllByOrderByCurrencyAsc()
 ├── service/
-│   ├── InstrumentService.java
-│   └── AllocationUpdateService.java
+│   ├── InstrumentService.java             CRUD + updatePrices + updateAllocations
+│   ├── AllocationUpdateService.java       Scraping Boursorama pour allocation géographique
+│   ├── ExchangeRateService.java           findAll, getRatesAsMap, updateRates
+│   ├── MarketDataService.java             Orchestrateur scheduler complet
+│   ├── BoursoramaClient.java              Scraping HTML Jsoup (cours BOURSE)
+│   ├── CoinGeckoClient.java               REST CoinGecko (cours CRYPTO)
+│   └── EcbRateClient.java                 REST ECB/Frankfurter (taux de change)
 ├── controller/
 │   ├── InstrumentController.java
-│   └── AllocationController.java
+│   ├── AllocationController.java
+│   ├── ExchangeRateController.java
+│   └── MarketDataController.java
 ├── scheduler/
-│   └── AllocationScheduler.java
+│   ├── MarketDataScheduler.java           @Scheduled cron mensuel
+│   └── AllocationScheduler.java           @Scheduled le 1er du mois à 3h00
 └── dto/
-    ├── InstrumentDto.java                 (record)
-    ├── InstrumentAllocationDto.java       (record)
-    ├── InstrumentSectorAllocationDto.java (record)
-    ├── CreateInstrumentRequest.java       (record)
-    ├── UpdateInstrumentPriceRequest.java  (record)
-    └── UpdateStablePriceRequest.java      (record)
-```
-
-### `InstrumentService`
-
-Injecte :
-- `InstrumentRepository`
-- `InstrumentAllocationRepository`
-- `InstrumentSectorAllocationRepository`
-
-Méthodes principales :
-
-| Méthode | Description |
-|---------|-------------|
-| `findAll(q, category)` | Recherche filtrée avec chargement des allocations |
-| `findById(id)` | Détail avec allocations |
-| `create(request)` | Création avec validation (ISIN unique pour BOURSE, ticker unique pour CRYPTO) |
-| `update(id, request)` | Modification avec contrôle d'unicité en excluant l'instrument courant |
-| `updateStablePrice(id, stable)` | Bascule le prix fixe |
-| `findActiveInstruments()` | Instruments liés à des positions actives |
-| `updatePrices(requests)` | Mise à jour groupée des cours |
-| `updateAllocations(id, entries)` | Replace complet de l'allocation géographique |
-| `updateSectorAllocations(id, entries)` | Replace complet de l'allocation sectorielle |
-| `loadAllocationsForScore(instrumentIds)` | Charge les allocations en batch pour le scoring patrimonial |
-
-### `AllocationUpdateService`
-
-Récupère automatiquement la répartition géographique depuis Boursorama via `BoursoramaClient.getCountryAllocation()`. Ne traite que les instruments BOURSE avec `stablePrice = false` et `boursoramaSymbol` renseigné.
-
-### `AllocationScheduler`
-
-Déclenche `AllocationUpdateService.updateAll()` le 1er de chaque mois à **3h00** (1h après `MarketDataScheduler`). Désactivé en profil `dev` via `scheduler.enabled=false`.
-
----
-
-## 6. Architecture frontend
-
-```
-frontend/src/
-├── api/
-│   └── patrimoine.js                  # getInstruments, createInstrument, updateInstrument,
-│                                      # updateInstrumentAllocations, updateInstrumentSectorAllocations,
-│                                      # runAllocationUpdate
-└── components/
-    ├── admin/
-    │   ├── AdminInstrumentPage.jsx    # Page admin principale
-    │   ├── AdminInstrumentForm.jsx    # Modal création / édition
-    │   ├── AdminAllocationModal.jsx   # Édition allocation géographique
-    │   └── AdminSectorAllocationModal.jsx  # Édition allocation sectorielle
-    └── patrimoine/
-        └── InstrumentPriceUpdateModal.jsx  # Mise à jour groupée des cours
-```
-
-### 6.1 Navigation
-
-```
-Administration → Instruments financiers → AdminInstrumentPage
-```
-
-Accessible uniquement pour le rôle ADMIN.
-
-### 6.2 `AdminInstrumentPage`
-
-La page affiche deux tableaux séparés : **BOURSE** et **CRYPTO**.
-
-Colonnes de chaque tableau :
-
-| Colonne | Description |
-|---------|-------------|
-| Nom | Nom tronqué avec tooltip d'allocations au survol (si données disponibles) + boutons 🌍 et 🏭 |
-| ISIN / Ticker | Identifiant unique selon la catégorie |
-| Boursorama / CoinGecko ID | Symbole de la source de prix automatique |
-| Prix actuel | `lastPrice` formaté avec devise |
-| Mis à jour | `lastPriceUpdatedAt` — affiché en orange si > 30 jours (`⚠`) |
-| Prix fixe | Badge 🔒 Fixe si `stablePrice = true` |
-| Action | Bouton "Modifier" ouvrant `AdminInstrumentForm` |
-
-En-tête de la page :
-- Bouton **"🌍 Mettre à jour les allocations"** → `POST /api/admin/allocations/run` + rapport inline
-- Bouton **"⟳ Mettre à jour les cours"** → `POST /api/admin/market-data/run` + rapport inline
-- Bouton **"+ Ajouter"** → ouvre `AdminInstrumentForm` en création
-
-### 6.3 Tooltip d'allocations
-
-Au survol du nom d'un instrument disposant d'allocations, un panneau flottant (position fixed) affiche :
-- Section **Géographique** : liste pays + pourcentage
-- Section **Sectorielle** : liste secteur + pourcentage
-
-### 6.4 `AdminAllocationModal`
-
-Modal de saisie de l'allocation géographique. Affiche une liste de lignes `pays / %`, avec indicateur de total (vert si = 100 %, orange sinon). L'enregistrement remplace toutes les allocations existantes via `PUT /api/instruments/{id}/allocations`.
-
-### 6.5 `AdminSectorAllocationModal`
-
-Identique à `AdminAllocationModal`, mais pour les secteurs. Appelle `PUT /api/instruments/{id}/sector-allocations`.
-
----
-
-## 7. Flux — mise à jour des allocations
-
-```mermaid
-stateDiagram-v2
-    state "AdminInstrumentPage" as page
-    state "Appel API /admin/allocations/run" as run
-    state "AllocationUpdateService.updateAll()" as svc
-    state "Boursorama scraping (par instrument)" as scrap
-    state "Rapport inline" as report
-
-    [*] --> page
-    page --> run : Clic "🌍 Mettre à jour les allocations"
-    run --> svc
-    svc --> scrap : Pour chaque instrument BOURSE avec boursoramaSymbol
-    scrap --> svc : CountryEntry[]
-    svc --> report : { instrumentsUpdated }
-    report --> page : Rechargement des instruments
+    ├── InstrumentDto.java
+    ├── InstrumentAllocationDto.java
+    ├── InstrumentSectorAllocationDto.java
+    ├── CreateInstrumentRequest.java
+    ├── UpdateInstrumentPriceRequest.java
+    ├── UpdateStablePriceRequest.java
+    ├── ExchangeRateDto.java
+    ├── UpdateExchangeRateRequest.java
+    └── MarketDataReportDto.java
 ```
 
 ---
 
-## 8. Règles métier
+## 6. Mise à jour manuelle des cours (admin)
 
-1. **Unicité ISIN** : deux instruments BOURSE ne peuvent pas avoir le même ISIN. Contrôle effectué à la création et à la modification (exclusion de l'instrument courant en modification).
+Mécanisme de secours permettant à un ADMIN de mettre à jour les cours depuis la page Patrimoine lorsque le scheduler automatique est indisponible ou incorrect.
+
+### Règles
+
+- `lastPrice` doit être **strictement positif** — rejeté `400` sinon
+- `lastPriceUpdatedAt` est toujours fixé **côté serveur** à `now()` — le frontend ne transmet pas de date
+- Un instrument **absent de la liste** soumise n'est **pas modifié**
+- Un `instrumentId` introuvable lève `404` et interrompt la requête pour tous
+
+### Interface — `InstrumentPriceUpdateModal`
+
+Accessible depuis le bouton **"Mettre à jour les cours"** (ADMIN uniquement) dans l'en-tête de `PatrimoinePage`.
+
+| Zone | Description |
+|------|-------------|
+| Tableau | Une ligne par instrument actif (`GET /api/instruments/active`) |
+| Cours actuel | `lastPrice` grisé + date — **orange** si `lastPriceUpdatedAt > 30 jours` |
+| Nouveau cours | `<input>` vide par défaut — facultatif (seules les lignes renseignées sont soumises) |
+| Variation | Variation % vs cours actuel en temps réel — vert si ≥ 0, rouge si < 0 |
+| Toggle 🔒 / 🔓 | Bascule `stablePrice` via `PATCH /stable-price` — mise à jour optimiste avec revert sur erreur |
+
+Les instruments avec `stablePrice = true` : ligne grisée (`opacity-50`), saisie désactivée, pas d'indicateur d'obsolescence.
+
+---
+
+## 7. Mise à jour automatique des cours (scheduler)
+
+Le 1er de chaque mois à **2h00**, `MarketDataScheduler` déclenche une chaîne en quatre étapes :
+
+```
+1. Résolution des IDs CoinGecko manquants (CRYPTO sans coinGeckoId)
+2. Mise à jour des cours instruments
+   ├── BOURSE : BoursoramaClient.getPrice(boursoramaSymbol) pour chaque instrument avec stablePrice=false
+   └── CRYPTO : CoinGeckoClient.getPrices(coinGeckoIds) — un seul appel groupé
+3. Mise à jour des taux de change via EcbRateClient (ECB/Frankfurter)
+4. Snapshot patrimonial pour tous les utilisateurs (PortfolioSnapshotService)
+```
+
+Chaque étape s'exécute indépendamment — une erreur partielle ne bloque pas les suivantes.
+
+**Désactivé en profil `dev`** (`scheduler.enabled=false`).
+
+### Sources de données
+
+| Source | Domaine | URL | Remarques |
+|--------|---------|-----|-----------|
+| **Boursorama** (scraping HTML Jsoup) | BOURSE | `https://www.boursorama.com/cours/{boursoramaSymbol}/` | Sélecteur : `span.c-instrument--last[data-ist-last]` ; format français (`30,8419`) |
+| **CoinGecko** (API REST) | CRYPTO | `GET /simple/price?ids={...}&vs_currencies=eur,usd` | Gratuit, 50 req/min ; `coinGeckoId` résolu via `GET /search?query={ticker}` |
+| **ECB / Frankfurter** | Taux de change | `GET https://api.frankfurter.app/latest?from=EUR` | Officiel, gratuit, sans clé |
+
+### Rapport d'exécution (`MarketDataReportDto`)
+
+```json
+{
+  "instrumentsResolved": 1,
+  "instrumentsUpdated": 8,
+  "instrumentsFailed": 0,
+  "ratesUpdated": 5,
+  "snapshotsCreated": 2,
+  "snapshotsSkipped": 0,
+  "snapshotsFailed": 0,
+  "errors": [],
+  "executedAt": "2026-04-01T02:00:00"
+}
+```
+
+### Gestion des erreurs
+
+| Cas | Comportement |
+|-----|-------------|
+| `boursoramaSymbol` absent | Instrument ignoré silencieusement |
+| Scraping Boursorama échoue | Log `ERROR`, compté en `failed`, traitement continue |
+| `coinGeckoId` introuvable | Log `WARN`, ajouté à `errors`, traitement continue |
+| ECB : aucun taux | Log `ERROR`, `ratesUpdated = 0`, traitement continue |
+| Snapshot utilisateur échoue | Log `ERROR`, ajouté à `errors`, passage à l'utilisateur suivant |
+
+### Logs
+
+```
+[MàJ] Démarrage de la mise à jour des données marché
+[MàJ] Terminé — 1 CoinGecko résolus | 8 cours MàJ | 5 taux | 2 snapshots créés
+[MàJ] Terminé avec 2 erreur(s) — 7 cours MàJ | 1 échoués | 5 taux | 2 snapshots créés
+```
+
+### Configuration
+
+```properties
+scheduler.enabled=false   # false en dev, true en prod
+```
+
+---
+
+## 8. Taux de change
+
+### Convention
+
+`rate` = nombre d'unités de la devise étrangère pour 1 EUR.
+
+| Exemple | Signification |
+|---------|---------------|
+| `currency = "USD"`, `rate = 1.08` | 1 EUR = 1,08 USD |
+| `currency = "GBP"`, `rate = 0.86` | 1 EUR = 0,86 GBP |
+
+Formule de conversion : `amountEur = amountNatif / rate`
+
+### Impact sur la valorisation (`PositionDto`)
+
+```
+currentValueEur = units × instrument.lastPrice                  (si devise = EUR)
+currentValueEur = (units × instrument.lastPrice) / rate         (si devise ≠ EUR et taux configuré)
+currentValueEur = units × instrument.lastPrice (devise native)  (si taux non configuré — dégradé)
+```
+
+La map des taux est chargée **une seule fois par requête** dans `PositionService` et `PortfolioSnapshotService` pour éviter les appels répétés.
+
+### Mise à jour automatique
+
+`EcbRateClient` → `ExchangeRateService.updateRates()` s'exécute à l'étape 3 du scheduler mensuel.
+
+### Interface — `ExchangeRateUpdateModal`
+
+Accessible depuis le bouton **"Taux de change"** (ADMIN uniquement) dans l'en-tête de `PatrimoinePage`.
+
+- Tableau des taux existants : devise | taux actuel | date (orange si > 7 jours) | nouveau taux
+- Formulaire d'ajout : code devise + taux → upsert
+- Seules les lignes avec un nouveau taux renseigné sont soumises via `PUT /api/exchange-rates`
+
+### Règles
+
+- `rate` doit être **strictement positif** — rejeté `400` sinon
+- La mise à jour est un **upsert par devise** : crée si absente, met à jour si existante
+- Une devise absente de la liste soumise n'est **pas modifiée**
+
+---
+
+## 9. Règles métier
+
+1. **Unicité ISIN** : deux instruments BOURSE ne peuvent pas avoir le même ISIN (contrôle en création et modification).
 2. **Unicité ticker** : deux instruments CRYPTO ne peuvent pas avoir le même ticker.
-3. **Prix fixe** : `stablePrice = true` exclut l'instrument de toute mise à jour de cours (scheduler ou manuelle via le modal). L'indicateur d'obsolescence est masqué.
-4. **Replace complet des allocations** : `PUT /api/instruments/{id}/allocations` supprime toutes les lignes existantes avant insertion — il n'y a pas de merge partiel.
-5. **Lignes vides ignorées** : les entrées dont `country` (ou `sector`) est null ou vide ne sont pas persistées.
-6. **Instruments actifs** : `GET /api/instruments/active` ne retourne que les instruments référencés par au moins une position `ACTIVE` — utilisé pour la mise à jour manuelle des cours depuis `PatrimoinePage`.
+3. **Prix fixe** : `stablePrice = true` exclut l'instrument de toute mise à jour de cours — scheduler ou manuelle.
+4. **Replace complet des allocations** : `PUT /allocations` supprime toutes les lignes existantes avant insertion.
+5. **Lignes vides ignorées** : les entrées dont `country` / `sector` est null ou vide ne sont pas persistées.
+6. **Instruments actifs** : `GET /api/instruments/active` retourne uniquement les instruments référencés par au moins une position `ACTIVE`.
 
 ---
 
-## 9. Tests unitaires
+## 10. Tests unitaires
 
 | Classe de test | Contenu |
 |----------------|---------|
 | `InstrumentServiceTest` | CRUD, validation ISIN/ticker, mise à jour des prix, allocations |
 | `InstrumentControllerTest` | Endpoints, authentification, contrôle rôle ADMIN |
 | `AllocationUpdateServiceTest` | Mise à jour automatique, comportement en cas d'échec Boursorama |
-
----
-
-## 10. Évolutions futures envisagées
-
-| Évolution | Description |
-|-----------|-------------|
-| **Allocation sectorielle automatique** | Scraping Boursorama pour la répartition sectorielle (analogue à l'allocation géographique) |
-| **Résolution automatique du boursoramaSymbol** | Recherche depuis l'ISIN via l'API Boursorama |
+| `ExchangeRateServiceTest` | findAll, updateRates, upsert, validation rate |
+| `ExchangeRateControllerTest` | GET/PUT, contrôle rôle ADMIN |
+| `MarketDataServiceTest` | Résolution CoinGecko, Boursorama, ECB, runFullUpdate complet |

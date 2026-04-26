@@ -35,10 +35,14 @@ AssetCategory (enum)
 
 ```
 FiscalEnvelope (enum)    — applicable à BOURSE, LIVRET, IMMO_PAPIER
-  CTO   — Compte Titres Ordinaire
-  PEA   — Plan d'Épargne en Actions
-  AV    — Assurance Vie (inclut le fonds en euros)
-  NONE  — pas d'enveloppe fiscale dédiée
+  CTO       — Compte Titres Ordinaire
+  PEA       — Plan d'Épargne en Actions
+  AV        — Assurance Vie (inclut le fonds en euros)
+  FLAT_TAX  — Soumis à la flat tax / PFU (30 %)
+  PEE_PERCO — Plan d'Épargne Entreprise / Collectif
+  PER       — Plan d'Épargne Retraite
+  AUTRE     — Autre enveloppe non listée
+  NONE      — pas d'enveloppe fiscale dédiée
 ```
 
 | Enveloppe | Fiscalité applicable | Condition |
@@ -46,6 +50,10 @@ FiscalEnvelope (enum)    — applicable à BOURSE, LIVRET, IMMO_PAPIER
 | CTO | 30 % (PFU — flat tax) | Immédiate sur plus-values et dividendes |
 | PEA | 17,2 % (prélèvements sociaux uniquement) | Après 5 ans de détention |
 | AV | 7,5 % + 17,2 % PS (avec abattement 4 600 €/9 200 €) | Après 8 ans de détention |
+| FLAT_TAX | 30 % (PFU) | Soumis à la flat tax |
+| PEE_PERCO | Exonération IR sous conditions (5 ans) + PS 17,2 % | Épargne salariale |
+| PER | Déductible à l'entrée, fiscalité à la sortie | Retraite |
+| AUTRE | Variable | — |
 | NONE | Variable selon le support | — |
 
 ---
@@ -152,6 +160,7 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `address` | `String` | IMMO_PHYSIQUE | Adresse du bien |
 | `estimatedCurrentValue` | `BigDecimal` | IMMO_PHYSIQUE | Valeur estimée actuelle — saisie manuellement |
 | `acquisitionDate` | `LocalDate` | IMMO_PHYSIQUE | Date d'acquisition du bien — nullable |
+| `acquisitionPrice` | `BigDecimal` | IMMO_PHYSIQUE | Prix d'acquisition du bien — nullable ; utilisé comme montant investi si renseigné |
 | `annualRate` | `BigDecimal` | LIVRET | Taux d'intérêt annuel en % |
 | `commissionRate` | `BigDecimal` | IMMO_PAPIER | Taux de commission de la plateforme en % |
 | `currentBalance` | `BigDecimal` | LIQUIDITE | Solde actuel — mis à jour manuellement |
@@ -367,6 +376,10 @@ classDiagram
         CTO
         PEA
         AV
+        FLAT_TAX
+        PEE_PERCO
+        PER
+        AUTRE
         NONE
     }
 
