@@ -12,6 +12,7 @@ import {
 } from './loanSimulatorUtils'
 import { NumInput, AmountPctInput, Section, PropertyTypeToggle } from './LoanSimulatorInputs'
 import AmortizationTable from './AmortizationTable'
+import RentalInvestmentSection from './RentalInvestmentSection'
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
@@ -83,6 +84,17 @@ export default function LoanSimulatorPage({ user }) {
   const [investmentReturnRate, setInvestmentReturnRate] = useState(5)
   const [rentBuyHorizon, setRentBuyHorizon]           = useState(20)
 
+  // Investissement locatif
+  const [rentalVacancyRate,    setRentalVacancyRate]    = useState(8)
+  const [rentalGestionRate,    setRentalGestionRate]    = useState(0)
+  const [rentalPnoInsurance,   setRentalPnoInsurance]   = useState(0)
+  const [rentalAccountingFees, setRentalAccountingFees] = useState(0)
+  const [rentalGliEnabled,     setRentalGliEnabled]     = useState(false)
+  const [rentalGliRate,        setRentalGliRate]        = useState(2.5)
+  const [rentalAnnualWorks,    setRentalAnnualWorks]    = useState(0)
+  const [rentalFurnitureVal,   setRentalFurnitureVal]   = useState(0)
+  const [rentalTmi,            setRentalTmi]            = useState(30)
+
   // UI
   const [showMonthly, setShowMonthly]     = useState(false)
   const [showTable, setShowTable]         = useState(true)
@@ -138,6 +150,8 @@ export default function LoanSimulatorPage({ user }) {
       showComparison, compDuration, compRate,
       showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
       showRentComparison, monthlyRent, rentIncreaseRate, investmentReturnRate, rentBuyHorizon,
+      rentalVacancyRate, rentalGestionRate, rentalPnoInsurance, rentalAccountingFees,
+      rentalGliEnabled, rentalGliRate, rentalAnnualWorks, rentalFurnitureVal, rentalTmi,
       incomeOverride, additionalIncomes,
     }
   }
@@ -185,6 +199,15 @@ export default function LoanSimulatorPage({ user }) {
     setRentIncreaseRate(sim.rentIncreaseRate ?? 2)
     setInvestmentReturnRate(sim.investmentReturnRate ?? 5)
     setRentBuyHorizon(sim.rentBuyHorizon ?? 20)
+    setRentalVacancyRate(sim.rentalVacancyRate ?? 8)
+    setRentalGestionRate(sim.rentalGestionRate ?? 0)
+    setRentalPnoInsurance(sim.rentalPnoInsurance ?? 0)
+    setRentalAccountingFees(sim.rentalAccountingFees ?? 0)
+    setRentalGliEnabled(sim.rentalGliEnabled ?? false)
+    setRentalGliRate(sim.rentalGliRate ?? 2.5)
+    setRentalAnnualWorks(sim.rentalAnnualWorks ?? 0)
+    setRentalFurnitureVal(sim.rentalFurnitureVal ?? 0)
+    setRentalTmi(sim.rentalTmi ?? 30)
     setIncomeOverride(sim.incomeOverride ?? '')
     setAdditionalIncomes(sim.additionalIncomes ?? [])
     setShowLoadPanel(false)
@@ -1308,6 +1331,30 @@ export default function LoanSimulatorPage({ user }) {
             currentYear={CURRENT_YEAR}
           />
         </div>
+      </div>
+
+      {/* ── Investissement locatif (pleine largeur) ── */}
+      <div className="mt-2">
+      <RentalInvestmentSection
+        acquisitionCost={calc.acquisitionCost}
+        propertyPrice={propertyPrice}
+        totalMonthlyPayment={calc.totalMonthlyAfterDeferral}
+        propertyTax={propertyTax}
+        condoFees={condoFees}
+        annualSummary={calc.amortization.annualSummary}
+        loanAmount={loanAmount}
+        personalContrib={calc.requiredContrib}
+        monthlyRent={monthlyRent}           onMonthlyRent={setMonthlyRent}
+        vacancyRate={rentalVacancyRate}     onVacancyRate={setRentalVacancyRate}
+        gestionRate={rentalGestionRate}     onGestionRate={setRentalGestionRate}
+        pnoInsurance={rentalPnoInsurance}   onPnoInsurance={setRentalPnoInsurance}
+        accountingFees={rentalAccountingFees} onAccountingFees={setRentalAccountingFees}
+        gliEnabled={rentalGliEnabled}       onGliEnabled={setRentalGliEnabled}
+        gliRate={rentalGliRate}             onGliRate={setRentalGliRate}
+        annualWorks={rentalAnnualWorks}     onAnnualWorks={setRentalAnnualWorks}
+        furnitureVal={rentalFurnitureVal}   onFurnitureVal={setRentalFurnitureVal}
+        tmi={rentalTmi}                     onTmi={setRentalTmi}
+      />
       </div>
 
       {/* ── Tooltip frais de notaire ── */}
