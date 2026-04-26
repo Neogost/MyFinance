@@ -42,8 +42,9 @@ public class TaxSimulatorController {
             @Parameter(description = "IDs des revenus complémentaires à inclure (absent ou vide = aucun revenu complémentaire)")
             @RequestParam(required = false) List<Long> includedIncomes) {
 
+        User freshUser = userService.findEntityById(currentUser.getId());
         int annee = year != null ? year : LocalDate.now().getYear();
-        TaxSimulationDto result = taxSimulatorService.simulate(currentUser, annee, salarySource, includedIncomes);
+        TaxSimulationDto result = taxSimulatorService.simulate(freshUser, annee, salarySource, includedIncomes);
         return ResponseEntity.ok(result);
     }
 

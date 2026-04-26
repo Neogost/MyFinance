@@ -48,6 +48,11 @@ class TaxSimulatorControllerTest {
                 30000f, 0f, 0f, 0f,
                 30000f, 3000f, "FORFAITAIRE_10_POURCENT",
                 27000f, 1.0f, 1700f, 1700f, 5.67f);
+
+        // Le controller recharge l'utilisateur depuis la DB pour ne pas utiliser l'objet de session Spring Security.
+        // On mocke ici pour que les stubs any(User.class) matchent un vrai objet (pas null).
+        User mockUser = User.builder().id(1L).login("jean.dupont").role(RoleEnum.USER).build();
+        when(userService.findEntityById(1L)).thenReturn(mockUser);
     }
 
     // ── GET /api/tax-simulator ─────────────────────────────────
