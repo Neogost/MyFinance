@@ -147,8 +147,8 @@ frontend/src/
 - API patrimoine — snapshots et données marché : `docs/api/patrimoine-snapshots.md`
 - API patrimoine — outils (score, objectifs, référentiel INSEE) : `docs/api/patrimoine-outils.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
-- Bilan financier personnel (architecture) : `docs/architecture/bilan-financier.md`
-- Simulateur d'intérêts composés (architecture) : `docs/architecture/compound-interest-simulator.md`
+- Bilan financier personnel (architecture) : `docs/architecture/tools/bilan-financier.md`
+- Simulateur d'intérêts composés (architecture) : `docs/architecture/tools/compound-interest-simulator.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 - Historique des connexions (architecture) : `docs/architecture/login-history.md`
 - API historique des connexions : `docs/api/login-history.md`
@@ -539,7 +539,7 @@ npm run dev
   - **Frontend** : `PatrimoinePage`, `PositionForm` (wizard 2 étapes), `OrderPanel` + API layer `patrimoine.js`
   - **Navigation** : intégration menu Patrimoine + routing App.jsx
   - **Endpoints API** : `/api/positions`, `/api/instruments`, `/api/portfolio-snapshots` (CRUD complet)
-  - **Documentation** : `docs/architecture/patrimoine.md`, `docs/api/patrimoine.md`
+  - **Documentation** : `docs/architecture/patrimoine.md`, `docs/api/patrimoine-positions.md`
 - **Patrimoine — Mise à jour manuelle des cours** (ADMIN) :
   - `GET /api/instruments/active` + `PUT /api/instruments/prices` + `PATCH /api/instruments/{id}/stable-price` protégés `ADMIN`
   - Modal `InstrumentPriceUpdateModal` : instruments groupés par catégorie (BOURSE / CRYPTO séparés), cours obsolètes (> 30 j) en orange, compteur global d'obsolètes, variation % temps réel lors de la saisie
@@ -548,7 +548,7 @@ npm run dev
   - Mise à jour optimiste du toggle avec revert sur erreur API
   - Fix CORS : `PATCH` ajouté dans `setAllowedMethods` de `SecurityConfig`
   - Bouton "Mettre à jour les cours" visible uniquement pour le rôle ADMIN
-  - Documentation : `docs/architecture/instrument-price-update.md`
+  - Documentation : `docs/architecture/instruments.md`
 - **Patrimoine — Création d'instrument à la volée** :
   - Dans `PositionForm`, si la recherche BOURSE (ISIN) ou CRYPTO (ticker) ne retourne aucun résultat, proposition de créer l'instrument directement avec nom + devise
   - L'instrument créé est automatiquement sélectionné dans le formulaire
@@ -610,7 +610,7 @@ npm run dev
   - **Projection FIRE** : objectif × 25 dépenses, barre de progression, années restantes, rendement pondéré (bloc violet)
   - Toggle Mensuel / Annuel (× 12) ; TOTAL Actif et Passif toujours alignés en bas (`mt-auto`)
   - Aucun endpoint backend nouveau — 6 appels parallèles vers endpoints existants
-  - Documentation : `docs/architecture/bilan-financier.md`
+  - Documentation : `docs/architecture/tools/bilan-financier.md`
 
 - **Patrimoine — Relevé optionnel du montant investi** :
   - `investedAmountEur` n'est plus obligatoire dans la saisie d'un relevé manuel
@@ -622,7 +622,7 @@ npm run dev
   - Endpoint `GET /api/patrimoine/referentiel` retournant les seuils D1–D9 par tranche d'âge (7 tranches : 18-29, 30-39, …, 80+)
   - `birthDate` ajouté dans la réponse du login (`SecurityConfig`) pour permettre le calcul côté frontend
   - `PatrimoinePage` affiche `D{rang}/10 · {label tranche}` sous la valeur du patrimoine brut
-  - Documentation : `docs/api/patrimoine.md`
+  - Documentation : `docs/api/patrimoine-outils.md`
 
 - **Tableau de bord — Évolution du patrimoine** (`PatrimoineEvolutionChart`) :
   - Graphique en aires empilées par catégorie (IMMO_PHYSIQUE → BOURSE) basé sur les snapshots saisis
@@ -705,7 +705,7 @@ npm run dev
   - Endpoint de déclenchement manuel : `POST /api/admin/market-data/run` (ADMIN)
   - Frontend : bouton "⟳ Mettre à jour les cours" dans `AdminInstrumentPage` avec rapport inline
   - Tests : `MarketDataServiceTest` (571 tests au total)
-  - Documentation : `docs/architecture/market-data-scheduler.md`
+  - Documentation : `docs/architecture/instruments.md`
 
 - **Page admin "Gestion des instruments"** (`AdminInstrumentPage`) :
   - Tableau BOURSE / CRYPTO avec prix actuel, date de mise à jour (orange si > 30 j), symbole Boursorama / CoinGecko ID, prix fixe

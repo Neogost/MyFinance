@@ -167,14 +167,14 @@ cd backend
 | `docs/architecture/recurring-expenses.md` | Dépenses récurrentes, capacité d'épargne |
 | `docs/architecture/passifs.md` | Possessions, décote automatique par catégorie |
 | `docs/architecture/dettes.md` | Dettes : amortissement, suivi manuel, tableau |
-| `docs/architecture/bilan-financier.md` | Bilan financier personnel, ratio FIRE |
+| `docs/architecture/tools/bilan-financier.md` | Bilan financier personnel, ratio FIRE |
 | `docs/architecture/dashboard.md` | Tableau de bord, widgets Recharts |
-| `docs/architecture/safety-net.md` | Matelas de sécurité, modes de calcul |
+| `docs/architecture/user-management.md` | Utilisateurs, rôles, droits, inscription, matelas de sécurité |
 | `docs/architecture/family-group.md` | Regroupement familial, invitations |
 | `docs/architecture/login-history.md` | Historique des connexions, événements |
-| `docs/architecture/loan-simulator.md` | Simulateur d'emprunt, investissement locatif |
-| `docs/architecture/crisis-simulator.md` | Simulateur de crise, impact choc de marché |
-| `docs/architecture/compound-interest-simulator.md` | Simulateur d'intérêts composés |
+| `docs/architecture/tools/loan-simulator.md` | Simulateur d'emprunt, investissement locatif |
+| `docs/architecture/tools/crisis-simulator.md` | Simulateur de crise, impact choc de marché |
+| `docs/architecture/tools/compound-interest-simulator.md` | Simulateur d'intérêts composés |
 | `docs/architecture/decisions/` | Décisions d'architecture (ADR) et patterns |
 
 ### API

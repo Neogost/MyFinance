@@ -479,7 +479,7 @@ GET /api/family-groups/my/members/{memberId}/positions
 
 ### Réponse — 200 OK
 
-Tableau de `PositionDto` — même structure que `GET /api/positions`. Voir `docs/api/patrimoine.md` pour le détail des champs.
+Tableau de `PositionDto` — même structure que `GET /api/positions`. Voir [`docs/api/patrimoine-positions.md`](patrimoine-positions.md) pour le détail des champs.
 
 ```json
 [

@@ -117,7 +117,7 @@ Authentification par session cookie. Deux rôles : `USER` (accès à ses propres
 
 | Documentation | Lien |
 |---------------|------|
-| Architecture | [`docs/architecture/userManagement.md`](userManagement.md) |
+| Architecture | [`docs/architecture/user-management.md`](user-management.md) |
 | Architecture sécurité | [`docs/architecture/security.md`](security.md) |
 | API authentification | [`docs/api/authentication.md`](../api/authentication.md) |
 | API utilisateurs | [`docs/api/users.md`](../api/users.md) |
@@ -131,7 +131,7 @@ Authentification par session cookie. Deux rôles : `USER` (accès à ses propres
 
 Réserve de liquidités configurée selon trois modes : montant fixe (`FIXED_AMOUNT`), N mois de dépenses (`MONTHS_EXPENSES`), ou N mois de salaire (`MONTHS_SALARY`). Visualisé via un widget tableau de bord et un indicateur sur les cartes LIVRET/LIQUIDITE du patrimoine.
 
-→ [`docs/architecture/safety-net.md`](safety-net.md)
+→ [`docs/architecture/user-management.md`](user-management.md) (section Matelas de sécurité)
 
 #### Regroupement familial
 
@@ -230,8 +230,9 @@ Score de cohérence calculé en 6 axes (Diversification, Matelas, Endettement, �
 | Architecture instruments | [`docs/architecture/instruments.md`](instruments.md) |
 | Architecture scoring | [`docs/architecture/patrimoine-scoring.md`](patrimoine-scoring.md) |
 | Architecture stratégie | [`docs/architecture/patrimoine-strategy.md`](patrimoine-strategy.md) |
-| Architecture scoring | [`docs/architecture/patrimoine-scoring.md`](patrimoine-scoring.md) |
-| API | [`docs/api/patrimoine.md`](../api/patrimoine.md) |
+| API positions et ordres | [`docs/api/patrimoine-positions.md`](../api/patrimoine-positions.md) |
+| API snapshots et marché | [`docs/api/patrimoine-snapshots.md`](../api/patrimoine-snapshots.md) |
+| API outils (score, objectifs) | [`docs/api/patrimoine-outils.md`](../api/patrimoine-outils.md) |
 
 ---
 
@@ -247,19 +248,19 @@ Estimation de l'impôt sur le revenu à partir du profil fiscal. Choix de la sou
 
 Vue synthétique calquée sur un compte de résultat d'entreprise. Revenus, dépenses, actifs, passifs, taux d'épargne, ratio de couverture patrimoniale et projection FIRE côte à côte.
 
-→ [`docs/architecture/bilan-financier.md`](bilan-financier.md)
+→ [`docs/architecture/tools/bilan-financier.md`](tools/bilan-financier.md)
 
 #### Simulateur d'intérêts composés
 
 Projection de la croissance d'un capital avec versements périodiques, inflation, frais, fiscalité PFU et mode inversé (calcul des paramètres pour atteindre un objectif).
 
-→ [`docs/architecture/compound-interest-simulator.md`](compound-interest-simulator.md)
+→ [`docs/architecture/tools/compound-interest-simulator.md`](tools/compound-interest-simulator.md)
 
 #### Simulateur d'emprunt immobilier
 
 Simulation complète d'un crédit immobilier : mensualité, coût total, tableau d'amortissement. Prend en compte frais de notaire, frais d'agence, assurance, PTZ et remboursement anticipé.
 
-→ [`docs/architecture/loan-simulator.md`](loan-simulator.md)
+→ [`docs/architecture/tools/loan-simulator.md`](tools/loan-simulator.md)
 
 #### Déclaration de patrimoine
 
@@ -271,7 +272,7 @@ Document officiel exportable en PDF synthétisant l'identité civile, le patrimo
 
 Applique les taux de chute historiques de crises majeures (2008, dot-com, COVID, 2022) au patrimoine actuel. Montre l'impact par catégorie, la couverture du matelas de sécurité post-crise et une estimation du temps de récupération selon le taux d'épargne.
 
-→ [`docs/architecture/crisis-simulator.md`](crisis-simulator.md)
+→ [`docs/architecture/tools/crisis-simulator.md`](tools/crisis-simulator.md)
 
 ---
 
@@ -283,25 +284,13 @@ Accessibles uniquement au rôle `ADMIN`.
 
 CRUD complet sur les comptes utilisateurs. Validation des demandes d'inscription.
 
-→ [`docs/architecture/userManagement.md`](userManagement.md) — API : [`docs/api/users.md`](../api/users.md)
+→ [`docs/architecture/user-management.md`](user-management.md) — API : [`docs/api/users.md`](../api/users.md)
 
-#### Mise à jour manuelle des cours
+#### Instruments, cours et taux de change
 
-Mise à jour du `lastPrice` des instruments actifs. Toggle prix fixe pour les instruments à cours stable. Allocations géographiques et sectorielles saisies manuellement.
+Mise à jour manuelle et automatique des cours (Boursorama BOURSE, CoinGecko CRYPTO), scheduler mensuel (1er du mois à 2h), taux de change ECB, snapshot patrimonial pour tous les utilisateurs. Toggle prix fixe par instrument. Allocations géographiques et sectorielles.
 
-→ [`docs/architecture/instrument-price-update.md`](instrument-price-update.md)
-
-#### Mise à jour automatique des cours (scheduler)
-
-Scheduler Spring (`@Scheduled`, 1er du mois à 2h) : Boursorama (BOURSE), CoinGecko (CRYPTO), Frankfurter/ECB (taux de change), suivi d'un snapshot mensuel pour tous les utilisateurs. Déclenchement manuel via `POST /api/admin/market-data/run`.
-
-→ [`docs/architecture/market-data-scheduler.md`](market-data-scheduler.md)
-
-#### Gestion des taux de change
-
-Saisie et maintenance des taux de change (USD, GBP, CHF…) pour la conversion EUR des positions en devise étrangère.
-
-→ [`docs/architecture/exchange-rates.md`](exchange-rates.md) — API : [`docs/api/exchange-rates.md`](../api/exchange-rates.md)
+→ [`docs/architecture/instruments.md`](instruments.md) — API : [`docs/api/exchange-rates.md`](../api/exchange-rates.md)
 
 #### Gestion manuelle des relevés
 
