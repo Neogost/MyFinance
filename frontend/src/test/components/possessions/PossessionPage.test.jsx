@@ -231,12 +231,10 @@ describe('PossessionPage — pattern CRUD', () => {
 
   // ── Suppression ───────────────────────────────────────────────────────────
 
-  it('supprime une possession après confirmation et refetch la liste', async () => {
+  it('supprime une possession après confirmation dans la modale', async () => {
     mockFetchAll()
     deletePossession.mockResolvedValue()
-    window.confirm = vi.fn(() => true)
 
-    // Après suppression : liste sans la première possession
     getPossessions.mockResolvedValueOnce(POSSESSIONS)
       .mockResolvedValue(POSSESSIONS.slice(1))
     getPossessionsSummary.mockResolvedValue(SUMMARY)
@@ -245,24 +243,27 @@ describe('PossessionPage — pattern CRUD', () => {
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Supprimer définitivement'))
 
     await waitFor(() => {
       expect(deletePossession).toHaveBeenCalledWith(POSSESSIONS[0].id)
-      // Vérifie que fetchAll est rappelé
       expect(getPossessions).toHaveBeenCalledTimes(2)
     })
   })
 
-  it("n'appelle pas deletePossession si l'utilisateur annule la confirmation", async () => {
+  it("n'appelle pas deletePossession si l'utilisateur annule la modale", async () => {
     mockFetchAll()
-    window.confirm = vi.fn(() => false)
 
     render(<PossessionPage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
 
     expect(deletePossession).not.toHaveBeenCalled()
+    expect(screen.queryByText('Supprimer définitivement')).not.toBeInTheDocument()
   })
 
   // ── Différence vs OtherIncomePage : pas d'optimistic update ──────────────

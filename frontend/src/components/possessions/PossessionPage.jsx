@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { getPossessions, getPossessionsSummary, createPossession, updatePossession, deletePossession } from '../../api/possessions'
 import PossessionForm from './PossessionForm'
+import { fmt, formatDate } from '../../utils/formatting.js'
+import KpiCard from '../common/KpiCard'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 const CATEGORY_META = {
   VEHICULE:       { label: 'Véhicule',                 color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
@@ -12,37 +15,15 @@ const CATEGORY_META = {
   AUTRE:          { label: 'Autre',                     color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
 }
 
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
-
-function fmt(n) {
-  return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—'
-}
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  const [year, month, day] = iso.split('-')
-  return `${parseInt(day)} ${MONTHS_FR[parseInt(month) - 1]} ${year}`
-}
-
-function KpiCard({ label, value, unit = '€', color, sub }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1">
-      <p className="text-xs text-gray-400 tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold amount ${color ?? 'text-gray-900'}`}>
-        {value != null ? `${fmt(value)} ${unit}` : '—'}
-      </p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-    </div>
-  )
-}
 
 export default function PossessionPage() {
   const [possessions, setPossessions] = useState([])
   const [summary,     setSummary]     = useState(null)
   const [formTarget,  setFormTarget]  = useState(undefined)
   const [filter,      setFilter]      = useState('ALL')
-  const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState(null)
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -69,9 +50,11 @@ export default function PossessionPage() {
     await fetchAll()
   }
 
-  async function handleDelete(p) {
-    if (!confirm(`Supprimer « ${p.label} » ?`)) return
-    await deletePossession(p.id)
+  function handleDelete(p) { setDeleteTarget(p) }
+
+  async function confirmDelete() {
+    await deletePossession(deleteTarget.id)
+    setDeleteTarget(null)
     await fetchAll()
   }
 
@@ -283,6 +266,13 @@ export default function PossessionPage() {
           possession={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer « ${deleteTarget.label} » ?`}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>

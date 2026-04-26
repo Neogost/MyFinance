@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { getDebts, getDebtsSummary, createDebt, updateDebt, deleteDebt, getBalanceEntries, addBalanceEntry, deleteBalanceEntry } from '../../api/debts'
 import DebtForm from './DebtForm'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
+import { fmt, fmtPct, formatDate } from '../../utils/formatting.js'
+import KpiCard from '../common/KpiCard'
 
 const TYPE_META = {
   IMMOBILIER:   { label: 'Immobilier',            color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
@@ -11,35 +13,6 @@ const TYPE_META = {
   AUTRE:        { label: 'Autre',                   color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
 }
 
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
-
-function fmt(n) {
-  if (n == null) return '—'
-  return parseFloat(n).toLocaleString('fr-FR', { minimumFractionDigits: 2 })
-}
-
-function fmtPct(n) {
-  if (n == null) return '—'
-  return `${parseFloat(n).toFixed(2)} %`
-}
-
-function formatDate(iso) {
-  if (!iso) return '—'
-  const [year, month, day] = iso.split('-')
-  return `${parseInt(day)} ${MONTHS_FR[parseInt(month) - 1]} ${year}`
-}
-
-function KpiCard({ label, value, unit = '€', color, sub }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1">
-      <p className="text-xs text-gray-400 tracking-wide">{label}</p>
-      <p className={`text-2xl font-bold amount ${color ?? 'text-gray-900'}`}>
-        {value != null ? `${fmt(value)} ${unit}` : '—'}
-      </p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-    </div>
-  )
-}
 
 function ProgressBar({ pct, colorClass = 'bg-indigo-400' }) {
   const p = Math.min(Math.max(parseFloat(pct) || 0, 0), 100)
