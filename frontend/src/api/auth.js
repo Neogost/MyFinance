@@ -24,3 +24,4 @@ export const updateSafetyNet        = (data) => api.put('/api/profile/safety-net
 export const updatePersonalInfo     = (data) => api.put('/api/profile/personal-info', data).then(r => r.data)
 export const updateFiscalProfile    = (data) => api.put('/api/profile/fiscal',        data).then(r => r.data)
 export const getBaremeKilometrique  = ()     => api.get('/api/fiscal/bareme-kilometrique').then(r => r.data)
+export const getAppVersion          = ()     => api.get('/api/version').then(r => r.data.version)

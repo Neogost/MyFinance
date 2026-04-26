@@ -24,7 +24,7 @@ import { getRegistrations } from './api/registrations'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
-import { logout, getMe } from './api/auth'
+import { logout, getMe, getAppVersion } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 import LandingPage from './components/LandingPage'
 import DocumentationPage from './components/documentation/DocumentationPage'
@@ -40,6 +40,7 @@ export default function App() {
   const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
+  const [appVersion,           setAppVersion]           = useState(null)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -49,6 +50,7 @@ export default function App() {
     getMe()
       .then(u => {
         setUser(u)
+        getAppVersion().then(setAppVersion).catch(() => {})
         if (u?.role === 'ADMIN') {
           getRegistrations('PENDING').then(list => setPendingRegistrations(list.length)).catch(() => {})
         }
@@ -162,6 +164,7 @@ export default function App() {
         familyMode={familyMode}
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
         pendingRegistrations={pendingRegistrations}
+        appVersion={appVersion}
       />
 
       <main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
@@ -209,6 +212,12 @@ export default function App() {
 
         {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>
+
+      {appVersion && (
+        <footer className="hidden md:block text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-gray-100">
+          MyFinance v{appVersion}
+        </footer>
+      )}
     </div>
     </ErrorBoundary>
   )

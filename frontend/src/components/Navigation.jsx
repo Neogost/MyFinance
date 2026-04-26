@@ -105,7 +105,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode, pendingRegistrations = 0 }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null }) {
   const [incomeOpen,     setIncomeOpen]     = useState(false)
   const [toolsOpen,      setToolsOpen]      = useState(false)
   const [adminOpen,      setAdminOpen]      = useState(false)
@@ -354,6 +354,9 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               >
                 Déconnexion
               </button>
+              {appVersion && (
+                <p className="text-center text-xs text-gray-400 mt-2 pb-1">v{appVersion}</p>
+              )}
             </div>
           </div>
         </div>
