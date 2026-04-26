@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getLoginHistory } from '../../api/admin'
-
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
+import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
 function formatDateTime(iso) {
   const d = new Date(iso)
-  return `${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+  return `${d.getDate()} ${MONTHS_FR_SHORT[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
 }
 
 function formatDateTimeCompact(iso) {

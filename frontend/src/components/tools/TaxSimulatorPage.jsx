@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getOtherIncomes } from '../../api/income'
 import { simulateTax } from '../../api/tools'
+import { inputCls } from '../../components/common/formStyles.js'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -68,8 +69,6 @@ export default function TaxSimulatorPage() {
       setLoading(false)
     }
   }
-
-  const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
 
   return (
     <div className="max-w-3xl mx-auto">

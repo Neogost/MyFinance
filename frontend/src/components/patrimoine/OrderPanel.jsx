@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getOrders, createOrder, updateOrder, deleteOrder } from '../../api/patrimoine'
+import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
 const ORDER_TYPE_LABELS = {
   DEPOSIT:     { label: 'Dépôt',       color: 'bg-green-100 text-green-700'    },
@@ -20,10 +21,9 @@ const ORDER_TYPES_BY_CATEGORY = {
   LIVRET:        ['DEPOSIT', 'WITHDRAWAL', 'INTEREST'],
 }
 
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 function formatDate(iso) {
   const [year, month, day] = iso.split('-')
-  return `${parseInt(day, 10)} ${MONTHS_FR[parseInt(month, 10) - 1]} ${year}`
+  return `${parseInt(day, 10)} ${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'

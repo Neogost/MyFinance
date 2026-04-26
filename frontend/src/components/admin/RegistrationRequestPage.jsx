@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { getRegistrations, approveRegistration, rejectRegistration } from '../../api/registrations'
+import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
-const MONTHS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 function formatDate(iso) {
   const d = new Date(iso)
-  return `${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  return `${d.getDate()} ${MONTHS_FR_SHORT[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
 }
 
 const STATUS_LABELS = { PENDING: 'En attente', APPROVED: 'Approuvé', REJECTED: 'Rejeté' }

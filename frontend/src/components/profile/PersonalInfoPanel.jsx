@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { updatePersonalInfo } from '../../api/auth'
+import { labelCls } from '../../components/common/formStyles.js'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
-const labelCls = 'text-sm font-semibold text-gray-700'
 
 export default function PersonalInfoPanel({ user, onUpdate }) {
   const [form, setForm] = useState({

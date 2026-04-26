@@ -3,9 +3,7 @@ import {
   getMyGroup, createGroup, renameGroup, dissolveGroup, leaveGroup,
   removeMember, sendInvitation, getPendingInvitations, acceptInvitation, refuseInvitation
 } from '../../api/familyGroup'
-
-const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
-const labelCls = 'text-sm font-semibold text-gray-700'
+import { inputCls, labelCls } from '../../components/common/formStyles.js'
 
 export default function FamilyGroupPanel({ onGroupChange }) {
   const [group,       setGroup]       = useState(undefined) // undefined = chargement, null = pas de groupe
