@@ -33,7 +33,7 @@ username=admin&password=motdepasse
 
 ### Réponses
 
-**200 OK** — Le cookie `JSESSIONID` est positionné dans les headers de réponse.
+**200 OK** — Le cookie `JSESSIONID` est positionné dans les headers de réponse. Retourne un `UserDto` complet.
 
 ```json
 {
@@ -41,13 +41,35 @@ username=admin&password=motdepasse
   "login": "admin",
   "firstName": "Jean",
   "lastName": "Dupont",
-  "role": "ADMIN",
   "birthDate": "1990-05-14",
-  "familyGroupId": 3
+  "role": "ADMIN",
+  "familyGroupId": 3,
+  "fiscalParts": 1.0,
+  "useFlatRateDeduction": true,
+  "customProfessionalDeduction": null,
+  "safetyNetMode": "MONTHS_EXPENSES",
+  "safetyNetMonths": 3.0,
+  "safetyNetAmount": null,
+  "birthPlace": null,
+  "birthPostalCode": null,
+  "jobTitle": null,
+  "realExpensesTransportKm": null,
+  "realExpensesTransportCv": null,
+  "realExpensesTransportElectric": null,
+  "realExpensesPublicTransport": null,
+  "realExpensesMeals": null,
+  "realExpensesClothing": null,
+  "realExpensesTraining": null,
+  "realExpensesEquipment": null,
+  "realExpensesPhone": null,
+  "realExpensesDoubleResidence": null,
+  "realExpensesOther": null,
+  "realExpensesTeleworkDays": null,
+  "realExpensesTeleworkEmployerDaily": null
 }
 ```
 
-> `birthDate` peut être `null` si non renseigné sur le profil utilisateur.  
+> `birthDate` peut être `null` si non renseigné.  
 > `familyGroupId` peut être `null` si l'utilisateur n'appartient à aucun groupe. Le frontend utilise cette valeur pour afficher le bouton **Mode Foyer** dans la navigation.
 
 **401 Unauthorized** — Identifiants incorrects.
@@ -146,18 +168,7 @@ GET /api/auth/me
 
 ### Réponses
 
-**200 OK**
-
-```json
-{
-  "id": 1,
-  "login": "admin",
-  "firstName": "Jean",
-  "lastName": "Dupont",
-  "role": "ADMIN",
-  "familyGroupId": 3
-}
-```
+**200 OK** — Retourne le `UserDto` complet (même structure que `POST /api/auth/login`).
 
 **401 Unauthorized**
 
@@ -206,15 +217,22 @@ Content-Type: application/json
 
 ## Modèle `UserDto`
 
-| Champ           | Type     | Description              |
-|-----------------|----------|--------------------------|
-| `id`            | `number` | Identifiant unique        |
-| `login`         | `string` | Nom d'utilisateur         |
-| `firstName`     | `string` | Prénom                    |
-| `lastName`      | `string` | Nom de famille            |
-| `role`          | `string` | `USER` ou `ADMIN`         |
-| `birthDate`     | `string` | Date de naissance ISO (nullable), ex : `"1990-05-14"` |
-| `familyGroupId` | `number` | Identifiant du groupe familial (nullable) — présent si l'utilisateur appartient à un groupe |
+Le modèle complet est documenté dans [`docs/api/users.md`](users.md). Champs principaux utilisés par le frontend après connexion :
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant unique |
+| `login` | `string` | Nom d'utilisateur |
+| `firstName` | `string` | Prénom |
+| `lastName` | `string` | Nom de famille |
+| `birthDate` | `date\|null` | Date de naissance ISO 8601 (nullable) |
+| `role` | `string` | `USER` ou `ADMIN` |
+| `familyGroupId` | `number\|null` | Identifiant du groupe familial (nullable) |
+| `fiscalParts` | `number\|null` | Quotient familial |
+| `useFlatRateDeduction` | `boolean\|null` | Mode d'abattement |
+| `safetyNetMode` | `string\|null` | Mode du matelas de sécurité |
+| `safetyNetMonths` | `number\|null` | Nombre de mois (matelas) |
+| `safetyNetAmount` | `number\|null` | Montant fixe (matelas) |
 
 > Le mot de passe n'est jamais retourné dans les réponses.
 

@@ -708,6 +708,118 @@ DELETE /api/salary-contracts/1/benefits/1
 
 **404 Not Found** — Avantage ou contrat introuvable.
 
+## Astreintes — `/api/salary-contracts/{contractId}/on-calls`
+
+Les astreintes représentent les périodes de disponibilité hors horaires habituels, rémunérées par un forfait hebdomadaire. Elles sont **rattachées à un contrat** et intégrées côté frontend dans la grille de projections.
+
+---
+
+### GET /api/salary-contracts/{contractId}/on-calls
+
+Retourne la liste des astreintes du contrat.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+GET /api/salary-contracts/1/on-calls
+```
+
+#### Réponses
+
+**200 OK**
+
+```json
+[
+  {
+    "id": 1,
+    "weeklyFlatRate": 150.0,
+    "estimatedWeeksPerYear": 10,
+    "annualOnCallIncome": 1500.0
+  }
+]
+```
+
+> `annualOnCallIncome` = `weeklyFlatRate × estimatedWeeksPerYear` — calculé à la volée, non persisté.
+
+---
+
+### POST /api/salary-contracts/{contractId}/on-calls
+
+Ajoute une astreinte au contrat.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+POST /api/salary-contracts/1/on-calls
+Content-Type: application/json
+
+{
+  "weeklyFlatRate": 150.0,
+  "estimatedWeeksPerYear": 10
+}
+```
+
+#### Champs
+
+| Champ | Type | Obligatoire | Contraintes | Description |
+|-------|------|-------------|-------------|-------------|
+| `weeklyFlatRate` | `number` | oui | > 0 | Forfait hebdomadaire brut en € |
+| `estimatedWeeksPerYear` | `integer` | oui | 1–52 | Nombre de semaines d'astreinte estimées par an |
+
+#### Réponses
+
+**201 Created** — Retourne l'astreinte créée.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Contrat introuvable.
+
+---
+
+### PUT /api/salary-contracts/{contractId}/on-calls/{onCallId}
+
+Modifie une astreinte existante.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+PUT /api/salary-contracts/1/on-calls/1
+Content-Type: application/json
+
+{
+  "weeklyFlatRate": 200.0,
+  "estimatedWeeksPerYear": 8
+}
+```
+
+#### Réponses
+
+**200 OK** — Retourne l'astreinte mise à jour.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Astreinte introuvable.
+
+---
+
+### DELETE /api/salary-contracts/{contractId}/on-calls/{onCallId}
+
+Supprime une astreinte.
+
+**Accès** : propriétaire du contrat ou ADMIN
+
+```http
+DELETE /api/salary-contracts/1/on-calls/1
+```
+
+#### Réponses
+
+**204 No Content** — Suppression réussie.
+
+**403 Forbidden** — Accès non autorisé.
+
+**404 Not Found** — Astreinte introuvable.
+
 ---
 
 ## Modèles
@@ -745,6 +857,9 @@ DELETE /api/salary-contracts/1/benefits/1
 | `monthlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ paidMonthsPerYear` |
 | `dailyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ 228` |
 | `hourlyNetAfterTax` | `number\|null` | **Calculé** : `annualNetAfterTax ÷ annualWorkingHours` |
+| `monthlyEstimatedTax` | `number\|null` | **Calculé** : PAS mensuel estimé (`impôtEstimé ÷ paidMonthsPerYear`). `null` si profil fiscal incomplet |
+| `monthlyBenefits` | `number` | **Calculé** : avantages en nature mensuels (`Σ(ContractBenefit.monthlyAmount) ÷ paidMonthsPerYear`) |
+| `baseGrossSalary` | `number` | Salaire brut du contrat de base (valeur persistée sur `SalaryContract.annualGrossSalary`) |
 | `activeRevisionId` | `number\|null` | ID de la `SalaryRevision` active — `null` si le salaire du contrat est utilisé directement |
 
 ### `SalaryRevisionDto`
@@ -785,3 +900,12 @@ DELETE /api/salary-contracts/1/benefits/1
 | `id` | `number` | Identifiant |
 | `label` | `string` | Type d'avantage (ex : "Forfait téléphone") |
 | `monthlyAmount` | `number` | Montant mensuel (€) |
+
+### `ContractOnCallDto`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `number` | Identifiant |
+| `weeklyFlatRate` | `number` | Forfait hebdomadaire brut en € |
+| `estimatedWeeksPerYear` | `integer` | Nombre de semaines d'astreinte estimées par an (1–52) |
+| `annualOnCallIncome` | `number` | **Calculé** : `weeklyFlatRate × estimatedWeeksPerYear` |

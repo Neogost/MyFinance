@@ -29,13 +29,13 @@ Liste toutes les dettes de l'utilisateur connecté, triées par type puis par li
     "currency": "EUR",
     "positionId": 12,
     "remainingCapital": 184532.17,
-    "isManualOverride": false,
+    "projectionMode": true,
     "monthlyInsurance": 58.33,
     "monthlyTotal": 928.33,
     "progressPercent": 7.73,
     "nextMonthsSchedule": [
-      { "month": "2026-05", "remainingCapital": 184532.17, "principalPaid": 371.50, "interestPaid": 498.50 },
-      { "month": "2026-06", "remainingCapital": 184160.67, "principalPaid": 372.51, "interestPaid": 497.49 }
+      { "month": "2026-05", "payment": 870.00, "interest": 498.50, "capital": 371.50, "remainingCapital": 184160.67 },
+      { "month": "2026-06", "payment": 870.00, "interest": 497.49, "capital": 372.51, "remainingCapital": 183788.16 }
     ],
     "createdAt": "2026-04-01T09:00:00"
   }
@@ -44,10 +44,10 @@ Liste toutes les dettes de l'utilisateur connecté, triées par type puis par li
 
 **Champs calculés :**
 - `remainingCapital` : si `remainingCapitalOverride` est défini, utilise cette valeur ; sinon calcule par la formule d'amortissement `B(n) = P*(1+r)^n − M*((1+r)^n − 1)/r` où `n` = mois écoulés depuis `startDate`.
-- `isManualOverride` : `true` si `remainingCapitalOverride` est renseigné.
+- `projectionMode` : `true` si le capital restant est calculé automatiquement (projection), `false` si c'est une valeur saisie manuellement (`remainingCapitalOverride` non null).
 - `monthlyInsurance` : `initialCapital × insuranceRate / 12`.
 - `monthlyTotal` : `monthlyPayment + monthlyInsurance`.
-- `progressPercent` : `(1 − remainingCapital / initialCapital) × 100`.
+- `repaymentProgress` : `(1 − remainingCapital / initialCapital) × 100`.
 - `nextMonthsSchedule` : tableau d'amortissement des 12 prochains mois.
 
 ---

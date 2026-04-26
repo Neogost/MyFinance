@@ -7,7 +7,7 @@
 | `GET` | `/api/tax-simulator` | Authentifié | Lancer une simulation pour l'utilisateur connecté |
 | `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Lancer une simulation pour un autre utilisateur |
 
-> La mise à jour du profil fiscal (parts, abattement) passe par les endpoints existants de gestion du profil utilisateur (`PUT /api/users/{id}`), avec les nouveaux champs ajoutés au `UserDto`.
+> La mise à jour du profil fiscal (parts, abattement, frais réels) passe par `PUT /api/profile/fiscal` (self-service) ou `PUT /api/users/{id}` (ADMIN). Voir [`docs/api/profile.md`](profile.md).
 
 ---
 
@@ -70,25 +70,22 @@ Identiques à `GET /api/tax-simulator` + `{userId}` dans le chemin.
 
 ---
 
-## Mise à jour du profil fiscal — `PUT /api/users/{id}`
+## Mise à jour du profil fiscal
 
-Les champs fiscaux sont intégrés dans le `UserDto` existant. Aucun endpoint dédié n'est nécessaire.
+Le profil fiscal est géré via deux endpoints :
 
-### Nouveaux champs dans `UserDto` et `UserUpdateRequest`
+- **Self-service** : `PUT /api/profile/fiscal` (utilisateur connecté) — voir [`docs/api/profile.md`](profile.md)
+- **Admin** : inclus dans `PUT /api/users/{id}` (ADMIN uniquement)
 
-```json
-{
-  "fiscalParts": 2.5,
-  "useFlatRateDeduction": true,
-  "customProfessionalDeduction": null
-}
-```
+Les champs clés du profil fiscal dans `UserDto` :
 
-| Champ | Type | Obligatoire | Règles |
-|-------|------|-------------|--------|
-| `fiscalParts` | `Float` | Oui | ≥ 0.5 |
-| `useFlatRateDeduction` | `Boolean` | Oui | — |
-| `customProfessionalDeduction` | `Float` | Conditionnel | Obligatoire si `useFlatRateDeduction=false`, ≥ 0 |
+| Champ | Type | Description |
+|-------|------|-------------|
+| `fiscalParts` | `Float\|null` | Quotient familial (ex : `1.0`, `2.5`) — min `0.5` |
+| `useFlatRateDeduction` | `Boolean\|null` | `true` = abattement 10 % ; `false` = frais réels |
+| `customProfessionalDeduction` | `Float\|null` | Montant total des frais réels (€), calculé par le service |
+
+> Si `fiscalParts` est null, le simulateur retourne 400. Si `useFlatRateDeduction = false` et `customProfessionalDeduction` est null, le simulateur retourne 400.
 
 ---
 
