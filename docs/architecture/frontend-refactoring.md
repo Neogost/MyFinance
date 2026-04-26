@@ -10,7 +10,7 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 | Phase | État | Description |
 |-------|------|-------------|
 | Phase 0 | ✅ Terminée | 492 tests Vitest — utils, formulaires, panels, pages CRUD, graphiques, infrastructure |
-| Phase 1 | 🔲 À faire | Quick wins — utils, constantes, composants communs |
+| Phase 1 | ✅ Terminée | Quick wins — ~250 LOC supprimées, 0 régression, 492 tests verts |
 | Phase 2 | 🔲 À faire | Hooks réutilisables + pages volumineuses |
 | Phase 3 | 🔲 Optionnel | Architecture avancée |
 
@@ -18,42 +18,21 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 
 ## Contexte — Duplications identifiées
 
-### 1. Styles de formulaires — 39 occurrences dans 20+ fichiers
+### 1. Styles de formulaires — ✅ résolu (Phase 1)
 
-```js
-// Copié-collé dans SalaryContractForm, BonusForm, BenefitForm, DebtForm, PossessionForm…
-const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white'
-const labelCls = 'text-sm font-semibold text-gray-700'
-```
+~~39 occurrences dans 20+ fichiers~~ → centralisé dans `src/components/common/formStyles.js`
 
-### 2. `MONTHS_FR` — 9 fichiers avec 2 formats incohérents
+### 2. `MONTHS_FR` — ✅ résolu (Phase 1)
 
-```js
-// Format court — DettePage, OtherIncomePage, PaySlipPanel, BonusPanel…
-['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
+~~9 fichiers avec 2 formats incohérents~~ → `MONTHS_FR_SHORT` / `MONTHS_FR_LONG` dans `src/utils/constants.js`
 
-// Format long — BonusForm uniquement
-['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-```
+### 3. Fonctions de formatage — ✅ résolu (Phase 1)
 
-### 3. Fonctions de formatage — redéfinies dans 10+ pages
+~~Redéfinies dans 10+ pages~~ → `fmt`, `fmtPct`, `formatDate` dans `src/utils/formatting.js`
 
-`patrimoine/utils.jsx` contient une version centralisée mais personne ne l'importe.
+### 4. Composant `KpiCard` — ✅ résolu (Phase 1)
 
-```js
-// Redéfinie dans RecurringExpensePage, PossessionPage, DettePage, OtherIncomePage…
-function fmt(n) { return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—' }
-function formatDate(iso) { ... }
-function fmtPct(n) { ... }
-```
-
-### 4. Composant `KpiCard` — 3 versions quasi-identiques
-
-| Fichier | Nom local | Props |
-|---------|-----------|-------|
-| `RecurringExpensePage.jsx` | `SavingsCard` | label, value, sub, color, unit, labelTooltip |
-| `PossessionPage.jsx` | `KpiCard` | label, value, unit, color, sub |
-| `DettePage.jsx` | `KpiCard` | label, value, unit, color, sub |
+~~3 versions locales~~ → `src/components/common/KpiCard.jsx` (label, value, unit, color, sub, labelTooltip)
 
 ### 5. Pattern CRUD — ~100 lignes × 11 pages
 
@@ -72,13 +51,14 @@ async function handleSubmit(payload) { if (formTarget?.id) { /* update */ } else
 async function handleDelete(item) { if (!confirm(`Supprimer « ${item.label} » ?`)) return; ... }
 ```
 
-### 6. `confirm()` natif — 16 occurrences
+### 6. `confirm()` natif — ✅ partiellement résolu (Phase 1)
 
-`DeleteConfirmModal.jsx` existe dans `common/` mais n'est utilisé que dans DettePage.
+~~16 occurrences~~ → `DeleteConfirmModal` branché sur OtherIncomePage, PossessionPage, RecurringExpensePage.  
+Reste : panels (BonusPanel, BenefitPanel, OnCallPanel, RevisionPanel, PaySlipPanel), AdminFamilyGroupPage — à traiter en Phase 2 avec `useCrud`.
 
 ### 7. Métadonnées de catégories — 4 objets similaires non mutualisés
 
-`CATEGORY_META`, `TYPE_META`, `TYPE_LABELS` redéfinis dans chaque page.
+`CATEGORY_META`, `TYPE_META`, `TYPE_LABELS` redéfinis dans chaque page (non traité en Phase 1 — à évaluer).
 
 ---
 
@@ -133,44 +113,36 @@ frontend/src/
 
 ---
 
-## Phase 1 — Quick wins (1 journée)
+## Phase 1 — Quick wins ✅ Terminée
 
-**Prérequis :** Phase 0 terminée.
+**Réalisé le 2026-04-26.** Gain réel : **~250 LOC supprimées**, 492/492 tests verts, 0 régression.
 
-### 1.1 `src/utils/formatting.js` — centraliser les fonctions de formatage
+### 1.1 `src/utils/formatting.js` ✅
 
-- [ ] Déplacer `fmt`, `fmtCompact`, `fmtPct`, `formatDate` depuis `patrimoine/utils.jsx`
-- [ ] Exporter `MONTHS_FR_SHORT` et `MONTHS_FR_LONG` depuis `src/utils/constants.js`
-- [ ] Remplacer les 10+ redéfinitions locales par l'import centralisé
-- **Gain estimé :** -150 LOC
+- [x] `fmt`, `fmtPct`, `formatDate` centralisés
+- [x] Remplacer les redéfinitions locales (DettePage, PossessionPage, RecurringExpensePage, OtherIncomePage, DebtForm…)
 
-### 1.2 `src/utils/constants.js` — constantes partagées
+### 1.2 `src/utils/constants.js` ✅
 
-- [ ] Centraliser `MONTHS_FR_SHORT` / `MONTHS_FR_LONG`
-- [ ] Centraliser `CATEGORY_META`, `TYPE_META`, `TYPE_LABELS` (avec labelisation commune)
-- **Gain estimé :** -80 LOC, cohérence des formats
+- [x] `MONTHS_FR_SHORT` / `MONTHS_FR_LONG` — remplacent les 10 définitions locales
+- [x] `CATEGORY_META` non mutualisé (chaque page a des couleurs/icônes spécifiques — complexité > gain)
 
-### 1.3 `src/components/common/formStyles.js` — styles de formulaires
+### 1.3 `src/components/common/formStyles.js` ✅
 
-- [ ] Créer et exporter `inputCls`, `labelCls`, `selectCls`, `textareaCls`
-- [ ] Remplacer les définitions locales dans les 20+ formulaires
-- **Gain estimé :** -100 LOC
+- [x] `inputCls`, `labelCls` — remplacent les 17 définitions identiques
+- [x] 16 formulaires migrés (4 variantes avec padding/bg différents conservées localement)
 
-### 1.4 `src/components/common/KpiCard.jsx` — composant unique
+### 1.4 `src/components/common/KpiCard.jsx` ✅
 
-```jsx
-export default function KpiCard({ label, value, unit = '€', color, sub, tooltip }) { ... }
-```
+- [x] Composant générique créé (label, value, unit, color, sub, labelTooltip)
+- [x] `SavingsCard` (RecurringExpensePage), `KpiCard` (PossessionPage, DettePage) remplacés
+- [x] Tooltip élargi à `w-80` pour les breakdowns fiscaux
 
-- [ ] Créer le composant générique
-- [ ] Remplacer `SavingsCard` (RecurringExpensePage), `KpiCard` (PossessionPage, DettePage)
-- **Gain estimé :** -60 LOC
+### 1.5 `DeleteConfirmModal` ✅ partiel
 
-### 1.5 `DeleteConfirmModal` — généraliser sur les 16 `confirm()`
-
-- [ ] Brancher `DeleteConfirmModal` dans OtherIncomePage, PossessionPage, RecurringExpensePage
-- [ ] Brancher dans PositionCard, AdminInstrumentPage, AdminFamilyGroupPage
-- **Gain estimé :** UX uniforme, suppression des `confirm()` natifs
+- [x] OtherIncomePage, PossessionPage, RecurringExpensePage migrées
+- [ ] Panels (BonusPanel, BenefitPanel, OnCallPanel, RevisionPanel, PaySlipPanel) — à traiter en Phase 2 via `useCrud`
+- [ ] AdminFamilyGroupPage — à traiter en Phase 2
 
 ---
 
@@ -248,14 +220,14 @@ export function useAsyncForm(initialState, onSubmit) {
 
 ---
 
-## Abstractions à créer — récapitulatif
+## Abstractions — récapitulatif
 
-| Fichier à créer | Type | Bénéficiaires | Priorité |
-|----------------|------|---------------|----------|
-| `src/utils/formatting.js` | Utils | 10+ pages | Phase 1 |
-| `src/utils/constants.js` | Utils | 9+ fichiers | Phase 1 |
-| `src/components/common/formStyles.js` | Styles | 20+ formulaires | Phase 1 |
-| `src/components/common/KpiCard.jsx` | Composant | 4+ pages | Phase 1 |
-| `src/components/common/FormInput.jsx` | Composant | 20+ formulaires | Phase 2 |
-| `src/hooks/useCrud.js` | Hook | **11 pages** | Phase 2 |
-| `src/hooks/useAsyncForm.js` | Hook | 20+ formulaires | Phase 2 |
+| Fichier | Type | Bénéficiaires | État |
+|---------|------|---------------|------|
+| `src/utils/formatting.js` | Utils | 10+ pages | ✅ Phase 1 |
+| `src/utils/constants.js` | Utils | 9+ fichiers | ✅ Phase 1 |
+| `src/components/common/formStyles.js` | Styles | 20+ formulaires | ✅ Phase 1 |
+| `src/components/common/KpiCard.jsx` | Composant | 4+ pages | ✅ Phase 1 |
+| `src/components/common/FormInput.jsx` | Composant | 20+ formulaires | 🔲 Phase 2 |
+| `src/hooks/useCrud.js` | Hook | **11 pages** | 🔲 Phase 2 |
+| `src/hooks/useAsyncForm.js` | Hook | 20+ formulaires | 🔲 Phase 2 |
