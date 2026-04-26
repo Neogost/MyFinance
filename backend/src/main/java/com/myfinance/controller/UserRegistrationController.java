@@ -14,13 +14,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,15 +29,16 @@ public class UserRegistrationController {
 
     private final UserRegistrationService registrationService;
 
-    @Operation(summary = "Soumettre une demande de création de compte (public)")
-    @ApiResponse(responseCode = "201", description = "Demande enregistrée",
-            content = @Content(schema = @Schema(implementation = RegistrationRequestDto.class)))
-    @ApiResponse(responseCode = "409", description = "Login déjà utilisé ou demande PENDING existante")
+    @Operation(summary = "Soumettre une demande de création de compte (public)",
+            description = "Réponse identique quel que soit l'état du login (existant, en attente, ou nouveau) "
+                        + "pour empêcher l'énumération de comptes. Les doublons sont ignorés silencieusement côté serveur.")
+    @ApiResponse(responseCode = "202", description = "Demande prise en compte")
     @PostMapping("/api/auth/register")
-    public ResponseEntity<RegistrationRequestDto> register(
+    public ResponseEntity<Map<String, String>> register(
             @Valid @RequestBody CreateRegistrationRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(registrationService.create(request));
+        registrationService.create(request);
+        return ResponseEntity.accepted().body(Map.of(
+                "message", "Si le login est disponible, votre demande sera transmise à un administrateur."));
     }
 
     @Operation(summary = "Lister les demandes d'inscription (admin)")

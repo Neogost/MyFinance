@@ -29,30 +29,39 @@ public class UserRegistrationService {
 
     // ── Soumission (public) ────────────────────────────────────
 
-    public RegistrationRequestDto create(CreateRegistrationRequest request) {
-        if (userRepository.findByLogin(request.login()).isPresent()) {
-            log.warn("[system] Demande d'inscription refusée - login déjà utilisé par un compte actif");
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Ce login est déjà utilisé par un compte actif.");
-        }
-        if (registrationRepository.existsByLoginAndStatus(request.login(), RegistrationStatus.PENDING)) {
-            log.warn("[system] Demande d'inscription refusée - demande PENDING déjà existante");
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Une demande est déjà en attente pour ce login.");
+    /**
+     * Enregistre une demande d'inscription publique. Pour empêcher l'énumération de comptes
+     * (attaque OWASP — différence de réponse selon que le login existe ou non) :
+     *   - même réponse renvoyée dans tous les cas (succès, doublon utilisateur, doublon PENDING)
+     *   - le hash BCrypt est calculé même quand on n'écrit rien, pour neutraliser l'attaque par timing
+     * Les conflits sont logués côté serveur uniquement (admin peut investiguer si besoin).
+     */
+    public void create(CreateRegistrationRequest request) {
+        // Hash systématique pour égaliser le temps de réponse même en cas de no-op
+        String hashedPassword = passwordEncoder.encode(request.password());
+
+        boolean loginPris = userRepository.findByLogin(request.login()).isPresent();
+        boolean demandeEnAttente = registrationRepository.existsByLoginAndStatus(
+                request.login(), RegistrationStatus.PENDING);
+
+        if (loginPris || demandeEnAttente) {
+            log.warn("[system] Demande d'inscription ignorée silencieusement - "
+                    + "login déjà actif: {}, demande PENDING existante: {}",
+                    loginPris, demandeEnAttente);
+            return;
         }
 
         UserRegistrationRequest entity = UserRegistrationRequest.builder()
                 .login(request.login())
                 .firstName(request.firstName())
                 .lastName(request.lastName())
-                .hashedPassword(passwordEncoder.encode(request.password()))
+                .hashedPassword(hashedPassword)
                 .status(RegistrationStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        RegistrationRequestDto dto = RegistrationRequestDto.from(registrationRepository.save(entity));
-        log.info("[system] Demande d'inscription créée #{}", dto.id());
-        return dto;
+        UserRegistrationRequest saved = registrationRepository.save(entity);
+        log.info("[system] Demande d'inscription créée #{}", saved.getId());
     }
 
     // ── Lecture (admin) ────────────────────────────────────────

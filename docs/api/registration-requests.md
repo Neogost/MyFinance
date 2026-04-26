@@ -23,9 +23,17 @@ Règles de validation :
 
 | Code | Description |
 |------|-------------|
-| `201 Created` | Demande enregistrée — corps : `RegistrationRequestDto` |
+| `202 Accepted` | Demande prise en compte — corps : `{ "message": "..." }` |
 | `400 Bad Request` | Validation du corps échouée |
-| `409 Conflict` | Login déjà utilisé (compte actif ou demande PENDING existante) |
+
+**Réponse 202 (corps) :**
+```json
+{
+  "message": "Si le login est disponible, votre demande sera transmise à un administrateur."
+}
+```
+
+> ⚠ **Anti-énumération de comptes** : la réponse est volontairement identique que le login soit libre, déjà pris par un compte actif, ou déjà soumis en PENDING. Le hash BCrypt du mot de passe est calculé même en cas de no-op pour neutraliser l'attaque par timing. Les conflits sont consignés dans les logs serveur uniquement (`log.warn` côté `UserRegistrationService`) — l'admin peut ainsi investiguer un comportement suspect sans exposer l'information au client.
 
 ---
 

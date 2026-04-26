@@ -56,17 +56,18 @@ class UserRegistrationControllerTest {
     // ── POST /api/auth/register ────────────────────────────────
 
     @Test
-    void register_avecCorpsValide_retourne201() throws Exception {
+    void register_avecCorpsValide_retourne202AvecMessageGenerique() throws Exception {
         CreateRegistrationRequest request = new CreateRegistrationRequest(
                 "jean.dupont", "Jean", "Dupont", "Password1");
-        when(registrationService.create(any())).thenReturn(pendingDto);
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.login").value("jean.dupont"))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").exists())
+                // Pas d'info sur l'existence du login (anti-énumération)
+                .andExpect(jsonPath("$.login").doesNotExist())
+                .andExpect(jsonPath("$.status").doesNotExist());
     }
 
     @Test
@@ -82,16 +83,17 @@ class UserRegistrationControllerTest {
     }
 
     @Test
-    void register_loginDejaUtilise_retourne409() throws Exception {
+    void register_loginDejaUtilise_retourneAussi202_pourEmpecherEnumeration() throws Exception {
         CreateRegistrationRequest request = new CreateRegistrationRequest(
                 "jean.dupont", "Jean", "Dupont", "Password1");
-        when(registrationService.create(any()))
-                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));
+        // Le service no-op silencieusement en cas de doublon — pas d'exception levée
+        // (cf. UserRegistrationServiceTest.create_ignoreSilencieusement_*)
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict());
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").exists());
     }
 
     // ── GET /api/admin/registrations ──────────────────────────

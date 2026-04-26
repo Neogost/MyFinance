@@ -54,42 +54,41 @@ class UserRegistrationServiceTest {
     // ── create ─────────────────────────────────────────────────
 
     @Test
-    void create_sauvegardeEtRetourneLaDemandeAvecStatutPending() {
+    void create_sauvegardeLaDemandeAvecStatutPending() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
         when(registrationRepository.existsByLoginAndStatus("jean.dupont", RegistrationStatus.PENDING)).thenReturn(false);
         when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
         when(registrationRepository.save(any())).thenReturn(pendingRequest);
 
-        RegistrationRequestDto result = service.create(validRequest);
+        service.create(validRequest);
 
-        assertThat(result.login()).isEqualTo("jean.dupont");
-        assertThat(result.status()).isEqualTo(RegistrationStatus.PENDING);
         verify(passwordEncoder).encode("Password1");
         verify(registrationRepository).save(any(UserRegistrationRequest.class));
     }
 
     @Test
-    void create_leve409_siLoginDejaUtiliseDansUsers() {
+    void create_ignoreSilencieusement_siLoginDejaUtiliseDansUsers() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(User.builder().build()));
+        when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
 
-        assertThatThrownBy(() -> service.create(validRequest))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.CONFLICT));
+        // Pas d'exception : la méthode retourne normalement (anti-énumération)
+        service.create(validRequest);
 
+        // Le hash est calculé même en cas de no-op (anti-timing attack)
+        verify(passwordEncoder).encode("Password1");
+        // Mais aucune entrée n'est persistée
         verify(registrationRepository, never()).save(any());
     }
 
     @Test
-    void create_leve409_siDemandePendingExistante() {
+    void create_ignoreSilencieusement_siDemandePendingExistante() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
         when(registrationRepository.existsByLoginAndStatus("jean.dupont", RegistrationStatus.PENDING)).thenReturn(true);
+        when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
 
-        assertThatThrownBy(() -> service.create(validRequest))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.CONFLICT));
+        service.create(validRequest);
 
+        verify(passwordEncoder).encode("Password1");
         verify(registrationRepository, never()).save(any());
     }
 

@@ -131,8 +131,10 @@ describe('RegistrationForm', () => {
     })
   })
 
-  it('affiche une erreur 409 quand le login est déjà utilisé', async () => {
-    submitRegistration.mockRejectedValue({ response: { status: 409 } })
+  it('affiche un message générique en cas d\'erreur réseau ou serveur', async () => {
+    // Le backend retourne désormais 202 même en cas de doublon (anti-énumération).
+    // Toute rejection correspond à une erreur technique → message générique.
+    submitRegistration.mockRejectedValue({ response: { status: 500 } })
     render(<RegistrationForm onBack={onBack} />)
 
     const passwords = screen.getAllByPlaceholderText('••••••••')
@@ -145,7 +147,7 @@ describe('RegistrationForm', () => {
     fireEvent.submit(document.querySelector('form'))
 
     await waitFor(() => {
-      expect(screen.getByText(/login est déjà utilisé/)).toBeInTheDocument()
+      expect(screen.getByText(/Une erreur est survenue/)).toBeInTheDocument()
     })
   })
 

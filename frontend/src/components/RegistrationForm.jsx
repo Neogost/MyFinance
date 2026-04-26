@@ -42,9 +42,9 @@ export default function RegistrationForm({ onBack }) {
       })
       setSuccess(true)
     } catch (err) {
-      setError(err.response?.status === 409
-        ? 'Ce login est déjà utilisé ou une demande est déjà en attente.'
-        : 'Une erreur est survenue. Veuillez réessayer.')
+      // Le backend retourne désormais 202 même en cas de doublon (anti-énumération de comptes).
+      // Toute erreur ici est donc une erreur technique (réseau, validation, 5xx).
+      setError('Une erreur est survenue. Veuillez réessayer.')
     } finally {
       setLoading(false)
     }

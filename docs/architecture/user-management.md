@@ -117,11 +117,14 @@ Visiteur                        Backend                      Admin
    │  POST /api/auth/register      │                           │
    │──────────────────────────────►│                           │
    │  (login, nom, prénom, mdp)    │                           │
-   │                               │ Vérifie unicité login     │
    │                               │ Hache le mot de passe     │
-   │                               │ Sauvegarde PENDING        │
+   │                               │ (toujours, anti-timing)   │
+   │                               │ Si login libre & pas      │
+   │                               │   de PENDING → save       │
+   │                               │ Sinon → no-op silencieux  │
    │◄──────────────────────────────│                           │
-   │  201 Created                  │                           │
+   │  202 Accepted (réponse        │                           │
+   │  identique dans tous les cas) │                           │
    │                               │                           │
    │                               │   GET /api/admin/registrations
    │                               │◄──────────────────────────│
@@ -151,11 +154,12 @@ Visiteur                        Backend                      Admin
 
 ### Règles métier
 
-- **Unicité du login** : rejeté `409` si le login existe dans `users` **ou** dans `user_registration_requests` avec statut `PENDING`.
-- **Hachage immédiat** : le mot de passe est haché BCrypt avant persistance.
+- **Anti-énumération de comptes** : si le login existe déjà (`users` ou demande `PENDING`), le service `no-op silencieusement` et renvoie la même réponse `202 Accepted` que pour un login libre. Aucune fuite d'information vers le client. Les conflits sont logués côté serveur (`log.warn`) pour permettre à l'admin d'investiguer.
+- **Anti-timing attack** : le hash BCrypt est calculé systématiquement, même en cas de no-op, pour rendre la durée de réponse indépendante de l'existence du login.
+- **Hachage immédiat** : le mot de passe est haché BCrypt avant persistance (pas de stockage en clair même temporaire).
 - **Approbation** : crée directement l'entité `User` avec le hash stocké (pas de double-hachage). Profil par défaut : `fiscalParts=1.0`, `useFlatRateDeduction=true`, `role=USER`.
 - **Rejet** : demande marquée `REJECTED`, aucun compte créé, historique conservé.
-- **Demandes déjà traitées** : toute tentative d'approuver/rejeter une demande non-PENDING lève `409`.
+- **Demandes déjà traitées** : toute tentative d'approuver/rejeter une demande non-PENDING lève `409` (endpoints admin uniquement).
 
 ### Frontend
 
