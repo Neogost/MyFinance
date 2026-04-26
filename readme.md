@@ -150,7 +150,7 @@ cd backend
 # Frontend
 cd frontend
 npm test
-# 514 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure)
+# 880 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure)
 ```
 
 ## Documentation
