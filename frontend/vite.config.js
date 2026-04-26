@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -21,5 +22,11 @@ export default defineConfig({
     // En prod, le build est intégré au JAR Spring Boot
     outDir: '../backend/src/main/resources/static',
     emptyOutDir: true,
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    css: false,
   },
 })

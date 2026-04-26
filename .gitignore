@@ -48,6 +48,7 @@ application-secrets.properties
 node_modules/
 dist/
 build/
+coverage/
 .npm
 .eslintcache
 *.tsbuildinfo
