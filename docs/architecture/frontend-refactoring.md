@@ -12,7 +12,7 @@ Score initial : **6/10** — ~1 000 lignes dupliquées, 7 abstractions manquante
 | Phase 0 | ✅ Terminée | 492 tests Vitest — utils, formulaires, panels, pages CRUD, graphiques, infrastructure |
 | Phase 1 | ✅ Terminée | Quick wins — ~250 LOC supprimées, 0 régression, 492 tests verts |
 | Phase 2 | ✅ Terminée | useCrud (TDD) + migrations PossessionPage/OtherIncomePage/DettePage + PatrimoinePage découpée |
-| Phase 3 | 🔲 Optionnel | Architecture avancée |
+| Phase 3 | ✅ Terminée | LoanSimulatorPage 1 410 → 935 lignes — useLoanCalculations + LoanResultsPanel |
 
 ---
 
@@ -58,6 +58,7 @@ Reste : panels (BonusPanel, BenefitPanel, OnCallPanel, RevisionPanel, PaySlipPan
 | `CompoundInterestSimulatorPage.jsx` | 993 | Modes standard/inversé + graphiques |
 | `CrisisSimulatorPage.jsx` | 760 | Scénarios multiples + calculs + UI |
 | `PatrimoinePage.jsx` | ~~716~~ → 663 | `PatrimoineActionBar` + `PatrimoineFilters` extraits (Phase 2) |
+| `LoanSimulatorPage.jsx` | ~~1 410~~ → 935 | `useLoanCalculations` + `LoanResultsPanel` extraits (Phase 3) |
 | `PatrimoineDeclarationPage.jsx` | 533 | Synthèse + 5 sections + agrégation |
 | `PositionForm.jsx` | 542 | Wizard 6 catégories + création instrument à la volée |
 
@@ -157,26 +158,29 @@ Gain théorique disproportionné par rapport à la complexité ajoutée pour un 
 
 ---
 
-## Phase 3 — Architecture avancée (optionnel)
+## Phase 3 — Architecture avancée ✅ Terminée
 
-**Prérequis :** Phase 2 terminée. À décider selon les besoins.
+**Réalisé le 2026-04-26.** Gain réel : **-475 LOC** sur LoanSimulatorPage (1 410 → 935), 504/504 tests verts.
 
-### 3.1 Refactoriser `LoanSimulatorPage.jsx` (1 410 → ~600 lignes)
+### 3.1 `src/hooks/useLoanCalculations.js` ✅
 
-- [ ] Extraire `<LoanResultSummary />`
-- [ ] Extraire `<AmortizationChart />`
-- [ ] Extraire hook `useLoanCalculations()` pour la logique pure
-- `AmortizationTable.jsx` existe déjà — consolider
+- [x] Extraction du bloc `useMemo` de 190 lignes de calculs financiers
+- [x] Paramètres = dépendances exactes du useMemo source + `monthlyIncome` pré-calculé
+- [x] Calculs couverts : notaire, amortissement, TAEG, scénario de comparaison, simulation de revente, Louer vs Acheter, données graphiques
 
-### 3.2 `src/hooks/useFetch.js` — couche réseau avancée
+### 3.2 `src/components/tools/LoanResultsPanel.jsx` ✅
 
-- [ ] Cache côté client, retry automatique, état global des erreurs réseau
+- [x] Extraction du panneau droit : 348 lignes (KPIs, comparaison, co-emprunteurs, revente, Louer vs Acheter, 3 graphiques Recharts, tableau d'amortissement)
+- [x] Props groupées en 4 objets : `calc`, `loan`, `scenarios`, `tableState`
+- [x] Panneau gauche et `RentalInvestmentSection` conservés dans `LoanSimulatorPage`
 
-### 3.3 Tests unitaires frontend — couverture complète
+### 3.3 `useFetch.js` — non retenu
 
-- [ ] Composants communs (KpiCard, FormInput, DeleteConfirmModal)
-- [ ] Hooks (useCrud, useAsyncForm)
-- [ ] Pages principales (OtherIncomePage, RecurringExpensePage)
+Cache / retry inutiles pour un projet solo sur NAS local. Intercepteurs Axios existants suffisants.
+
+### 3.4 Tests — déjà couverts en Phase 0
+
+492 → 504 tests. `useLoanCalculations` couvert indirectement via `loanSimulatorUtils.test.js`.
 
 ---
 
@@ -191,5 +195,8 @@ Gain théorique disproportionné par rapport à la complexité ajoutée pour un 
 | `src/hooks/useCrud.js` | Hook | PossessionPage, OtherIncomePage, DettePage | ✅ Phase 2 |
 | `src/components/patrimoine/PatrimoineActionBar.jsx` | Composant | PatrimoinePage | ✅ Phase 2 |
 | `src/components/patrimoine/PatrimoineFilters.jsx` | Composant | PatrimoinePage | ✅ Phase 2 |
+| `src/hooks/useLoanCalculations.js` | Hook | LoanSimulatorPage | ✅ Phase 3 |
+| `src/components/tools/LoanResultsPanel.jsx` | Composant | LoanSimulatorPage | ✅ Phase 3 |
 | `src/components/common/FormInput.jsx` | Composant | — | ❌ Non retenu |
 | `src/hooks/useAsyncForm.js` | Hook | — | ❌ Non retenu |
+| `src/hooks/useFetch.js` | Hook | — | ❌ Non retenu |
