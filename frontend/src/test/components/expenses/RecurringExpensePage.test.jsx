@@ -203,36 +203,38 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
 
   // ── Suppression (optimistic + refresh summary) ────────────────────────────
 
-  it('supprime une dépense après confirmation et actualise le summary', async () => {
+  it('supprime une dépense après confirmation dans la modale', async () => {
     mockFetchAll()
     deleteExpense.mockResolvedValue()
     getExpenseSummary.mockResolvedValue(SUMMARY)
-    window.confirm = vi.fn(() => true)
 
     render(<RecurringExpensePage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Supprimer définitivement'))
 
     await waitFor(() => {
       expect(deleteExpense).toHaveBeenCalledWith(EXPENSES[0].id)
-      // getExpenseSummary appelé une 2e fois (refresh post-delete)
       expect(getExpenseSummary).toHaveBeenCalledTimes(2)
     })
   })
 
-  it("n'appelle pas deleteExpense si l'utilisateur annule la confirmation", async () => {
+  it("n'appelle pas deleteExpense si l'utilisateur annule la modale", async () => {
     mockFetchAll()
-    window.confirm = vi.fn(() => false)
 
     render(<RecurringExpensePage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+
     expect(deleteExpense).not.toHaveBeenCalled()
   })
 
-  it('retire la dépense de la liste immédiatement après suppression (optimistic)', async () => {
+  it('retire la dépense de la liste après confirmation dans la modale', async () => {
     mockFetchAll()
     deleteExpense.mockResolvedValue()
     getExpenseSummary.mockResolvedValue(SUMMARY)
@@ -241,6 +243,7 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
     await waitFor(() => expect(screen.getByText('Loyer appartement')).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    fireEvent.click(screen.getByText('Supprimer définitivement'))
 
     await waitFor(() => {
       expect(screen.queryByText('Loyer appartement')).not.toBeInTheDocument()

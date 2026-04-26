@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { getExpenses, getExpenseSummary, createExpense, updateExpense, deleteExpense, getExpenseBudgets, saveExpenseBudgets } from '../../api/expenses'
 import RecurringExpenseForm from './RecurringExpenseForm'
+import { fmt } from '../../utils/formatting.js'
+import KpiCard from '../common/KpiCard'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 const CATEGORY_META = {
   LOGEMENT:    { label: 'Logement',               color: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
@@ -16,36 +19,6 @@ const CATEGORY_META = {
 
 const FREQ_LABEL = { MONTHLY: 'mensuel', ANNUAL: 'annuel' }
 
-function fmt(n) {
-  return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—'
-}
-
-function SavingsCard({ label, value, sub, color, unit = '€', labelTooltip }) {
-
-  return (
-    <div
-      className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-1 relative"
-    >
-      <p className="text-xs text-gray-400 tracking-wide flex items-center gap-1">
-        {label}
-        {labelTooltip && (
-          <span className="relative group inline-flex items-center">
-            <span className="cursor-default text-gray-300 hover:text-gray-500 transition text-xs leading-none">ⓘ</span>
-            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg bg-gray-800 text-white text-xs p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-normal leading-relaxed">
-              {labelTooltip}
-            </span>
-          </span>
-        )}
-      </p>
-      <p className={`text-2xl amount font-bold ${color ?? 'text-gray-900'}`}>
-        {value != null ? `${fmt(value)} ${unit}` : '—'}
-      </p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-
-    </div>
-  )
-}
-
 export default function RecurringExpensePage() {
   const [expenses,          setExpenses]          = useState([])
   const [summary,           setSummary]           = useState(null)
@@ -57,6 +30,7 @@ export default function RecurringExpensePage() {
   const [budgetsDirty,      setBudgetsDirty]      = useState(false)
   const [budgetsSaving,     setBudgetsSaving]     = useState(false)
   const [showBudgetEditor,  setShowBudgetEditor]  = useState(false)
+  const [deleteTarget,      setDeleteTarget]      = useState(null)
 
   function updateBudget(category, value) {
     const updated = { ...budgets }
@@ -115,12 +89,13 @@ export default function RecurringExpensePage() {
     await fetchAll()
   }
 
-  async function handleDelete(exp) {
-    if (!confirm(`Supprimer « ${exp.label} » ?`)) return
-    await deleteExpense(exp.id)
-    setExpenses(es => es.filter(e => e.id !== exp.id))
-    // Rafraîchir le résumé
-    setSummary(await getExpenseSummary()) 
+  function handleDelete(exp) { setDeleteTarget(exp) }
+
+  async function confirmDelete() {
+    await deleteExpense(deleteTarget.id)
+    setExpenses(es => es.filter(e => e.id !== deleteTarget.id))
+    setSummary(await getExpenseSummary())
+    setDeleteTarget(null)
   }
 
   const filtered = filter === 'ALL' ? expenses : expenses.filter(e => e.category === filter)
@@ -157,7 +132,7 @@ export default function RecurringExpensePage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           {/* Bloc 2×2 KPIs */}
           <div className="grid grid-cols-2 gap-4 md:w-1/2">
-            <SavingsCard
+            <KpiCard
               label="Revenus nets mensuels"
               value={summary.monthlyNetIncome}
               sub={summary.incomeSource === 'NET_IMPOSABLE' ? '⚠ Net imposable (profil fiscal incomplet)' : summary.incomeSource === 'NONE' ? 'Aucun contrat actif' : null}
@@ -201,18 +176,18 @@ export default function RecurringExpensePage() {
                 )
               }
             />
-            <SavingsCard
+            <KpiCard
               label="Total dépenses / mois"
               value={summary.totalMonthlyExpenses}
               sub={summary.totalAnnualExpenses != null ? `${fmt(summary.totalAnnualExpenses)} €/an` : null}
             />
-            <SavingsCard
+            <KpiCard
               label="Capacité d'épargne"
               value={summary.savingsCapacity}
               sub={summary.savingsRate != null ? `Taux d'épargne : ${summary.savingsRate.toFixed(1)} %` : null}
               color={savingsColor}
             />
-            <SavingsCard
+            <KpiCard
               label="Taux d'épargne"
               value={summary.savingsRate != null ? summary.savingsRate.toFixed(1) : null}
               unit="%"
@@ -423,6 +398,13 @@ export default function RecurringExpensePage() {
           expense={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer « ${deleteTarget.label} » ?`}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>
