@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,7 +31,7 @@ public class ProfileController {
     @ApiResponse(responseCode = "400", description = "Données invalides")
     @PutMapping("/safety-net")
     public ResponseEntity<UserDto> updateSafetyNet(
-            @RequestBody UpdateSafetyNetRequest request,
+            @Valid @RequestBody UpdateSafetyNetRequest request,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updateSafetyNet(currentUser, request));
     }
@@ -40,7 +41,7 @@ public class ProfileController {
         content = @Content(schema = @Schema(implementation = UserDto.class)))
     @PutMapping("/fiscal")
     public ResponseEntity<UserDto> updateFiscalProfile(
-            @RequestBody UpdateFiscalProfileRequest request,
+            @Valid @RequestBody UpdateFiscalProfileRequest request,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updateFiscalProfile(currentUser, request));
     }
@@ -50,7 +51,7 @@ public class ProfileController {
         content = @Content(schema = @Schema(implementation = UserDto.class)))
     @PutMapping("/personal-info")
     public ResponseEntity<UserDto> updatePersonalInfo(
-            @RequestBody UpdatePersonalInfoRequest request,
+            @Valid @RequestBody UpdatePersonalInfoRequest request,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updatePersonalInfo(currentUser, request));
     }

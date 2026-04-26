@@ -172,4 +172,67 @@ class ProfileControllerTest {
                         .content("{}"))
                 .andExpect(status().isUnauthorized());
     }
+
+    // ── Validation Bean — H4 (champs trop longs / hors bornes) ─
+
+    @Test
+    @WithMockCustomUser
+    void updatePersonalInfo_jobTitleTropLong_retourne400() throws Exception {
+        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest(
+                "Jean", "Dupont", null, "Paris", "75001", "x".repeat(201));
+
+        mockMvc.perform(put("/api/profile/personal-info")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void updatePersonalInfo_birthDateFuture_retourne400() throws Exception {
+        UpdatePersonalInfoRequest req = new UpdatePersonalInfoRequest(
+                "Jean", "Dupont", java.time.LocalDate.now().plusDays(1), "Paris", "75001", "Ingénieur");
+
+        mockMvc.perform(put("/api/profile/personal-info")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void updateFiscalProfile_fiscalPartsNegatif_retourne400() throws Exception {
+        UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
+                -1.0f, true,
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/api/profile/fiscal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void updateFiscalProfile_realExpensesMealsNegatif_retourne400() throws Exception {
+        UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
+                1.0f, false,
+                null, null, null, null, -100f, null, null, null, null, null, null, null, null);
+
+        mockMvc.perform(put("/api/profile/fiscal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void updateSafetyNet_montantNegatif_retourne400() throws Exception {
+        UpdateSafetyNetRequest req = new UpdateSafetyNetRequest(SafetyNetMode.FIXED_AMOUNT, null, -1.0);
+
+        mockMvc.perform(put("/api/profile/safety-net")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
 }

@@ -1,12 +1,15 @@
 package com.myfinance.dto;
 
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 
 public record UpdatePersonalInfoRequest(
-        String firstName,
-        String lastName,
-        LocalDate birthDate,
-        String birthPlace,
-        String birthPostalCode,
-        String jobTitle
+        @Size(max = 100)        String firstName,
+        @Size(max = 100)        String lastName,
+        @Past                   LocalDate birthDate,
+        @Size(max = 100)        String birthPlace,
+        @Size(max = 20)         String birthPostalCode,
+        @Size(max = 200)        String jobTitle
 ) {}
