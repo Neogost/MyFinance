@@ -209,15 +209,16 @@ describe('OtherIncomePage — pattern CRUD', () => {
 
   // ── Suppression ───────────────────────────────────────────────────────────
 
-  it('supprime un revenu après confirmation utilisateur', async () => {
+  it('supprime un revenu après confirmation dans la modale', async () => {
     getOtherIncomes.mockResolvedValue(INCOMES)
     deleteOtherIncome.mockResolvedValue()
-    window.confirm = vi.fn(() => true)
 
     render(<OtherIncomePage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Supprimer définitivement'))
 
     await waitFor(() => {
       expect(deleteOtherIncome).toHaveBeenCalledWith(INCOMES[0].id)
@@ -225,14 +226,15 @@ describe('OtherIncomePage — pattern CRUD', () => {
     })
   })
 
-  it("n'appelle pas deleteOtherIncome si l'utilisateur annule la confirmation", async () => {
+  it("n'appelle pas deleteOtherIncome si l'utilisateur annule la modale", async () => {
     getOtherIncomes.mockResolvedValue(INCOMES)
-    window.confirm = vi.fn(() => false)
 
     render(<OtherIncomePage />)
     await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
 
     fireEvent.click(screen.getAllByText('Supprimer')[0])
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
 
     expect(deleteOtherIncome).not.toHaveBeenCalled()
     expect(screen.getByText('Loyer appartement T2')).toBeInTheDocument()

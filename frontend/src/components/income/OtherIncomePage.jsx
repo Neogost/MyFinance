@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getOtherIncomes, createOtherIncome, updateOtherIncome, deleteOtherIncome } from '../../api/income'
 import OtherIncomeForm from './OtherIncomeForm'
+import { formatDate } from '../../utils/formatting.js'
+import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 const TYPE_LABELS = {
   LOCATIF:      { label: 'Locatif',       color: 'bg-blue-100 text-blue-700' },
@@ -9,19 +11,13 @@ const TYPE_LABELS = {
   AUTRE:        { label: 'Autre',         color: 'bg-gray-100 text-gray-600' },
 }
 
-const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
-
-function formatDate(iso) {
-  const [year, month, day] = iso.split('-')
-  return `${parseInt(day, 10)} ${MONTHS_FR[parseInt(month, 10) - 1]} ${year}`
-}
-
 export default function OtherIncomePage() {
   const [incomes, setIncomes]     = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
   const [filter, setFilter]       = useState('ALL')
   const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
+  const [error,        setError]        = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => { fetchIncomes() }, [])
 
@@ -47,10 +43,12 @@ export default function OtherIncomePage() {
     setFormTarget(undefined)
   }
 
-  async function handleDelete(income) {
-    if (!confirm(`Supprimer « ${income.label} » ?`)) return
-    await deleteOtherIncome(income.id)
-    setIncomes(is => is.filter(i => i.id !== income.id))
+  function handleDelete(income) { setDeleteTarget(income) }
+
+  async function confirmDelete() {
+    await deleteOtherIncome(deleteTarget.id)
+    setIncomes(is => is.filter(i => i.id !== deleteTarget.id))
+    setDeleteTarget(null)
   }
 
   const filtered = filter === 'ALL' ? incomes : incomes.filter(i => i.type === filter)
@@ -178,6 +176,13 @@ export default function OtherIncomePage() {
           income={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={`Supprimer « ${deleteTarget.label} » ?`}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>

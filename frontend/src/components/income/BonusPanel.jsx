@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { getBonuses, createBonus, updateBonus, deleteBonus } from '../../api/income'
 import BonusForm from './BonusForm'
-
-const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
 function formatPaymentDate(iso) {
   const [year, month] = iso.split('-')
-  return `${MONTHS_FR[parseInt(month, 10) - 1]} ${year}`
+  return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
 export default function BonusPanel({ contractId, onBonusChange }) {
@@ -97,7 +96,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
                   <td className="px-3 py-2.5 font-medium text-gray-800">{bonus.label}</td>
                   <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">
                     {bonus.type === 'ANNUELLE'
-                      ? `Chaque année en ${MONTHS_FR[(bonus.paymentMonth ?? 1) - 1]}`
+                      ? `Chaque année en ${MONTHS_FR_SHORT[(bonus.paymentMonth ?? 1) - 1]}`
                       : formatPaymentDate(bonus.paymentDate)
                     }
                   </td>

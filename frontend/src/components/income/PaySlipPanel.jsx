@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { getPaySlips, createPaySlip, updatePaySlip, deletePaySlip } from '../../api/income'
 import PaySlipForm from './PaySlipForm'
-
-const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
 function formatPeriod(iso) {
   const [year, month] = iso.split('-')
-  return `${MONTHS_FR[parseInt(month, 10) - 1]} ${year}`
+  return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
 export default function PaySlipPanel({ contractId, projection }) {
