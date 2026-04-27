@@ -39,6 +39,12 @@
       "type": "java.lang.Integer",
       "description": "Durée de la fenêtre glissante de rate-limit IP /login, en minutes.",
       "defaultValue": 60
+    },
+    {
+      "name": "myfinance.swagger.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Active l'accès non-authentifié à Swagger UI (/swagger-ui.html, /v3/api-docs/**). À true en dev uniquement, false en docker/prod pour ne pas exposer la cartographie de l'API.",
+      "defaultValue": false
     }
   ]
 }

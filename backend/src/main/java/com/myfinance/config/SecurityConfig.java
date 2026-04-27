@@ -56,6 +56,13 @@ public class SecurityConfig {
     @Value("${security.csrf.enabled:true}")
     private boolean csrfEnabled;
 
+    // Swagger UI exposé uniquement en dev (à activer manuellement dans application-dev.properties).
+    // En prod/docker, l'UI est volontairement bloquée pour ne pas faciliter l'énumération des
+    // endpoints par un attaquant. Pour une protection en profondeur, l'admin peut aussi désactiver
+    // springdoc côté backend via springdoc.api-docs.enabled=false et springdoc.swagger-ui.enabled=false.
+    @Value("${myfinance.swagger.enabled:false}")
+    private boolean swaggerEnabled;
+
     /**
      * Publie les évènements `HttpSessionEvent` (création/destruction) au contexte Spring,
      * ce qui permet au {@code SessionRegistry} de détecter les sessions expirées et de les
@@ -117,12 +124,18 @@ public class SecurityConfig {
                     )
                 )
             )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/api/**").authenticated()
-                .anyRequest().permitAll() // fichiers statiques et routes SPA React
-            )
+            .authorizeHttpRequests(auth -> {
+                auth.requestMatchers("/api/auth/login", "/api/auth/register").permitAll();
+                if (swaggerEnabled) {
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll();
+                } else {
+                    // denyAll explicite : sans cette règle, Swagger UI tomberait sur anyRequest().permitAll()
+                    // car ses URLs ne sont pas sous /api/**
+                    auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").denyAll();
+                }
+                auth.requestMatchers("/api/**").authenticated();
+                auth.anyRequest().permitAll(); // fichiers statiques et routes SPA React
+            })
             .formLogin(form -> form
                 .loginProcessingUrl("/api/auth/login")
                 .successHandler((request, response, authentication) -> {

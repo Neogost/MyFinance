@@ -96,12 +96,24 @@ base-uri 'self'
 
 ```java
 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // public
-.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()       // Swagger
+// Swagger UI exposé uniquement si myfinance.swagger.enabled=true (dev),
+// denyAll sinon (docker/prod) pour ne pas faciliter l'énumération des endpoints.
+.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() OR denyAll()
 .requestMatchers("/api/**").authenticated()                             // API protégée
 .anyRequest().permitAll()                                               // fichiers statiques + routes SPA
 ```
 
 La séparation `/api/**` vs `/**` permet de servir le frontend React sans authentification (le contrôle se fait côté React via `GET /api/auth/me`).
+
+### Swagger UI
+
+- **Dev** : `myfinance.swagger.enabled=true` dans `application-dev.properties` → `/swagger-ui.html` et `/v3/api-docs/**` accessibles sans authentification, pratique pour le développement.
+- **Docker / Prod** : la propriété est absente (défaut `false`) → toute requête Swagger renvoie `403`. Une attaquante ne peut pas obtenir la cartographie des endpoints.
+- **Défense en profondeur** : pour également désactiver le bean springdoc côté backend (et faire renvoyer `404` au lieu de `403`), ajouter en docker/prod :
+  ```properties
+  springdoc.api-docs.enabled=false
+  springdoc.swagger-ui.enabled=false
+  ```
 
 ---
 
