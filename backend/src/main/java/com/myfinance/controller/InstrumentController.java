@@ -11,14 +11,17 @@ import com.myfinance.service.InstrumentService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/instruments")
 @RequiredArgsConstructor
@@ -52,7 +55,10 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public InstrumentDto update(
             @PathVariable Long id,
-            @Valid @RequestBody CreateInstrumentRequest request) {
+            @Valid @RequestBody CreateInstrumentRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Modification instrument #{} — name={}",
+                authentication.getName(), id, request.name());
         return instrumentService.update(id, request);
     }
 
@@ -61,7 +67,10 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public InstrumentDto updateStablePrice(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateStablePriceRequest request) {
+            @Valid @RequestBody UpdateStablePriceRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Toggle prix fixe instrument #{} → {}",
+                authentication.getName(), id, request.stablePrice());
         return instrumentService.updateStablePrice(id, request.stablePrice());
     }
 
@@ -77,7 +86,10 @@ public class InstrumentController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<InstrumentDto> updatePrices(
             @Size(max = 500, message = "Au maximum 500 instruments par mise à jour")
-            @Valid @RequestBody List<UpdateInstrumentPriceRequest> requests) {
+            @Valid @RequestBody List<UpdateInstrumentPriceRequest> requests,
+            Authentication authentication) {
+        log.info("[admin:{}] Mise à jour groupée des cours — {} instrument(s)",
+                authentication.getName(), requests.size());
         return instrumentService.updatePrices(requests);
     }
 
@@ -87,7 +99,10 @@ public class InstrumentController {
     public List<InstrumentAllocationDto> updateAllocations(
             @PathVariable Long id,
             @Size(max = 200, message = "Au maximum 200 entrées d'allocation géographique")
-            @Valid @RequestBody List<InstrumentAllocationDto> entries) {
+            @Valid @RequestBody List<InstrumentAllocationDto> entries,
+            Authentication authentication) {
+        log.info("[admin:{}] Mise à jour allocation géographique instrument #{} ({} pays)",
+                authentication.getName(), id, entries.size());
         return instrumentService.updateAllocations(id, entries);
     }
 
@@ -97,14 +112,19 @@ public class InstrumentController {
     public List<InstrumentSectorAllocationDto> updateSectorAllocations(
             @PathVariable Long id,
             @Size(max = 50, message = "Au maximum 50 entrées d'allocation sectorielle")
-            @Valid @RequestBody List<InstrumentSectorAllocationDto> entries) {
+            @Valid @RequestBody List<InstrumentSectorAllocationDto> entries,
+            Authentication authentication) {
+        log.info("[admin:{}] Mise à jour allocation sectorielle instrument #{} ({} secteurs)",
+                authentication.getName(), id, entries.size());
         return instrumentService.updateSectorAllocations(id, entries);
     }
 
     /** DELETE /api/instruments/{id} — supprimer un instrument et ses positions (ADMIN) */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        log.info("[admin:{}] Suppression instrument #{} (cascade : positions liées)",
+                authentication.getName(), id);
         instrumentService.deleteInstrument(id);
         return ResponseEntity.noContent().build();
     }

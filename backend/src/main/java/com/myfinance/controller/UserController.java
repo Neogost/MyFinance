@@ -13,13 +13,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -52,7 +55,11 @@ public class UserController {
         content = @Content(schema = @Schema(implementation = UserDto.class)))
     @ApiResponse(responseCode = "409", description = "Login déjà utilisé")
     @PostMapping
-    public ResponseEntity<UserDto> create(@Valid @RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserDto> create(
+            @Valid @RequestBody CreateUserRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Création utilisateur — login={}, rôle={}",
+                authentication.getName(), request.login(), request.role());
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
     }
 
@@ -64,7 +71,11 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> update(
             @Parameter(description = "Identifiant de l'utilisateur") @PathVariable Long id,
-            @Valid @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Modification utilisateur #{} — login={}, rôle={}, password={}",
+                authentication.getName(), id, request.login(), request.role(),
+                request.password() != null && !request.password().isBlank() ? "modifié" : "inchangé");
         return ResponseEntity.ok(userService.update(id, request));
     }
 
@@ -73,7 +84,9 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "Utilisateur introuvable")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @Parameter(description = "Identifiant de l'utilisateur") @PathVariable Long id) {
+            @Parameter(description = "Identifiant de l'utilisateur") @PathVariable Long id,
+            Authentication authentication) {
+        log.info("[admin:{}] Suppression utilisateur #{}", authentication.getName(), id);
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }

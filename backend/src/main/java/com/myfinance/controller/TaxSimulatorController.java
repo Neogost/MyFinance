@@ -11,14 +11,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/tax-simulator")
 @RequiredArgsConstructor
@@ -62,8 +65,11 @@ public class TaxSimulatorController {
             @Parameter(description = "Source des revenus salariaux : PROJECTION_CONTRAT ou BULLETINS_REELS")
             @RequestParam(required = false, defaultValue = TaxSimulatorService.SOURCE_PROJECTION) String salarySource,
             @Parameter(description = "IDs des revenus complémentaires à inclure (absent ou vide = aucun revenu complémentaire)")
-            @RequestParam(required = false) List<Long> includedIncomes) {
+            @RequestParam(required = false) List<Long> includedIncomes,
+            Authentication authentication) {
 
+        log.info("[admin:{}] Simulation IRPP pour user #{} (année={}, source={})",
+                authentication.getName(), userId, year, salarySource);
         User targetUser = userService.findEntityById(userId);
         int annee = year != null ? year : LocalDate.now().getYear();
         TaxSimulationDto result = taxSimulatorService.simulate(targetUser, annee, salarySource, includedIncomes);

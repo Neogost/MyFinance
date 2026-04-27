@@ -5,12 +5,15 @@ import com.myfinance.service.FamilyGroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/family-groups")
 @RequiredArgsConstructor
@@ -34,7 +37,8 @@ public class AdminFamilyGroupController {
 
     @Operation(summary = "Supprimer un groupe")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> dissolve(@PathVariable Long id) {
+    public ResponseEntity<Void> dissolve(@PathVariable Long id, Authentication authentication) {
+        log.info("[admin:{}] Dissolution groupe familial #{}", authentication.getName(), id);
         familyGroupService.adminDissolve(id);
         return ResponseEntity.noContent().build();
     }
@@ -43,7 +47,10 @@ public class AdminFamilyGroupController {
     @DeleteMapping("/{id}/members/{memberId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable Long id,
-            @PathVariable Long memberId) {
+            @PathVariable Long memberId,
+            Authentication authentication) {
+        log.info("[admin:{}] Retrait membre #{} du groupe familial #{}",
+                authentication.getName(), memberId, id);
         familyGroupService.adminRemoveMember(id, memberId);
         return ResponseEntity.noContent().build();
     }

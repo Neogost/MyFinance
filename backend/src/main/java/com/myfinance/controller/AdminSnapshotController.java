@@ -6,13 +6,16 @@ import com.myfinance.dto.PositionAdminRefDto;
 import com.myfinance.service.AdminSnapshotService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
@@ -35,7 +38,10 @@ public class AdminSnapshotController {
     /** POST /api/admin/snapshots */
     @PostMapping("/api/admin/snapshots")
     public ResponseEntity<AdminSnapshotDetailDto> create(
-            @Valid @RequestBody ManualSnapshotRequest request) {
+            @Valid @RequestBody ManualSnapshotRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Création snapshot manuel pour user #{} (date={})",
+                authentication.getName(), request.userId(), request.snapshotDate());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(adminSnapshotService.create(request));
     }
@@ -44,14 +50,18 @@ public class AdminSnapshotController {
     @PutMapping("/api/admin/snapshots/{id}")
     public AdminSnapshotDetailDto update(
             @PathVariable Long id,
-            @Valid @RequestBody ManualSnapshotRequest request) {
+            @Valid @RequestBody ManualSnapshotRequest request,
+            Authentication authentication) {
+        log.info("[admin:{}] Modification snapshot #{} (user #{}, date={})",
+                authentication.getName(), id, request.userId(), request.snapshotDate());
         return adminSnapshotService.update(id, request);
     }
 
     /** DELETE /api/admin/snapshots/{id} */
     @DeleteMapping("/api/admin/snapshots/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Long id, Authentication authentication) {
+        log.info("[admin:{}] Suppression snapshot #{}", authentication.getName(), id);
         adminSnapshotService.delete(id);
     }
 
