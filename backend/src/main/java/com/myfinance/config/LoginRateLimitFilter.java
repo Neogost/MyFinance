@@ -20,13 +20,18 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Filtre de rate-limit sur POST /api/auth/login. Deux niveaux de protection :
+ * Filtre de rate-limit sur POST /api/auth/login. Trois niveaux de protection :
  *
  *   1. Rate-limit IP (LoginIpAttemptService) : si l'IP a dépassé son quota d'échecs récents,
  *      retourne 429 avec secondesRestantes. Couvre le balayage massif et empêche qu'un
  *      attaquant ne DoS un compte précis (il sera lui-même rate-limité par IP).
  *
- *   2. Verrou par login (LoginAttemptService) : si le login est verrouillé suite à des échecs
+ *   2. Présence du paramètre username : si absent ou vide, retourne 400 immédiatement et
+ *      incrémente le compteur IP. Sans ce check, un attaquant pourrait probe l'application
+ *      avec des requêtes vides — Spring Security renverrait 401 mais le compteur per-login
+ *      serait bypassé (cf. M6 de l'audit).
+ *
+ *   3. Verrou par login (LoginAttemptService) : si le login est verrouillé suite à des échecs
  *      consécutifs, retourne 401 SANS révéler l'existence du compte (anti-énumération).
  *      Spring Security ne valide pas les credentials — la réponse est identique à un
  *      « identifiants incorrects » classique.
@@ -79,7 +84,22 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2. Verrou par login — réponse 401 SILENCIEUSE (anti-énumération de comptes)
+        // 2. Username manquant ou vide → 400 immédiat, sans laisser passer la requête
+        // jusqu'à Spring Security (qui renverrait 401 sans incrémenter aucun compteur per-login).
+        // Le compteur IP est incrémenté pour qu'un attaquant ne puisse pas probe sans être rate-limité.
+        if (login == null || login.isBlank()) {
+            if (loginIpAttemptService != null) {
+                loginIpAttemptService.enregistrerEchec(ip);
+            }
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding("UTF-8");
+            objectMapper.writeValue(response.getWriter(),
+                    Map.of("message", "Le paramètre 'username' est obligatoire."));
+            return;
+        }
+
+        // 3. Verrou par login — réponse 401 SILENCIEUSE (anti-énumération de comptes)
         // Le client ne peut pas distinguer « compte existant verrouillé » de « identifiants incorrects ».
         if (loginAttemptService != null && loginAttemptService.estBloque(login)) {
             if (loginHistoryService != null) {

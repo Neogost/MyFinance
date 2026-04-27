@@ -125,6 +125,55 @@ class LoginRateLimitFilterTest {
         verifyNoInteractions(loginAttemptService, loginIpAttemptService);
     }
 
+    // ── M6 : username manquant ou blank ───────────────────────
+
+    @Test
+    void usernameAbsent_retourne400EtIncrementeIp() throws Exception {
+        when(loginIpAttemptService.estBloque("203.0.113.42")).thenReturn(false);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // postLogin(null) ne setParameter() pas → username absent
+        filter.doFilter(postLogin(null), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(400);
+        assertThat(response.getContentAsString()).contains("'username' est obligatoire");
+        // Le compteur IP doit être incrémenté pour empêcher le probing sans rate-limit
+        verify(loginIpAttemptService).enregistrerEchec("203.0.113.42");
+        verify(chain, never()).doFilter(any(), any());
+        // Le verrou per-login n'est pas consulté (login absent)
+        verify(loginAttemptService, never()).estBloque(any());
+    }
+
+    @Test
+    void usernameBlank_retourne400EtIncrementeIp() throws Exception {
+        when(loginIpAttemptService.estBloque("203.0.113.42")).thenReturn(false);
+        MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/login");
+        req.setServletPath("/api/auth/login");
+        req.setRemoteAddr("203.0.113.42");
+        req.setParameter("username", "   ");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(req, response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(400);
+        verify(loginIpAttemptService).enregistrerEchec("203.0.113.42");
+        verify(chain, never()).doFilter(any(), any());
+    }
+
+    @Test
+    void ipBloqueeEtUsernameAbsent_retourne429_pasDeAccesAu400() throws Exception {
+        // Si l'IP est déjà rate-limitée, on retourne 429 sans même lire le username.
+        when(loginIpAttemptService.estBloque("203.0.113.42")).thenReturn(true);
+        when(loginIpAttemptService.secondesRestantes("203.0.113.42")).thenReturn(60L);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(postLogin(null), response, chain);
+
+        assertThat(response.getStatus()).isEqualTo(429);
+        // enregistrerEchec n'est pas appelé via la branche M6 (on est sorti avant via 429)
+        verify(loginIpAttemptService, never()).enregistrerEchec(any());
+    }
+
     // ── Compatibilité : services absents (cas @WebMvcTest) ────
 
     @Test
