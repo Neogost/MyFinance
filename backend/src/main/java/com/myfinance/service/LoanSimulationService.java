@@ -20,6 +20,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LoanSimulationService {
 
+    /**
+     * Taille maximale du JSON sérialisé `parametersJson`. Le simulateur frontend gère
+     * environ 40 paramètres (~3 KB en JSON compacté), donc 50 000 caractères laissent
+     * une marge ~10× pour l'évolution future. Au-delà, on rejette en 400 pour empêcher
+     * un utilisateur authentifié de stocker des MB de JSON arbitraire (M13 — DoS storage).
+     */
+    private static final int MAX_PARAMETERS_JSON_LENGTH = 50_000;
+
     private final LoanSimulationRepository loanSimulationRepository;
     private final ObjectMapper objectMapper;
 
@@ -36,11 +44,19 @@ public class LoanSimulationService {
 
     public LoanSimulationDto create(CreateLoanSimulationRequest request, User user) {
         try {
+            String parametersJson = objectMapper.writeValueAsString(request.parameters());
+            if (parametersJson.length() > MAX_PARAMETERS_JSON_LENGTH) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Paramètres de simulation trop volumineux (limite : "
+                                + MAX_PARAMETERS_JSON_LENGTH + " caractères, reçu : "
+                                + parametersJson.length() + ").");
+            }
+
             LoanSimulation simulation = LoanSimulation.builder()
                     .user(user)
                     .name(request.name())
                     .savedAt(LocalDateTime.now())
-                    .parametersJson(objectMapper.writeValueAsString(request.parameters()))
+                    .parametersJson(parametersJson)
                     .build();
 
             return LoanSimulationDto.from(loanSimulationRepository.save(simulation), objectMapper);

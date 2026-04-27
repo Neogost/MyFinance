@@ -114,6 +114,25 @@ class LoanSimulationServiceTest {
         loanSimulationService.create(request, owner);
     }
 
+    @Test
+    void create_leve400_siParametersJsonTropVolumineux() {
+        // Une chaîne de 51 000 caractères dans une valeur Map produit > 50 000 chars en JSON.
+        String hugePayload = "x".repeat(51_000);
+        CreateLoanSimulationRequest request = new CreateLoanSimulationRequest(
+                "Trop gros", Map.of("garbage", hugePayload));
+
+        assertThatThrownBy(() -> loanSimulationService.create(request, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("trop volumineux");
+                });
+
+        // Aucune persistance ne doit avoir lieu
+        verify(loanSimulationRepository, never()).save(any());
+    }
+
     // ── delete ─────────────────────────────────────────────────
 
     @Test
