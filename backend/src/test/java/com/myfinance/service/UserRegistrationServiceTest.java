@@ -132,6 +132,25 @@ class UserRegistrationServiceTest {
     }
 
     @Test
+    void approve_purgeLeHashApresCopieVersUser() {
+        // Capture le User envoyé à userRepository.save() pour vérifier qu'il reçoit bien
+        // le hash AVANT la purge sur la demande.
+        when(registrationRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        org.mockito.ArgumentCaptor<User> userCaptor = org.mockito.ArgumentCaptor.forClass(User.class);
+
+        service.approve(1L, "admin");
+
+        verify(userRepository).save(userCaptor.capture());
+        // Le User créé doit avoir reçu le hash original
+        assertThat(userCaptor.getValue().getPassword()).isEqualTo("$2a$hashed");
+        // Mais la demande persistée doit avoir un hash purgé (chaîne vide — la colonne est NOT NULL)
+        assertThat(pendingRequest.getHashedPassword()).isEmpty();
+    }
+
+    @Test
     void approve_leve404_siDemandIntrouvable() {
         when(registrationRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -166,6 +185,17 @@ class UserRegistrationServiceTest {
         assertThat(result.status()).isEqualTo(RegistrationStatus.REJECTED);
         assertThat(result.reviewedBy()).isEqualTo("admin");
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void reject_purgeLeHashAussi() {
+        when(registrationRepository.findById(1L)).thenReturn(Optional.of(pendingRequest));
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reject(1L, "admin");
+
+        // La demande rejetée ne doit pas conserver le hash en base
+        assertThat(pendingRequest.getHashedPassword()).isEmpty();
     }
 
     @Test

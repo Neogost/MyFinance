@@ -99,6 +99,12 @@ public class UserRegistrationService {
                 .build();
         userRepository.save(user);
 
+        // Le hash a été copié vers User : il n'a plus aucune utilité dans la table de
+        // demandes. On le purge pour que la table user_registration_requests ne contienne
+        // pas de hash brute-forçable offline en cas de fuite de la base. Empty string
+        // plutôt que null car la colonne est NOT NULL en base — purge équivalente côté
+        // sécurité (la chaîne vide n'est ni un hash valide ni susceptible de match).
+        request.setHashedPassword("");
         request.setStatus(RegistrationStatus.APPROVED);
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewedBy(adminLogin);
@@ -114,6 +120,9 @@ public class UserRegistrationService {
         UserRegistrationRequest request = getOrThrow(id);
         assertPending(request);
 
+        // Demande rejetée : le hash ne sera jamais utilisé. On le purge pour la même
+        // raison que dans approve() — pas de hash inutile en base.
+        request.setHashedPassword("");
         request.setStatus(RegistrationStatus.REJECTED);
         request.setReviewedAt(LocalDateTime.now());
         request.setReviewedBy(adminLogin);
