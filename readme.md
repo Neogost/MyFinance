@@ -145,7 +145,7 @@ Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation
 # Backend
 cd backend
 ./mvnw test
-# 647 tests unitaires (services + controllers)
+# 700 tests unitaires (services + controllers)
 
 # Frontend
 cd frontend
