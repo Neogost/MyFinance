@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -219,6 +220,36 @@ class InstrumentControllerTest {
     @WithMockUser(roles = "USER")
     void delete_asUser_retourne403() throws Exception {
         mockMvc.perform(delete("/api/instruments/1"))
+                .andExpect(status().isForbidden());
+    }
+
+    // ── PUT /api/instruments/{id} — H1 (ADMIN uniquement) ──────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void update_asAdmin_retourne200() throws Exception {
+        com.myfinance.dto.CreateInstrumentRequest request = new com.myfinance.dto.CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "Lyxor PEA Nasdaq-100 v2", "EUR", false, "QQQ.PA");
+        when(instrumentService.update(eq(1L), any())).thenReturn(etfDto);
+
+        mockMvc.perform(put("/api/instruments/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void update_asUser_retourne403() throws Exception {
+        // Un utilisateur non-admin ne doit PAS pouvoir modifier un instrument partagé.
+        // Sans cette restriction, un utilisateur pourrait altérer name/currency/boursoramaSymbol
+        // d'instruments référencés par les positions d'autres utilisateurs (data poisoning).
+        com.myfinance.dto.CreateInstrumentRequest request = new com.myfinance.dto.CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "ARNAQUE", "EUR", false, null);
+
+        mockMvc.perform(put("/api/instruments/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 

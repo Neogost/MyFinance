@@ -91,7 +91,17 @@ Créer un instrument manuellement.
 
 Modifier un instrument. Mêmes champs que POST.
 
-**Réponse 200**
+**Rôle requis :** `ADMIN`
+
+> ⚠ Les instruments sont des données partagées (référencés par les positions de tous les utilisateurs). La modification est réservée aux administrateurs pour empêcher l'altération du nom, de la devise ou du `boursoramaSymbol` par un utilisateur tiers.
+
+**Réponse 200** — `InstrumentDto` mis à jour.
+
+| Code | Erreur |
+|------|--------|
+| 403  | Rôle insuffisant (USER tentant la modification) |
+| 404  | Instrument introuvable |
+| 409  | ISIN ou ticker déjà existant |
 
 ---
 

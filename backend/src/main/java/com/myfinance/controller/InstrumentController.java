@@ -47,8 +47,9 @@ public class InstrumentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(instrumentService.create(request));
     }
 
-    /** PUT /api/instruments/{id} */
+    /** PUT /api/instruments/{id} — modification d'un instrument (ADMIN uniquement) */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public InstrumentDto update(
             @PathVariable Long id,
             @Valid @RequestBody CreateInstrumentRequest request) {

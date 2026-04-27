@@ -262,7 +262,7 @@ frontend/src/
 | `GET` | `/api/instruments` | Authentifié | Liste les instruments (recherche par ISIN, ticker ou nom) |
 | `GET` | `/api/instruments/{id}` | Authentifié | Détail d'un instrument + dernier prix |
 | `POST` | `/api/instruments` | Authentifié | Créer un instrument manuellement |
-| `PUT` | `/api/instruments/{id}` | Authentifié | Modifier un instrument |
+| `PUT` | `/api/instruments/{id}` | ADMIN | Modifier un instrument |
 | `GET` | `/api/instruments/active` | ADMIN | Liste les instruments liés à au moins une position ACTIVE |
 | `PUT` | `/api/instruments/prices` | ADMIN | Mise à jour groupée des cours (lastPrice + lastPriceUpdatedAt) |
 | `PATCH` | `/api/instruments/{id}/stable-price` | ADMIN | Activer / désactiver le prix fixe d'un instrument |
