@@ -111,6 +111,16 @@ public class SecurityConfig {
                     .includeSubDomains(true)
                     .maxAgeInSeconds(31536000)
                 )
+                .referrerPolicy(referrer -> referrer.policy(
+                        org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter
+                                .ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(permissions -> permissions.policy(
+                        // Désactive toutes les API navigateur sensibles : même en cas de XSS,
+                        // l'attaquant ne peut pas accéder à la caméra, au micro, à la géoloc, etc.
+                        "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), "
+                                + "fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), "
+                                + "midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), "
+                                + "screen-wake-lock=(), sync-xhr=(), usb=(), web-share=(), xr-spatial-tracking=()"))
                 .contentSecurityPolicy(csp -> csp
                     .policyDirectives(
                         "default-src 'self'; " +
