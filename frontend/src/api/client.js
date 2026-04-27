@@ -1,6 +1,15 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/', withCredentials: true })
+// xsrfCookieName et xsrfHeaderName matchent les valeurs par défaut de Spring Security
+// (CookieCsrfTokenRepository.withHttpOnlyFalse()). Axios lit le cookie XSRF-TOKEN posé par
+// le backend et ré-émet sa valeur dans l'en-tête X-XSRF-TOKEN sur toutes les requêtes
+// non-GET — ce qui valide le double-submit cookie côté serveur.
+const api = axios.create({
+  baseURL:        '/',
+  withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+})
 
 // Callbacks injectés par App.jsx au démarrage
 let _onUnauthorized = null
