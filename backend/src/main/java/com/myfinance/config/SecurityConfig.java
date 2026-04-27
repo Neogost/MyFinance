@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -53,6 +55,17 @@ public class SecurityConfig {
     // false en dev (frontend sur port différent) et dans les tests — true en prod
     @Value("${security.csrf.enabled:true}")
     private boolean csrfEnabled;
+
+    /**
+     * Publie les évènements `HttpSessionEvent` (création/destruction) au contexte Spring,
+     * ce qui permet au {@code SessionRegistry} de détecter les sessions expirées et de les
+     * retirer de la liste des sessions actives. Sans ce bean, une session expirée resterait
+     * comptabilisée et empêcherait `maximumSessions(1)` de fonctionner correctement.
+     */
+    @Bean
+    ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
+        return new ServletListenerRegistrationBean<>(new HttpSessionEventPublisher());
+    }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -178,6 +191,14 @@ public class SecurityConfig {
                     objectMapper.writeValue(response.getWriter(),
                             Map.of("message", "Déconnexion réussie"));
                 })
+            )
+            .sessionManagement(session -> session
+                // Une seule session active par utilisateur. Un nouveau login invalide la
+                // session précédente du même utilisateur (un cookie volé devient inutilisable
+                // dès que le propriétaire légitime se reconnecte).
+                // maxSessionsPreventsLogin(false) → la nouvelle session gagne, l'ancienne est tuée.
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(false)
             )
             .exceptionHandling(ex -> ex
                 // Retourne 401 JSON au lieu d'une redirection vers /login

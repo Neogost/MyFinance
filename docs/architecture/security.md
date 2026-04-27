@@ -389,11 +389,18 @@ if (showRegister) {
 
 ## Gestion de session
 
-| Paramètre | Valeur | Fichier |
-|-----------|--------|---------|
-| Durée de vie | 12 heures | `application.properties` |
+| Paramètre | Valeur | Source |
+|-----------|--------|--------|
+| Durée de vie | 4 heures | `application.properties` (gitignored, à maintenir manuellement) |
 | Cookie `HttpOnly` | `true` | `application.properties` |
 | Cookie `SameSite` | `Strict` | `application.properties` |
-| Cookie `Secure` | `true` en prod | `application-prod.properties` |
+| Cookie `Secure` | `true` en prod | `application-prod.properties` (et `X-Forwarded-Proto` en docker via `ForwardedHeadersConfig`) |
+| Sessions concurrentes | 1 par utilisateur | `SecurityConfig` (`maximumSessions(1).maxSessionsPreventsLogin(false)`) |
+
+### Concurrence des sessions
+
+Spring Security est configuré avec `maximumSessions(1)` : un nouveau login pour un compte invalide automatiquement la session précédente du même utilisateur. Combinées au timeout de 4 heures, ces deux mesures réduisent fortement la fenêtre d'exploitation d'un cookie volé : il devient inutilisable dès que le propriétaire légitime se reconnecte (au plus tard 4 h plus tard).
+
+Le bean `HttpSessionEventPublisher` (déclaré dans `SecurityConfig`) est nécessaire pour que le `SessionRegistry` retire les sessions expirées de la liste des sessions actives — sans lui, une session expirée resterait comptabilisée et bloquerait incorrectement les futurs logins.
 
 La session est restaurée au rechargement de page via `GET /api/auth/me` dans `App.jsx` — si le cookie `JSESSIONID` est encore valide, l'utilisateur n'a pas à se reconnecter.
