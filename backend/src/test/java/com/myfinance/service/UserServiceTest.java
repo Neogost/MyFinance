@@ -30,6 +30,7 @@ class UserServiceTest {
 
     @Mock UserRepository                  userRepository;
     @Mock PasswordEncoder                 passwordEncoder;
+    @Mock PasswordPolicyService           passwordPolicyService;
     @Mock FamilyGroupRepository           familyGroupRepository;
     @Mock FamilyGroupInvitationRepository familyGroupInvitationRepository;
     @Mock PortfolioSnapshotRepository     portfolioSnapshotRepository;

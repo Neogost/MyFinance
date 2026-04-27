@@ -58,7 +58,7 @@ class UserRegistrationControllerTest {
     @Test
     void register_avecCorpsValide_retourne202AvecMessageGenerique() throws Exception {
         CreateRegistrationRequest request = new CreateRegistrationRequest(
-                "jean.dupont", "Jean", "Dupont", "Password1");
+                "jean.dupont", "Jean", "Dupont", "Secure123!Pass");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -85,7 +85,7 @@ class UserRegistrationControllerTest {
     @Test
     void register_loginDejaUtilise_retourneAussi202_pourEmpecherEnumeration() throws Exception {
         CreateRegistrationRequest request = new CreateRegistrationRequest(
-                "jean.dupont", "Jean", "Dupont", "Password1");
+                "jean.dupont", "Jean", "Dupont", "Secure123!Pass");
         // Le service no-op silencieusement en cas de doublon — pas d'exception levée
         // (cf. UserRegistrationServiceTest.create_ignoreSilencieusement_*)
 

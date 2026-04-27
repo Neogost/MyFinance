@@ -9,10 +9,11 @@ const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm o
 const labelCls = 'text-sm font-semibold text-gray-700'
 
 const PASSWORD_RULES = [
-  { test: p => p.length >= 8,   label: '8 caractères minimum' },
-  { test: p => /[A-Z]/.test(p), label: 'Une majuscule' },
-  { test: p => /[a-z]/.test(p), label: 'Une minuscule' },
-  { test: p => /\d/.test(p),    label: 'Un chiffre' },
+  { test: p => p.length >= 12,        label: '12 caractères minimum' },
+  { test: p => /[A-Z]/.test(p),       label: 'Une majuscule' },
+  { test: p => /[a-z]/.test(p),       label: 'Une minuscule' },
+  { test: p => /\d/.test(p),          label: 'Un chiffre' },
+  { test: p => /[^A-Za-z0-9]/.test(p), label: 'Un caractère spécial' },
 ]
 
 function PasswordHints({ password }) {

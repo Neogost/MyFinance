@@ -26,6 +26,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository                 userRepository;
     private final PasswordEncoder                passwordEncoder;
+    private final PasswordPolicyService          passwordPolicyService;
     private final FamilyGroupRepository          familyGroupRepository;
     private final FamilyGroupInvitationRepository familyGroupInvitationRepository;
     private final PortfolioSnapshotRepository    portfolioSnapshotRepository;
@@ -82,6 +83,10 @@ public class UserService implements UserDetailsService {
                     "Ce login est déjà utilisé : " + request.login());
         }
 
+        passwordPolicyService.validateNotCommon(request.password());
+        passwordPolicyService.validateNotContainsIdentity(
+                request.password(), request.login(), request.firstName(), request.lastName());
+
         validerProfilFiscal(request.useFlatRateDeduction(), request.customProfessionalDeduction());
 
         User user = User.builder()
@@ -126,6 +131,9 @@ public class UserService implements UserDetailsService {
         user.setRole(request.role());
 
         if (request.password() != null && !request.password().isBlank()) {
+            passwordPolicyService.validateNotCommon(request.password());
+            passwordPolicyService.validateNotContainsIdentity(
+                    request.password(), request.login(), request.firstName(), request.lastName());
             user.setPassword(passwordEncoder.encode(request.password()));
         }
 
@@ -161,6 +169,11 @@ public class UserService implements UserDetailsService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                     "Mot de passe actuel incorrect");
         }
+
+        passwordPolicyService.validateNotSameAsCurrent(request.newPassword(), user.getPassword());
+        passwordPolicyService.validateNotCommon(request.newPassword());
+        passwordPolicyService.validateNotContainsIdentity(
+                request.newPassword(), user.getLogin(), user.getFirstName(), user.getLastName());
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);

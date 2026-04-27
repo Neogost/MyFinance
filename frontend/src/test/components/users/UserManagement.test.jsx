@@ -118,7 +118,7 @@ describe('UserForm', () => {
     render(<UserForm onSubmit={vi.fn()} onCancel={vi.fn()} />)
     // labels sans htmlFor → on cible l'input par name
     fireEvent.change(document.querySelector('[name="password"]'), { target: { value: 'test' } })
-    expect(screen.getByText('8 caractères minimum')).toBeInTheDocument()
+    expect(screen.getByText('12 caractères minimum')).toBeInTheDocument()
     expect(screen.getByText('Une majuscule')).toBeInTheDocument()
   })
 
@@ -129,7 +129,7 @@ describe('UserForm', () => {
     fireEvent.change(document.querySelector('[name="firstName"]'), { target: { value: 'Alice' } })
     fireEvent.change(document.querySelector('[name="lastName"]'),  { target: { value: 'Martin' } })
     fireEvent.change(document.querySelector('[name="login"]'),     { target: { value: 'alice.martin' } })
-    fireEvent.change(document.querySelector('[name="password"]'),  { target: { value: 'ValidPass1' } })
+    fireEvent.change(document.querySelector('[name="password"]'),  { target: { value: 'ValidPassword123!' } })
     fireEvent.submit(document.querySelector('form'))
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({

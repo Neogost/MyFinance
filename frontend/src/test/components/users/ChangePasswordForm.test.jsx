@@ -44,16 +44,16 @@ describe('ChangePasswordForm', () => {
   it('affiche les indicateurs de règles en saisissant un mot de passe', () => {
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
     fireEvent.change(document.querySelector('[name="newPassword"]'), { target: { name: 'newPassword', value: 'ab' } })
-    expect(screen.getByText('8 caractères minimum')).toBeInTheDocument()
+    expect(screen.getByText('12 caractères minimum')).toBeInTheDocument()
     expect(screen.getByText('Une majuscule')).toBeInTheDocument()
   })
 
   it('coche les règles respectées', () => {
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fireEvent.change(document.querySelector('[name="newPassword"]'), { target: { name: 'newPassword', value: 'Abcdefg1' } })
+    fireEvent.change(document.querySelector('[name="newPassword"]'), { target: { name: 'newPassword', value: 'Abcdefgh123!' } })
     const items = screen.getAllByRole('listitem')
     // Toutes les 4 règles doivent être cochées (✓)
-    expect(items.filter(li => li.textContent.includes('✓'))).toHaveLength(4)
+    expect(items.filter(li => li.textContent.includes('✓'))).toHaveLength(5)
   })
 
   // ── Validations front ─────────────────────────────────────
@@ -70,7 +70,7 @@ describe('ChangePasswordForm', () => {
 
   it('affiche une erreur si les mots de passe ne correspondent pas', async () => {
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('ancienMdp', 'NewPass1', 'NewPass2')
+    fill('ancienMdp', 'NewPassword123!', 'NewPassword999!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => {
       expect(screen.getByText(/ne correspondent pas/i)).toBeInTheDocument()
@@ -83,17 +83,17 @@ describe('ChangePasswordForm', () => {
   it('appelle changePassword avec les bons paramètres', async () => {
     changePassword.mockResolvedValue()
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('ancienMdp', 'NewPass1', 'NewPass1')
+    fill('ancienMdp', 'NewPassword123!', 'NewPassword123!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => {
-      expect(changePassword).toHaveBeenCalledWith({ currentPassword: 'ancienMdp', newPassword: 'NewPass1' })
+      expect(changePassword).toHaveBeenCalledWith({ currentPassword: 'ancienMdp', newPassword: 'NewPassword123!' })
     })
   })
 
   it('affiche le message de succès après changement réussi', async () => {
     changePassword.mockResolvedValue()
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('ancienMdp', 'NewPass1', 'NewPass1')
+    fill('ancienMdp', 'NewPassword123!', 'NewPassword123!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => {
       expect(screen.getByText(/Mot de passe modifié avec succès/i)).toBeInTheDocument()
@@ -103,7 +103,7 @@ describe('ChangePasswordForm', () => {
   it('vide les champs après changement réussi', async () => {
     changePassword.mockResolvedValue()
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('ancienMdp', 'NewPass1', 'NewPass1')
+    fill('ancienMdp', 'NewPassword123!', 'NewPassword123!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => expect(screen.getByText(/succès/i)).toBeInTheDocument())
     expect(document.querySelector('[name="currentPassword"]').value).toBe('')
@@ -112,7 +112,7 @@ describe('ChangePasswordForm', () => {
   it('affiche "Mot de passe actuel incorrect" sur erreur 401', async () => {
     changePassword.mockRejectedValue({ response: { status: 401 } })
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('mauvaisMdp', 'NewPass1', 'NewPass1')
+    fill('mauvaisMdp', 'NewPassword123!', 'NewPassword123!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => {
       expect(screen.getByText('Mot de passe actuel incorrect.')).toBeInTheDocument()
@@ -122,7 +122,7 @@ describe('ChangePasswordForm', () => {
   it('affiche une erreur générique sur erreur non-401', async () => {
     changePassword.mockRejectedValue({ response: { status: 500 } })
     render(<ChangePasswordForm user={USER} onGroupChange={vi.fn()} onUserUpdate={vi.fn()} />)
-    fill('ancienMdp', 'NewPass1', 'NewPass1')
+    fill('ancienMdp', 'NewPassword123!', 'NewPassword123!')
     fireEvent.submit(screen.getByRole('button', { name: /Changer le mot de passe/i }).closest('form'))
     await waitFor(() => {
       expect(screen.getByText('Une erreur est survenue.')).toBeInTheDocument()

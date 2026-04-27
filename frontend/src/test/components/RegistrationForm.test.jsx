@@ -38,14 +38,14 @@ describe('RegistrationForm', () => {
 
   it("n'affiche pas l'indicateur tant que le mot de passe est vide", () => {
     render(<RegistrationForm onBack={onBack} />)
-    expect(screen.queryByText('8 caractères minimum')).not.toBeInTheDocument()
+    expect(screen.queryByText('12 caractères minimum')).not.toBeInTheDocument()
   })
 
   it('affiche les règles de mot de passe dès la première saisie', () => {
     render(<RegistrationForm onBack={onBack} />)
     const [passwordInput] = screen.getAllByPlaceholderText('••••••••')
     fireEvent.change(passwordInput, { target: { value: 'a' } })
-    expect(screen.getByText('8 caractères minimum')).toBeInTheDocument()
+    expect(screen.getByText('12 caractères minimum')).toBeInTheDocument()
     expect(screen.getByText('Une majuscule')).toBeInTheDocument()
     expect(screen.getByText('Un chiffre')).toBeInTheDocument()
   })
@@ -53,10 +53,10 @@ describe('RegistrationForm', () => {
   it('valide toutes les règles avec un mot de passe fort', () => {
     render(<RegistrationForm onBack={onBack} />)
     const [passwordInput] = screen.getAllByPlaceholderText('••••••••')
-    fireEvent.change(passwordInput, { target: { value: 'MonMdp1!' } })
+    fireEvent.change(passwordInput, { target: { value: 'MonMdpRobuste123!' } })
 
     const checks = screen.getAllByText('✓')
-    expect(checks.length).toBe(4)
+    expect(checks.length).toBe(5)
   })
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ describe('RegistrationForm', () => {
     render(<RegistrationForm onBack={onBack} />)
 
     const passwords = screen.getAllByPlaceholderText('••••••••')
-    fireEvent.change(passwords[0], { target: { value: 'MonMdp1!' } })
+    fireEvent.change(passwords[0], { target: { value: 'MonMdpRobuste123!' } })
     fireEvent.change(passwords[1], { target: { value: 'Diff1234!' } })
 
     fireEvent.submit(document.querySelector('form'))
@@ -101,14 +101,14 @@ describe('RegistrationForm', () => {
     fireEvent.change(screen.getByPlaceholderText('Dupont'),       { target: { value: 'Dupont' } })
     fireEvent.change(screen.getByPlaceholderText('jean.dupont'),  { target: { value: 'jean.dupont' } })
     const passwords = screen.getAllByPlaceholderText('••••••••')
-    fireEvent.change(passwords[0], { target: { value: 'MonMdp1!' } })
-    fireEvent.change(passwords[1], { target: { value: 'MonMdp1!' } })
+    fireEvent.change(passwords[0], { target: { value: 'MonMdpRobuste123!' } })
+    fireEvent.change(passwords[1], { target: { value: 'MonMdpRobuste123!' } })
 
     fireEvent.submit(document.querySelector('form'))
 
     await waitFor(() => {
       expect(submitRegistration).toHaveBeenCalledWith({
-        login: 'jean.dupont', firstName: 'Jean', lastName: 'Dupont', password: 'MonMdp1!',
+        login: 'jean.dupont', firstName: 'Jean', lastName: 'Dupont', password: 'MonMdpRobuste123!',
       })
     })
   })
@@ -121,8 +121,8 @@ describe('RegistrationForm', () => {
     fireEvent.change(screen.getByPlaceholderText('Jean'),        { target: { value: 'Jean' } })
     fireEvent.change(screen.getByPlaceholderText('Dupont'),      { target: { value: 'Dupont' } })
     fireEvent.change(screen.getByPlaceholderText('jean.dupont'), { target: { value: 'j.d' } })
-    fireEvent.change(passwords[0], { target: { value: 'MonMdp1!' } })
-    fireEvent.change(passwords[1], { target: { value: 'MonMdp1!' } })
+    fireEvent.change(passwords[0], { target: { value: 'MonMdpRobuste123!' } })
+    fireEvent.change(passwords[1], { target: { value: 'MonMdpRobuste123!' } })
 
     fireEvent.submit(document.querySelector('form'))
 
@@ -141,8 +141,8 @@ describe('RegistrationForm', () => {
     fireEvent.change(screen.getByPlaceholderText('Jean'),        { target: { value: 'Jean' } })
     fireEvent.change(screen.getByPlaceholderText('Dupont'),      { target: { value: 'Dupont' } })
     fireEvent.change(screen.getByPlaceholderText('jean.dupont'), { target: { value: 'jean' } })
-    fireEvent.change(passwords[0], { target: { value: 'MonMdp1!' } })
-    fireEvent.change(passwords[1], { target: { value: 'MonMdp1!' } })
+    fireEvent.change(passwords[0], { target: { value: 'MonMdpRobuste123!' } })
+    fireEvent.change(passwords[1], { target: { value: 'MonMdpRobuste123!' } })
 
     fireEvent.submit(document.querySelector('form'))
 

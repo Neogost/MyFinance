@@ -103,7 +103,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void create_avecCorpsValide_retourne201() throws Exception {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "Password1", RoleEnum.USER, null, null, null);
+                "Jean", "Dupont", null, "jean.dupont", "Secure123!Pass", RoleEnum.USER, null, null, null);
 
         when(userService.create(any(CreateUserRequest.class))).thenReturn(userDto);
 
@@ -131,7 +131,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void create_loginDejaUtilise_retourne409() throws Exception {
         CreateUserRequest request = new CreateUserRequest(
-                "Jean", "Dupont", null, "jean.dupont", "Password1", RoleEnum.USER, null, null, null);
+                "Jean", "Dupont", null, "jean.dupont", "Secure123!Pass", RoleEnum.USER, null, null, null);
 
         when(userService.create(any(CreateUserRequest.class)))
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT));

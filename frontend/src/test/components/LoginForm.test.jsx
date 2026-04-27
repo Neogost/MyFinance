@@ -63,11 +63,11 @@ describe('LoginForm', () => {
     render(<LoginForm onSuccess={onSuccess} />)
 
     fireEvent.change(screen.getByLabelText('Identifiant'), { target: { value: 'jean.dupont' } })
-    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'MonMdp1' } })
+    fireEvent.change(screen.getByLabelText('Mot de passe'), { target: { value: 'MonMdpRobuste123!' } })
     fireEvent.click(screen.getByRole('button', { name: 'Se connecter' }))
 
     await waitFor(() => {
-      expect(login).toHaveBeenCalledWith('jean.dupont', 'MonMdp1')
+      expect(login).toHaveBeenCalledWith('jean.dupont', 'MonMdpRobuste123!')
       expect(onSuccess).toHaveBeenCalledWith(user)
     })
   })

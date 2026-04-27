@@ -31,6 +31,7 @@ class UserRegistrationServiceTest {
     @Mock UserRegistrationRequestRepository registrationRepository;
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock PasswordPolicyService passwordPolicyService;
     @InjectMocks UserRegistrationService service;
 
     UserRegistrationRequest pendingRequest;
@@ -38,7 +39,7 @@ class UserRegistrationServiceTest {
 
     @BeforeEach
     void setUp() {
-        validRequest = new CreateRegistrationRequest("jean.dupont", "Jean", "Dupont", "Password1");
+        validRequest = new CreateRegistrationRequest("jean.dupont", "Jean", "Dupont", "Secure123!Pass");
 
         pendingRequest = UserRegistrationRequest.builder()
                 .id(1L)
@@ -57,25 +58,25 @@ class UserRegistrationServiceTest {
     void create_sauvegardeLaDemandeAvecStatutPending() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
         when(registrationRepository.existsByLoginAndStatus("jean.dupont", RegistrationStatus.PENDING)).thenReturn(false);
-        when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
+        when(passwordEncoder.encode("Secure123!Pass")).thenReturn("$2a$hashed");
         when(registrationRepository.save(any())).thenReturn(pendingRequest);
 
         service.create(validRequest);
 
-        verify(passwordEncoder).encode("Password1");
+        verify(passwordEncoder).encode("Secure123!Pass");
         verify(registrationRepository).save(any(UserRegistrationRequest.class));
     }
 
     @Test
     void create_ignoreSilencieusement_siLoginDejaUtiliseDansUsers() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.of(User.builder().build()));
-        when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
+        when(passwordEncoder.encode("Secure123!Pass")).thenReturn("$2a$hashed");
 
         // Pas d'exception : la méthode retourne normalement (anti-énumération)
         service.create(validRequest);
 
         // Le hash est calculé même en cas de no-op (anti-timing attack)
-        verify(passwordEncoder).encode("Password1");
+        verify(passwordEncoder).encode("Secure123!Pass");
         // Mais aucune entrée n'est persistée
         verify(registrationRepository, never()).save(any());
     }
@@ -84,11 +85,11 @@ class UserRegistrationServiceTest {
     void create_ignoreSilencieusement_siDemandePendingExistante() {
         when(userRepository.findByLogin("jean.dupont")).thenReturn(Optional.empty());
         when(registrationRepository.existsByLoginAndStatus("jean.dupont", RegistrationStatus.PENDING)).thenReturn(true);
-        when(passwordEncoder.encode("Password1")).thenReturn("$2a$hashed");
+        when(passwordEncoder.encode("Secure123!Pass")).thenReturn("$2a$hashed");
 
         service.create(validRequest);
 
-        verify(passwordEncoder).encode("Password1");
+        verify(passwordEncoder).encode("Secure123!Pass");
         verify(registrationRepository, never()).save(any());
     }
 

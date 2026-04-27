@@ -26,6 +26,7 @@ public class UserRegistrationService {
     private final UserRegistrationRequestRepository registrationRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicyService passwordPolicyService;
 
     // ── Soumission (public) ────────────────────────────────────
 
@@ -37,6 +38,13 @@ public class UserRegistrationService {
      * Les conflits sont logués côté serveur uniquement (admin peut investiguer si besoin).
      */
     public void create(CreateRegistrationRequest request) {
+        // Validation politique de mot de passe AVANT toute vérification de doublon :
+        // les règles policy sont publiques (mêmes pour tous), elles ne révèlent pas
+        // si le login existe déjà
+        passwordPolicyService.validateNotCommon(request.password());
+        passwordPolicyService.validateNotContainsIdentity(
+                request.password(), request.login(), request.firstName(), request.lastName());
+
         // Hash systématique pour égaliser le temps de réponse même en cas de no-op
         String hashedPassword = passwordEncoder.encode(request.password());
 
