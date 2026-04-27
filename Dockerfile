@@ -26,7 +26,7 @@ RUN ./mvnw clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-COPY --from=backend-builder /app/target/myFinance-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=backend-builder /app/target/myFinance-*.jar app.jar
 
 RUN mkdir -p /data /logs
 
