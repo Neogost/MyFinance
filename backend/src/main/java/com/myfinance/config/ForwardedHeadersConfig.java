@@ -13,9 +13,8 @@ import org.springframework.context.annotation.Profile;
  * `request.getRemoteAddr()` avec la vraie IP du client final, ainsi que le scheme via
  * `X-Forwarded-Proto`.
  *
- * Sans cette config, toutes les requêtes paraissent provenir de l'IP du proxy
- * (ex : 172.29.0.1 dans le bridge Docker QNAP), ce qui rend l'historique de connexion
- * et le rate-limit IP totalement inopérants.
+ * Sans cette config, toutes les requêtes paraissent provenir de l'IP du proxy, ce qui 
+ * rend l'historique de connexion et le rate-limit IP totalement inopérants.
  *
  * Sécurité : par défaut RemoteIpValve ne fait confiance qu'aux IPs internes RFC 1918
  * (10/8, 172.16/12, 192.168/16) et loopback. Comme le conteneur Spring n'est pas exposé
