@@ -406,7 +406,7 @@ if (showRegister) {
 | Durée de vie | 4 heures | `application.properties` (gitignored, à maintenir manuellement) |
 | Cookie `HttpOnly` | `true` | `application.properties` |
 | Cookie `SameSite` | `Strict` | `application.properties` |
-| Cookie `Secure` | `true` en prod | `application-prod.properties` (et `X-Forwarded-Proto` en docker via `ForwardedHeadersConfig`) |
+| Cookie `Secure` | `true` en prod et docker | `application-prod.properties` + `SessionCookieSecurityConfig` (force programmatiquement `Secure=true` en docker/prod, prend le pas sur la propriété `application-docker.properties`) |
 | Sessions concurrentes | 1 par utilisateur | `SecurityConfig` (`maximumSessions(1).maxSessionsPreventsLogin(false)`) |
 
 ### Concurrence des sessions
