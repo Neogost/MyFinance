@@ -179,14 +179,19 @@ class FamilyGroupControllerTest {
 
     @Test
     @WithMockCustomUser
-    void sendInvitation_retourne201() throws Exception {
-        when(familyGroupService.sendInvitation(any(), any())).thenReturn(invitationDto);
+    void sendInvitation_retourne202AvecMessageGenerique() throws Exception {
+        // M15 : retour 202 + message générique, identique pour tous les cas
+        // (login existant, login inconnu, owner s'invitant, déjà invité).
+        // L'owner consulte ensuite GET /api/family-groups/my pour voir l'invitation.
 
         mockMvc.perform(post("/api/family-groups/my/invitations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new SendInvitationRequest("marc"))))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.message").exists())
+                // Pas d'info sur l'existence du login (anti-énumération)
+                .andExpect(jsonPath("$.status").doesNotExist())
+                .andExpect(jsonPath("$.invitedUser").doesNotExist());
     }
 
     @Test

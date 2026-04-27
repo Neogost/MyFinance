@@ -84,13 +84,17 @@ public class FamilyGroupController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Envoyer une invitation")
+    @Operation(summary = "Envoyer une invitation",
+            description = "Réponse identique quel que soit l'état du login (existant, non-existant, déjà invité, "
+                        + "owner s'invitant lui-même) pour empêcher l'énumération de comptes. "
+                        + "L'owner consulte ensuite GET /api/family-groups/my pour vérifier que l'invitation a bien été créée.")
     @PostMapping("/my/invitations")
-    public ResponseEntity<FamilyGroupInvitationDto> sendInvitation(
+    public ResponseEntity<java.util.Map<String, String>> sendInvitation(
             @Valid @RequestBody SendInvitationRequest request,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(familyGroupService.sendInvitation(request, user));
+        familyGroupService.sendInvitation(request, user);
+        return ResponseEntity.accepted().body(java.util.Map.of(
+                "message", "Si l'utilisateur existe et n'a pas déjà été invité, il recevra l'invitation."));
     }
 
     @Operation(summary = "Invitations reçues en attente")

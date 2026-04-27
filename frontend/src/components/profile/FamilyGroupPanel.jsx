@@ -14,6 +14,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
   const [createName,  setCreateName]  = useState('')
   const [renameName,  setRenameName]  = useState('')
   const [inviteLogin, setInviteLogin] = useState('')
+  const [inviteInfo,  setInviteInfo]  = useState(null)
   const [showRename,  setShowRename]  = useState(false)
   const [saving,      setSaving]      = useState(false)
 
@@ -108,10 +109,16 @@ export default function FamilyGroupPanel({ onGroupChange }) {
     e.preventDefault()
     setSaving(true)
     setError(null)
+    setInviteInfo(null)
     try {
-      const inv = await sendInvitation({ login: inviteLogin })
-      setGroup(g => ({ ...g, invitations: [...(g.invitations || []), inv] }))
+      // Anti-énumération (M15) : le backend renvoie 202 + message générique sans
+      // confirmer l'existence du login. On re-fetch le groupe pour vérifier si
+      // l'invitation a réellement été créée (visible dans group.invitations).
+      await sendInvitation({ login: inviteLogin })
+      const refreshed = await getMyGroup()
+      setGroup(refreshed)
       setInviteLogin('')
+      setInviteInfo('Si l\'utilisateur existe et n\'a pas déjà été invité, il recevra l\'invitation.')
     } catch (err) {
       const msg = err.response?.data?.message
       setError(msg || 'Impossible d\'envoyer l\'invitation.')
@@ -152,6 +159,10 @@ export default function FamilyGroupPanel({ onGroupChange }) {
 
       {error && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+      )}
+
+      {inviteInfo && !error && (
+        <p className="text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">{inviteInfo}</p>
       )}
 
       {/* ── Invitations reçues ── */}

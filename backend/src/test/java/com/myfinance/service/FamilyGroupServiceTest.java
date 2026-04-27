@@ -216,32 +216,34 @@ class FamilyGroupServiceTest {
                         .isEqualTo(HttpStatus.BAD_REQUEST));
     }
 
+    // M15 — anti-énumération : login owner, login inconnu, déjà PENDING → no-op silencieux
+    // (pas d'exception). L'owner ne peut pas distinguer les cas par la réponse.
+
     @Test
-    void sendInvitation_suiMeme_leve400() {
+    void sendInvitation_suiMeme_noOpSilencieux() {
         when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("kevin")).thenReturn(Optional.of(owner));
 
-        assertThatThrownBy(() -> familyGroupService.sendInvitation(
-                new SendInvitationRequest("kevin"), owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
+        // Pas d'exception — comportement no-op
+        familyGroupService.sendInvitation(new SendInvitationRequest("kevin"), owner);
+
+        verify(invitationRepository, never()).save(any());
     }
 
     @Test
-    void sendInvitation_leve404_siLoginInconnu() {
+    void sendInvitation_loginInconnu_noOpSilencieux() {
         when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("inconnu")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> familyGroupService.sendInvitation(
-                new SendInvitationRequest("inconnu"), owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.NOT_FOUND));
+        familyGroupService.sendInvitation(new SendInvitationRequest("inconnu"), owner);
+
+        verify(invitationRepository, never()).save(any());
+        // findByGroupAndInvitedUserAndStatus ne doit même pas être consulté (sortie tôt)
+        verify(invitationRepository, never()).findByGroupAndInvitedUserAndStatus(any(), any(), any());
     }
 
     @Test
-    void sendInvitation_leve400_siDejaUnePendingExistante() {
+    void sendInvitation_dejaUnePendingExistante_noOpSilencieux() {
         when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("marc")).thenReturn(Optional.of(outsider));
         FamilyGroupInvitation existante = FamilyGroupInvitation.builder()
@@ -250,15 +252,14 @@ class FamilyGroupServiceTest {
         when(invitationRepository.findByGroupAndInvitedUserAndStatus(group, outsider, InvitationStatus.PENDING))
                 .thenReturn(Optional.of(existante));
 
-        assertThatThrownBy(() -> familyGroupService.sendInvitation(
-                new SendInvitationRequest("marc"), owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
+        familyGroupService.sendInvitation(new SendInvitationRequest("marc"), owner);
+
+        // Pas de nouvelle invitation créée — l'ancienne PENDING reste en l'état
+        verify(invitationRepository, never()).save(any());
     }
 
     @Test
-    void sendInvitation_creeEtRetourneLInvitation() {
+    void sendInvitation_creeLInvitation_quandConditionsValides() {
         when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(userRepository.findByLogin("marc")).thenReturn(Optional.of(outsider));
         when(invitationRepository.findByGroupAndInvitedUserAndStatus(group, outsider, InvitationStatus.PENDING))
@@ -270,11 +271,10 @@ class FamilyGroupServiceTest {
                     .createdAt(i.getCreatedAt()).build();
         });
 
-        FamilyGroupInvitationDto dto = familyGroupService.sendInvitation(
-                new SendInvitationRequest("marc"), owner);
+        familyGroupService.sendInvitation(new SendInvitationRequest("marc"), owner);
 
-        assertThat(dto.status()).isEqualTo(InvitationStatus.PENDING);
-        assertThat(dto.invitedUser().login()).isEqualTo("marc");
+        // L'invitation est bien créée — vérifié via save() invoqué une fois
+        verify(invitationRepository).save(any());
     }
 
     // ── acceptInvitation ───────────────────────────────────────

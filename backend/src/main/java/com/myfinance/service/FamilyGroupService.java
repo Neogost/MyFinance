@@ -6,6 +6,7 @@ import com.myfinance.repository.FamilyGroupInvitationRepository;
 import com.myfinance.repository.FamilyGroupRepository;
 import com.myfinance.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +14,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FamilyGroupService {
@@ -163,23 +166,37 @@ public class FamilyGroupService {
 
     // ── Invitations ────────────────────────────────────────────
 
+    /**
+     * Envoie une invitation à rejoindre le groupe. Comportement anti-énumération (M15) :
+     * la réponse est identique quel que soit le résultat — login inexistant, owner s'invitant
+     * lui-même, invitation déjà en attente, ou création réelle. L'attaquant ne peut pas tester
+     * l'existence d'un login en observant le retour. Les conflits sont logués côté serveur
+     * uniquement (admin peut investiguer).
+     *
+     * Le retour est void — l'owner constate le succès en consultant `findMyGroup` (la nouvelle
+     * invitation apparaît dans la liste si elle a été créée).
+     */
     @Transactional
-    public FamilyGroupInvitationDto sendInvitation(SendInvitationRequest request, User owner) {
+    public void sendInvitation(SendInvitationRequest request, User owner) {
         FamilyGroup group = requireOwner(owner);
 
-        User target = userRepository.findByLogin(request.login())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Utilisateur introuvable : " + request.login()));
+        Optional<User> targetOpt = userRepository.findByLogin(request.login());
+        if (targetOpt.isEmpty()) {
+            log.warn("[system] Invitation ignorée — login inexistant: {}", request.login());
+            return;
+        }
+        User target = targetOpt.get();
 
         if (target.getId().equals(owner.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Vous ne pouvez pas vous inviter vous-même");
+            log.warn("[system] Invitation ignorée — owner #{} tente de s'inviter lui-même", owner.getId());
+            return;
         }
 
-        // Vérifier qu'il n'y a pas déjà une invitation PENDING
-        invitationRepository.findByGroupAndInvitedUserAndStatus(group, target, InvitationStatus.PENDING)
-                .ifPresent(inv -> { throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Une invitation est déjà en attente pour cet utilisateur"); });
+        if (invitationRepository.findByGroupAndInvitedUserAndStatus(group, target, InvitationStatus.PENDING).isPresent()) {
+            log.warn("[system] Invitation ignorée — déjà PENDING pour user #{} dans groupe #{}",
+                    target.getId(), group.getId());
+            return;
+        }
 
         FamilyGroupInvitation invitation = FamilyGroupInvitation.builder()
                 .group(group)
@@ -187,8 +204,8 @@ public class FamilyGroupService {
                 .status(InvitationStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .build();
-
-        return FamilyGroupInvitationDto.from(invitationRepository.save(invitation));
+        invitationRepository.save(invitation);
+        log.info("[system] Invitation envoyée — group #{}, target #{}", group.getId(), target.getId());
     }
 
     @Transactional
