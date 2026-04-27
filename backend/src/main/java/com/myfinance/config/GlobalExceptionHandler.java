@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
@@ -56,6 +57,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Accès refusé"));
+    }
+
+    // Ressource statique introuvable → 404 silencieux.
+    // Cas typique : navigateurs (iOS/Safari surtout) qui demandent automatiquement
+    // /apple-touch-icon-*.png, /favicon.ico, /robots.txt etc. Sans ce handler, le
+    // handler générique loggue en ERROR avec stack trace + renvoie 500, ce qui pollue
+    // les logs pour du bruit normal.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Void> handleNoResourceFound(NoResourceFoundException ex) {
+        return ResponseEntity.notFound().build();
     }
 
     // Exception non typée : toujours ERROR avec stack trace
