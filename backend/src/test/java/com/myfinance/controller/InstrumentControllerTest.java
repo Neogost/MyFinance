@@ -238,6 +238,51 @@ class InstrumentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // ── H2 : whitelist sur boursoramaSymbol ────────────────────
+
+    @Test
+    @WithMockUser
+    void create_boursoramaSymbolAvecPathTraversal_retourne400() throws Exception {
+        // Tentative d'injection : caractères / et .. (path traversal vers une autre URL)
+        com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false,
+                "1rTESE/../../malicious.example.com");
+
+        mockMvc.perform(post("/api/instruments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void create_boursoramaSymbolAvecCharactereSpecial_retourne400() throws Exception {
+        // % et ? sont aussi des caractères dangereux pour une URL
+        com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false,
+                "1rTESE?evil=true");
+
+        mockMvc.perform(post("/api/instruments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void create_boursoramaSymbolValide_retourne201() throws Exception {
+        // Symbole conforme à la whitelist (lettres + chiffres + . - _) → OK
+        com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "ETF Lyxor", "EUR", false,
+                "1rTESE");
+        when(instrumentService.create(any())).thenReturn(etfDto);
+
+        mockMvc.perform(post("/api/instruments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated());
+    }
+
     @Test
     @WithMockUser(roles = "USER")
     void update_asUser_retourne403() throws Exception {
