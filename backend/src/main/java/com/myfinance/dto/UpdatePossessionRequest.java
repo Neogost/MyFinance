@@ -5,15 +5,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record UpdatePossessionRequest(
         @NotNull PossessionCategoryEnum category,
-        @NotBlank String label,
+        @NotBlank @Size(max = 200) String label,
         @NotNull @Positive BigDecimal purchasePrice,
         @NotNull @PastOrPresent LocalDate purchaseDate,
         BigDecimal estimatedCurrentValue,
-        String notes
+        @Size(max = 2000) String notes
 ) {}

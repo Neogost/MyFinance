@@ -4,12 +4,13 @@ import com.myfinance.domain.OtherIncomeTypeEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
 public record UpdateOtherIncomeRequest(
         @NotNull OtherIncomeTypeEnum type,
-        @NotBlank String label,
+        @NotBlank @Size(max = 200) String label,
         @NotNull @Positive Float amount,
         @NotNull LocalDate date,
         Boolean isTaxable,      // null → true par défaut dans le service

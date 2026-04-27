@@ -4,14 +4,15 @@ import com.myfinance.domain.DebtTypeEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record UpdateDebtRequest(
         @NotNull DebtTypeEnum type,
-        @NotBlank String label,
-        String lender,
+        @NotBlank @Size(max = 200) String label,
+        @Size(max = 200) String lender,
         LocalDate startDate,
         LocalDate endDate,
         @NotNull @Positive BigDecimal initialCapital,
@@ -19,6 +20,6 @@ public record UpdateDebtRequest(
         BigDecimal insuranceRate,
         BigDecimal monthlyPayment,
         BigDecimal remainingCapitalOverride,
-        String currency,
+        @Size(min = 3, max = 3) String currency,
         Long positionId
 ) {}

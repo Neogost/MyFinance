@@ -8,11 +8,11 @@ import java.time.LocalDate;
 
 public record UpdateRecurringExpenseRequest(
         @NotNull ExpenseCategoryEnum category,
-        @NotBlank String label,
+        @NotBlank @Size(max = 200) String label,
         @NotNull @Positive Float amount,
         @NotNull FrequencyEnum frequency,
         @NotNull @DecimalMin("0.01") @DecimalMax("100.0") Float sharePercentage,
         LocalDate startDate,
         LocalDate endDate,
-        String notes
+        @Size(max = 2000) String notes
 ) {}
