@@ -75,7 +75,9 @@ public class InstrumentController {
     /** PUT /api/instruments/prices — mise à jour groupée des cours (ADMIN) */
     @PutMapping("/prices")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<InstrumentDto> updatePrices(@Valid @RequestBody List<UpdateInstrumentPriceRequest> requests) {
+    public List<InstrumentDto> updatePrices(
+            @Size(max = 500, message = "Au maximum 500 instruments par mise à jour")
+            @Valid @RequestBody List<UpdateInstrumentPriceRequest> requests) {
         return instrumentService.updatePrices(requests);
     }
 
