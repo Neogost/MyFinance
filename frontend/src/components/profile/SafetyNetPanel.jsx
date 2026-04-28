@@ -6,6 +6,20 @@ import { computeSafetyNetTarget } from '../../utils/safetyNet'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
+function FieldTooltip({ text }) {
+  return (
+    <span className="relative group ml-1.5 cursor-help inline-flex items-center">
+      <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 text-xs text-white bg-gray-800 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20 shadow-lg leading-relaxed">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+      </span>
+    </span>
+  )
+}
+
 const MODES = [
   { value: 'MONTHS_EXPENSES', label: 'Mois de dépenses', hint: 'Couvre N mois de charges récurrentes' },
   { value: 'MONTHS_SALARY',   label: 'Mois de salaire',  hint: 'Couvre N mois de salaire net' },
@@ -88,7 +102,10 @@ export default function SafetyNetPanel({ user, onUpdate }) {
 
       {/* Sélecteur de mode */}
       <div className="flex flex-col gap-2 mb-5">
-        <label className="text-sm font-semibold text-gray-700">Mode de calcul</label>
+        <label className="text-sm font-semibold text-gray-700 flex items-center">
+          Mode de calcul
+          <FieldTooltip text="Détermine comment l'objectif de matelas est calculé. Il est comparé à la somme de vos Livrets et Liquidités dans le widget Matelas de sécurité (tableau de bord), le simulateur de crise et le score patrimonial (axe Matelas)." />
+        </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {MODES.map(m => (
             <button key={m.value}
@@ -114,7 +131,10 @@ export default function SafetyNetPanel({ user, onUpdate }) {
       {/* Champ conditionnel */}
       {(mode === 'MONTHS_EXPENSES' || mode === 'MONTHS_SALARY') && (
         <div className="flex flex-col gap-1.5 mb-5">
-          <label className="text-sm font-semibold text-gray-700">Nombre de mois</label>
+          <label className="text-sm font-semibold text-gray-700 flex items-center">
+            Nombre de mois
+            <FieldTooltip text="Multiplié par votre référence mensuelle (dépenses ou salaire net) pour calculer l'objectif. La règle courante est 3 à 6 mois. Affiché dans le widget Matelas de sécurité et le simulateur de crise." />
+          </label>
           <div className="relative w-40">
             <input
               type="number" min="1" step="0.5"
@@ -130,7 +150,10 @@ export default function SafetyNetPanel({ user, onUpdate }) {
 
       {mode === 'FIXED_AMOUNT' && (
         <div className="flex flex-col gap-1.5 mb-5">
-          <label className="text-sm font-semibold text-gray-700">Montant cible</label>
+          <label className="text-sm font-semibold text-gray-700 flex items-center">
+            Montant cible
+            <FieldTooltip text="Seuil fixe comparé à la somme de vos Livrets + Liquidités. Affiché dans le widget Matelas de sécurité (tableau de bord) et utilisé dans le simulateur de crise pour évaluer votre résilience financière." />
+          </label>
           <div className="relative w-52">
             <input
               type="number" min="0" step="500"

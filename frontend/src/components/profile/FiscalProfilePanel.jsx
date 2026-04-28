@@ -21,6 +21,20 @@ function AmountInput({ value, onChange, placeholder = 'ex : 500' }) {
   )
 }
 
+function FieldTooltip({ text }) {
+  return (
+    <span className="relative group ml-1.5 cursor-help inline-flex items-center">
+      <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 text-xs text-white bg-gray-800 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20 shadow-lg leading-relaxed">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+      </span>
+    </span>
+  )
+}
+
 function ExpenseRow({ label, hint, amount, children }) {
   return (
     <div className="flex flex-col gap-2 py-4 border-b border-gray-100 last:border-0 last:pb-0 first:pt-0">
@@ -191,7 +205,10 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
 
       {/* Parts fiscales */}
       <div className="flex flex-col gap-1.5 mb-5">
-        <label className="text-sm font-semibold text-gray-700">Nombre de parts fiscales</label>
+        <label className="text-sm font-semibold text-gray-700 flex items-center">
+          Nombre de parts fiscales
+          <FieldTooltip text="Utilisé par le simulateur d'impôts et les projections de contrat salarial pour calculer votre impôt via le quotient familial. Influe sur le net d'impôt affiché dans le bilan financier, la déclaration de patrimoine et le score patrimonial (axe Capacité d'épargne)." />
+        </label>
         <div className="relative w-40">
           <input type="number" min="1" max="10" step="0.25" value={fiscalParts}
             onChange={e => { setFiscalParts(e.target.value); setSuccess(false) }}
@@ -203,7 +220,10 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
 
       {/* Mode de déduction */}
       <div className="flex flex-col gap-2 mb-6">
-        <label className="text-sm font-semibold text-gray-700">Déduction professionnelle</label>
+        <label className="text-sm font-semibold text-gray-700 flex items-center">
+          Déduction professionnelle
+          <FieldTooltip text="Réduit le revenu imposable avant application du barème. L'abattement forfaitaire 10 % est appliqué automatiquement ; les frais réels remplacent ce forfait si leur total est supérieur. Le choix impacte le net d'impôt sur vos contrats, le simulateur d'impôts et le bilan financier." />
+        </label>
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2.5 cursor-pointer">
             <input type="radio" checked={flatRate === true}
