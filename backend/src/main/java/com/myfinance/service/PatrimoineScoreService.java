@@ -90,26 +90,32 @@ public class PatrimoineScoreService {
             List<PositionDto> positions, InstrumentService.AllocationsBundle allocations) {
         int score = 0;
 
-        long countCat = valueByCategory.size();
+        // Liquidités exclues : elles ne reflètent pas la diversification des investissements
+        Map<String, Double> investMap = valueByCategory.entrySet().stream()
+                .filter(e -> !e.getKey().equals("LIQUIDITE"))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        double investTotal = investMap.values().stream().mapToDouble(Double::doubleValue).sum();
+
+        long countCat = investMap.size();
         if (countCat >= 4) score += 8;
         else if (countCat == 3) score += 4;
         else if (countCat == 2) score += 2;
 
         double maxPct = 0;
         String maxCat = null;
-        if (totalValue > 0) {
-            for (Map.Entry<String, Double> e : valueByCategory.entrySet()) {
-                double pct = e.getValue() / totalValue;
+        if (investTotal > 0) {
+            for (Map.Entry<String, Double> e : investMap.entrySet()) {
+                double pct = e.getValue() / investTotal;
                 if (pct > maxPct) { maxPct = pct; maxCat = e.getKey(); }
             }
             if (maxPct <= 0.60) score += 7;
         }
 
         long onTrack = 0;
-        if (!targets.isEmpty() && totalValue > 0) {
+        if (!targets.isEmpty() && investTotal > 0) {
             onTrack = targets.entrySet().stream()
                     .filter(e -> e.getValue() != null && e.getValue() > 0)
-                    .filter(e -> valueByCategory.getOrDefault(e.getKey(), 0.0) >= e.getValue() * 0.5)
+                    .filter(e -> investMap.getOrDefault(e.getKey(), 0.0) >= e.getValue() * 0.5)
                     .count();
             if (onTrack >= 3) score += 5;
             else if (onTrack >= 2) score += 3;
@@ -117,7 +123,7 @@ public class PatrimoineScoreService {
         }
 
         StringBuilder detail = new StringBuilder();
-        detail.append(String.format("%d catégorie(s) active(s) sur 6.", countCat));
+        detail.append(String.format("%d catégorie(s) d'investissement active(s) sur 5 (hors liquidités).", countCat));
         if (maxCat != null && maxPct > 0.60) {
             detail.append(String.format(" %s représente %.0f%% du total (seuil max 60%%).", maxCat, maxPct * 100));
         } else if (maxCat != null) {
