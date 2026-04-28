@@ -129,7 +129,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
   const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator'].includes(currentPage)
-  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations'].includes(currentPage)
+  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','performance'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
@@ -219,6 +219,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ['admin-family-groups',  'Regroupements familiaux',    0],
                       ['admin-instruments',    'Instruments financiers',     0],
                       ['admin-registrations',  "Demandes d'inscription",     pendingRegistrations],
+                      ['performance',          'Performance (en travaux)',   0],
                     ].map(([page, label, badge]) => (
                       <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
                         className={`w-full text-left px-4 py-2 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
@@ -363,6 +364,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Regroupements familiaux"   page="admin-family-groups" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
+                <MobileMenuItem label="Performance (en travaux)"  page="performance"         currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
               </>
             )}
 

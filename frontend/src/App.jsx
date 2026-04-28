@@ -14,6 +14,7 @@ import LoanSimulatorPage from './components/tools/LoanSimulatorPage'
 import PatrimoineDeclarationPage from './components/tools/PatrimoineDeclarationPage'
 import CrisisSimulatorPage from './components/tools/CrisisSimulatorPage'
 import LombardSimulatorPage from './components/tools/LombardSimulatorPage'
+import PerformancePage from './components/tools/PerformancePage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -214,6 +215,7 @@ export default function App() {
 
         {currentPage === 'crisis-simulator' && <CrisisSimulatorPage user={user} />}
         {currentPage === 'lombard-simulator' && <LombardSimulatorPage />}
+        {currentPage === 'performance'       && user.role === 'ADMIN' && <PerformancePage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 

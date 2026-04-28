@@ -146,9 +146,11 @@ frontend/src/
 - API patrimoine — instruments, positions, ordres : `docs/api/patrimoine-positions.md`
 - API patrimoine — snapshots et données marché : `docs/api/patrimoine-snapshots.md`
 - API patrimoine — outils (score, objectifs, référentiel INSEE) : `docs/api/patrimoine-outils.md`
+- Performance patrimoniale (TWR / MWR — *spécifié, non implémenté*) : `docs/architecture/patrimoine-performance.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
 - Bilan financier personnel (architecture) : `docs/architecture/tools/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/tools/compound-interest-simulator.md`
+- Simulateur de crédit Lombard (architecture) : `docs/architecture/tools/lombard-credit-simulator.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 - Historique des connexions (architecture) : `docs/architecture/login-history.md`
 - API historique des connexions : `docs/api/login-history.md`
@@ -421,6 +423,13 @@ frontend/src/
 | `DELETE` | `/api/admin/snapshots/{id}` | ADMIN | Supprimer un snapshot |
 | `GET` | `/api/admin/users/{userId}/positions` | ADMIN | Positions actives d'un utilisateur (pour le formulaire) |
 
+### Performance patrimoniale (TWR / MWR) — *en travaux, ADMIN only*
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/patrimoine/performance` | ADMIN | Performance globale (TWR + MWR) sur la période — params optionnels : `from`, `to`, `benchmarkRate` |
+| `GET` | `/api/patrimoine/performance/positions` | ADMIN | Performance de toutes les positions éligibles, triées par TWR décroissant |
+| `GET` | `/api/patrimoine/performance/positions/{id}` | ADMIN | Performance d'une position individuelle (ownership vérifié) |
+
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
 - Les controllers ne font que déléguer et retourner le `ResponseEntity` approprié
@@ -460,15 +469,18 @@ Le projet suit le **versionnage sémantique** (`MAJOR.MINOR.PATCH`).
 ```bash
 # 1. Mettre à jour backend/pom.xml : <version>1.2.1</version> → <version>1.3.0</version>
 
-# 2. Commiter
-git add backend/pom.xml
+# 2. Ajouter la nouvelle entrée au sommet de CHANGELOG.md (cf. docs/contributing/changelog-template.md)
+#    Le contenu est affiché aux utilisateurs via la modal "Notes de version" du pied de page.
+
+# 3. Commiter
+git add backend/pom.xml CHANGELOG.md
 git commit -m "chore(release): bump version to 1.3.0"
 
-# 3. Tagger et pousser
+# 4. Tagger et pousser
 git tag v1.3.0
 git push origin main && git push origin v1.3.0
 
-# 4. Déployer
+# 5. Déployer
 ./deploy.sh
 ```
 
@@ -476,6 +488,7 @@ git push origin main && git push origin v1.3.0
 - `backend/pom.xml` → `mvn package` → `META-INF/build-info.properties` (via goal `build-info` du `spring-boot-maven-plugin`)
 - `BuildProperties` bean Spring → `GET /api/version` → frontend
 - Affichage : footer desktop (toutes les pages) + bas du menu mobile
+- Bouton "Notes de version" à côté du numéro → ouvre la modal `ReleaseNotesModal` qui rend `CHANGELOG.md` (chargé via `?raw` Vite)
 
 **Règle :** le tag git et `<version>` dans `pom.xml` doivent toujours correspondre.
 Procédure complète : `docs/deployment/docker-deployment.md`
@@ -745,6 +758,43 @@ npm run dev
   - Teintes colorées adoucies en dark (indigo, violet, red, green, teal, orange, blue, emerald, amber, pink, purple)
   - Toggle lune/soleil dans la barre de navigation (desktop et mobile), à côté du bouton masquage des valeurs
   - État géré dans `App.jsx` (`useState` + `useEffect`), persisté en `localStorage`
+
+- **Simulateur de crédit Lombard** (`LombardSimulatorPage`) :
+  - Outil entièrement frontend — utilise `GET /api/positions?status=ACTIVE` pour pré-remplir le portefeuille collatéral
+  - 4 scénarios LTV : Prudent / Réaliste / Optimiste (par catégorie) + Personnalisé éditable via sliders
+  - Modes Capacité maximale ou Montant précis ; remboursement In fine ou Amortissable
+  - Effet de levier (réinvestissement) : gain net après PFU vs coût des intérêts, calcul du `breakEvenRate`
+  - Sensibilité aux variations EURIBOR (deltas −1 / 0 / +1 / +2 / +3 pts)
+  - Comparaison parallèle des 3 scénarios LTV (capacité, mensualité, marge avant margin call, faisabilité)
+  - Stress test couplé au levier : applique le drawdown BOURSE au capital réinvesti (effet boule de neige révélé en cas de margin call simultané) ; réutilise `crisisScenarios.js`
+  - Comparaison vente vs Lombard avec calcul d'impôt PFU et manque à gagner sur rendement attendu
+  - Graphiques : donut capacité par catégorie, ligne évolution du capital restant (tooltip enrichi), barres empilées intérêts/capital annuel
+  - Tooltips pédagogiques (`InfoTooltip` interne) sur tous les concepts : LTV, margin call, in fine/amortissable, PFU, effet de levier, stress test
+  - Pas de persistance V1 (entièrement en mémoire React)
+  - Documentation : `docs/architecture/tools/lombard-credit-simulator.md`
+
+- **Couverture de tests JaCoCo** :
+  - Plugin `jacoco-maven-plugin` 0.8.12 dans `backend/pom.xml`
+  - Exclusions : `dto/**`, `config/**`, `domain/**`, `MyFinanceApplication.class`
+  - Seuils : 70 % lignes / 60 % branches → build échoue si non atteint (couverture actuelle 80 % / 62 %)
+  - Rapport HTML : `target/site/jacoco/index.html` (généré automatiquement à `./mvnw test`)
+  - Plugin `maven-surefire-report-plugin` pour le rapport HTML d'exécution : `target/reports/surefire.html` (généré via `./mvnw surefire-report:report-only`)
+
+- **Performance patrimoniale (TWR / MWR)** — *en travaux, ADMIN only* :
+  - **Statut** : fonctionnalité accessible uniquement aux administrateurs (menu Admin → "Performance (en travaux)") tant que les limites structurelles ne sont pas levées. Bandeau orange "🚧 Fonctionnalité en cours de développement" affiché en permanence.
+  - **Backend** : `@PreAuthorize("hasRole('ADMIN')")` sur `PerformanceController` (toutes les routes)
+  - **Frontend** : route `currentPage === 'performance'` gardée par `user.role === 'ADMIN'` dans `App.jsx`
+  - Calcul du rendement annualisé sur les catégories BOURSE, CRYPTO, IMMO_PAPIER, LIVRET (LIQUIDITE et IMMO_PHYSIQUE exclus)
+  - **TWR** (Time-Weighted Return) via Modified Dietz entre snapshots + chaînage — neutralise l'effet des versements
+  - **MWR** (Money-Weighted Return) via XIRR Newton-Raphson + bissection — rendement réellement vécu
+  - Classes utilitaires stateless : `XirrSolver` et `TwrChainer` (package `service/math`)
+  - Série temporelle (timeSeries) pour le graphique TWR cumulé vs benchmark configurable (% annuel constant)
+  - Détail par catégorie (TWR + MWR + investi + valeur + gain + dividendes)
+  - Détail par position triées par TWR décroissant
+  - Endpoints : `GET /api/patrimoine/performance`, `/positions`, `/positions/{id}`
+  - Frontend : `PerformancePage` dans Outils → Performance (TWR / MWR), Recharts LineChart
+  - Tests : `XirrSolverTest` (6 cas), `TwrChainerTest` (7 cas), `PerformanceServiceTest` (9 cas), `PerformanceControllerTest` (10 cas) — total : 738 tests
+  - Documentation : `docs/architecture/patrimoine-performance.md`
 
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

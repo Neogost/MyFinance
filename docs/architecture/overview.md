@@ -284,6 +284,14 @@ Simule un emprunt garanti par le portefeuille de titres financiers (sans vente d
 
 → [`docs/architecture/tools/lombard-credit-simulator.md`](tools/lombard-credit-simulator.md)
 
+#### Performance patrimoniale (TWR / MWR) — *ADMIN only, en travaux*
+
+Calcul du rendement annualisé du patrimoine (hors `IMMO_PHYSIQUE` et `LIQUIDITE`) avec deux métriques complémentaires : **TWR** (performance pure de l'actif, via Modified Dietz entre snapshots) et **MWR / XIRR** (performance réellement vécue, Newton-Raphson). Page dédiée avec sélecteur de période (Globale / YTD / 1 / 3 / 5 ans), graphique TWR cumulé vs benchmark configurable, tableaux par catégorie et par position triées par TWR. Aucune nouvelle entité — réutilise `PositionOrder`, `PortfolioSnapshot` et `ExchangeRate`.
+
+**Restreint au rôle ADMIN** tant que les limites structurelles (catégorie mutable rétroactivement, granularité mensuelle, frais non tracés) ne sont pas levées. Bandeau orange "🚧 Fonctionnalité en cours de développement" en permanence sur la page.
+
+→ [`docs/architecture/patrimoine-performance.md`](patrimoine-performance.md)
+
 ---
 
 ### 3.9 Fonctionnalités d'administration
@@ -386,3 +394,4 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
 | Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |
 | Masquage des valeurs financières (blur, révélable au survol) | Implémenté |
+| Performance patrimoniale (TWR / MWR, page dédiée) | Implémenté — ADMIN only, en travaux |
