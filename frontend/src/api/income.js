@@ -7,6 +7,9 @@ export const createSalaryContract = (data)    => api.post('/api/salary-contracts
 export const updateSalaryContract = (id, data) => api.put(`/api/salary-contracts/${id}`, data).then(r => r.data)
 export const deleteSalaryContract = (id)      => api.delete(`/api/salary-contracts/${id}`)
 
+// Valeur du point d'indice fonction publique à une date donnée (pour l'aperçu en temps réel)
+export const getPublicPointValue  = (date)    => api.get('/api/salary-contracts/public/point-value', { params: { date } }).then(r => r.data.pointValue)
+
 // ── Bulletins de paie ──────────────────────────────────────────
 export const getPaySlips    = (contractId)          => api.get(`/api/salary-contracts/${contractId}/pay-slips`).then(r => r.data)
 export const createPaySlip  = (contractId, data)    => api.post(`/api/salary-contracts/${contractId}/pay-slips`, data).then(r => r.data)

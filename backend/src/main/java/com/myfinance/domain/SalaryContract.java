@@ -29,13 +29,24 @@ public class SalaryContract {
     // Nom de l'entreprise — nullable pour compatibilité avec les contrats existants
     private String companyName;
 
+    // Type de contrat — nullable pendant la migration douce (traité comme PRIVATE si null)
+    @Enumerated(EnumType.STRING)
+    private ContractTypeEnum contractType;
+
+    // PUBLIC uniquement : TITULAIRE ou CONTRACTUEL (détermine les cotisations)
+    @Enumerated(EnumType.STRING)
+    private PublicSubTypeEnum publicSubType;
+
+    // PUBLIC uniquement : indice majoré (le brut annuel en est déduit)
+    private Integer indiceMajore;
+
     @Column(nullable = false)
     private LocalDate startDate;
 
     // null = contrat en cours
     private LocalDate endDate;
 
-    @Column(nullable = false)
+    // PRIVATE : saisi par l'utilisateur. PUBLIC : calculé depuis indiceMajore × valeur du point (nullable)
     private Float annualGrossSalary;
 
     @Column(nullable = false)

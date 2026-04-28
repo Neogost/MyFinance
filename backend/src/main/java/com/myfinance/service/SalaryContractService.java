@@ -1,10 +1,8 @@
 package com.myfinance.service;
 
+import com.myfinance.config.PublicSectorParameters;
 import com.myfinance.config.TaxParameters;
-import com.myfinance.domain.RoleEnum;
-import com.myfinance.domain.SalaryContract;
-import com.myfinance.domain.SalaryRevision;
-import com.myfinance.domain.User;
+import com.myfinance.domain.*;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
@@ -26,11 +24,13 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SalaryContractService {
 
-    private final SalaryContractRepository salaryContractRepository;
-    private final ContractBenefitRepository contractBenefitRepository;
-    private final SalaryRevisionRepository salaryRevisionRepository;
-    private final TaxParameters taxParameters;
-    private final TaxSimulatorService taxSimulatorService;
+    private final SalaryContractRepository    salaryContractRepository;
+    private final ContractBenefitRepository   contractBenefitRepository;
+    private final SalaryRevisionRepository    salaryRevisionRepository;
+    private final TaxParameters               taxParameters;
+    private final PublicSectorParameters      publicSectorParameters;
+    private final PointValueService           pointValueService;
+    private final TaxSimulatorService         taxSimulatorService;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -43,37 +43,46 @@ public class SalaryContractService {
 
     public SalaryContractDto findById(Long id, User currentUser) {
         SalaryContract contract = getContractWithOwnershipCheck(id, currentUser);
-        // On utilise le propriétaire réel du contrat pour le calcul fiscal
         return toDto(contract, contract.getUser());
     }
 
     // ── Création ───────────────────────────────────────────────
 
     public SalaryContractDto create(CreateSalaryContractRequest request, User user) {
-        // Un seul contrat actif (endDate = null) par utilisateur
+        validateRequest(request);
+
         if (request.endDate() == null
                 && salaryContractRepository.existsByUserAndEndDateIsNull(user)) {
-            log.warn("[user:{}] Création contrat refusée - contrat actif existant pour cet utilisateur", user.getId());
+            log.warn("[user:{}] Création contrat refusée - contrat actif existant", user.getId());
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Un contrat actif existe déjà. Clôturez-le avant d'en créer un nouveau.");
         }
 
+        ContractTypeEnum type = request.contractType() != null
+                ? request.contractType() : ContractTypeEnum.PRIVATE;
+
+        Float annualGross = resolveAnnualGross(request.isPublic(), request.indiceMajore(),
+                request.annualGrossSalary(), request.startDate());
+
         SalaryContract contract = SalaryContract.builder()
                 .user(user)
+                .contractType(type)
+                .publicSubType(request.publicSubType())
+                .indiceMajore(request.indiceMajore())
                 .companyName(request.companyName())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
-                .annualGrossSalary(request.annualGrossSalary())
-                .paidMonthsPerYear(request.paidMonthsPerYear())
+                .annualGrossSalary(annualGross)
+                .paidMonthsPerYear(request.isPublic() ? 12 : request.paidMonthsPerYear())
                 .weeklyHours(request.weeklyHours())
                 .mealVoucherAmount(request.mealVoucherAmount())
                 .mealVoucherEmployeeRate(request.mealVoucherEmployeeRate())
-                .isCadre(request.isCadre())
+                .isCadre(request.isPublic() ? false : request.isCadre())
                 .employeePrevoyanceRate(request.employeePrevoyanceRate())
                 .build();
 
         SalaryContractDto dto = toDto(salaryContractRepository.save(contract), user);
-        log.info("[user:{}] Contrat salarial créé #{} [{}]", user.getId(), dto.id(), request.companyName());
+        log.info("[user:{}] Contrat {} créé #{} [{}]", user.getId(), type, dto.id(), request.companyName());
         return dto;
     }
 
@@ -82,7 +91,6 @@ public class SalaryContractService {
     public SalaryContractDto update(Long id, UpdateSalaryContractRequest request, User currentUser) {
         SalaryContract contract = getContractWithOwnershipCheck(id, currentUser);
 
-        // Si on rend ce contrat actif, vérifie qu'aucun autre ne l'est déjà
         if (request.endDate() == null && contract.getEndDate() != null) {
             if (salaryContractRepository.existsByUserAndEndDateIsNull(contract.getUser())) {
                 log.warn("[user:{}] Réactivation contrat #{} refusée - contrat actif existant", currentUser.getId(), id);
@@ -91,19 +99,32 @@ public class SalaryContractService {
             }
         }
 
+        boolean isPublic = contract.getContractType() == ContractTypeEnum.PUBLIC;
+
+        Float annualGross = resolveAnnualGross(isPublic,
+                isPublic ? request.indiceMajore() : null,
+                request.annualGrossSalary(),
+                request.startDate());
+
         contract.setCompanyName(request.companyName());
         contract.setStartDate(request.startDate());
         contract.setEndDate(request.endDate());
-        contract.setAnnualGrossSalary(request.annualGrossSalary());
-        contract.setPaidMonthsPerYear(request.paidMonthsPerYear());
+        contract.setAnnualGrossSalary(annualGross);
+        if (isPublic && request.indiceMajore() != null) {
+            contract.setIndiceMajore(request.indiceMajore());
+            contract.setPublicSubType(request.publicSubType());
+        }
+        if (!isPublic) {
+            contract.setPaidMonthsPerYear(request.paidMonthsPerYear());
+            contract.setIsCadre(request.isCadre());
+        }
         contract.setWeeklyHours(request.weeklyHours());
         contract.setMealVoucherAmount(request.mealVoucherAmount());
         contract.setMealVoucherEmployeeRate(request.mealVoucherEmployeeRate());
-        contract.setIsCadre(request.isCadre());
         contract.setEmployeePrevoyanceRate(request.employeePrevoyanceRate());
 
         SalaryContractDto dto = toDto(salaryContractRepository.save(contract), contract.getUser());
-        log.info("[user:{}] Contrat salarial modifié #{} [{}]", currentUser.getId(), id, request.companyName());
+        log.info("[user:{}] Contrat salarial modifié #{}", currentUser.getId(), id);
         return dto;
     }
 
@@ -116,7 +137,7 @@ public class SalaryContractService {
         log.info("[user:{}] Contrat salarial supprimé #{}", currentUser.getId(), id);
     }
 
-    // ── Accès interne (utilisé par MonthlyPaySlipService) ─────
+    // ── Accès interne ──────────────────────────────────────────
 
     public SalaryContract getContractWithOwnershipCheck(Long id, User currentUser) {
         SalaryContract contract = salaryContractRepository.findById(id)
@@ -127,10 +148,42 @@ public class SalaryContractService {
         boolean isAdmin = currentUser.getRole() == RoleEnum.ADMIN;
 
         if (!isOwner && !isAdmin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Accès non autorisé à ce contrat");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès non autorisé à ce contrat");
         }
         return contract;
+    }
+
+    // ── Helpers privés ─────────────────────────────────────────
+
+    private void validateRequest(CreateSalaryContractRequest request) {
+        if (request.isPublic()) {
+            if (request.indiceMajore() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "L'indice majoré est requis pour un contrat fonction publique.");
+            }
+            if (request.publicSubType() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Le sous-type (TITULAIRE / CONTRACTUEL) est requis pour un contrat fonction publique.");
+            }
+        } else {
+            if (request.annualGrossSalary() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Le salaire brut annuel est requis pour un contrat privé.");
+            }
+        }
+    }
+
+    /**
+     * Résout le salaire brut annuel effectif selon le type de contrat.
+     * PUBLIC : calculé depuis indiceMajore × valeur du point.
+     * PRIVATE : transmis directement depuis le formulaire.
+     */
+    private Float resolveAnnualGross(boolean isPublic, Integer indiceMajore,
+                                     Float annualGrossSalary, LocalDate referenceDate) {
+        if (isPublic && indiceMajore != null) {
+            return pointValueService.computeAnnualGross(indiceMajore, referenceDate);
+        }
+        return annualGrossSalary;
     }
 
     // ── Construction du DTO avec projections ───────────────────
@@ -142,19 +195,36 @@ public class SalaryContractService {
                 .mapToDouble(b -> b.getMonthlyAmount() != null ? b.getMonthlyAmount() : 0.0)
                 .sum() * 12f;
 
-        // Révision active : la plus récente dont effectiveDate <= aujourd'hui
         Optional<SalaryRevision> activeRevision = salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
                         contract, LocalDate.now());
 
-        Long activeRevisionId     = activeRevision.map(SalaryRevision::getId).orElse(null);
-        float effectiveSalary     = activeRevision
-                .map(SalaryRevision::getAnnualGrossSalary)
-                .orElse(contract.getAnnualGrossSalary());
+        Long  activeRevisionId = activeRevision.map(SalaryRevision::getId).orElse(null);
+        float effectiveSalary;
+        Float pointValueUsed = null;
 
-        log.debug("[user:{}] Projection contrat #{} - salaire effectif: {} €, révision active: {}",
-                contractOwner.getId(), contract.getId(), effectiveSalary, activeRevisionId);
-        return SalaryContractDto.from(contract, taxParameters, contractOwner, taxSimulatorService,
-                annualBenefits, activeRevisionId, effectiveSalary);
+        ContractTypeEnum type = contract.getContractType() != null
+                ? contract.getContractType() : ContractTypeEnum.PRIVATE;
+
+        if (type == ContractTypeEnum.PUBLIC && contract.getIndiceMajore() != null) {
+            // Pour PUBLIC : recalcul du brut depuis l'indice à la date effective (révision ou début du contrat)
+            LocalDate refDate = activeRevision
+                    .map(SalaryRevision::getEffectiveDate)
+                    .orElse(contract.getStartDate());
+            double pv = pointValueService.getAnnualValueAt(refDate);
+            pointValueUsed   = (float) pv;
+            effectiveSalary  = (float) (contract.getIndiceMajore() * pv);
+        } else {
+            effectiveSalary = activeRevision
+                    .map(SalaryRevision::getAnnualGrossSalary)
+                    .orElse(contract.getAnnualGrossSalary() != null ? contract.getAnnualGrossSalary() : 0f);
+        }
+
+        log.debug("[user:{}] Projection contrat #{} ({}) — brut effectif: {} €",
+                contractOwner.getId(), contract.getId(), type, effectiveSalary);
+
+        return SalaryContractDto.from(contract, taxParameters, publicSectorParameters,
+                contractOwner, taxSimulatorService, annualBenefits,
+                activeRevisionId, effectiveSalary, pointValueUsed);
     }
 }

@@ -198,6 +198,7 @@ export default function SalaryContractPage() {
             {showRevisions && (
               <RevisionPanel
                 contractId={selected.id}
+                contractType={selected.contractType}
                 activeRevisionId={selected.activeRevisionId}
                 onRevisionChange={fetchContracts}
               />

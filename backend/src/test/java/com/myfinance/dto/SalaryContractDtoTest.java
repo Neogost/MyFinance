@@ -1,5 +1,6 @@
 package com.myfinance.dto;
 
+import com.myfinance.config.PublicSectorParameters;
 import com.myfinance.config.TaxParameters;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
@@ -30,6 +31,7 @@ class SalaryContractDtoTest {
     TaxSimulatorService taxSimulatorService;
 
     TaxParameters taxParams;
+    PublicSectorParameters publicParams;
     User userSansProfil;
 
     @BeforeEach
@@ -54,6 +56,9 @@ class SalaryContractDtoTest {
         // Utilisateur sans profil fiscal → estimerImpotSurSalaire retourne null
         userSansProfil = User.builder().id(1L).role(RoleEnum.USER).build();
         when(taxSimulatorService.estimerImpotSurSalaire(anyFloat(), any())).thenReturn(null);
+
+        // Paramètres secteur public — non utilisés dans ces tests (contrats PRIVATE)
+        publicParams = new PublicSectorParameters();
     }
 
     private SalaryContract buildContract(float annualGross, int paidMonths, float weeklyHours,
@@ -71,8 +76,8 @@ class SalaryContractDtoTest {
     }
 
     private SalaryContractDto from(SalaryContract c) {
-        return SalaryContractDto.from(c, taxParams, userSansProfil, taxSimulatorService, 0f,
-                null, c.getAnnualGrossSalary());
+        return SalaryContractDto.from(c, taxParams, publicParams, userSansProfil, taxSimulatorService, 0f,
+                null, c.getAnnualGrossSalary(), null);
     }
 
     // ── Salaire net imposable annuel ───────────────────────────
@@ -209,8 +214,8 @@ class SalaryContractDtoTest {
                 .isCadre(true).employeePrevoyanceRate(0.015f)
                 .build();
 
-        SalaryContractDto dto = SalaryContractDto.from(contract, taxParams, userSansProfil, taxSimulatorService, 0f,
-                null, contract.getAnnualGrossSalary());
+        SalaryContractDto dto = SalaryContractDto.from(contract, taxParams, publicParams, userSansProfil, taxSimulatorService, 0f,
+                null, contract.getAnnualGrossSalary(), null);
 
         assertThat(dto.isCadre()).isTrue();
         assertThat(dto.employeePrevoyanceRate()).isEqualTo(0.015f);
@@ -280,8 +285,8 @@ class SalaryContractDtoTest {
         // annualNetAfterTax = 36904 - 3000 + 1200 = 35104
         SalaryContractDto dto = SalaryContractDto.from(
                 buildContract(45000f, 12, 35f, 0f, 0f),
-                taxParams, userSansProfil, taxSimulatorService, 1200f,
-                null, 45000f);
+                taxParams, publicParams, userSansProfil, taxSimulatorService, 1200f,
+                null, 45000f, null);
 
         assertThat(dto.annualNetAfterTax()).isCloseTo(36904.05f - 3000f + 1200f, offset(1f));
         assertThat(dto.monthlyNetAfterTax()).isCloseTo(dto.annualNetAfterTax() / 12f, offset(0.1f));

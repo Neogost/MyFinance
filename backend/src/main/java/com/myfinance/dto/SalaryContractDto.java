@@ -1,9 +1,13 @@
 package com.myfinance.dto;
 
+import com.myfinance.config.PublicSectorParameters;
 import com.myfinance.config.TaxParameters;
+import com.myfinance.domain.ContractTypeEnum;
+import com.myfinance.domain.PublicSubTypeEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.service.NetImposableCalculator;
+import com.myfinance.service.PublicNetImposableCalculator;
 import com.myfinance.service.TaxSimulatorService;
 
 import java.time.LocalDate;
@@ -13,14 +17,21 @@ import java.time.LocalDate;
  *
  * Trois niveaux de rémunération sont exposés :
  *   Brut  →  Net imposable (base fiscale)  →  Net d'impôt (après impôt estimé + avantages en nature)
+ *
+ * Pour les contrats PUBLIC, le brut est dérivé de l'indiceMajore × valeur du point.
+ * Le super brut n'est pas calculé pour les contrats PUBLIC (null).
  */
 public record SalaryContractDto(
         Long id,
+        ContractTypeEnum contractType,
+        PublicSubTypeEnum publicSubType,
+        Integer indiceMajore,
+        Float pointValueUsed,         // valeur du point utilisée pour le calcul (PUBLIC uniquement, à titre informatif)
         String companyName,
         LocalDate startDate,
         LocalDate endDate,
-        Float annualGrossSalary,   // salaire effectif (révision active ou contrat de base)
-        Float baseGrossSalary,     // salaire brut du contrat de base (toujours c.annualGrossSalary)
+        Float annualGrossSalary,      // brut effectif (révision active ou contrat de base)
+        Float baseGrossSalary,        // brut du contrat de base
         Long activeRevisionId,
         Integer paidMonthsPerYear,
         Float weeklyHours,
@@ -28,7 +39,7 @@ public record SalaryContractDto(
         Float mealVoucherEmployeeRate,
         Boolean isCadre,
         Float employeePrevoyanceRate,
-        // ── Net imposable (base fiscale) ───────────────────────
+        // ── Net imposable (base fiscale) ────────────────────────────────
         Float annualNetImposable,
         Float monthlyGrossSalary,
         Float monthlyNetImposable,
@@ -44,53 +55,52 @@ public record SalaryContractDto(
         Float monthlyNetAfterTax,
         Float dailyNetAfterTax,
         Float hourlyNetAfterTax,
-        Float monthlyEstimatedTax,   // PAS mensuel (null si profil fiscal incomplet)
-        Float monthlyBenefits,       // avantages en nature mensuels (Σ ContractBenefit / paidMonths)
-        // ── Super brut (coût employeur estimé — taux forfaitaire) ─────────
+        Float monthlyEstimatedTax,
+        Float monthlyBenefits,
+        // ── Super brut (null pour PUBLIC — concept non applicable) ──────
         Float annualSuperGross,
         Float monthlySuperGross,
         Float dailySuperGross,
         Float hourlySuperGross
 ) {
-    /**
-     * @param c               Entité contrat
-     * @param taxParams       Paramètres fiscaux (cotisations, barème, abattement)
-     * @param user            Propriétaire du contrat (profil fiscal pour l'estimation d'impôt)
-     * @param taxSimulator    Service simulateur (calcul de l'impôt estimé)
-     * @param annualBenefits  Somme annuelle des avantages en nature exonérés (Σ monthlyAmount × 12)
-     */
-    /**
-     * @param activeRevisionId  ID de la révision active (null si aucune — salaire du contrat utilisé)
-     * @param effectiveSalary   Salaire brut annuel effectif (révision active ou contrat.annualGrossSalary)
-     */
-    public static SalaryContractDto from(SalaryContract c, TaxParameters taxParams,
-                                         User user, TaxSimulatorService taxSimulator,
+    public static SalaryContractDto from(SalaryContract c,
+                                         TaxParameters taxParams,
+                                         PublicSectorParameters publicParams,
+                                         User user,
+                                         TaxSimulatorService taxSimulator,
                                          float annualBenefits,
-                                         Long activeRevisionId, float effectiveSalary) {
-        boolean isCadre        = Boolean.TRUE.equals(c.getIsCadre());
-        float annualNetImp     = NetImposableCalculator.calculer(
-                effectiveSalary, isCadre, c.getEmployeePrevoyanceRate(), taxParams);
-        float workingHours     = c.getWeeklyHours() * (228f / 5f);
-        float employeeRate     = c.getMealVoucherEmployeeRate() / 100f;
+                                         Long activeRevisionId,
+                                         float effectiveSalary,
+                                         Float pointValueUsed) {
+        ContractTypeEnum type = c.getContractType() != null ? c.getContractType() : ContractTypeEnum.PRIVATE;
 
-        // Net d'impôt — null si profil fiscal incomplet ou barème absent
-        Float estimatedTax     = taxSimulator.estimerImpotSurSalaire(annualNetImp, user);
+        float annualNetImp = computeNetImposable(c, type, effectiveSalary, taxParams, publicParams);
+        float workingHours = c.getWeeklyHours() * (228f / 5f);
+        float employeeRate = c.getMealVoucherEmployeeRate() / 100f;
+        int   paidMonths   = c.getPaidMonthsPerYear();
+
+        Float estimatedTax      = taxSimulator.estimerImpotSurSalaire(annualNetImp, user);
         Float annualNetAfterTax = estimatedTax != null
                 ? annualNetImp - estimatedTax + annualBenefits
                 : null;
 
-        // Super brut — coût employeur estimé (taux forfaitaire)
-        float annualSuperGross = effectiveSalary * (1f + taxParams.getEmployerFlatRate());
+        // Super brut : non calculé pour les contrats PUBLIC (concept non applicable)
+        Float annualSuperGross = type == ContractTypeEnum.PUBLIC ? null
+                : effectiveSalary * (1f + taxParams.getEmployerFlatRate());
 
         return new SalaryContractDto(
                 c.getId(),
+                type,
+                c.getPublicSubType(),
+                c.getIndiceMajore(),
+                pointValueUsed,
                 c.getCompanyName(),
                 c.getStartDate(),
                 c.getEndDate(),
                 effectiveSalary,
                 c.getAnnualGrossSalary(),
                 activeRevisionId,
-                c.getPaidMonthsPerYear(),
+                paidMonths,
                 c.getWeeklyHours(),
                 c.getMealVoucherAmount(),
                 c.getMealVoucherEmployeeRate(),
@@ -98,8 +108,8 @@ public record SalaryContractDto(
                 c.getEmployeePrevoyanceRate(),
                 // net imposable
                 annualNetImp,
-                effectiveSalary / c.getPaidMonthsPerYear(),
-                annualNetImp / c.getPaidMonthsPerYear(),
+                effectiveSalary / paidMonths,
+                annualNetImp / paidMonths,
                 workingHours,
                 effectiveSalary / workingHours,
                 annualNetImp / workingHours,
@@ -109,16 +119,32 @@ public record SalaryContractDto(
                 c.getMealVoucherAmount() * (1f - employeeRate) * 19f,
                 // net d'impôt
                 annualNetAfterTax,
-                annualNetAfterTax != null ? annualNetAfterTax / c.getPaidMonthsPerYear() : null,
+                annualNetAfterTax != null ? annualNetAfterTax / paidMonths : null,
                 annualNetAfterTax != null ? annualNetAfterTax / 228f : null,
                 annualNetAfterTax != null ? annualNetAfterTax / workingHours : null,
-                estimatedTax != null ? estimatedTax / c.getPaidMonthsPerYear() : null,
-                annualBenefits / c.getPaidMonthsPerYear(),
+                estimatedTax != null ? estimatedTax / paidMonths : null,
+                annualBenefits / paidMonths,
                 // super brut
                 annualSuperGross,
-                annualSuperGross / c.getPaidMonthsPerYear(),
-                annualSuperGross / 228f,
-                annualSuperGross / workingHours
+                annualSuperGross != null ? annualSuperGross / paidMonths : null,
+                annualSuperGross != null ? annualSuperGross / 228f : null,
+                annualSuperGross != null ? annualSuperGross / workingHours : null
         );
+    }
+
+    private static float computeNetImposable(SalaryContract c,
+                                              ContractTypeEnum type,
+                                              float brut,
+                                              TaxParameters taxParams,
+                                              PublicSectorParameters publicParams) {
+        if (type == ContractTypeEnum.PUBLIC
+                && c.getPublicSubType() == PublicSubTypeEnum.TITULAIRE) {
+            return PublicNetImposableCalculator.calculerTitulaire(
+                    brut, c.getEmployeePrevoyanceRate(),
+                    publicParams.getCotisations().getTitulaire());
+        }
+        // PRIVATE ou PUBLIC CONTRACTUEL → régime général
+        boolean isCadre = Boolean.TRUE.equals(c.getIsCadre());
+        return NetImposableCalculator.calculer(brut, isCadre, c.getEmployeePrevoyanceRate(), taxParams);
     }
 }

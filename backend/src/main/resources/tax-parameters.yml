@@ -2,6 +2,64 @@
 ## Mis à jour annuellement par l'administrateur après la loi de finances.
 ## Modifier ce fichier et redémarrer l'application suffit (pas de recompilation nécessaire).
 
+## Paramètres fonction publique
+## valeur-point : historique complet des revalorisations
+## Source : https://www.fonction-publique.gouv.fr/etre-agent-public/ma-remuneration/connaitre-le-point-dindice
+fonction-publique:
+  point-indice:
+    history:
+      - effective-date: 2002-01-01
+        annual-value: 51.8175
+      - effective-date: 2002-03-01
+        annual-value: 52.1284
+      - effective-date: 2002-12-01
+        annual-value: 52.4933
+      - effective-date: 2004-01-01
+        annual-value: 52.7558
+      - effective-date: 2005-02-01
+        annual-value: 53.0196
+      - effective-date: 2005-07-01
+        annual-value: 53.2847
+      - effective-date: 2005-11-01
+        annual-value: 53.7110
+      - effective-date: 2006-07-01
+        annual-value: 53.9795
+      - effective-date: 2007-02-01
+        annual-value: 54.4113
+      - effective-date: 2008-03-01
+        annual-value: 54.6834
+      - effective-date: 2008-10-01
+        annual-value: 54.8475
+      - effective-date: 2009-07-01
+        annual-value: 55.1217
+      - effective-date: 2009-10-01
+        annual-value: 55.2871
+      - effective-date: 2010-07-01
+        annual-value: 55.5635
+      - effective-date: 2016-07-01
+        annual-value: 55.8969
+      - effective-date: 2017-02-01
+        annual-value: 56.2323
+      - effective-date: 2022-07-01
+        annual-value: 58.2004
+      - effective-date: 2023-07-01
+        annual-value: 59.0734
+  cotisations:
+    titulaire:
+      ## Pension civile (CNRACL) — assiette : traitement indiciaire brut
+      pension-civile: 0.1110
+      ## CSG/CRDS — taux effectifs déjà corrigés par l'abattement de 1,75 % (base 98,25 %)
+      ## Seule la CSG déductible réduit le net imposable
+      csg-deductible: 0.0668       # 6,80 % × 0,9825
+      csg-non-deductible: 0.0236   # 2,40 % × 0,9825 — prélevée mais non déductible
+      crds: 0.0049                  # 0,50 % × 0,9825 — prélevée mais non déductible
+      ## RAFP (5 %) ignoré en V1 : assis uniquement sur primes, pas sur TIB
+      ## Contribution solidarité (CES) : 0 % depuis le 01/01/2018 (supprimée)
+    contractuel:
+      ## Régime général identique au privé — mêmes taux que cotisations-private
+      ## Différence principale (hors scope V1) : IRCANTEC à la place d'Agirc-Arrco
+      inherits-private: true
+
 tax:
   year: 2025
   income-period: "2024"

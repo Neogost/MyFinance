@@ -4,6 +4,7 @@ import com.myfinance.domain.User;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
+import com.myfinance.service.PointValueService;
 import com.myfinance.service.SalaryContractService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,7 +20,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/salary-contracts")
@@ -28,6 +33,7 @@ import java.util.List;
 public class SalaryContractController {
 
     private final SalaryContractService salaryContractService;
+    private final PointValueService     pointValueService;
 
     @Operation(summary = "Lister mes contrats salariaux")
     @ApiResponse(responseCode = "200", description = "Liste des contrats",
@@ -86,5 +92,15 @@ public class SalaryContractController {
             @AuthenticationPrincipal User currentUser) {
         salaryContractService.delete(id, currentUser);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Valeur du point d'indice de la fonction publique à une date donnée")
+    @ApiResponse(responseCode = "200", description = "Valeur du point retournée")
+    @GetMapping("/public/point-value")
+    public ResponseEntity<Map<String, Double>> getPointValue(
+            @Parameter(description = "Date de référence (YYYY-MM-DD)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        LocalDate ref = date != null ? date : LocalDate.now();
+        return ResponseEntity.ok(Map.of("pointValue", pointValueService.getAnnualValueAt(ref)));
     }
 }

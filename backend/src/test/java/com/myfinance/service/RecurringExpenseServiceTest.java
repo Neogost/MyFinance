@@ -309,7 +309,8 @@ class RecurringExpenseServiceTest {
 
     private SalaryContractDto buildContractDto(LocalDate endDate, Float monthlyNetAfterTax, Float monthlyNetImposable) {
         return new SalaryContractDto(
-                1L, "Entreprise", LocalDate.of(2023, 1, 1), endDate,
+                1L, null, null, null, null,
+                "Entreprise", LocalDate.of(2023, 1, 1), endDate,
                 36000f, null, null, 12, 35f, 0f, 0f, false, null,
                 monthlyNetImposable != null ? monthlyNetImposable * 12 : 28000f,
                 3000f,
