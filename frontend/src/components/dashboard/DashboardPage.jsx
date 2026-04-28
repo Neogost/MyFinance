@@ -37,6 +37,9 @@ function sumActive(positions) {
 export default function DashboardPage({ user, familyMode, onNavigate }) {
   const [familyPositions,  setFamilyPositions]  = useState(null)
   const [memberBreakdown,  setMemberBreakdown]  = useState(null)
+  const [hasSalaryData,    setHasSalaryData]    = useState(null)
+  const [hasExpenseData,   setHasExpenseData]   = useState(null)
+  const [hasPassifData,    setHasPassifData]    = useState(null)
 
   useEffect(() => {
     async function run() {
@@ -91,7 +94,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className={`col-span-1 ${hasExpenseData === false ? 'md:col-span-3' : 'md:col-span-2'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
             <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution salariale annuelle</h3>
             <p className="text-xs text-gray-400 mb-6">
               Brut, net imposable et net d'impôt par année — d'après les contrats et révisions salariales.
@@ -99,22 +102,26 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
             <SalaryAnnualBarChart />
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des dépenses</h3>
-            <p className="text-xs text-gray-400 mb-6">
-              Part de chaque poste dans les dépenses mensuelles récurrentes, et capacité d'épargne résiduelle.
-            </p>
-            <ExpensesByCategoryChart />
-          </div>
+          {hasExpenseData !== false && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des dépenses</h3>
+              <p className="text-xs text-gray-400 mb-6">
+                Part de chaque poste dans les dépenses mensuelles récurrentes, et capacité d'épargne résiduelle.
+              </p>
+              <ExpensesByCategoryChart onHasData={setHasExpenseData} />
+            </div>
+          )}
         </div>
 
-        <div className="hidden md:block mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-base font-semibold text-gray-800 mb-1">Détail mensuel par bulletins</h3>
-          <p className="text-xs text-gray-400 mb-6">
-            Brut, net fiscal, net versé et prélèvement à la source — données issues des bulletins de paie saisis.
-          </p>
-          <SalaryEvolutionChart />
-        </div>
+        {hasSalaryData !== false && (
+          <div className="hidden md:block mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-1">Détail mensuel par bulletins</h3>
+            <p className="text-xs text-gray-400 mb-6">
+              Brut, net fiscal, net versé et prélèvement à la source — données issues des bulletins de paie saisis.
+            </p>
+            <SalaryEvolutionChart onHasData={setHasSalaryData} />
+          </div>
+        )}
 
         {user.safetyNetMode && (
           <div className="mt-6">
@@ -212,25 +219,25 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
               </p>
               <PatrimoineByMemberChart data={memberBreakdown} />
             </div>
-          ) : (
+          ) : hasPassifData !== false ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des passifs</h3>
               <p className="text-xs text-gray-400 mb-6">
                 Valeur actuelle estimée par catégorie de possession, avec décote cumulée depuis l'achat.
               </p>
-              <PassifsByCategoryChart />
+              <PassifsByCategoryChart onHasData={setHasPassifData} />
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Stratégie & passifs (mode Foyer : passifs prend sa propre ligne) */}
-        {familyMode && memberBreakdown && (
+        {familyMode && memberBreakdown && hasPassifData !== false && (
           <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des passifs</h3>
             <p className="text-xs text-gray-400 mb-6">
               Valeur actuelle estimée par catégorie de possession, avec décote cumulée depuis l'achat.
             </p>
-            <PassifsByCategoryChart />
+            <PassifsByCategoryChart onHasData={setHasPassifData} />
           </div>
         )}
 

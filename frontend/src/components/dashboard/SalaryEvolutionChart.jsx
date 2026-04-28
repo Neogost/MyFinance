@@ -37,7 +37,7 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
-export default function SalaryEvolutionChart() {
+export default function SalaryEvolutionChart({ onHasData }) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -49,6 +49,7 @@ export default function SalaryEvolutionChart() {
           ...p,
           periodLabel: formatPeriod(p.period),
         })))
+        onHasData?.(points.length > 0)
       })
       .catch(() => setError('Impossible de charger les données.'))
       .finally(() => setLoading(false))
@@ -70,14 +71,7 @@ export default function SalaryEvolutionChart() {
     )
   }
 
-  if (data.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-400 text-sm gap-2">
-        <p>Aucun bulletin de paie saisi.</p>
-        <p className="text-xs">Rendez-vous dans <span className="font-medium">Revenus → Salariat</span> pour saisir vos bulletins mensuels.</p>
-      </div>
-    )
-  }
+  if (data.length === 0) return null
 
   return (
     <ResponsiveContainer width="100%" height={380}>

@@ -28,7 +28,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function ExpensesByCategoryChart() {
+export default function ExpensesByCategoryChart({ onHasData }) {
   const [data, setData]         = useState([])
   const [summary, setSummary]   = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -49,6 +49,7 @@ export default function ExpensesByCategoryChart() {
             pct:      total > 0 ? (c.monthlyAmount / total * 100).toFixed(1) : '0.0',
           }))
         setData(chartData)
+        onHasData?.(chartData.length > 0)
       })
       .catch(() => setError('Impossible de charger les dépenses'))
       .finally(() => setLoading(false))
@@ -56,9 +57,7 @@ export default function ExpensesByCategoryChart() {
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>
-  if (!data.length) return (
-    <div className="text-center text-gray-400 py-12 text-sm">Aucune dépense à afficher.</div>
-  )
+  if (!data.length) return null
 
   const savingsRate = summary?.savingsRate ?? null
 
