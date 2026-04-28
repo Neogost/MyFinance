@@ -109,7 +109,7 @@ export default function PaySlipPanel({ contractId, projection }) {
                     {slip.netSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                   </td>
                   <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
-                    <DiffBadge value={diff(slip.netSalary, projection?.monthlyNetSalary)} />
+                    <DiffBadge value={diff(slip.netSalary, projection?.monthlyNetAfterTax)} />
                   </td>
                   <td className="px-3 py-2.5 text-right text-gray-500 hidden md:table-cell amount">
                     {slip.incomeTaxWithholding?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
