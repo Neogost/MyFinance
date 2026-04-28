@@ -6,6 +6,8 @@ COPY frontend/package*.json frontend/
 RUN cd frontend && npm ci
 
 COPY frontend/ frontend/
+# CHANGELOG.md est embarqué dans le bundle JS (modal "Notes de version") via ?raw
+COPY CHANGELOG.md CHANGELOG.md
 RUN mkdir -p backend/src/main/resources/static \
     && cd frontend && npm run build
 

@@ -121,7 +121,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null, onShowReleaseNotes }) {
   const [incomeOpen,     setIncomeOpen]     = useState(false)
   const [toolsOpen,      setToolsOpen]      = useState(false)
   const [adminOpen,      setAdminOpen]      = useState(false)
@@ -381,7 +381,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 Déconnexion
               </button>
               {appVersion && (
-                <p className="text-center text-xs text-gray-400 mt-2 pb-1">v{appVersion}</p>
+                <div className="text-center mt-2 pb-1 text-xs text-gray-400">
+                  v{appVersion}
+                  <span className="mx-1.5 text-gray-300">·</span>
+                  <button
+                    onClick={() => { onShowReleaseNotes?.(); closeMobile() }}
+                    className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
+                  >
+                    Notes de version
+                  </button>
+                </div>
               )}
             </div>
           </div>

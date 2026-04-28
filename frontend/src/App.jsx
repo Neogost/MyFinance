@@ -30,6 +30,7 @@ import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
 import LandingPage from './components/LandingPage'
 import DocumentationPage from './components/documentation/DocumentationPage'
 import ContactPage from './components/ContactPage'
+import ReleaseNotesModal from './components/ReleaseNotesModal'
 import logo from './assets/logo.png'
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
   const [pendingRegistrations, setPendingRegistrations] = useState(0)
   const [appVersion,           setAppVersion]           = useState(null)
+  const [showReleaseNotes,     setShowReleaseNotes]     = useState(false)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -182,6 +184,7 @@ export default function App() {
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
         pendingRegistrations={pendingRegistrations}
         appVersion={appVersion}
+        onShowReleaseNotes={() => setShowReleaseNotes(true)}
       />
 
       <main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
@@ -234,8 +237,17 @@ export default function App() {
       {appVersion && (
         <footer className="hidden md:block text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-gray-100">
           MyFinance v{appVersion}
+          <span className="text-gray-300 mx-2">·</span>
+          <button
+            onClick={() => setShowReleaseNotes(true)}
+            className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
+          >
+            Notes de version
+          </button>
         </footer>
       )}
+
+      {showReleaseNotes && <ReleaseNotesModal onClose={() => setShowReleaseNotes(false)} />}
     </div>
     </ErrorBoundary>
   )

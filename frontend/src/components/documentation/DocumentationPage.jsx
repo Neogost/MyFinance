@@ -102,10 +102,15 @@ const mdComponents = {
   strong: ({ children }) => (
     <strong className="font-semibold text-gray-900">{children}</strong>
   ),
-  code: ({ inline, children }) =>
-    inline
-      ? <code className="px-1.5 py-0.5 bg-gray-100 text-indigo-700 rounded text-[0.85em] font-mono">{children}</code>
-      : <code className="block bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm font-mono text-gray-800 overflow-x-auto mb-3">{children}</code>,
+  code: ({ children, className }) => {
+    // react-markdown v10 ne passe plus `inline` : on détecte le bloc via la classe language-XXX ou la présence de retours à la ligne
+    const text = String(children ?? '')
+    const isBlock = (className || '').startsWith('language-') || text.includes('\n')
+    if (isBlock) {
+      return <code className={className}>{children}</code>
+    }
+    return <code className="px-1.5 py-0.5 bg-gray-100 text-indigo-700 rounded text-[0.85em] font-mono">{children}</code>
+  },
   pre: ({ children }) => (
     <pre className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm overflow-x-auto mb-3">{children}</pre>
   ),
