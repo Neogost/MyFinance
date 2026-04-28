@@ -19,6 +19,7 @@ import GeographicExposureWidget from './GeographicExposureWidget'
 import SectorExposureWidget from './SectorExposureWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { getPositions } from '../../api/patrimoine'
+import DashboardCustomizePanel, { DEFAULT_WIDGET_CONFIG } from './DashboardCustomizePanel'
 
 function SectionTitle({ title, subtitle }) {
   return (
@@ -41,6 +42,18 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
   const [hasSalaryData,    setHasSalaryData]    = useState(null)
   const [hasExpenseData,   setHasExpenseData]   = useState(null)
   const [hasPassifData,    setHasPassifData]    = useState(null)
+  const [customizing,      setCustomizing]      = useState(false)
+  const [wc, setWc] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dashboardWidgets')
+      return saved ? { ...DEFAULT_WIDGET_CONFIG, ...JSON.parse(saved) } : DEFAULT_WIDGET_CONFIG
+    } catch { return DEFAULT_WIDGET_CONFIG }
+  })
+
+  function updateWc(next) {
+    setWc(next)
+    localStorage.setItem('dashboardWidgets', JSON.stringify(next))
+  }
 
   useEffect(() => {
     async function run() {
@@ -73,12 +86,31 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
 
   return (
     <div className="space-y-10">
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Tableau de bord</h2>
-        <p className="text-gray-500 text-sm mt-1">
-          Bonjour <strong>{user.firstName}</strong> — une vue d'ensemble de vos revenus, dépenses et patrimoine.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Tableau de bord</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Bonjour <strong>{user.firstName}</strong> — une vue d'ensemble de vos revenus, dépenses et patrimoine.
+          </p>
+        </div>
+        <button
+          onClick={() => setCustomizing(true)}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:border-indigo-400 hover:text-indigo-600 transition shadow-sm"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          Personnaliser
+        </button>
       </div>
+
+      {customizing && (
+        <DashboardCustomizePanel
+          config={wc}
+          onChange={updateWc}
+          onClose={() => setCustomizing(false)}
+        />
+      )}
 
       {familyMode && (
         <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium">
@@ -95,15 +127,17 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          <div className={`col-span-1 ${hasExpenseData === false ? 'md:col-span-3' : 'md:col-span-2'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution salariale annuelle</h3>
-            <p className="text-xs text-gray-400 mb-6">
-              Brut, net imposable et net d'impôt par année — d'après les contrats et révisions salariales.
-            </p>
-            <SalaryAnnualBarChart />
-          </div>
+          {wc.salaryAnnual && (
+            <div className={`col-span-1 ${wc.expensesBreakdown && hasExpenseData !== false ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+              <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution salariale annuelle</h3>
+              <p className="text-xs text-gray-400 mb-6">
+                Brut, net imposable et net d'impôt par année — d'après les contrats et révisions salariales.
+              </p>
+              <SalaryAnnualBarChart />
+            </div>
+          )}
 
-          {hasExpenseData !== false && (
+          {wc.expensesBreakdown && hasExpenseData !== false && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des dépenses</h3>
               <p className="text-xs text-gray-400 mb-6">
@@ -114,7 +148,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           )}
         </div>
 
-        {hasSalaryData !== false && (
+        {wc.salaryMonthly && hasSalaryData !== false && (
           <div className="hidden md:block mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-base font-semibold text-gray-800 mb-1">Détail mensuel par bulletins</h3>
             <p className="text-xs text-gray-400 mb-6">
@@ -124,7 +158,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           </div>
         )}
 
-        {user.safetyNetMode && (
+        {user.safetyNetMode && wc.safetyNet && (
           <div className="mt-6">
             <SafetyNetWidget user={user} />
           </div>
@@ -139,77 +173,93 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         />
 
         {/* Évolution historique + Projection FIRE */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-          <div className="col-span-1 md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution du patrimoine</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              Valeur brute par catégorie au fil des relevés saisis.
-            </p>
-            <PatrimoineEvolutionChart />
+        {(wc.patrimoineEvolution || wc.fireProjection) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+            {wc.patrimoineEvolution && (
+              <div className={`col-span-1 ${wc.fireProjection ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution du patrimoine</h3>
+                <p className="text-xs text-gray-400 mb-4">
+                  Valeur brute par catégorie au fil des relevés saisis.
+                </p>
+                <PatrimoineEvolutionChart />
+              </div>
+            )}
+            {wc.fireProjection && (
+              <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-200 p-6">
+                <FireProjectionWidget />
+              </div>
+            )}
           </div>
-          <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-200 p-6">
-            <FireProjectionWidget />
-          </div>
-        </div>
+        )}
 
         {/* Répartition — 3 × 2 donuts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Patrimoine brut</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+          {wc.patrimoineBrut && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-800">Patrimoine brut</h3>
+                {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+              </div>
+              <p className="text-xs text-gray-400 mb-6">
+                Répartition de la valeur actuelle par catégorie d'actif.
+              </p>
+              <PatrimoineByCategoryChart positions={familyPositions} />
             </div>
-            <p className="text-xs text-gray-400 mb-6">
-              Répartition de la valeur actuelle par catégorie d'actif.
-            </p>
-            <PatrimoineByCategoryChart positions={familyPositions} />
-          </div>
+          )}
 
-          <PatrimoineNetWidget />
+          {wc.patrimoineNet && <PatrimoineNetWidget />}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Patrimoine financier</h3>
+          {wc.patrimoineFinancier && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-800">Patrimoine financier</h3>
               {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
             </div>
             <p className="text-xs text-gray-400 mb-6">
               Répartition hors immobilier physique et papier.
             </p>
             <PatrimoineByCategoryChart financierOnly positions={familyPositions} />
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Répartition par enveloppe</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
             </div>
-            <p className="text-xs text-gray-400 mb-6">
-              Répartition du patrimoine brut par type d'enveloppe fiscale (AV, PEA, CTO…).
-            </p>
-            <PatrimoineByEnvelopeChart positions={familyPositions} />
-          </div>
+          )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Plus-values par catégorie</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+          {wc.enveloppe && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-800">Répartition par enveloppe</h3>
+                {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+              </div>
+              <p className="text-xs text-gray-400 mb-6">
+                Répartition du patrimoine brut par type d'enveloppe fiscale (AV, PEA, CTO…).
+              </p>
+              <PatrimoineByEnvelopeChart positions={familyPositions} />
             </div>
-            <p className="text-xs text-gray-400 mb-6">
-              Répartition des plus-values latentes sur l'ensemble des positions actives.
-            </p>
-            <CapitalGainsByCategoryChart positions={familyPositions} />
-          </div>
+          )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Répartition par devise</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+          {wc.capitalGains && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-800">Plus-values par catégorie</h3>
+                {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+              </div>
+              <p className="text-xs text-gray-400 mb-6">
+                Répartition des plus-values latentes sur l'ensemble des positions actives.
+              </p>
+              <CapitalGainsByCategoryChart positions={familyPositions} />
             </div>
-            <p className="text-xs text-gray-400 mb-6">
-              Exposition aux devises étrangères — valeurs converties en EUR au taux courant.
-            </p>
-            <PatrimoineByCurrencyChart positions={familyPositions} />
-          </div>
+          )}
+
+          {wc.devise && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-800">Répartition par devise</h3>
+                {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+              </div>
+              <p className="text-xs text-gray-400 mb-6">
+                Exposition aux devises étrangères — valeurs converties en EUR au taux courant.
+              </p>
+              <PatrimoineByCurrencyChart positions={familyPositions} />
+            </div>
+          )}
 
           {familyMode && memberBreakdown ? (
             <div className="bg-white rounded-xl shadow-sm border border-indigo-200 p-6">
@@ -222,7 +272,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
               </p>
               <PatrimoineByMemberChart data={memberBreakdown} />
             </div>
-          ) : hasPassifData !== false ? (
+          ) : wc.passifs && hasPassifData !== false ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des passifs</h3>
               <p className="text-xs text-gray-400 mb-6">
@@ -234,7 +284,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         </div>
 
         {/* Stratégie & passifs (mode Foyer : passifs prend sa propre ligne) */}
-        {familyMode && memberBreakdown && hasPassifData !== false && (
+        {familyMode && memberBreakdown && wc.passifs && hasPassifData !== false && (
           <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-base font-semibold text-gray-800 mb-1">Répartition des passifs</h3>
             <p className="text-xs text-gray-400 mb-6">
@@ -245,46 +295,59 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         )}
 
         {/* Exposition géographique & sectorielle */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Exposition géographique</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
-            </div>
-            <p className="text-xs text-gray-400 mb-4">
-              Positions BOURSE pondérées par l'allocation géographique de chaque ETF.
-            </p>
-            <GeographicExposureWidget positions={familyPositions} />
+        {(wc.geoExposure || wc.sectorExposure) && (
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {wc.geoExposure && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h3 className="text-base font-semibold text-gray-800">Exposition géographique</h3>
+                  {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+                </div>
+                <p className="text-xs text-gray-400 mb-4">
+                  Positions BOURSE pondérées par l'allocation géographique de chaque ETF.
+                </p>
+                <GeographicExposureWidget positions={familyPositions} />
+              </div>
+            )}
+            {wc.sectorExposure && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h3 className="text-base font-semibold text-gray-800">Exposition sectorielle</h3>
+                  {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
+                </div>
+                <p className="text-xs text-gray-400 mb-4">
+                  Positions BOURSE pondérées par la répartition sectorielle de chaque ETF.
+                </p>
+                <SectorExposureWidget positions={familyPositions} />
+              </div>
+            )}
           </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-800">Exposition sectorielle</h3>
-              {familyMode && <span className="text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5 shrink-0">🏠 Foyer</span>}
-            </div>
-            <p className="text-xs text-gray-400 mb-4">
-              Positions BOURSE pondérées par la répartition sectorielle de chaque ETF.
-            </p>
-            <SectorExposureWidget positions={familyPositions} />
-          </div>
-        </div>
+        )}
 
         {/* Score patrimonial + Radar objectifs + Endettement */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-          <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-6">
-            <PatrimoineScoreWidget />
+        {(wc.scorePatrimonial || wc.objectives || wc.dette) && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
+            {wc.scorePatrimonial && (
+              <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-6">
+                <PatrimoineScoreWidget />
+              </div>
+            )}
+            {wc.objectives && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
+                <p className="text-xs text-gray-400 mb-4">
+                  Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
+                </p>
+                <PatrimoineStrategyRadarChart />
+              </div>
+            )}
+            {wc.dette && (
+              <div className={`col-span-1 ${wc.scorePatrimonial && wc.objectives ? 'md:col-span-2' : wc.scorePatrimonial || wc.objectives ? 'md:col-span-3' : 'md:col-span-4'}`}>
+                <DetteWidget onNavigate={onNavigate} />
+              </div>
+            )}
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
-            <p className="text-xs text-gray-400 mb-4">
-              Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
-            </p>
-            <PatrimoineStrategyRadarChart />
-          </div>
-          <div className="col-span-1 md:col-span-2">
-            <DetteWidget onNavigate={onNavigate} />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
