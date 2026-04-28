@@ -4,6 +4,20 @@ import { labelCls } from '../../components/common/formStyles.js'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 
+function FieldTooltip({ text }) {
+  return (
+    <span className="relative group ml-1.5 cursor-help inline-flex items-center">
+      <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+      </svg>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 text-xs text-white bg-gray-800 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20 shadow-lg leading-relaxed">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
+      </span>
+    </span>
+  )
+}
+
 export default function PersonalInfoPanel({ user, onUpdate }) {
   const [form, setForm] = useState({
     firstName:       user.firstName       ?? '',
@@ -56,13 +70,13 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Prénom *</label>
+          <label className={`${labelCls} flex items-center`}>Prénom *<FieldTooltip text="Affiché dans la navigation et dans les rapports (bilan financier, déclaration de patrimoine)." /></label>
           <input name="firstName" type="text" value={form.firstName}
             onChange={handleChange} placeholder="Kévin"
             className={inputCls} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Nom *</label>
+          <label className={`${labelCls} flex items-center`}>Nom *<FieldTooltip text="Affiché dans la navigation et dans les rapports (bilan financier, déclaration de patrimoine)." /></label>
           <input name="lastName" type="text" value={form.lastName}
             onChange={handleChange} placeholder="Dupont"
             className={inputCls} />
@@ -71,13 +85,13 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Date de naissance</label>
+          <label className={`${labelCls} flex items-center`}>Date de naissance<FieldTooltip text="Utilisée pour calculer votre tranche d'âge et vous positionner par rapport aux déciles INSEE de patrimoine." /></label>
           <input name="birthDate" type="date" value={form.birthDate}
             onChange={handleChange}
             className={inputCls} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Poste actuel</label>
+          <label className={`${labelCls} flex items-center`}>Poste actuel<FieldTooltip text="Affiché dans votre profil et utilisé dans la déclaration de patrimoine." /></label>
           <input name="jobTitle" type="text" value={form.jobTitle}
             onChange={handleChange} placeholder="ex : Ingénieur logiciel"
             className={inputCls} />
@@ -86,13 +100,13 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Commune de naissance</label>
+          <label className={`${labelCls} flex items-center`}>Commune de naissance<FieldTooltip text="Requise pour la déclaration de patrimoine (section Passifs & dettes)." /></label>
           <input name="birthPlace" type="text" value={form.birthPlace}
             onChange={handleChange} placeholder="Paris"
             className={inputCls} />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className={labelCls}>Code postal de naissance</label>
+          <label className={`${labelCls} flex items-center`}>Code postal de naissance<FieldTooltip text="Requis pour la déclaration de patrimoine (section Passifs & dettes)." /></label>
           <input name="birthPostalCode" type="text" value={form.birthPostalCode}
             onChange={handleChange} placeholder="75001"
             className={inputCls} />
