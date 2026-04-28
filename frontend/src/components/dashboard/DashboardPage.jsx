@@ -14,6 +14,7 @@ import PatrimoineStrategyRadarChart from './PatrimoineStrategyRadarChart'
 import PatrimoineScoreWidget from './PatrimoineScoreWidget'
 import SafetyNetWidget from './SafetyNetWidget'
 import DetteWidget from './DetteWidget'
+import PatrimoineNetWidget from './PatrimoineNetWidget'
 import GeographicExposureWidget from './GeographicExposureWidget'
 import SectorExposureWidget from './SectorExposureWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
@@ -163,6 +164,8 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
             </p>
             <PatrimoineByCategoryChart positions={familyPositions} />
           </div>
+
+          <PatrimoineNetWidget />
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between gap-2 mb-1">
