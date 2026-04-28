@@ -16,6 +16,8 @@ La gestion des revenus repose sur **cinq niveaux complémentaires** :
 
 La **vue théorique** (`SalaryProjectionDto`) et les **bulletins réels** (`MonthlyPaySlip`) sont affichables côte à côte pour permettre à l'utilisateur de mesurer l'écart entre les projections et la réalité (primes, avantages en nature, variation de salaire).
 
+> **Deux types de contrats sont supportés** : `PRIVATE` (entreprise privée — salaire brut annuel saisi) et `PUBLIC` (fonction publique — brut dérivé d'un indice majoré × valeur du point). La chaîne de calcul en aval (net imposable → net après impôt → projections) est commune ; seules les cotisations salariales diffèrent selon le type. Voir [`salary-public-sector.md`](salary-public-sector.md) pour le détail.
+
 ---
 
 ## 1. Contrat salarial — `SalaryContract`

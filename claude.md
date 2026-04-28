@@ -122,6 +122,7 @@ frontend/src/
 - Fonctionnalités détaillées : `docs/architecture/overview.md`
 - Gestion des utilisateurs, inscription, matelas de sécurité : `docs/architecture/user-management.md`
 - Gestion des revenus (entités, formules, accès) : `docs/architecture/salary.md`
+- Contrats fonction publique (indice, cotisations, migration) : `docs/architecture/salary-public-sector.md`
 - Simulateur des impôts (algorithme, barème, config) : `docs/architecture/tax-simulator.md`
 - Schéma de base de données (ER diagram complet) : `docs/architecture/diagram/er-diagram.mmd`
 - Modèle de données (diagramme de classes) : `docs/architecture/diagram/class-diagram.mmd`
@@ -200,15 +201,16 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `GET` | `/api/salary-contracts` | Authentifié | Liste ses contrats (avec projections calculées) |
 | `GET` | `/api/salary-contracts/{id}` | Authentifié | Détail + projections d'un contrat |
-| `POST` | `/api/salary-contracts` | Authentifié | Créer un contrat (1 seul actif à la fois) |
+| `POST` | `/api/salary-contracts` | Authentifié | Créer un contrat PRIVATE ou PUBLIC (1 seul actif à la fois) |
 | `PUT` | `/api/salary-contracts/{id}` | Authentifié | Modifier un contrat |
 | `DELETE` | `/api/salary-contracts/{id}` | Authentifié | Supprimer un contrat (cascade bulletins) |
+| `GET` | `/api/salary-contracts/public/point-value?date=` | Authentifié | Valeur annuelle du point d'indice fonction publique à une date |
 
 ### Révisions salariales
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
 | `GET` | `/api/salary-contracts/{id}/revisions` | Authentifié | Liste des révisions d'un contrat |
-| `POST` | `/api/salary-contracts/{id}/revisions` | Authentifié | Ajouter une révision salariale |
+| `POST` | `/api/salary-contracts/{id}/revisions` | Authentifié | Ajouter une révision (brut ou indiceMajore selon type de contrat) |
 | `PUT` | `/api/salary-contracts/{id}/revisions/{revId}` | Authentifié | Modifier une révision |
 | `DELETE` | `/api/salary-contracts/{id}/revisions/{revId}` | Authentifié | Supprimer une révision |
 
@@ -795,6 +797,19 @@ npm run dev
   - Frontend : `PerformancePage` dans Outils → Performance (TWR / MWR), Recharts LineChart
   - Tests : `XirrSolverTest` (6 cas), `TwrChainerTest` (7 cas), `PerformanceServiceTest` (9 cas), `PerformanceControllerTest` (10 cas) — total : 738 tests
   - Documentation : `docs/architecture/patrimoine-performance.md`
+
+- **Contrats fonction publique** :
+  - **2 nouveaux enums** : `ContractTypeEnum` (PRIVATE / PUBLIC), `PublicSubTypeEnum` (TITULAIRE / CONTRACTUEL)
+  - **Entité `SalaryContract`** : 3 champs ajoutés (`contractType`, `publicSubType`, `indiceMajore`), `annualGrossSalary` rendu nullable (calculé pour PUBLIC)
+  - **Entité `SalaryRevision`** : champ `indiceMajore` ajouté — pour les révisions PUBLIC, le brut est recalculé depuis l'IM × valeur du point à la date d'entrée en vigueur
+  - **Configuration** : `tax-parameters.yml` enrichi avec historique complet de la valeur du point (18 paliers depuis 2002) et taux de cotisations titulaire (CNRACL 11,1 %, CSG 6,68 %, CRDS 0,49 %) — classe `PublicSectorParameters`
+  - **Services** : `PointValueService` (lookup par date), `PublicNetImposableCalculator` (titulaire → CNRACL + CSG ; contractuel → délègue au privé)
+  - **Aiguillage dans `SalaryContractService`** : résolution du brut et calcul du net imposable conditionnels sur `contractType`. Super brut `null` pour PUBLIC, `isCadre` forcé `false`, `paidMonthsPerYear` forcé 12.
+  - **Endpoint utilitaire** : `GET /api/salary-contracts/public/point-value?date=` — valeur du point pour l'aperçu temps réel dans les formulaires
+  - **Frontend** : formulaire en 2 steps (`SalaryContractTypeStep` → `SalaryContractFormPrivate` ou `SalaryContractFormPublic`), aperçu brut temps réel sur l'IM, `RevisionForm` conditionnel (indice ou brut selon type)
+  - **Migration** : `backend/migrations/006_backfill_contract_type_public_sector.sql` (Phase 2 — à exécuter après déploiement)
+  - **Documentation** : `docs/architecture/salary-public-sector.md`, `docs/api/salary-contracts.md` mis à jour
+  - Tests : 746 tests BUILD SUCCESS
 
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

@@ -370,6 +370,7 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Regroupement familial (invitations, mode foyer, modération admin) | Implémenté |
 | Tableau de bord (évolution salariale, patrimoine, FIRE, dettes, scoring) | Implémenté |
 | Contrats salariaux (projections 4 niveaux, révisions, bulletins, primes, avantages, astreintes) | Implémenté |
+| Contrats fonction publique (indice majoré, cotisations CNRACL, formulaire 2-step, révisions par indice) | Implémenté |
 | Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) | Implémenté |
 | Dépenses récurrentes (9 catégories, colocation, budgets) | Implémenté |
 | Passifs / possessions (7 catégories, décote automatique, override) | Implémenté |

@@ -88,17 +88,42 @@ GET /api/salary-contracts/1
 
 ---
 
-### POST /api/salary-contracts
+### GET /api/salary-contracts/public/point-value
 
-Crée un nouveau contrat salarial. Si `endDate` est absent (`null`), le contrat est considéré comme **actif**. Un seul contrat actif est autorisé par utilisateur.
+Retourne la valeur annuelle du point d'indice de la fonction publique en vigueur à une date donnée. Utilisé par le formulaire pour calculer l'aperçu du brut en temps réel.
 
 **Accès** : authentifié
+
+```http
+GET /api/salary-contracts/public/point-value?date=2024-01-01
+```
+
+| Paramètre | Type | Obligatoire | Description |
+|-----------|------|-------------|-------------|
+| `date` | `date` | non | Date de référence (défaut : aujourd'hui) |
+
+**200 OK**
+
+```json
+{ "pointValue": 59.0734 }
+```
+
+---
+
+### POST /api/salary-contracts
+
+Crée un nouveau contrat salarial (privé ou fonction publique). Si `endDate` est absent (`null`), le contrat est considéré comme **actif**. Un seul contrat actif est autorisé par utilisateur.
+
+**Accès** : authentifié
+
+**Exemple — Entreprise privée**
 
 ```http
 POST /api/salary-contracts
 Content-Type: application/json
 
 {
+  "contractType": "PRIVATE",
   "companyName": "Acme Corp",
   "startDate": "2023-01-01",
   "endDate": null,
@@ -112,24 +137,61 @@ Content-Type: application/json
 }
 ```
 
-#### Champs
+**Exemple — Fonction publique**
+
+```http
+POST /api/salary-contracts
+Content-Type: application/json
+
+{
+  "contractType": "PUBLIC",
+  "publicSubType": "TITULAIRE",
+  "indiceMajore": 421,
+  "companyName": "Mairie de Paris",
+  "startDate": "2023-01-01",
+  "endDate": null,
+  "weeklyHours": 35.0,
+  "mealVoucherAmount": 0.0,
+  "mealVoucherEmployeeRate": 0.0,
+  "employeePrevoyanceRate": null
+}
+```
+
+> `annualGrossSalary` et `isCadre` sont ignorés pour `PUBLIC` (calculés / non applicables). `paidMonthsPerYear` est forcé à 12.
+
+#### Champs communs
 
 | Champ | Type | Obligatoire | Contraintes | Description |
 |-------|------|-------------|-------------|-------------|
-| `companyName` | `string` | non | | Nom de l'entreprise — `null` acceptable |
+| `contractType` | `string` | non | `PRIVATE` \| `PUBLIC` | Type de contrat (défaut : `PRIVATE`) |
+| `companyName` | `string` | non | | Nom de l'entreprise / administration |
 | `startDate` | `date` | oui | | Date de début du contrat |
 | `endDate` | `date` | non | | Date de fin — `null` = contrat en cours |
-| `annualGrossSalary` | `number` | oui | > 0 | Salaire brut annuel (€) |
-| `paidMonthsPerYear` | `integer` | oui | 1–13 | Nombre de mois de paie |
 | `weeklyHours` | `number` | oui | > 0 | Heures travaillées par semaine |
 | `mealVoucherAmount` | `number` | oui | ≥ 0 | Valeur faciale du ticket restaurant (€) |
 | `mealVoucherEmployeeRate` | `number` | oui | 0–100 | Part salarié du ticket restaurant (%) |
-| `isCadre` | `boolean` | non | | `true` = statut cadre (APEC applicable). `null` traité comme `false` |
-| `employeePrevoyanceRate` | `number` | non | 0,0–1,0 | Taux prévoyance/mutuelle salarié en décimal (ex : `0.015` = 1,5 %) |
+| `employeePrevoyanceRate` | `number` | non | 0,0–1,0 | Taux prévoyance/mutuelle salarié en décimal |
+
+#### Champs spécifiques PRIVATE
+
+| Champ | Type | Obligatoire | Description |
+|-------|------|-------------|-------------|
+| `annualGrossSalary` | `number` | oui (si PRIVATE) | Salaire brut annuel (€) |
+| `paidMonthsPerYear` | `integer` | oui | 1–13 mois |
+| `isCadre` | `boolean` | non | `true` = statut cadre (APEC) |
+
+#### Champs spécifiques PUBLIC
+
+| Champ | Type | Obligatoire | Description |
+|-------|------|-------------|-------------|
+| `publicSubType` | `string` | oui (si PUBLIC) | `TITULAIRE` ou `CONTRACTUEL` |
+| `indiceMajore` | `integer` | oui (si PUBLIC) | Indice majoré (IM) ≥ 200 — brut calculé automatiquement |
 
 #### Réponses
 
 **201 Created** — Retourne le contrat créé avec les projections calculées.
+
+**400 Bad Request** — `indiceMajore` absent pour PUBLIC, ou `annualGrossSalary` absent pour PRIVATE.
 
 **409 Conflict** — Un contrat actif (`endDate = null`) existe déjà.
 
@@ -369,9 +431,11 @@ GET /api/salary-contracts/1/revisions
 
 ### POST /api/salary-contracts/{contractId}/revisions
 
-Ajoute une révision salariale au contrat.
+Ajoute une révision salariale au contrat. Pour les contrats PUBLIC, le champ `indiceMajore` remplace `annualGrossSalary`.
 
 **Accès** : propriétaire du contrat ou ADMIN
+
+**Exemple — PRIVATE**
 
 ```http
 POST /api/salary-contracts/1/revisions
@@ -384,13 +448,27 @@ Content-Type: application/json
 }
 ```
 
+**Exemple — PUBLIC**
+
+```http
+POST /api/salary-contracts/1/revisions
+Content-Type: application/json
+
+{
+  "effectiveDate": "2025-01-01",
+  "indiceMajore": 435,
+  "label": "Avancement d'échelon 2025"
+}
+```
+
 #### Champs
 
 | Champ | Type | Obligatoire | Contraintes | Description |
 |-------|------|-------------|-------------|-------------|
 | `effectiveDate` | `date` | oui | ≥ `contract.startDate` | Date d'entrée en vigueur |
-| `annualGrossSalary` | `number` | oui | > 0 | Nouveau salaire brut annuel (€) |
-| `label` | `string` | non | | Libellé libre (ex : "Promotion mars 2025") |
+| `annualGrossSalary` | `number` | si PRIVATE | > 0 | Nouveau salaire brut annuel (€) |
+| `indiceMajore` | `integer` | si PUBLIC | ≥ 200 | Nouvel indice majoré — brut calculé depuis `IM × valeur du point` |
+| `label` | `string` | non | | Libellé libre |
 
 #### Réponses
 
@@ -415,6 +493,8 @@ Content-Type: application/json
 Modifie une révision existante (remplacement complet).
 
 **Accès** : propriétaire du contrat ou ADMIN
+
+Mêmes champs que POST (`annualGrossSalary` pour PRIVATE, `indiceMajore` pour PUBLIC).
 
 ```http
 PUT /api/salary-contracts/1/revisions/1
