@@ -157,6 +157,76 @@ export function computeSaleAlternative({
   }
 }
 
+// Effet de levier : impact de réinvestir le capital emprunté
+export function computeLeverageImpact({
+  loanAmount, totalInterest, durationYears,
+  expectedReturn,        // %/an
+  taxRate = 30,          // PFU sur la plus-value (%)
+}) {
+  if (loanAmount <= 0) return null
+  const futureValue = loanAmount * Math.pow(1 + expectedReturn / 100, durationYears)
+  const grossGain   = futureValue - loanAmount
+  const taxOnGain   = Math.max(0, grossGain) * taxRate / 100
+  const netGain     = grossGain - taxOnGain
+
+  // Effet de levier net = gain net du réinvestissement - coût des intérêts
+  const netLeverage = netGain - totalInterest
+  const breakEvenRate = (() => {
+    // Trouve r tel que loanAmount × (1+r)^d × (1-tax) - loanAmount × (1-tax × ratioPV) = totalInterest
+    // Approximation : taux net ≈ taux brut × (1 − tax/100). Donc taux brut breakeven ≈ totalInterest/loanAmount/duration / (1-tax/100)
+    if (durationYears <= 0) return 0
+    const grossNeeded = (totalInterest / loanAmount) / durationYears
+    return grossNeeded / (1 - taxRate / 100) * 100
+  })()
+
+  return {
+    futureValue,
+    grossGain,
+    taxOnGain,
+    netGain,
+    totalInterest,
+    netLeverage,
+    breakEvenRate,
+  }
+}
+
+// Sensibilité aux variations de taux (scénarios EURIBOR)
+export function computeRateSensitivity({
+  loanAmount, baseRate, durationYears, mode, deltas = [-1, 0, 1, 2, 3],
+}) {
+  return deltas.map(delta => {
+    const rate = Math.max(0, baseRate + delta)
+    const cost = computeLoanCost(loanAmount, rate, durationYears, mode)
+    return {
+      delta, rate,
+      monthlyPayment: cost.monthlyPayment,
+      totalInterest:  cost.totalInterest,
+    }
+  })
+}
+
+// Comparaison parallèle des scénarios LTV (sur un montant donné, ou la capacité de chacun)
+export function compareLtvScenarios({
+  valueByCategory, scenarios, scenarioNames,
+  loanAmount, mode, annualRate, durationYears, repaymentMode, marginCallThreshold,
+}) {
+  return scenarioNames.map(name => {
+    const ltvMap = scenarios[name]
+    const cap    = computeCapacity(valueByCategory, ltvMap)
+    const effective = mode === 'capacity' ? cap.total : Math.min(loanAmount, cap.total)
+    const cost   = computeLoanCost(effective, annualRate, durationYears, repaymentMode)
+    const drop   = computeMaxDrop(effective, cap.totalValue, marginCallThreshold)
+    return {
+      name, capacity: cap.total, avgLtv: cap.avgLtv,
+      effectiveAmount: effective,
+      monthlyPayment: cost.monthlyPayment,
+      totalInterest:  cost.totalInterest,
+      maxDrop:        drop,
+      exceeded:       mode === 'amount' && loanAmount > cap.total,
+    }
+  })
+}
+
 // Plus-value latente totale du portefeuille (pour le ratio d'imposition)
 export function computeAvgCapitalGainRatio(positions) {
   let totalValue = 0
