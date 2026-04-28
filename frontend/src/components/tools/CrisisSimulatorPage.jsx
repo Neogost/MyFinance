@@ -67,7 +67,7 @@ function ChartTooltip({ active, payload, label }) {
       <p className="text-gray-500 mb-1 font-medium">An {label}</p>
       {payload.map(p => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-semibold">
-          {p.name} : {fmtEur(p.value)}
+          {p.name} : <span className="amount">{fmtEur(p.value)}</span>
         </p>
       ))}
     </div>
@@ -371,24 +371,24 @@ export default function CrisisSimulatorPage({ user }) {
         ].map(({ label, before, after }) => (
           <div key={label} className="bg-white rounded-xl shadow-sm p-5">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{label}</p>
-            <p className="text-lg font-bold text-gray-900">{fmtEur(before)}</p>
+            <p className="text-lg font-bold text-gray-900 amount">{fmtEur(before)}</p>
             <p className="text-xs text-gray-400 mb-3">avant crise</p>
             <div className="border-t border-gray-100 pt-3">
-              <p className={`text-lg font-bold ${after < before ? 'text-red-600' : 'text-gray-900'}`}>{fmtEur(after)}</p>
+              <p className={`text-lg font-bold amount ${after < before ? 'text-red-600' : 'text-gray-900'}`}>{fmtEur(after)}</p>
               <p className="text-xs text-gray-400">après crise</p>
             </div>
           </div>
         ))}
         <div className="bg-red-50 border border-red-100 rounded-xl shadow-sm p-5">
           <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-3">Perte potentielle</p>
-          <p className={`text-2xl font-bold ${totalLoss >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+          <p className={`text-2xl font-bold amount ${totalLoss >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
             {fmtEur(jobLoss ? patrimoineBrutApresChomage - patrimoineBrutBefore : totalLoss)}
           </p>
-          <p className={`text-base font-semibold mt-1 ${totalLoss >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+          <p className={`text-base font-semibold mt-1 amount ${totalLoss >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
             {fmtPct(patrimoineBrutBefore > 0 ? (jobLoss ? patrimoineBrutApresChomage - patrimoineBrutBefore : totalLoss) / patrimoineBrutBefore : 0)}
           </p>
           {jobLoss && erosionMatelas > 0 && (
-            <p className="text-xs text-amber-600 mt-2">dont {fmtEur(erosionMatelas)} de matelas</p>
+            <p className="text-xs text-amber-600 mt-2">dont <span className="amount">{fmtEur(erosionMatelas)}</span> de matelas</p>
           )}
         </div>
       </div>
@@ -431,7 +431,7 @@ export default function CrisisSimulatorPage({ user }) {
             <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-2">Recommandation de rééquilibrage</p>
             {recommendation.type === 'mat' && (
               <p className="text-sm text-gray-700">
-                Transférer <span className="font-semibold text-indigo-700">{fmtEur(recommendation.transfer)}</span> de {recommendation.sourceName} vers Livrets
+                Transférer <span className="font-semibold text-indigo-700 amount">{fmtEur(recommendation.transfer)}</span> de {recommendation.sourceName} vers Livrets
                 porterait votre couverture matelas à <span className="font-semibold">{recommendation.newMoisCouverts.toFixed(1)} mois</span> et votre score à{' '}
                 <span className="font-semibold text-indigo-700">{recommendation.newScore}/10</span>
                 {' '}(+{recommendation.scoreDiff} point{recommendation.scoreDiff > 1 ? 's' : ''}).
@@ -439,7 +439,7 @@ export default function CrisisSimulatorPage({ user }) {
             )}
             {recommendation.type === 'loss' && (
               <p className="text-sm text-gray-700">
-                Réduire votre exposition {recommendation.sourceName} de <span className="font-semibold text-indigo-700">{fmtEur(recommendation.transfer)}</span> (20 %)
+                Réduire votre exposition {recommendation.sourceName} de <span className="font-semibold text-indigo-700 amount">{fmtEur(recommendation.transfer)}</span> (20 %)
                 en faveur des Livrets limiterait la perte à{' '}
                 <span className="font-semibold">{Math.round(Math.abs(recommendation.newLossPct) * 100)} %</span> et porterait votre score à{' '}
                 <span className="font-semibold text-indigo-700">{recommendation.newScore}/10</span>
@@ -448,7 +448,7 @@ export default function CrisisSimulatorPage({ user }) {
             )}
             {recommendation.type === 'rec' && (
               <p className="text-sm text-gray-700">
-                Augmenter votre épargne mensuelle de <span className="font-semibold text-indigo-700">{fmtEur(recommendation.savingsBoost)}</span> réduirait
+                Augmenter votre épargne mensuelle de <span className="font-semibold text-indigo-700 amount">{fmtEur(recommendation.savingsBoost)}</span> réduirait
                 la récupération de <span className="font-semibold">{recommendation.savedYears} an{recommendation.savedYears > 1 ? 's' : ''}</span>
                 {' '}(à {recommendation.newRecoveryYears} ans) et porterait votre score à{' '}
                 <span className="font-semibold text-indigo-700">{recommendation.newScore}/10</span>
@@ -475,9 +475,9 @@ export default function CrisisSimulatorPage({ user }) {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">{CATEGORY_LABELS[cat]}</span>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-400">{fmtEur(before)}</span>
+                    <span className="text-gray-400 amount">{fmtEur(before)}</span>
                     <span className="text-gray-300">→</span>
-                    <span className={`font-semibold ${isDown ? 'text-red-600' : isUp ? 'text-emerald-600' : 'text-gray-700'}`}>{fmtEur(after)}</span>
+                    <span className={`font-semibold amount ${isDown ? 'text-red-600' : isUp ? 'text-emerald-600' : 'text-gray-700'}`}>{fmtEur(after)}</span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeCls}`}>{fmtPct(drawdown)}</span>
                   </div>
                 </div>
@@ -497,19 +497,19 @@ export default function CrisisSimulatorPage({ user }) {
 
           {jobLoss && erosionMatelas > 0 && (
             <div className="flex items-center gap-3 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-              <span className="text-amber-600 font-medium">− {fmtEur(erosionMatelas)} consommés pendant {jobLossMonths} mois de chômage</span>
-              <span className="text-amber-400">({fmtEur(liquiditesAfter)} → {fmtEur(liquiditesApresChomage)})</span>
+              <span className="text-amber-600 font-medium">− <span className="amount">{fmtEur(erosionMatelas)}</span> consommés pendant {jobLossMonths} mois de chômage</span>
+              <span className="text-amber-400 amount">({fmtEur(liquiditesAfter)} → {fmtEur(liquiditesApresChomage)})</span>
             </div>
           )}
           {jobLoss && erosionMatelas === 0 && liquiditesAfter > 0 && totalJobLossExpenses > 0 && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 font-medium">
-              Matelas épuisé — {jobLossMonths} mois de dépenses ({fmtEur(totalJobLossExpenses)}) dépassent le matelas disponible ({fmtEur(liquiditesAfter)})
+              Matelas épuisé — {jobLossMonths} mois de dépenses (<span className="amount">{fmtEur(totalJobLossExpenses)}</span>) dépassent le matelas disponible (<span className="amount">{fmtEur(liquiditesAfter)}</span>)
             </div>
           )}
 
           <div className="flex flex-wrap items-center gap-6 mb-5">
             <div>
-              <p className={`text-2xl font-bold ${jobLoss && liquiditesApresChomage < liquiditesAfter ? 'text-amber-600' : 'text-gray-900'}`}>
+              <p className={`text-2xl font-bold amount ${jobLoss && liquiditesApresChomage < liquiditesAfter ? 'text-amber-600' : 'text-gray-900'}`}>
                 {fmtEur(liquiditesAffichees)}
               </p>
               <p className="text-sm text-gray-500">LIVRET + LIQUIDITE{jobLoss ? ' après chômage' : ' après crise'}</p>
@@ -527,7 +527,7 @@ export default function CrisisSimulatorPage({ user }) {
                 <p className={`text-sm font-semibold ${liquiditesAffichees >= snTarget ? 'text-emerald-600' : 'text-red-600'}`}>
                   {liquiditesAffichees >= snTarget ? '✓ Objectif atteint' : '✗ Objectif non atteint'}
                 </p>
-                <p className="text-sm text-gray-400">Cible matelas : {fmtEur(snTarget)}</p>
+                <p className="text-sm text-gray-400">Cible matelas : <span className="amount">{fmtEur(snTarget)}</span></p>
               </div>
             )}
           </div>
@@ -545,7 +545,7 @@ export default function CrisisSimulatorPage({ user }) {
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all duration-300 ${barCls}`} style={{ width: `${pct}%` }} />
                       </div>
-                      <span className={`text-xs font-medium w-20 text-right shrink-0 ${value === 0 ? 'text-red-500' : 'text-gray-700'}`}>
+                      <span className={`text-xs font-medium w-20 text-right shrink-0 amount ${value === 0 ? 'text-red-500' : 'text-gray-700'}`}>
                         {value === 0 ? 'Épuisé' : fmtEur(value)}
                       </span>
                     </div>
@@ -576,12 +576,12 @@ export default function CrisisSimulatorPage({ user }) {
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-500 mb-1">Montant réinvesti</p>
-                <p className="text-lg font-bold text-indigo-600">{fmtEur(reinvestAmount)}</p>
+                <p className="text-lg font-bold text-indigo-600 amount">{fmtEur(reinvestAmount)}</p>
                 <p className="text-xs text-gray-400 mt-1">à {Math.round(Math.abs(bourseDrawdown) * 100)} % sous le prix d'avant-crise</p>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-500 mb-1">Plus-value latente au creux</p>
-                <p className="text-lg font-bold text-emerald-600">+ {fmtEur(reinvestBonus)}</p>
+                <p className="text-lg font-bold text-emerald-600 amount">+ {fmtEur(reinvestBonus)}</p>
                 <p className="text-xs text-gray-400 mt-1">gain théorique si retour au niveau pré-crise</p>
               </div>
               <div className="p-4 bg-indigo-50 rounded-lg">
@@ -657,9 +657,9 @@ export default function CrisisSimulatorPage({ user }) {
 
         <p className="text-xs text-gray-400 mt-4">
           Basé sur un rendement historique post-crise de {Math.round(scenario.postCrisisReturn * 100)} % / an
-          {!jobLoss && annualSavings > 0 && ` + une épargne de ${fmtEur(annualSavings / 12)} / mois`}
+          {!jobLoss && annualSavings > 0 && <> + une épargne de <span className="amount">{fmtEur(annualSavings / 12)}</span> / mois</>}
           {!jobLoss && annualSavings <= 0 && ' (épargne nulle ou négative)'}
-          {jobLoss && ` · sans épargne · matelas érodé de ${fmtEur(erosionMatelas)} sur ${jobLossMonths} mois de chômage`}
+          {jobLoss && <> · sans épargne · matelas érodé de <span className="amount">{fmtEur(erosionMatelas)}</span> sur {jobLossMonths} mois de chômage</>}
           .
         </p>
       </div>
@@ -675,7 +675,7 @@ export default function CrisisSimulatorPage({ user }) {
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Objectif FIRE</p>
-              <p className="text-lg font-bold text-gray-800">{fmtEur(fireTarget)}</p>
+              <p className="text-lg font-bold text-gray-800 amount">{fmtEur(fireTarget)}</p>
               <p className="text-xs text-gray-400 mt-1">25 × dépenses annuelles (règle des 4 %)</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
