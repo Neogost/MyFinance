@@ -119,6 +119,11 @@ export default function PaySlipPanel({ contractId, projection }) {
                       <button onClick={() => setFormTarget(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
                         Modifier
                       </button>
+                      <button onClick={() => setFormTarget({ ...slip, id: undefined, period: '' })}
+                        title="Dupliquer ce bulletin (la période sera à choisir)"
+                        className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
+                        Dupliquer
+                      </button>
                       <button onClick={() => handleDelete(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition">
                         Supprimer
                       </button>

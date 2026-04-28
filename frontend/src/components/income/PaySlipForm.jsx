@@ -6,7 +6,9 @@ const EMPTY = { period: '', grossSalary: '', taxableNetSalary: '', netSalary: ''
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 
 export default function PaySlipForm({ slip, onSubmit, onCancel }) {
-  const isEdit = Boolean(slip)
+  // En duplication, slip existe mais sans id — on reste en mode création
+  const isEdit = Boolean(slip?.id)
+  const isDuplicate = Boolean(slip && !slip.id)
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -55,8 +57,17 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-gray-900 mb-6">
-          {isEdit ? 'Modifier le bulletin' : 'Ajouter un bulletin de paie'}
+          {isEdit
+            ? 'Modifier le bulletin'
+            : isDuplicate
+              ? 'Dupliquer un bulletin de paie'
+              : 'Ajouter un bulletin de paie'}
         </h2>
+        {isDuplicate && (
+          <p className="text-xs text-gray-500 -mt-4 mb-4">
+            Les montants ont été pré-remplis. Sélectionnez la période concernée pour créer le nouveau bulletin.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
