@@ -35,6 +35,7 @@ vi.mock('../../../components/dashboard/SafetyNetWidget',             () => ({ de
 vi.mock('../../../components/dashboard/DetteWidget',                 () => ({ default: () => <div data-testid="dette-widget" /> }))
 vi.mock('../../../components/dashboard/GeographicExposureWidget',    () => ({ default: () => <div data-testid="geo-widget" /> }))
 vi.mock('../../../components/dashboard/SectorExposureWidget',        () => ({ default: () => <div data-testid="sector-widget" /> }))
+vi.mock('../../../components/dashboard/PatrimoineNetWidget',         () => ({ default: () => <div data-testid="patrimoine-net-widget" /> }))
 
 const USER = { id: 1, firstName: 'Jean', lastName: 'Dupont', role: 'USER', familyGroupId: null, safetyNetMode: 'FIXED_AMOUNT' }
 

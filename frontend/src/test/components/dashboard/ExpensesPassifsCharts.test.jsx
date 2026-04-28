@@ -27,12 +27,12 @@ describe('ExpensesByCategoryChart', () => {
     })
   })
 
-  it('affiche "Aucune dépense" quand la liste est vide', async () => {
+  it('appelle onHasData(false) et ne rend rien quand la liste est vide', async () => {
     getExpenseSummary.mockResolvedValue({ byCategory: [], totalMonthlyExpenses: 0, savingsRate: null })
-    render(<ExpensesByCategoryChart />)
-    await waitFor(() => {
-      expect(screen.getByText(/Aucune dépense/)).toBeInTheDocument()
-    })
+    const onHasData = vi.fn()
+    const { container } = render(<ExpensesByCategoryChart onHasData={onHasData} />)
+    await waitFor(() => expect(onHasData).toHaveBeenCalledWith(false))
+    expect(container.firstChild).toBeNull()
   })
 
   it('affiche "Total mensuel" et le label de catégorie avec des données', async () => {
@@ -82,12 +82,12 @@ describe('PassifsByCategoryChart', () => {
     })
   })
 
-  it('affiche "Aucune possession" quand la liste est vide', async () => {
+  it('appelle onHasData(false) et ne rend rien quand la liste est vide', async () => {
     getPossessionsSummary.mockResolvedValue({ byCategory: [], totalEffectiveValue: 0, totalDepreciation: 0, globalDepreciationRate: 0 })
-    render(<PassifsByCategoryChart />)
-    await waitFor(() => {
-      expect(screen.getByText(/Aucune possession/)).toBeInTheDocument()
-    })
+    const onHasData = vi.fn()
+    const { container } = render(<PassifsByCategoryChart onHasData={onHasData} />)
+    await waitFor(() => expect(onHasData).toHaveBeenCalledWith(false))
+    expect(container.firstChild).toBeNull()
   })
 
   it('affiche "Valeur actuelle totale" et le label de catégorie avec des données', async () => {

@@ -80,7 +80,17 @@ L'utilisateur peut **ajuster fictivement** chaque catégorie (champ surchargeabl
 | `marginCallThreshold` | `number` | Seuil de couverture déclenchant un appel de marge (défaut : LTV utilisé + 10 pts) |
 | `simulatedMarketDrop` | `number` | Baisse simulée du portefeuille (%, 0–80) — défaut 30 % |
 
-### 3.5 Comparaison vente vs Lombard — optionnel
+### 3.5 Effet de levier (réinvestissement) — optionnel
+
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `leverageEnabled` | `boolean` | Activer la simulation de réinvestissement du capital emprunté |
+| `leverageReturn` | `number` | Rendement annuel attendu du réinvestissement (%) — défaut 7 |
+| `leverageTaxRate` | `number` | Taux d'imposition des plus-values (PFU, défaut 30 %) |
+
+L'hypothèse implicite : le capital emprunté est réinvesti dans un actif de type BOURSE (cas standard du Lombard à effet de levier). Le drawdown BOURSE du scénario de stress est appliqué à ce capital pour évaluer le risque combiné.
+
+### 3.6 Comparaison vente vs Lombard — optionnel
 
 | Paramètre | Type | Description |
 |-----------|------|-------------|
@@ -89,7 +99,7 @@ L'utilisateur peut **ajuster fictivement** chaque catégorie (champ surchargeabl
 | `capitalGainTaxRate` | `number` | Taux d'imposition des plus-values (défaut 30 % — flat tax) |
 | `expectedReturn` | `number` | Rendement annuel attendu du portefeuille (%) — pour comparer le manque à gagner |
 
-### 3.6 Sauvegarde de simulation — optionnel
+### 3.7 Sauvegarde de simulation — optionnel
 
 | Paramètre | Stockage | Description |
 |-----------|----------|-------------|
@@ -224,13 +234,68 @@ economie = coutVente − coutLombard
 
 L'arbitrage favorise le Lombard si `economie > 0`.
 
-### 4.9 Effet de levier théorique
+### 4.9 Effet de levier — réinvestissement
+
+Quand `leverageEnabled` est actif, l'outil simule un emprunt réinvesti puis compare le gain net au coût des intérêts.
 
 ```
-levier = loanAmount / (valeurPortefeuilleActuelle − loanAmount)
+futureValue   = loanAmount × (1 + leverageReturn / 100) ^ durationYears
+grossGain     = futureValue − loanAmount
+taxOnGain     = max(0, grossGain) × leverageTaxRate / 100
+netGain       = grossGain − taxOnGain
+
+netLeverage   = netGain − totalInterest
+breakEvenRate = (totalInterest / loanAmount / durationYears) / (1 − taxRate/100) × 100
 ```
 
-Affiché à titre indicatif — un levier > 1 indique que l'emprunt dépasse les fonds propres réels.
+L'arbitrage est favorable si `netLeverage > 0`. Le `breakEvenRate` est le rendement brut minimum du réinvestissement nécessaire pour rentabiliser l'opération (compte tenu de l'imposition).
+
+### 4.10 Couplage stress test + effet de levier
+
+Quand le levier est activé et qu'un scénario de stress est simulé, le capital réinvesti subit lui aussi le choc (drawdown de la catégorie BOURSE) :
+
+```
+reinvestDrawdown   = activeStressDrawdowns.BOURSE
+reinvestedAfterShock = loanAmount × (1 + reinvestDrawdown)
+reinvestLoss       = reinvestedAfterShock − loanAmount   // négatif en cas de crise
+
+// Effet boule de neige
+si stressRisk.status === 'margin_call' && reinvestLoss < 0 :
+  pertesCumulees = stressRisk.amountToComplete + |reinvestLoss|
+  // L'utilisateur subit un margin call ET perd sur son investissement levé
+```
+
+Cette section révèle le risque #1 du Lombard à effet de levier : pendant une crise, le portefeuille initial déclenche un margin call **et** le portefeuille réinvesti chute simultanément.
+
+### 4.11 Sensibilité aux variations de taux
+
+Le Lombard est généralement à taux variable indexé EURIBOR/€STR + spread. L'outil recalcule le coût pour 5 scénarios de variation des taux :
+
+```
+deltas = [-1, 0, +1, +2, +3]  // points de base
+pour chaque delta :
+  rate     = max(0, baseRate + delta)
+  cost     = computeLoanCost(loanAmount, rate, durationYears, mode)
+  diff     = cost.totalInterest − totalInterest_base
+```
+
+Affiché en tableau avec mise en évidence du scénario actuel.
+
+### 4.12 Comparaison parallèle des scénarios LTV
+
+Vue côte à côte des 3 scénarios standards (Prudent / Réaliste / Optimiste) sur le même montant ou la capacité de chacun :
+
+```
+pour chaque scenario in ['prudent', 'realiste', 'optimiste'] :
+  ltvMap         = LTV_SCENARIOS[scenario]
+  capacity       = computeCapacity(valueByCategory, ltvMap)
+  effective      = mode === 'capacity' ? capacity.total : min(loanAmount, capacity.total)
+  cost           = computeLoanCost(effective, annualRate, durationYears, repaymentMode)
+  maxDrop        = computeMaxDrop(effective, capacity.totalValue, marginCallThreshold)
+  faisabilite    = mode === 'amount' ? loanAmount ≤ capacity.total : true
+```
+
+Permet de comparer en un coup d'œil capacité, mensualité, coût total, marge avant margin call et faisabilité pour un même projet.
 
 ---
 
@@ -322,6 +387,37 @@ Bloc dédié réutilisant les scénarios du simulateur de crise existant :
 - Tableau de tous les scénarios en synthèse (ligne par ligne)
 - Bouton "Voir le simulateur de crise complet →" (lien vers `crisis-simulator`)
 
+### 5.6.ter Section "Effet de levier" (toggle)
+
+- Checkbox "Effet de levier (réinvestissement)" avec tooltip explicatif
+- Inputs visibles si activé : rendement attendu (%/an), taux PFU plus-value (%)
+- Affichage dans le panneau droit :
+  - 3 KPIs : valeur au terme / plus-value nette / coût intérêts
+  - Encart résultat : effet de levier net en € (vert si favorable, rouge sinon)
+  - Si défavorable : indication du `breakEvenRate` à atteindre
+  - Avertissement amber sur l'amplification des pertes en cas de crise
+- L'encart violet "Impact sur le capital réinvesti" apparaît automatiquement dans la section stress test quand le levier est actif
+
+### 5.6.quater Section "Sensibilité aux taux variables"
+
+Tableau de 5 lignes (`-1 pt`, `Aujourd'hui`, `+1 pt`, `+2 pt`, `+3 pt`) avec :
+- Taux effectif appliqué
+- Mensualité (ou intérêts mensuels en mode in fine)
+- Coût total intérêts
+- Δ vs base (en € et coloré : rouge si surcoût, vert si économie)
+
+La ligne "Aujourd'hui" est mise en évidence (fond indigo). Une note précise que le Lombard est généralement à taux variable révisé trimestriellement.
+
+### 5.6.quinquies Section "Comparaison des scénarios LTV"
+
+Tableau parallèle des 3 scénarios standards (Prudent / Réaliste / Optimiste) avec :
+- Capacité maximale
+- LTV moyen
+- Mensualité (ou intérêts mensuels)
+- Coût total intérêts
+- Marge avant margin call (coloré : vert > 30 %, amber 15–30 %, rouge < 15 %)
+- Faisabilité (uniquement en mode "amount") : badge ✓ OK ou ✗ Dépasse
+
 ### 5.7 Section "Comparaison vente vs Lombard" (dépliable)
 
 - Toggle "Activer la comparaison"
@@ -353,6 +449,23 @@ Coût total intérêts    Marge avant margin call
 - Mode **amortissable** : tableau classique (mensualité, intérêts, amortissement, capital restant)
 - Vue annuelle agrégée + vue mensuelle dépliable
 
+### 5.9.bis Tooltips pédagogiques
+
+Le simulateur intègre des tooltips (icône ℹ qui s'ouvre vers le bas pour éviter le conflit avec la nav fixe) sur les concepts financiers :
+
+| Position | Concept expliqué |
+|----------|-----------------|
+| Titre principal | Définition du crédit Lombard |
+| Bannière LTV (1ère carte) | Loan-to-Value et variations par catégorie |
+| Mode de remboursement | In fine vs Amortissable |
+| Section Margin call | Mécanisme d'appel de marge |
+| Section Effet de levier | Stratégie de réinvestissement et risques |
+| Champs PFU (×2) | Flat tax 30 % détaillée |
+| Section Stress test | Méthodologie + lien avec `crisisScenarios.js` |
+| Encart "Impact sur le capital réinvesti" | Hypothèse de drawdown BOURSE appliqué au levier |
+
+Composant `InfoTooltip` défini localement dans le fichier (`width` paramétrable, position `top-full mt-2`).
+
 ### 5.10 Graphiques
 
 #### Répartition de la capacité par catégorie (PieChart donut)
@@ -363,6 +476,18 @@ Segments : capacité provenant de `BOURSE`, `IMMO_PAPIER`, `LIVRET`, `LIQUIDITE`
 
 - En mode amortissable : courbe décroissante du capital restant
 - En mode in fine : palier horizontal puis chute en mois N
+- Axe X : `tickFormatter` "Année 1", "Année 2"… (l'année 0 est libellée "Départ")
+- Tooltip personnalisé : titre "Année N", capital restant (indigo), capital remboursé (vert), progression %
+- Points visibles sur la courbe (`dot` actif) pour faciliter le survol
+
+#### Répartition annuelle intérêts / capital (BarChart empilé)
+
+Barres empilées par année :
+- Intérêts (rose `#ec4899`) en bas
+- Capital remboursé (indigo `#4f46e5`) au-dessus
+- Tooltip : intérêts / capital / total versé sur l'année
+- En mode in fine, on visualise les intérêts constants chaque année puis le capital qui apparaît en année finale
+- En mode amortissable, on visualise la transition progressive (intérêts décroissants, capital croissant)
 
 #### Jauge stress test (BarChart horizontal)
 
@@ -387,7 +512,12 @@ Valeur après chute simulée      │██████████│          
 | `computeMaxDrop(loanAmount, currentValue, threshold)` | % de chute tolérée |
 | `computeSaleAlternative(loanAmount, positions, taxRate, expectedReturn, duration)` | Comparaison vente vs Lombard |
 | `applyStressScenario(valueByCategory, scenarioDrops)` | Valeur portefeuille après choc — réutilise les `drawdowns` de `crisisScenarios.js` |
-| `evaluateMarginCallRisk(loanAmount, postCrashValue, ltvMap, threshold)` | Retourne `{ status: 'safe' \| 'warning' \| 'margin_call', amountToComplete }` |
+| `evaluateMarginCallRisk(loanAmount, postCrashValue, threshold)` | Retourne `{ status: 'safe' \| 'warning' \| 'margin_call', amountToComplete, ltvEffective }` |
+| `computeSaleAlternative({...})` | Comparaison vente vs Lombard (impôt PV + manque à gagner) |
+| `computeAvgCapitalGainRatio(positions)` | Ratio moyen plus-value latente sur les positions actives |
+| `computeLeverageImpact({...})` | Effet de levier net : `{ futureValue, grossGain, taxOnGain, netGain, netLeverage, breakEvenRate }` |
+| `computeRateSensitivity({...})` | Tableau d'impact de variations EURIBOR (deltas par défaut `[-1, 0, +1, +2, +3]`) |
+| `compareLtvScenarios({...})` | Tableau parallèle des 3 scénarios LTV pour un montant ou la capacité de chacun |
 
 ### 6.2 Constantes externalisées
 
@@ -436,6 +566,11 @@ const [stressScenarioId, setStressScenarioId] = useState('subprime-2008')
 const [customStressDrops, setCustomStressDrops] = useState({
   BOURSE: -30, IMMO_PAPIER: -15, IMMO_PHYSIQUE: -10, CRYPTO: -50, LIVRET: 0, LIQUIDITE: 0,
 })
+
+// Effet de levier (réinvestissement)
+const [leverageEnabled, setLeverageEnabled] = useState(false)
+const [leverageReturn,  setLeverageReturn]  = useState(7)
+const [leverageTaxRate, setLeverageTaxRate] = useState(30)
 
 // Comparaison vente
 const [compareWithSale, setCompareWithSale]     = useState(false)

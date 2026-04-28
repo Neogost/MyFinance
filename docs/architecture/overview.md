@@ -92,6 +92,7 @@ mindmap
         Bilan financier personnel
         Simulateur d'intérêts composés
         Simulateur d'emprunt immobilier
+        Simulateur de crédit Lombard
         Déclaration de patrimoine
         Simulateur de crise
     Administration
@@ -277,6 +278,12 @@ Applique les taux de chute historiques de crises majeures (2008, dot-com, COVID,
 
 → [`docs/architecture/tools/crisis-simulator.md`](tools/crisis-simulator.md)
 
+#### Simulateur de crédit Lombard
+
+Simule un emprunt garanti par le portefeuille de titres financiers (sans vente d'actifs). Trois scénarios LTV pré-définis (Prudent / Réaliste / Optimiste) + mode personnalisé éditable, modes In fine / Amortissable, calcul du seuil de margin call et chute tolérée. Effet de levier (réinvestissement à un rendement attendu) avec gain net après PFU vs coût des intérêts. Sensibilité aux variations EURIBOR (±3 pts). Comparaison parallèle des 3 scénarios LTV sur un même projet. Stress test couplé au levier (effet boule de neige révélé) réutilisant les `drawdowns` du simulateur de crise. Comparaison vente vs Lombard avec calcul d'imposition plus-value et manque à gagner.
+
+→ [`docs/architecture/tools/lombard-credit-simulator.md`](tools/lombard-credit-simulator.md)
+
 ---
 
 ### 3.9 Fonctionnalités d'administration
@@ -374,6 +381,7 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Simulateur d'emprunt immobilier | Implémenté |
 | Déclaration de patrimoine (PDF) | Implémenté |
 | Simulateur de crise | Implémenté |
+| Simulateur de crédit Lombard (LTV, levier, stress test, sensibilité taux) | Implémenté |
 | Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
 | Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
 | Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |

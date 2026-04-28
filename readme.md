@@ -17,6 +17,7 @@ Application web personnelle de gestion financière, hébergée sur NAS QNAP en r
 | Scoring patrimonial | ✅ | Score 0–105 pts en 6 axes, profil FRAGILE→OPTIMISE, widget tableau de bord |
 | Simulateur d'impôts | ✅ | IRPP avec revenus salariaux + complémentaires + astreintes |
 | Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement, section investissement locatif |
+| Simulateur de crédit Lombard | ✅ | Capacité d'emprunt selon LTV (3 scénarios + custom), effet de levier, sensibilité aux taux, stress test couplé |
 | Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net (actifs, possessions, dettes) |
 | Simulateur d'intérêts composés | ✅ | Projection d'épargne avec versements périodiques et rendement cible |
 | Bilan financier | ✅ | Actif/passif, ratio de couverture patrimoniale, projection FIRE |
@@ -145,12 +146,12 @@ Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation
 # Backend
 cd backend
 ./mvnw test
-# 700 tests unitaires (services + controllers)
+# 706 tests unitaires (services + controllers) · couverture JaCoCo : target/site/jacoco/index.html
 
 # Frontend
 cd frontend
 npm test
-# 880 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure)
+# 923 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard)
 ```
 
 ## Documentation
@@ -179,6 +180,7 @@ npm test
 | `docs/architecture/family-group.md` | Regroupement familial, invitations |
 | `docs/architecture/login-history.md` | Historique des connexions, événements |
 | `docs/architecture/tools/loan-simulator.md` | Simulateur d'emprunt, investissement locatif |
+| `docs/architecture/tools/lombard-credit-simulator.md` | Simulateur de crédit Lombard, LTV par scénario, stress test couplé au levier |
 | `docs/architecture/tools/crisis-simulator.md` | Simulateur de crise, impact choc de marché |
 | `docs/architecture/tools/compound-interest-simulator.md` | Simulateur d'intérêts composés |
 | `docs/architecture/decisions/` | Décisions d'architecture (ADR) et patterns |

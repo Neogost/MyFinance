@@ -47,12 +47,12 @@ describe('SalaryEvolutionChart', () => {
     })
   })
 
-  it('affiche "Aucun bulletin de paie" quand la liste est vide', async () => {
+  it('appelle onHasData(false) et ne rend rien quand la liste est vide', async () => {
     getSalaryEvolution.mockResolvedValue([])
-    render(<SalaryEvolutionChart />)
-    await waitFor(() => {
-      expect(screen.getByText(/Aucun bulletin de paie saisi/)).toBeInTheDocument()
-    })
+    const onHasData = vi.fn()
+    const { container } = render(<SalaryEvolutionChart onHasData={onHasData} />)
+    await waitFor(() => expect(onHasData).toHaveBeenCalledWith(false))
+    expect(container.firstChild).toBeNull()
   })
 
   it('n\'affiche pas l\'état vide quand des données sont présentes', async () => {
