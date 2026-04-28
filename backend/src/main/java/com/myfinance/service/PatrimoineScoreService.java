@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.AssetCategory;
+import com.myfinance.domain.FiscalEnvelope;
 import com.myfinance.domain.PositionStatus;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
@@ -8,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.Period;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,9 +43,6 @@ public class PatrimoineScoreService {
         double totalValue = valueByCategory.values().stream().mapToDouble(Double::doubleValue).sum();
         double liquidValue = valueByCategory.getOrDefault("LIQUIDITE", 0.0)
                 + valueByCategory.getOrDefault("LIVRET", 0.0);
-        double riskValue = valueByCategory.getOrDefault("BOURSE", 0.0)
-                + valueByCategory.getOrDefault("CRYPTO", 0.0);
-
         // Chargement des allocations géo/sectorielles pour les positions BOURSE
         List<Long> bourseInstrumentIds = positions.stream()
                 .filter(p -> p.category() == AssetCategory.BOURSE && p.instrument() != null
@@ -62,7 +58,7 @@ public class PatrimoineScoreService {
                 scoreSafetyNet(user, liquidValue, expenseSummary),
                 scoreEndettement(debtSummary, expenseSummary, totalValue),
                 scoreEpargne(expenseSummary),
-                scoreAgeRisque(user, riskValue, totalValue),
+                scoreOptimisationFiscale(positions),
                 scoreProgression(snapshots)
         );
 
@@ -300,31 +296,43 @@ public class PatrimoineScoreService {
         return new PatrimoineScoreDto.AxeScoreDto("EPARGNE", "Capacité d'épargne", score, 20, detail, savingsRate == null);
     }
 
-    // ── Axe 5 : Cohérence âge/risque (15 pts) ─────────────────────
+    // ── Axe 5 : Optimisation fiscale (15 pts) ─────────────────────
 
-    private PatrimoineScoreDto.AxeScoreDto scoreAgeRisque(User user, double riskValue, double totalValue) {
-        if (user.getBirthDate() == null) {
-            return new PatrimoineScoreDto.AxeScoreDto("AGE_RISQUE", "Cohérence âge/risque", 0, 15,
-                    "Date de naissance non renseignée dans Mon Profil — cet indicateur nécessite votre âge.", true);
+    private PatrimoineScoreDto.AxeScoreDto scoreOptimisationFiscale(List<PositionDto> positions) {
+        List<PositionDto> eligibles = positions.stream()
+                .filter(p -> p.category() == AssetCategory.BOURSE || p.category() == AssetCategory.IMMO_PAPIER)
+                .filter(p -> p.computed() != null && p.computed().currentValueEur() != null)
+                .toList();
+
+        if (eligibles.isEmpty()) {
+            return new PatrimoineScoreDto.AxeScoreDto("OPTIMISATION_FISCALE", "Optimisation fiscale", 15, 15,
+                    "Aucune position BOURSE ou IMMO_PAPIER — axe non applicable.", false);
         }
 
-        int age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
-        double targetRiskPct = Math.max(0, Math.min(1.0, (110.0 - age) / 100.0));
-        double actualRiskPct = totalValue > 0 ? riskValue / totalValue : 0;
-        double deviation = Math.abs(actualRiskPct - targetRiskPct);
+        double totalEligible = eligibles.stream()
+                .mapToDouble(p -> p.computed().currentValueEur().doubleValue())
+                .sum();
+
+        double taxAdvantagedValue = eligibles.stream()
+                .filter(p -> p.fiscalEnvelope() == FiscalEnvelope.PEA
+                          || p.fiscalEnvelope() == FiscalEnvelope.AV
+                          || p.fiscalEnvelope() == FiscalEnvelope.PEE_PERCO)
+                .mapToDouble(p -> p.computed().currentValueEur().doubleValue())
+                .sum();
+
+        double pct = totalEligible > 0 ? taxAdvantagedValue / totalEligible : 0;
 
         int score;
-        if (deviation <= 0.10) score = 15;
-        else if (deviation <= 0.20) score = 10;
-        else if (deviation <= 0.30) score = 5;
+        if (pct >= 0.80) score = 15;
+        else if (pct >= 0.60) score = 10;
+        else if (pct >= 0.40) score = 5;
         else score = 0;
 
-        String direction = actualRiskPct < targetRiskPct ? "sous-exposé" : "surexposé";
         String detail = String.format(
-                "%d ans → cible BOURSE+CRYPTO : %.0f%% — actuelle : %.0f%% — écart : %.0f%% (%s aux marchés).",
-                age, targetRiskPct * 100, actualRiskPct * 100, deviation * 100, direction);
+                "%.0f %% de BOURSE+IMMO_PAPIER en enveloppe avantageuse (PEA, AV, PEE) — %.0f € sur %.0f € total.",
+                pct * 100, taxAdvantagedValue, totalEligible);
 
-        return new PatrimoineScoreDto.AxeScoreDto("AGE_RISQUE", "Cohérence âge/risque", score, 15, detail, false);
+        return new PatrimoineScoreDto.AxeScoreDto("OPTIMISATION_FISCALE", "Optimisation fiscale", score, 15, detail, false);
     }
 
     // ── Axe 6 : Progression patrimoniale (10 pts) ─────────────────

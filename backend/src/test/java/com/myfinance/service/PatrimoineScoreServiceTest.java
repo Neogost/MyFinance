@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.domain.FiscalEnvelope;
 import com.myfinance.domain.PositionStatus;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SafetyNetMode;
@@ -85,14 +86,45 @@ class PatrimoineScoreServiceTest {
     // ── Sans données ───────────────────────────────────────────────
 
     @Test
-    void computeScore_sansBirthDate_axeAgeRisqueAZero() {
-        user = User.builder().id(1L).login("user").role(RoleEnum.USER).build();
+    void computeScore_sansBourseNiImmoPapier_axeFiscalMaxScore() {
         stubDataMinimale();
 
         PatrimoineScoreDto result = service.computeScore(user);
 
         PatrimoineScoreDto.AxeScoreDto axe = result.axes().stream()
-                .filter(a -> a.id().equals("AGE_RISQUE"))
+                .filter(a -> a.id().equals("OPTIMISATION_FISCALE"))
+                .findFirst().orElseThrow();
+        assertThat(axe.score()).isEqualTo(axe.maxScore());
+    }
+
+    @Test
+    void computeScore_avecBourseEnPea_axeFiscalMaxScore() {
+        stubDataBase();
+        PositionComputedDto computed = new PositionComputedDto(
+                BigDecimal.valueOf(30000), BigDecimal.valueOf(40000), BigDecimal.valueOf(10000), null, null);
+        when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
+                .thenReturn(List.of(buildPositionWithEnvelope("BOURSE", FiscalEnvelope.PEA, computed)));
+
+        PatrimoineScoreDto result = service.computeScore(user);
+
+        PatrimoineScoreDto.AxeScoreDto axe = result.axes().stream()
+                .filter(a -> a.id().equals("OPTIMISATION_FISCALE"))
+                .findFirst().orElseThrow();
+        assertThat(axe.score()).isEqualTo(15);
+    }
+
+    @Test
+    void computeScore_avecBourseSansEnveloppe_axeFiscalAZero() {
+        stubDataBase();
+        PositionComputedDto computed = new PositionComputedDto(
+                BigDecimal.valueOf(30000), BigDecimal.valueOf(40000), BigDecimal.valueOf(10000), null, null);
+        when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
+                .thenReturn(List.of(buildPositionWithEnvelope("BOURSE", FiscalEnvelope.CTO, computed)));
+
+        PatrimoineScoreDto result = service.computeScore(user);
+
+        PatrimoineScoreDto.AxeScoreDto axe = result.axes().stream()
+                .filter(a -> a.id().equals("OPTIMISATION_FISCALE"))
                 .findFirst().orElseThrow();
         assertThat(axe.score()).isZero();
     }
@@ -158,7 +190,7 @@ class PatrimoineScoreServiceTest {
                 BigDecimal.valueOf(40000), BigDecimal.valueOf(50000),
                 BigDecimal.valueOf(10000), null, null);
 
-        PositionDto bourse = buildPosition("BOURSE", computed);
+        PositionDto bourse = buildPositionWithEnvelope("BOURSE", FiscalEnvelope.PEA, computed);
         PositionDto livret = buildPosition("LIVRET", new PositionComputedDto(
                 BigDecimal.valueOf(10000), BigDecimal.valueOf(10000), BigDecimal.ZERO, null, null));
         PositionDto liquidite = buildPosition("LIQUIDITE", new PositionComputedDto(
@@ -189,12 +221,9 @@ class PatrimoineScoreServiceTest {
                 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
     }
 
-    private void stubDataMinimale() {
+    private void stubDataBase() {
         when(instrumentService.loadAllocationsForScore(any()))
                 .thenReturn(new InstrumentService.AllocationsBundle(Map.of(), Map.of()));
-
-        when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
-                .thenReturn(List.of());
         when(patrimoineTargetService.getTargets(user)).thenReturn(Map.of());
         when(debtService.getSummary(user)).thenReturn(new DebtSummaryDto(
                 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
@@ -203,10 +232,20 @@ class PatrimoineScoreServiceTest {
         when(portfolioSnapshotService.findAllByUser(user)).thenReturn(List.of());
     }
 
+    private void stubDataMinimale() {
+        stubDataBase();
+        when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
+                .thenReturn(List.of());
+    }
+
     private PositionDto buildPosition(String category, PositionComputedDto computed) {
+        return buildPositionWithEnvelope(category, null, computed);
+    }
+
+    private PositionDto buildPositionWithEnvelope(String category, FiscalEnvelope envelope, PositionComputedDto computed) {
         return new PositionDto(null,
                 com.myfinance.domain.AssetCategory.valueOf(category),
-                null, category, "EUR", null, null, null,
+                null, category, "EUR", envelope, null, null,
                 null, null, null, null, null, null, null, null,
                 false, PositionStatus.ACTIVE, null, null, computed);
     }
