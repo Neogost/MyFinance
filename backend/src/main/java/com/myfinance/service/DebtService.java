@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -148,6 +149,7 @@ public class DebtService {
 
     // ── Suppression ────────────────────────────────────────────
 
+    @Transactional
     public void delete(Long id, User currentUser) {
         Debt debt = getWithOwnershipCheck(id, currentUser);
         balanceEntryRepository.deleteByDebt(debt);
@@ -188,6 +190,7 @@ public class DebtService {
         return DebtBalanceEntryDto.from(saved);
     }
 
+    @Transactional
     public void deleteBalanceEntry(Long debtId, Long entryId, User currentUser) {
         Debt debt = getWithOwnershipCheck(debtId, currentUser);
 
