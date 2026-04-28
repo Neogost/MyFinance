@@ -114,14 +114,14 @@ function CategoryTable({ title, rows, totalLabel }) {
             <tr key={key} className="border-b border-gray-100">
               <td className="py-1.5 text-gray-700">{key}</td>
               {hasExtra && <td className="py-1.5 text-gray-400 text-xs px-4">{extra ?? ''}</td>}
-              <td className="py-1.5 text-right font-medium text-gray-900">{fmtEur(value)}</td>
+              <td className="py-1.5 text-right font-medium text-gray-900 amount">{fmtEur(value)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-gray-400">
             <td className="py-1.5 font-bold text-gray-800" colSpan={hasExtra ? 2 : 1}>{totalLabel}</td>
-            <td className="py-1.5 text-right font-bold text-gray-900">{fmtEur(total)}</td>
+            <td className="py-1.5 text-right font-bold text-gray-900 amount">{fmtEur(total)}</td>
           </tr>
         </tfoot>
       </table>
@@ -287,12 +287,12 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
               <tbody>
                 <tr className="border-b border-gray-100">
                   <td className="py-1.5 text-gray-600">Patrimoine brut</td>
-                  <td className="py-1.5 text-right font-semibold text-gray-900">{fmtEur(patrimoineBrut)}</td>
+                  <td className="py-1.5 text-right font-semibold text-gray-900 amount">{fmtEur(patrimoineBrut)}</td>
                 </tr>
                 {totalPassif > 0 && (
                   <tr className="border-b border-gray-100">
                     <td className="py-1.5 text-gray-600">Passifs & dettes</td>
-                    <td className="py-1.5 text-right text-gray-700">{fmtEur(totalPassif)}</td>
+                    <td className="py-1.5 text-right text-gray-700 amount">{fmtEur(totalPassif)}</td>
                   </tr>
                 )}
                 {Object.entries(possessionsByCategory).map(([cat, items]) => {
@@ -300,30 +300,30 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                   return (
                     <tr key={cat} className="border-b border-gray-100">
                       <td className="py-1 text-gray-400 text-xs pl-3">{POSSESSION_LABELS[cat] ?? cat}</td>
-                      <td className="py-1 text-right text-gray-500 text-xs">{fmtEur(total)}</td>
+                      <td className="py-1 text-right text-gray-500 text-xs amount">{fmtEur(total)}</td>
                     </tr>
                   )
                 })}
                 {Object.entries(dettesByType).map(([type, total]) => (
                   <tr key={type} className="border-b border-gray-100">
                     <td className="py-1 text-red-400 text-xs pl-3">{DETTE_TYPE_LABELS[type] ?? type}</td>
-                    <td className="py-1 text-right text-red-500 text-xs">{fmtEur(total)}</td>
+                    <td className="py-1 text-right text-red-500 text-xs amount">{fmtEur(total)}</td>
                   </tr>
                 ))}
                 <tr className="border-b border-gray-200">
                   <td className="py-1.5 font-bold text-gray-800">Patrimoine net</td>
-                  <td className={`py-1.5 text-right font-bold ${patrimoineNet >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                  <td className={`py-1.5 text-right font-bold amount ${patrimoineNet >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                     {fmtEur(patrimoineNet)}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-1.5 text-gray-400 text-xs pl-3">dont actif financier</td>
-                  <td className="py-1.5 text-right text-gray-500 text-xs">{fmtEur(patrimoineFinancier)}</td>
+                  <td className="py-1.5 text-right text-gray-500 text-xs amount">{fmtEur(patrimoineFinancier)}</td>
                 </tr>
                 {totalPlusValue !== 0 && (
                   <tr>
                     <td className="py-1.5 text-gray-400 text-xs pl-3">dont plus-values latentes</td>
-                    <td className={`py-1.5 text-right text-xs font-medium ${totalPlusValue >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <td className={`py-1.5 text-right text-xs font-medium amount ${totalPlusValue >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {totalPlusValue >= 0 ? '+' : ''}{fmtEur(totalPlusValue)}
                     </td>
                   </tr>
@@ -343,7 +343,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                     <td className="py-1.5 text-gray-600">
                       Salaire net fiscal{activeContract?.companyName ? ` (${activeContract.companyName})` : ''}
                     </td>
-                    <td className="py-1.5 text-right font-bold text-gray-900">{fmtEur(monthlySalary)}</td>
+                    <td className="py-1.5 text-right font-bold text-gray-900 amount">{fmtEur(monthlySalary)}</td>
                   </tr>
                 ) : (
                   <tr>
@@ -366,19 +366,19 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                   .map(e => (
                     <tr key={e.category} className="border-b border-gray-100">
                       <td className="py-1.5 text-gray-600">{EXPENSE_LABELS[e.category] ?? e.category}</td>
-                      <td className="py-1.5 text-right text-gray-700">{fmtEur(e.monthlyAmount)}</td>
+                      <td className="py-1.5 text-right text-gray-700 amount">{fmtEur(e.monthlyAmount)}</td>
                     </tr>
                   ))
                 }
                 {monthlyTax != null && (
                   <tr className="border-b border-gray-100">
                     <td className="py-1.5 text-gray-400 text-xs">Impôt estimé</td>
-                    <td className="py-1.5 text-right text-gray-500 text-xs">{fmtEur(monthlyTax)}</td>
+                    <td className="py-1.5 text-right text-gray-500 text-xs amount">{fmtEur(monthlyTax)}</td>
                   </tr>
                 )}
                 <tr className="border-t-2 border-gray-400">
                   <td className="py-1.5 font-bold text-gray-800">Total dépenses</td>
-                  <td className="py-1.5 text-right font-bold text-gray-900">
+                  <td className="py-1.5 text-right font-bold text-gray-900 amount">
                     {fmtEur(totalDepenses + (monthlyTax ?? 0))}
                   </td>
                 </tr>
@@ -386,13 +386,13 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                   <>
                     <tr>
                       <td className="py-1.5 text-gray-400 text-xs">Capacité d'épargne</td>
-                      <td className={`py-1.5 text-right text-xs font-medium ${capaciteEpargne >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <td className={`py-1.5 text-right text-xs font-medium amount ${capaciteEpargne >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                         {capaciteEpargne >= 0 ? '+' : ''}{fmtEur(capaciteEpargne)}
                       </td>
                     </tr>
                     <tr>
                       <td className="py-1 text-gray-400 text-xs">Taux d'épargne</td>
-                      <td className={`py-1 text-right text-xs ${capaciteEpargne >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <td className={`py-1 text-right text-xs amount ${capaciteEpargne >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                         {Math.round((capaciteEpargne / totalRevenus) * 100)} %
                       </td>
                     </tr>
@@ -454,7 +454,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                       <tr key={p.id} className="border-b border-gray-100">
                         <td className="py-1.5 text-gray-700">{p.address || p.label}</td>
                         <td className="py-1.5 text-gray-400 text-xs px-4">{OWNERSHIP_LABELS[p.ownershipType] ?? ''}</td>
-                        <td className="py-1.5 text-right font-medium text-gray-900">
+                        <td className="py-1.5 text-right font-medium text-gray-900 amount">
                           {fmtEur(parseFloat(p.computed?.currentValueEur ?? 0))}
                         </td>
                       </tr>
@@ -462,7 +462,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                         <tr key={`${p.id}-acq`} className="border-b border-gray-100">
                           <td className="py-1 text-gray-400 text-xs pl-3">Prix d'acquisition</td>
                           <td />
-                          <td className="py-1 text-right text-gray-400 text-xs">
+                          <td className="py-1 text-right text-gray-400 text-xs amount">
                             {fmtEur(parseFloat(p.acquisitionPrice))}
                           </td>
                         </tr>
@@ -473,7 +473,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                 <tfoot>
                   <tr className="border-t-2 border-gray-400">
                     <td className="py-1.5 font-bold text-gray-800" colSpan={2}>Total Immobilier physique</td>
-                    <td className="py-1.5 text-right font-bold text-gray-900">
+                    <td className="py-1.5 text-right font-bold text-gray-900 amount">
                       {fmtEur(byCategory['IMMO_PHYSIQUE'].reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0))}
                     </td>
                   </tr>
@@ -508,16 +508,16 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
                       <span className="ml-2 text-xs text-gray-400">{DETTE_TYPE_LABELS[d.type] ?? d.type}</span>
                     </td>
                     <td className="py-1.5 text-gray-400 text-xs px-4">{d.lender ?? '—'}</td>
-                    <td className="py-1.5 text-right font-medium text-red-600">{fmtEur(parseFloat(d.remainingCapital ?? 0))}</td>
-                    <td className="py-1.5 text-right text-gray-600 pl-4">{d.monthlyTotal != null ? fmtEur(d.monthlyTotal) : '—'}</td>
+                    <td className="py-1.5 text-right font-medium text-red-600 amount">{fmtEur(parseFloat(d.remainingCapital ?? 0))}</td>
+                    <td className="py-1.5 text-right text-gray-600 pl-4 amount">{d.monthlyTotal != null ? fmtEur(d.monthlyTotal) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-gray-400">
                   <td className="py-1.5 font-bold text-gray-800" colSpan={2}>Total dettes</td>
-                  <td className="py-1.5 text-right font-bold text-red-600">{fmtEur(totalDettes)}</td>
-                  <td className="py-1.5 text-right font-bold text-gray-700 pl-4">
+                  <td className="py-1.5 text-right font-bold text-red-600 amount">{fmtEur(totalDettes)}</td>
+                  <td className="py-1.5 text-right font-bold text-gray-700 pl-4 amount">
                     {fmtEur(debts.reduce((s, d) => s + (d.monthlyTotal ?? 0), 0))}
                   </td>
                 </tr>
