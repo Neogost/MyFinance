@@ -1,10 +1,24 @@
 # Notes de version
 
-## v1.4.0 — 28 avril 2026 — Crédit Lombard, personnalisation et sécurité
+## v1.4.0 — 28 avril 2026 — Lombard, contrats publics, personnalisation et sécurité
 
-> Cette version introduit un nouveau simulateur dédié au crédit Lombard, des outils de personnalisation du tableau de bord, et plusieurs améliorations de transparence et de sécurité.
+> Cette version introduit le support des contrats de la **fonction publique**, un nouveau simulateur de crédit Lombard, des outils de personnalisation du tableau de bord, et plusieurs améliorations de transparence et de sécurité.
 
 ### ✨ Nouveautés
+
+#### Contrats fonction publique (Revenus → Salariat)
+
+Il est maintenant possible de saisir un contrat de la **fonction publique** en plus des contrats d'entreprise privée.
+
+À la création d'un contrat, un écran de sélection propose :
+- 🏢 **Entreprise privée** — formulaire habituel (salaire brut annuel)
+- 🏛️ **Fonction publique** — nouveau formulaire dédié
+
+Pour les contrats publics, le salaire n'est pas saisi directement : vous renseignez votre **indice majoré (IM)** et l'application calcule automatiquement le traitement brut annuel en appliquant la **valeur du point d'indice** en vigueur à la date du contrat. L'historique complet des revalorisations depuis 2002 est intégré.
+
+- Deux statuts supportés : **Titulaire** (cotisations CNRACL + CSG spécifiques) et **Contractuel** (régime général comme le privé)
+- Un aperçu du brut calculé s'affiche en temps réel sous le champ indice
+- Les **révisions salariales** fonctionnent de la même façon : saisissez le nouvel indice majoré et le brut est recalculé automatiquement à la date d'entrée en vigueur
 
 #### Simulateur de crédit Lombard (Outils → Simulateur de crédit Lombard)
 
@@ -35,12 +49,25 @@ Bouton **Personnaliser** en haut du dashboard pour activer/désactiver chaque wi
 
 L'axe « Cohérence âge/risque » est remplacé par **Optimisation fiscale** : mesure la part de BOURSE / IMMO_PAPIER placée en enveloppe avantageuse (PEA, AV, PEE) plutôt qu'en CTO. Plus actionnable et indépendant de votre âge.
 
+#### Performance patrimoniale — TWR / MWR (Administration, en travaux)
+
+Une nouvelle page de **mesure du rendement annualisé** du patrimoine financier est disponible dans le menu Administration (réservée aux administrateurs, fonctionnalité en cours de développement).
+
+- **TWR** (Time-Weighted Return) : performance pure de l'actif, neutralise les versements — comparable à un benchmark
+- **MWR** (Money-Weighted Return / XIRR) : rendement réellement vécu, tient compte du timing de vos investissements
+- Sélecteur de période : Globale, YTD, 1 an, 3 ans, 5 ans
+- Graphique d'évolution du TWR cumulé vs un benchmark de référence configurable (ex. 8 %/an)
+- Tableaux par catégorie (Bourse, Crypto, Immo papier, Livret) et par position triés par performance
+- ⚠️ Les calculs s'appuient sur vos relevés mensuels — la précision dépend de leur régularité
+
 ### 🎨 Améliorations
 
 - **Tooltips explicatifs** dans Mon Profil : chaque champ (informations personnelles, profil fiscal, matelas de sécurité) explique où la donnée est utilisée dans l'application
 - **Masquage automatique** des sections du Dashboard sans données : si vous n'avez pas de bulletins de paie, dépenses ou passifs, les widgets correspondants ne s'affichent plus
 - **Mode "masquer les valeurs"** étendu à la déclaration de patrimoine et au simulateur de crise — toutes les valeurs monétaires sont désormais floutées
 - **Diversification patrimoniale** : les liquidités (compte courant) ne sont plus comptées comme une catégorie de diversification — focus sur les vrais investissements
+- **Duplication d'un bulletin de paie** : bouton « Dupliquer » sur chaque ligne du panneau bulletins — ouvre la modal de saisie pré-remplie avec les montants du bulletin existant, seule la période reste à sélectionner
+- **Saisie du brut annuel au centime** : le champ « Salaire brut annuel » du formulaire contrat n'est plus limité aux multiples de 100 €
 
 ### 🔒 Sécurité
 
@@ -53,6 +80,7 @@ L'axe « Cohérence âge/risque » est remplacé par **Optimisation fiscale** : 
 
 ### 🐛 Corrections
 
+- **Comparaison « vs théorique » du Net versé** dans les bulletins de paie : le badge d'écart était toujours vide car le code comparait à un champ inexistant (`monthlyNetSalary`) au lieu du bon champ (`monthlyNetAfterTax`)
 - **Suppression d'une dette** : correction de l'erreur "No EntityManager" qui empêchait la suppression dans certains cas
 - **Pages d'erreur 500** : les ressources statiques manquantes renvoient désormais un 404 silencieux
 
@@ -60,7 +88,7 @@ L'axe « Cohérence âge/risque » est remplacé par **Optimisation fiscale** : 
 
 - **JaCoCo** ajouté pour la couverture de tests backend (rapport HTML, seuil 70 % lignes / 60 % branches)
 - **Maven Surefire Report** pour le rapport HTML d'exécution des tests
-- 706 tests backend + 923 tests frontend (43 nouveaux pour le simulateur Lombard)
+- 746 tests backend + 923 tests frontend
 
 ---
 
