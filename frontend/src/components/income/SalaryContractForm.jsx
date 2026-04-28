@@ -96,7 +96,7 @@ export default function SalaryContractForm({ contract, onSubmit, onCancel }) {
 
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Salaire brut annuel (€) *</label>
-            <input name="annualGrossSalary" type="number" min="0" step="100" value={form.annualGrossSalary} onChange={handleChange} required placeholder="45000" className={inputCls} />
+            <input name="annualGrossSalary" type="number" min="0" step="0.01" value={form.annualGrossSalary} onChange={handleChange} required placeholder="45000" className={inputCls} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
