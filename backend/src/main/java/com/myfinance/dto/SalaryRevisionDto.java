@@ -8,6 +8,7 @@ public record SalaryRevisionDto(
         Long id,
         LocalDate effectiveDate,
         Float annualGrossSalary,
+        Integer indiceMajore,   // null pour les contrats PRIVATE
         String label
 ) {
     public static SalaryRevisionDto from(SalaryRevision revision) {
@@ -15,6 +16,7 @@ public record SalaryRevisionDto(
                 revision.getId(),
                 revision.getEffectiveDate(),
                 revision.getAnnualGrossSalary(),
+                revision.getIndiceMajore(),
                 revision.getLabel()
         );
     }

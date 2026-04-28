@@ -31,6 +31,7 @@ class SalaryRevisionServiceTest {
 
     @Mock SalaryRevisionRepository salaryRevisionRepository;
     @Mock SalaryContractRepository salaryContractRepository;
+    @Mock PointValueService         pointValueService;
     @InjectMocks SalaryContractService salaryContractService;
     SalaryRevisionService salaryRevisionService;
 
@@ -59,7 +60,7 @@ class SalaryRevisionServiceTest {
                 .annualGrossSalary(47000f).label("Augmentation 2025")
                 .build();
 
-        salaryRevisionService = new SalaryRevisionService(salaryRevisionRepository, salaryContractService);
+        salaryRevisionService = new SalaryRevisionService(salaryRevisionRepository, salaryContractService, pointValueService);
     }
 
     // ── findAllByContract ──────────────────────────────────────
@@ -92,7 +93,7 @@ class SalaryRevisionServiceTest {
     @Test
     void create_creeLaRevision() {
         CreateSalaryRevisionRequest request = new CreateSalaryRevisionRequest(
-                LocalDate.of(2025, 1, 1), 47000f, "Augmentation 2025");
+                LocalDate.of(2025, 1, 1), 47000f, null, "Augmentation 2025");
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
         when(salaryRevisionRepository.existsByContractAndEffectiveDate(contract, LocalDate.of(2025, 1, 1)))
@@ -115,7 +116,7 @@ class SalaryRevisionServiceTest {
     @Test
     void create_leve400_siDateAvantDebutContrat() {
         CreateSalaryRevisionRequest request = new CreateSalaryRevisionRequest(
-                LocalDate.of(2022, 6, 1), 47000f, null);
+                LocalDate.of(2022, 6, 1), 47000f, null, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
 
@@ -130,7 +131,7 @@ class SalaryRevisionServiceTest {
     @Test
     void create_leve409_siDateDejaExistante() {
         CreateSalaryRevisionRequest request = new CreateSalaryRevisionRequest(
-                LocalDate.of(2024, 1, 1), 46000f, null);
+                LocalDate.of(2024, 1, 1), 46000f, null, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
         when(salaryRevisionRepository.existsByContractAndEffectiveDate(contract, LocalDate.of(2024, 1, 1)))
@@ -150,7 +151,7 @@ class SalaryRevisionServiceTest {
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
 
         assertThatThrownBy(() -> salaryRevisionService.create(1L,
-                new CreateSalaryRevisionRequest(LocalDate.of(2025, 1, 1), 47000f, null), autre))
+                new CreateSalaryRevisionRequest(LocalDate.of(2025, 1, 1), 47000f, null, null), autre))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.FORBIDDEN));
@@ -161,7 +162,7 @@ class SalaryRevisionServiceTest {
     @Test
     void update_modifieLaRevision() {
         UpdateSalaryRevisionRequest request = new UpdateSalaryRevisionRequest(
-                LocalDate.of(2024, 1, 1), 46000f, "Augmentation 2024 corrigée");
+                LocalDate.of(2024, 1, 1), 46000f, null, "Augmentation 2024 corrigée");
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
         when(salaryRevisionRepository.findById(1L)).thenReturn(Optional.of(revision2024));
@@ -176,7 +177,7 @@ class SalaryRevisionServiceTest {
     @Test
     void update_leve409_siNouvelleDateDejaExistante() {
         UpdateSalaryRevisionRequest request = new UpdateSalaryRevisionRequest(
-                LocalDate.of(2025, 1, 1), 46000f, null);
+                LocalDate.of(2025, 1, 1), 46000f, null, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
         when(salaryRevisionRepository.findById(1L)).thenReturn(Optional.of(revision2024));

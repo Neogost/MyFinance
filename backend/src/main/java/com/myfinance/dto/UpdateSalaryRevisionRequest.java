@@ -1,5 +1,6 @@
 package com.myfinance.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -8,6 +9,9 @@ import java.time.LocalDate;
 
 public record UpdateSalaryRevisionRequest(
         @NotNull LocalDate effectiveDate,
-        @NotNull @Positive Float annualGrossSalary,
+        // PRIVATE : requis. PUBLIC : null (calculé depuis indiceMajore)
+        @Positive Float annualGrossSalary,
+        // PUBLIC uniquement
+        @Min(200) Integer indiceMajore,
         @Size(max = 200) String label
 ) {}

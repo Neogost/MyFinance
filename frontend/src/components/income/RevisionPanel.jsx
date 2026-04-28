@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getRevisions, createRevision, updateRevision, deleteRevision } from '../../api/income'
 import RevisionForm from './RevisionForm'
 
-export default function RevisionPanel({ contractId, activeRevisionId, onRevisionChange }) {
+export default function RevisionPanel({ contractId, contractType, activeRevisionId, onRevisionChange }) {
   const [revisions, setRevisions] = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
   const [loading, setLoading]       = useState(true)
@@ -103,6 +103,7 @@ export default function RevisionPanel({ contractId, activeRevisionId, onRevision
       {formTarget !== undefined && (
         <RevisionForm
           revision={formTarget}
+          contractType={contractType}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
         />

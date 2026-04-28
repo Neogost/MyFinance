@@ -32,6 +32,9 @@ public class SalaryRevision {
     @Column(nullable = false)
     private Float annualGrossSalary;
 
+    // PUBLIC uniquement : indice majoré ayant servi à calculer annualGrossSalary — nullable
+    private Integer indiceMajore;
+
     // Libellé libre (ex : "Augmentation annuelle 2025") — nullable
     private String label;
 }

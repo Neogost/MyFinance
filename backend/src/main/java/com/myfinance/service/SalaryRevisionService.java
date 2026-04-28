@@ -1,5 +1,6 @@
 package com.myfinance.service;
 
+import com.myfinance.domain.ContractTypeEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.SalaryRevision;
 import com.myfinance.domain.User;
@@ -21,7 +22,8 @@ import java.util.List;
 public class SalaryRevisionService {
 
     private final SalaryRevisionRepository salaryRevisionRepository;
-    private final SalaryContractService salaryContractService;
+    private final SalaryContractService    salaryContractService;
+    private final PointValueService        pointValueService;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -54,10 +56,14 @@ public class SalaryRevisionService {
                     "Une révision existe déjà pour la date : " + request.effectiveDate());
         }
 
+        float annualGross = resolveAnnualGross(contract, request.indiceMajore(),
+                request.annualGrossSalary(), request.effectiveDate());
+
         SalaryRevision revision = SalaryRevision.builder()
                 .contract(contract)
                 .effectiveDate(request.effectiveDate())
-                .annualGrossSalary(request.annualGrossSalary())
+                .annualGrossSalary(annualGross)
+                .indiceMajore(request.indiceMajore())
                 .label(request.label())
                 .build();
 
@@ -90,8 +96,12 @@ public class SalaryRevisionService {
                     "Une révision existe déjà pour la date : " + request.effectiveDate());
         }
 
+        float annualGross = resolveAnnualGross(contract, request.indiceMajore(),
+                request.annualGrossSalary(), request.effectiveDate());
+
         revision.setEffectiveDate(request.effectiveDate());
-        revision.setAnnualGrossSalary(request.annualGrossSalary());
+        revision.setAnnualGrossSalary(annualGross);
+        revision.setIndiceMajore(request.indiceMajore());
         revision.setLabel(request.label());
 
         SalaryRevisionDto dto = SalaryRevisionDto.from(salaryRevisionRepository.save(revision));
@@ -106,6 +116,25 @@ public class SalaryRevisionService {
         getRevisionForContract(revisionId, contract);
         salaryRevisionRepository.deleteById(revisionId);
         log.info("[user:{}] Révision salariale supprimée #{} [contrat #{}]", currentUser.getId(), revisionId, contractId);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────
+
+    /**
+     * Pour PUBLIC + indiceMajore fourni : calcule le brut via PointValueService.
+     * Pour PRIVATE (ou PUBLIC contractuel sans indice) : utilise annualGrossSalary directement.
+     */
+    private float resolveAnnualGross(SalaryContract contract, Integer indiceMajore,
+                                     Float annualGrossSalary, java.time.LocalDate referenceDate) {
+        if (ContractTypeEnum.PUBLIC == contract.getContractType() && indiceMajore != null) {
+            return pointValueService.computeAnnualGross(indiceMajore, referenceDate);
+        }
+        if (annualGrossSalary == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Le salaire brut annuel est requis pour un contrat privé.");
+        }
+        return annualGrossSalary;
     }
 
     // ── Vérification appartenance ─────────────────────────────
