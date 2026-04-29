@@ -54,6 +54,14 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - **Footer** : numéro de version affiché dynamiquement
 - **PWA** : icônes carrées (180 / 167 / 152 / 192 / 512 px), splash screens iOS pour 11 résolutions (iPhone SE → iPad Pro 13"), métadonnées Open Graph, `application-name`, `format-detection`
 
+#### Page Contact — refonte
+- Avatar agrandi (80 px) avec bordure indigo et barre de couleur en haut de carte
+- Liens de contact en blocs pleine largeur (cible tap mobile confortable)
+- Bouton "Copier" l'adresse email avec retour visuel ✓
+- Icônes SVG officielles LinkedIn et GitHub (couleurs de marque)
+- Bouton "← Retour" dans le header et lien "← Accueil" dans le footer
+- Padding adaptatif `p-5 md:p-8` sur mobile
+
 ---
 
 ## v1.4.0 — 28 avril 2026 — Lombard, contrats publics, personnalisation et sécurité
