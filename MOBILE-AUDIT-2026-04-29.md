@@ -522,10 +522,10 @@ fi
 
 ### Phase 4 — Validation et garde-fous
 **Objectif** : prévenir la régression.
-- [ ] Mettre à jour `memory/feedback_mobile_patterns.md` : rappel `z-60` strict
-- [ ] Ajouter à la checklist de fin de tâche dans `claude.md` : « Tester en 375 px avant commit »
-- [ ] Audit final complet (toutes les pages, tous les modals, tous les écrans)
-- [ ] Mettre à jour `CHANGELOG.md` (entrée `[Mobile] Conformité responsive complète`)
+- [x] **Mettre à jour `memory/feedback_mobile_patterns.md`** — z-60, layouts, dark mode, tableaux, script pre-commit
+- [x] **Ajouter section "Responsive mobile" dans `claude.md`** — checklist 375 px avant commit
+- [x] **`CHANGELOG.md`** — entrée v1.5.1 Mobile conformité complète
+- [ ] Audit final complet (toutes les pages, tous les modals) — à faire manuellement
 
 ---
 
@@ -546,7 +546,7 @@ fi
 | Phase 1 — Hygiène globale | ✅ RÉSOLU | 2026-04-29 |
 | Phase 2 — Formulaires | ✅ RÉSOLU | 2026-04-29 |
 | Phase 3 — Outils | ✅ RÉSOLU | 2026-04-29 |
-| Phase 4 — Validation | ⏳ À faire | — |
+| Phase 4 — Validation | 🔄 En cours | 2026-04-29 |
 
 ---
 

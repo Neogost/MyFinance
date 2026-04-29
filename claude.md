@@ -37,6 +37,16 @@ Avant de considérer une tâche comme terminée, vérifier chaque point applicab
 
 > Ces deux points (tests + docs) sont **non négociables** : une fonctionnalité sans test ni documentation n'est pas terminée.
 
+### Responsive mobile
+
+- Tout nouveau composant frontend → vérifier en **375 px** (iPhone SE) dans Chrome DevTools avant commit
+- Modals : `flex items-end sm:items-center` + `z-60` + `max-h-[90vh] overflow-y-auto` + `rounded-t-2xl sm:rounded-xl`
+- Grilles : jamais `grid-cols-N` sans fallback `grid-cols-1 md:grid-cols-N`
+- Tableaux : toujours `<div className="overflow-x-auto">` autour de `<table>`
+- Layouts 2 panneaux : `flex flex-col lg:flex-row gap-N lg:items-start` (pas `items-start` sans `lg:`)
+- Script de détection : `./scripts/check-mobile-patterns.sh --staged`
+- Référence complète : `MOBILE-AUDIT-2026-04-29.md` · Patterns détaillés : `docs/architecture/decisions/ADR-004-responsive-mobile.md`
+
 ---
 
 ## Description
