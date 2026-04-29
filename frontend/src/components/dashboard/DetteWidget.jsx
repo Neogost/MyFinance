@@ -122,7 +122,7 @@ export default function DetteWidget({ onNavigate }) {
       </div>
 
       {/* ── KPIs ── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-gray-50 rounded-lg px-4 py-3">
           <p className="text-xs text-gray-400 mb-1">Capital restant dû</p>
           <p className="text-base font-bold text-red-600 amount">{fmt(totalCapital)}</p>

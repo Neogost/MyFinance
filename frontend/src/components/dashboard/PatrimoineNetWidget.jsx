@@ -72,7 +72,7 @@ export default function PatrimoineNetWidget() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <div>
           <p className="text-xs text-gray-400 mb-1">Patrimoine brut</p>
           <p className="text-xl font-bold text-gray-900 amount">{fmtEur(patrimoineBrut)}</p>

@@ -269,7 +269,7 @@ done
 
 ---
 
-### 🟠 M1 — Widgets dashboard à 3 KPIs
+### 🟠 M1 — ✅ RÉSOLU (2026-04-29) — Widgets dashboard à 3 KPIs
 
 **Avant** (`PatrimoineNetWidget.jsx:75`) :
 ```jsx
@@ -505,7 +505,7 @@ fi
 - [x] **C1** — ✅ RÉSOLU (2026-04-29) — `z-50` → `z-60` sur 9 fichiers (10 occurrences)
 - [x] **C2** — ✅ RÉSOLU (2026-04-29) — bottom drawer sur 5 modals (3 desktop-only exclues)
 - [x] **C3** — ✅ RÉSOLU (2026-04-29) — `overflow-x-auto` sur 14 tableaux (4 desktop-only exclues)
-- [ ] M1 — Corriger les 2 widgets dashboard (`grid-cols-1 sm:grid-cols-3`)
+- [x] **M1** — ✅ RÉSOLU (2026-04-29) — `grid-cols-3` → `grid-cols-1 sm:grid-cols-3` sur 2 widgets
 - [ ] Test manuel en 375 px sur les pages impactées
 
 ### Phase 2 — Formulaires modaux
@@ -536,7 +536,7 @@ fi
 | C1 — z-50 sur modals | ✅ RÉSOLU | 2026-04-29 | 0 |
 | C2 — Modals sans bottom drawer | ✅ RÉSOLU | 2026-04-29 | 0 |
 | C3 — Tableaux sans overflow-x-auto | ✅ RÉSOLU | 2026-04-29 | 0 |
-| M1 — Widgets dashboard | ⏳ À faire | — | 2 fichiers |
+| M1 — Widgets dashboard | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M2 — Grilles formulaires | ⏳ À faire | — | 46 occurrences |
 | m1 — Simulateurs | ⏳ À faire | — | 7 pages |
 | m2 — Doc / admin | ⏳ À faire | — | 6 fichiers |
