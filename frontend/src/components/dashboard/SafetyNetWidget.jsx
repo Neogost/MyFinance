@@ -57,11 +57,11 @@ export default function SafetyNetWidget({ user }) {
         <div>
           <p className={`text-sm font-semibold ${textH}`}>Matelas de sécurité</p>
           <p className={`text-xs ${textS} mt-0.5`}>
-            Livrets & Liquidités · objectif {modeLabel} · {fmtEur.format(target)}
+            Livrets & Liquidités · objectif {modeLabel} · <span className="amount">{fmtEur.format(target)}</span>
           </p>
         </div>
         <div className="text-right shrink-0 ml-4">
-          <p className={`text-base font-bold ${textH}`}>{fmtEur.format(current)}</p>
+          <p className={`text-base font-bold ${textH} amount`}>{fmtEur.format(current)}</p>
           <p className={`text-xs ${textS}`}>{pct.toFixed(0)} %{achieved ? ' ✓' : ''}</p>
         </div>
       </div>
