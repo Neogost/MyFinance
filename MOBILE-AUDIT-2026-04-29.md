@@ -349,7 +349,7 @@ grep -rn "grid-cols-[2-9]" frontend/src/components/*/[A-Z]*Form.jsx | grep -v "m
 
 ---
 
-### 🟡 m1 — Pages outils / simulateurs
+### 🟡 m1 — ✅ RÉSOLU (2026-04-29) — Pages outils / simulateurs
 
 **Recharts — recettes courantes** :
 ```jsx
@@ -516,7 +516,7 @@ fi
 
 ### Phase 3 — Simulateurs et outils
 **Objectif** : pages outils lisibles sur mobile (sans chercher la perfection visuelle des graphiques).
-- [ ] m1 — Pour chaque page outil : test 375×667, lister les débordements, corriger en une PR par page
+- [x] **m1** — ✅ RÉSOLU (2026-04-29) — 7 pages outils auditées et corrigées
 - [ ] Recharts : `<ResponsiveContainer>` + ajustement marges
 - [ ] Tableaux comparatifs : scroll horizontal + colonnes secondaires masquées
 
@@ -538,7 +538,7 @@ fi
 | C3 — Tableaux sans overflow-x-auto | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M1 — Widgets dashboard | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M2 — Grilles formulaires | ✅ RÉSOLU | 2026-04-29 | 22 conservées intentionnellement |
-| m1 — Simulateurs | ⏳ À faire | — | 7 pages |
+| m1 — Simulateurs | ✅ RÉSOLU | 2026-04-29 | 0 |
 | m2 — Doc / admin | ⏳ À faire | — | 6 fichiers |
 
 | Phase | Statut | Date |
