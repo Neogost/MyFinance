@@ -45,7 +45,7 @@ Avant de considérer une tâche comme terminée, vérifier chaque point applicab
 - Tableaux : toujours `<div className="overflow-x-auto">` autour de `<table>`
 - Layouts 2 panneaux : `flex flex-col lg:flex-row gap-N lg:items-start` (pas `items-start` sans `lg:`)
 - Script de détection : `./scripts/check-mobile-patterns.sh --staged`
-- Référence complète : `MOBILE-AUDIT-2026-04-29.md` · Patterns détaillés : `docs/architecture/decisions/ADR-004-responsive-mobile.md`
+- Référence complète : `docs/audits/MOBILE-AUDIT-2026-04-29.md` · Patterns détaillés : `docs/architecture/decisions/ADR-004-responsive-mobile.md`
 
 ---
 
@@ -148,7 +148,7 @@ frontend/src/
 - Gestion des dettes (projection auto vs override manuel) : `docs/architecture/diagram/activity-debt-management.mmd`
 - Ajout d'une position (wizard 6 catégories) : `docs/architecture/diagram/activity-asset-management-add-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
-- Audit responsive mobile et plan de mise en conformité : `MOBILE-AUDIT-2026-04-29.md`
+- Audit responsive mobile et plan de mise en conformité : `docs/audits/MOBILE-AUDIT-2026-04-29.md`
 - Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
 - API authentification : `docs/api/authentication.md`
 - API tableau de bord : `docs/api/dashboard.md`
