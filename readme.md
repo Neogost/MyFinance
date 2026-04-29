@@ -18,6 +18,7 @@ Application web personnelle de gestion financière, hébergée sur NAS QNAP en r
 | Simulateur d'impôts | ✅ | IRPP avec revenus salariaux + complémentaires + astreintes |
 | Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement, section investissement locatif |
 | Simulateur de crédit Lombard | ✅ | Capacité d'emprunt selon LTV (3 scénarios + custom), effet de levier, sensibilité aux taux, stress test couplé |
+| Comparateur d'enveloppes fiscales | ✅ | PEA / CTO / Assurance-vie / PER — capital net après impôts, rendements différenciés, tooltips pédagogiques |
 | Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net (actifs, possessions, dettes) |
 | Simulateur d'intérêts composés | ✅ | Projection d'épargne avec versements périodiques et rendement cible |
 | Bilan financier | ✅ | Actif/passif, ratio de couverture patrimoniale, projection FIRE |
@@ -151,7 +152,7 @@ cd backend
 # Frontend
 cd frontend
 npm test
-# 923 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard)
+# 923 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes)
 ```
 
 ## Documentation
@@ -181,6 +182,8 @@ npm test
 | `docs/architecture/login-history.md` | Historique des connexions, événements |
 | `docs/architecture/tools/loan-simulator.md` | Simulateur d'emprunt, investissement locatif |
 | `docs/architecture/tools/lombard-credit-simulator.md` | Simulateur de crédit Lombard, LTV par scénario, stress test couplé au levier |
+| `docs/architecture/tools/fiscal-envelope-comparator.md` | Comparateur d'enveloppes fiscales PEA/CTO/AV/PER |
+| `docs/architecture/tools/retirement-simulator.md` | Simulateur retraite (spécifié, non implémenté) |
 | `docs/architecture/tools/crisis-simulator.md` | Simulateur de crise, impact choc de marché |
 | `docs/architecture/tools/compound-interest-simulator.md` | Simulateur d'intérêts composés |
 | `docs/architecture/decisions/` | Décisions d'architecture (ADR) et patterns |

@@ -106,8 +106,14 @@ frontend/src/
 │   │   ├── RecurringExpensePage.jsx  Page dépenses récurrentes (KPIs, répartition, liste groupée)
 │   │   └── RecurringExpenseForm.jsx  Modal création/édition dépense (aperçu projection, colocation)
 │   └── tools/
-│       └── TaxSimulatorPage.jsx     Simulateur des impôts
-├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | expenses | tax-simulator | users | profile)
+│       ├── TaxSimulatorPage.jsx               Simulateur des impôts
+│       ├── FiscalEnvelopeComparatorPage.jsx    Comparateur d'enveloppes fiscales
+│       └── … (BilanFinancier, Lombard, Crise, Emprunt, Intérêts composés, Performance)
+├── data/
+│   └── fiscal-envelopes.js   Barèmes fiscaux PEA/CTO/AV/PER (PFU, abattements, plafonds)
+├── utils/
+│   └── fiscalEnvelopes.js    Fonctions de calcul par enveloppe + orchestrateur compareEnvelopes
+├── App.jsx           Routage par état (currentPage : dashboard | salary | other-incomes | expenses | tax-simulator | fiscal-envelopes | users | profile)
 ├── App.css           Fichier vide (styles migrés vers Tailwind)
 └── index.css         Point d'entrée CSS — @import "tailwindcss"
 ```
@@ -152,6 +158,8 @@ frontend/src/
 - Bilan financier personnel (architecture) : `docs/architecture/tools/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/tools/compound-interest-simulator.md`
 - Simulateur de crédit Lombard (architecture) : `docs/architecture/tools/lombard-credit-simulator.md`
+- Comparateur d'enveloppes fiscales (architecture) : `docs/architecture/tools/fiscal-envelope-comparator.md`
+- Simulateur retraite (architecture, spécifié) : `docs/architecture/tools/retirement-simulator.md`
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 - Historique des connexions (architecture) : `docs/architecture/login-history.md`
 - API historique des connexions : `docs/api/login-history.md`
@@ -811,5 +819,19 @@ npm run dev
   - **Documentation** : `docs/architecture/salary-public-sector.md`, `docs/api/salary-contracts.md` mis à jour
   - Tests : 746 tests BUILD SUCCESS
 
+- **Comparateur d'enveloppes fiscales** (`FiscalEnvelopeComparatorPage`) :
+  - Outil purement frontend — aucun endpoint backend nouveau, pré-remplissage TMI via `GET /api/tax-simulator`
+  - 4 enveloppes comparées : CTO, PEA, Assurance-vie, PER — chacune avec fiscalité propre
+  - Rendements différenciés par enveloppe (sliders individuels) ou mode « même taux partout » (toggle)
+  - Valeurs par défaut réalistes : CTO 7 %, PEA 6,5 %, AV 3,5 %, PER 4,5 %
+  - Simulation AV : abattement annuel (4 600 € / 9 200 €) après 8 ans, taux réduit 24,7 % ou PFU, prise en compte du seuil 150 000 €
+  - Simulation PER : déduction TMI à l'entrée, réinvestissement éco. fiscale au rendement PER, taxation barème (TMI retraite) + PFU 30 % à la sortie
+  - Frais d'enveloppe paramétrables par enveloppe (déduits mensuellement du rendement)
+  - Référentiel externalisé : `frontend/src/data/fiscal-envelopes.js` (barèmes révisables sans recompilation backend)
+  - Fonctions de calcul : `frontend/src/utils/fiscalEnvelopes.js` (`simulateCTO`, `simulatePEA`, `simulateAV`, `simulatePER`, `compareEnvelopes`)
+  - Navigation : Outils → « Enveloppes fiscales » (desktop + mobile)
+  - Tests `SalaryContractForm.test.jsx` mis à jour pour le wizard 2 étapes (contrats publics)
+  - Documentation : `docs/architecture/tools/fiscal-envelope-comparator.md`
+
 **À venir :**
-- (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)
+- Simulateur retraite (spécifié dans `docs/architecture/tools/retirement-simulator.md` — non implémenté)

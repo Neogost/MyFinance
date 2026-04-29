@@ -1,5 +1,27 @@
 # Notes de version
 
+## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales
+
+> Cette version introduit un nouveau simulateur permettant de comparer le rendement net après impôt de quatre enveloppes fiscales : PEA, CTO, Assurance-vie et PER.
+
+### ✨ Nouveautés
+
+#### Comparateur d'enveloppes fiscales (Outils → Enveloppes fiscales)
+
+Répondez à la question : *« Pour un même investissement, quelle enveloppe me laisse le plus d'argent après impôts ? »*
+
+- **4 enveloppes comparées** : PEA, CTO, Assurance-vie et PER — chacune avec ses règles fiscales propres
+- **Rendements différenciés par enveloppe** : un slider par enveloppe (CTO/PEA → actions monde, AV → mix fonds euros + UC, PER → profil équilibré) ou un mode « même taux partout » pour isoler l'impact fiscal pur
+- **Fiscalité complète** : exonération IR PEA après 5 ans, abattement AV après 8 ans (4 600 € / 9 200 €), déduction TMI à l'entrée du PER avec taxation à la sortie au barème retraite, PFU 30 % ou option barème
+- **Réinvestissement de l'économie d'impôt PER** : l'économie fiscale annuelle est capitalisée séparément et comparée nette de PFU — donne une vision équitable de l'avantage PER
+- **Profil fiscal pré-rempli** depuis votre simulateur d'impôts (TMI actuelle et à la retraite)
+- **Frais d'enveloppe paramétrables** par enveloppe (frais de gestion UC typiques : 0,6 %/an)
+- **Graphique d'évolution** du capital brut sur la durée + comparaison par jalons (5 / 10 / 20 ans)
+- **Tableau récapitulatif** : capital brut, frais cumulés, économie fiscale à l'entrée, impôt à la sortie, capital net et rendement brut par enveloppe
+- **Tooltips pédagogiques** sur chaque concept : TMI, PFU vs barème, abattement AV, plafond PEA, plafond PER, dividendes CTO, réinvestissement éco. PER
+
+---
+
 ## v1.4.0 — 28 avril 2026 — Lombard, contrats publics, personnalisation et sécurité
 
 > Cette version introduit le support des contrats de la **fonction publique**, un nouveau simulateur de crédit Lombard, des outils de personnalisation du tableau de bord, et plusieurs améliorations de transparence et de sécurité.

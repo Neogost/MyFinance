@@ -128,7 +128,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
-  const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator'].includes(currentPage)
+  const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes'].includes(currentPage)
   const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','performance'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
@@ -187,6 +187,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                     ['compound-interest',      'Intérêts composés'],
                     ['loan-simulator',         "Simulateur d'emprunt"],
                     ['lombard-simulator',      'Simulateur crédit Lombard'],
+                    ['fiscal-envelopes',       'Enveloppes fiscales'],
                     ['patrimoine-declaration', 'Déclaration de patrimoine'],
                     ['crisis-simulator',       'Simulation de crise'],
                   ].map(([page, label]) => (
@@ -348,6 +349,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               ['compound-interest',      'Intérêts composés'],
               ['loan-simulator',         "Simulateur d'emprunt"],
               ['lombard-simulator',      'Simulateur crédit Lombard'],
+              ['fiscal-envelopes',       'Enveloppes fiscales'],
               ['patrimoine-declaration', 'Déclaration de patrimoine'],
               ['crisis-simulator',       'Simulation de crise'],
             ].map(([page, label]) => (

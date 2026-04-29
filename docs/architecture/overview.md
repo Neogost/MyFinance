@@ -93,6 +93,7 @@ mindmap
         Simulateur d'intérêts composés
         Simulateur d'emprunt immobilier
         Simulateur de crédit Lombard
+        Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER)
         Déclaration de patrimoine
         Simulateur de crise
     Administration
@@ -284,6 +285,12 @@ Simule un emprunt garanti par le portefeuille de titres financiers (sans vente d
 
 → [`docs/architecture/tools/lombard-credit-simulator.md`](tools/lombard-credit-simulator.md)
 
+#### Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER)
+
+Compare le rendement net après impôt de quatre enveloppes pour un même investissement. Rendements différenciés par enveloppe (sliders individuels) ou mode taux unique pour isoler l'impact fiscal pur. Fiscalité complète : PFU/barème CTO, exonération IR PEA après 5 ans, abattement AV après 8 ans, déduction TMI + taxation barème à la sortie PER. Réinvestissement de l'économie d'impôt PER dans un placement virtuel. Frais d'enveloppe paramétrables. Profil fiscal pré-rempli depuis le simulateur d'impôts. Tooltips pédagogiques sur chaque concept. Graphique d'évolution + bar chart jalons + tableau récapitulatif.
+
+→ [`docs/architecture/tools/fiscal-envelope-comparator.md`](tools/fiscal-envelope-comparator.md)
+
 #### Performance patrimoniale (TWR / MWR) — *ADMIN only, en travaux*
 
 Calcul du rendement annualisé du patrimoine (hors `IMMO_PHYSIQUE` et `LIQUIDITE`) avec deux métriques complémentaires : **TWR** (performance pure de l'actif, via Modified Dietz entre snapshots) et **MWR / XIRR** (performance réellement vécue, Newton-Raphson). Page dédiée avec sélecteur de période (Globale / YTD / 1 / 3 / 5 ans), graphique TWR cumulé vs benchmark configurable, tableaux par catégorie et par position triées par TWR. Aucune nouvelle entité — réutilise `PositionOrder`, `PortfolioSnapshot` et `ExchangeRate`.
@@ -391,6 +398,8 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Déclaration de patrimoine (PDF) | Implémenté |
 | Simulateur de crise | Implémenté |
 | Simulateur de crédit Lombard (LTV, levier, stress test, sensibilité taux) | Implémenté |
+| Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER, rendements différenciés, tooltips) | Implémenté |
+| Simulateur retraite (régime général, Agirc-Arrco, CNRACL) | Spécifié — non implémenté |
 | Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
 | Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
 | Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |
