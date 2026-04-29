@@ -283,6 +283,7 @@ export default function BilanFinancierPage({ user }) {
         <div className="bg-green-600 text-white text-center py-2 font-bold text-sm tracking-widest uppercase">
           Revenus
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <tbody>
 
@@ -328,10 +329,11 @@ export default function BilanFinancierPage({ user }) {
             <TotalRow label="TOTAL" amount={totalRevenues * mult} color="text-green-700" />
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* ── DÉPENSES ── */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto border border-gray-100">
         <div className="bg-amber-500 text-white text-center py-2 font-bold text-sm tracking-widest uppercase">
           Dépenses
         </div>
@@ -374,6 +376,7 @@ export default function BilanFinancierPage({ user }) {
           <div className="bg-green-600 text-white text-center py-2 font-bold text-sm tracking-widest uppercase">
             Actif
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <tbody>
               {Object.keys(actifByCategory).length === 0 && (
@@ -396,6 +399,7 @@ export default function BilanFinancierPage({ user }) {
               }
             </tbody>
           </table>
+          </div>
           <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-3 md:px-4 py-2.5">
             <span className="text-sm font-bold text-green-700">TOTAL</span>
             <span className="text-sm font-bold text-green-700 amount whitespace-nowrap">{fmt(totalActif)} €</span>
@@ -407,6 +411,7 @@ export default function BilanFinancierPage({ user }) {
           <div className="bg-amber-500 text-white text-center py-2 font-bold text-sm tracking-widest uppercase">
             Passif
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <tbody>
               {passifByCategory.length === 0 && immoPhysiqueValue === 0 && totalDettes === 0 && (
@@ -456,6 +461,7 @@ export default function BilanFinancierPage({ user }) {
               )}
             </tbody>
           </table>
+          </div>
           <div className="mt-auto border-t-2 border-gray-300 bg-gray-50 flex justify-between px-3 md:px-4 py-2.5">
             <span className="text-sm font-bold text-amber-700">TOTAL</span>
             <span className="text-sm font-bold text-amber-700 amount whitespace-nowrap">{fmt(totalPassif)} €</span>

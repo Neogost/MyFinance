@@ -757,7 +757,8 @@ export default function LoanSimulatorPage({ user }) {
             )}
           </Section>
 
-          {/* Comparaison de scénarios */}
+          {/* Comparaison de scénarios — desktop uniquement */}
+          <div className="hidden md:block">
           <Section title="Comparaison de scénarios" collapsible defaultOpen={false}>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={showComparison} onChange={e => setShowComparison(e.target.checked)}
@@ -780,6 +781,7 @@ export default function LoanSimulatorPage({ user }) {
               </>
             )}
           </Section>
+          </div>
 
           {/* Simulation de revente */}
           <Section title="Simulation de revente" collapsible defaultOpen={false}>

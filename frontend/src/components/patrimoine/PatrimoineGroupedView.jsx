@@ -264,6 +264,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
 
             {/* ── Contenu dépliable ── */}
             {!isCollapsed && (
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-100">
@@ -351,6 +352,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                   </tr>
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         )

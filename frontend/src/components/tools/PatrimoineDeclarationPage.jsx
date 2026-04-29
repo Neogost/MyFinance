@@ -103,12 +103,8 @@ function CategoryTable({ title, rows, totalLabel }) {
       <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide border-b border-gray-300 pb-1 mb-2">
         {title}
       </h3>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <colgroup>
-          <col />
-          {hasExtra && <col className="w-32" />}
-          <col className="w-32" />
-        </colgroup>
         <tbody>
           {rows.map(([key, value, extra]) => (
             <tr key={key} className="border-b border-gray-100">
@@ -125,6 +121,7 @@ function CategoryTable({ title, rows, totalLabel }) {
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   )
 }
@@ -280,11 +277,10 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
         <div className="grid grid-cols-2 gap-8 mb-10">
 
           {/* Colonne Patrimoine */}
-          <div>
+          <div className="overflow-x-auto">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Patrimoine</h2>
             <table className="w-full text-sm">
-              <colgroup><col /><col className="w-28" /></colgroup>
-              <tbody>
+                            <tbody>
                 <tr className="border-b border-gray-100">
                   <td className="py-1.5 text-gray-600">Patrimoine brut</td>
                   <td className="py-1.5 text-right font-semibold text-gray-900 amount">{fmtEur(patrimoineBrut)}</td>
@@ -333,11 +329,10 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
           </div>
 
           {/* Colonne Revenus / Dépenses */}
-          <div>
+          <div className="overflow-x-auto">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Revenus mensuels</h2>
             <table className="w-full text-sm mb-5">
-              <colgroup><col /><col className="w-28" /></colgroup>
-              <tbody>
+                            <tbody>
                 {monthlySalary != null ? (
                   <tr className="border-b border-gray-200">
                     <td className="py-1.5 text-gray-600">
@@ -355,8 +350,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
 
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Dépenses mensuelles</h2>
             <table className="w-full text-sm">
-              <colgroup><col /><col className="w-28" /></colgroup>
-              <tbody>
+                            <tbody>
                 {expensesByCategory.length === 0 ? (
                   <tr>
                     <td className="py-1.5 text-gray-400 text-xs italic" colSpan={2}>Aucune dépense enregistrée</td>
@@ -443,7 +437,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
 
           {/* IMMO_PHYSIQUE — une ligne par bien */}
           {byCategory['IMMO_PHYSIQUE']?.length > 0 && (
-            <div className="mb-6 declaration-section">
+            <div className="mb-6 declaration-section overflow-x-auto">
               <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide border-b border-gray-300 pb-1 mb-2">
                 {CATEGORY_LABELS['IMMO_PHYSIQUE']}
               </h3>
@@ -489,7 +483,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
 
         {/* ── Dettes ─────────────────────────────────────── */}
         {debts.length > 0 && (
-          <div className="border-t-2 border-gray-800 pt-6">
+          <div className="border-t-2 border-gray-800 pt-6 overflow-x-auto">
             <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Dettes</h2>
             <table className="w-full text-sm">
               <thead>

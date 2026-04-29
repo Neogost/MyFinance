@@ -109,15 +109,16 @@ export default function LoanResultsPanel({ calc, loan, scenarios, tableState }) 
 
           {/* Comparaison de scénarios */}
           {showComparison && comparison && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+            <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Comparaison de scénarios</h3>
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left py-2 text-xs text-gray-500 font-semibold">Paramètre</th>
                     <th className="text-right py-2 text-xs text-indigo-600 font-semibold">Scénario principal</th>
-                    <th className="text-right py-2 text-xs text-emerald-600 font-semibold">Scénario comparé</th>
-                    <th className="text-right py-2 text-xs text-gray-400 font-semibold">Différence</th>
+                    <th className="text-right py-2 text-xs text-emerald-600 font-semibold hidden md:table-cell">Scénario comparé</th>
+                    <th className="text-right py-2 text-xs text-gray-400 font-semibold hidden md:table-cell">Différence</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -140,13 +141,14 @@ export default function LoanResultsPanel({ calc, loan, scenarios, tableState }) 
                       <tr key={label}>
                         <td className="py-2 text-gray-600">{label}</td>
                         <td className="py-2 text-right font-semibold text-indigo-600">{main}</td>
-                        <td className="py-2 text-right font-semibold text-emerald-600">{comp}</td>
-                        <td className={`py-2 text-right text-xs font-semibold ${diffColor}`}>{diffFmt}</td>
+                        <td className="py-2 text-right font-semibold text-emerald-600 hidden md:table-cell">{comp}</td>
+                        <td className={`py-2 text-right text-xs font-semibold hidden md:table-cell ${diffColor}`}>{diffFmt}</td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
+              </div>
               <p className="text-xs text-gray-400 mt-3">Le scénario comparé utilise le même montant emprunté, le même taux d'assurance et les mêmes frais. Seuls le taux et la durée diffèrent.</p>
             </div>
           )}

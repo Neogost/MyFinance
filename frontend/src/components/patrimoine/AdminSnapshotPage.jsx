@@ -8,6 +8,10 @@ function fmtDate(isoDate) {
   if (!isoDate) return '—'
   return new Date(isoDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
+function fmtDateShort(isoDate) {
+  if (!isoDate) return '—'
+  return new Date(isoDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
 
 export default function AdminSnapshotPage() {
   const [users,           setUsers]           = useState([])
@@ -128,6 +132,7 @@ export default function AdminSnapshotPage() {
           )}
 
           {!loadingSnaps && snapshots.length > 0 && (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-xs text-gray-500 uppercase tracking-wide">
@@ -143,8 +148,9 @@ export default function AdminSnapshotPage() {
                   const gain = parseFloat(snap.totalCapitalGainEur)
                   return (
                     <tr key={snap.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {fmtDate(snap.snapshotDate)}
+                      <td className="px-3 md:px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                        <span className="hidden md:inline">{fmtDate(snap.snapshotDate)}</span>
+                        <span className="md:hidden">{fmtDateShort(snap.snapshotDate)}</span>
                       </td>
                       <td className="hidden md:table-cell px-4 py-4 text-right text-gray-700 amount">
                         <Amount value={snap.totalInvestedEur} />
@@ -157,7 +163,7 @@ export default function AdminSnapshotPage() {
                           <Amount value={snap.totalCapitalGainEur} prefix={gain >= 0 ? '+' : ''} />
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 md:px-6 py-4">
                         <div className="flex flex-col md:flex-row items-end md:justify-end gap-1 md:gap-2">
                           <button
                             onClick={() => setModalSnapshot(snap)}
@@ -176,6 +182,7 @@ export default function AdminSnapshotPage() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}

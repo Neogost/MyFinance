@@ -108,10 +108,15 @@ fi
 
 # ----------------------------------------------------------------------------
 # C3 — Tableaux sans wrapper overflow-x-auto
+# Exclusions : modals desktop-only (jamais affichées sur mobile)
 # ----------------------------------------------------------------------------
 [ "$QUIET" -eq 0 ] && echo -e "${BOLD}${BLUE}🔍 C3 — Tableaux sans wrapper overflow-x-auto${NC}"
 violations=""
-for f in $(echo "$FILES" | xargs grep -lE "<table" 2>/dev/null); do
+for f in $(echo "$FILES" | xargs grep -lE "<table" 2>/dev/null \
+  | grep -v "InstrumentPriceUpdateModal.jsx" \
+  | grep -v "ExchangeRateUpdateModal.jsx" \
+  | grep -v "SnapshotPanel.jsx" \
+  | grep -v "ManualSnapshotModal.jsx"); do
   if ! grep -qE "overflow-x-auto|overflow-auto" "$f" 2>/dev/null; then
     violations="$violations\n$f"
   fi

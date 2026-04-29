@@ -111,7 +111,7 @@ export default function RegistrationRequestPage({ onPendingCountChange }) {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50">

@@ -329,12 +329,13 @@ export default function RecurringExpensePage() {
                     )}
                   </div>
                 </div>
+                <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <tbody>
                     {items.map(exp => (
                       <tr key={exp.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
                         <td className="px-4 py-3 text-sm text-gray-800 font-medium">{exp.label}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500 amount">
+                        <td className="hidden md:table-cell px-4 py-3 text-xs text-gray-500 amount">
                           {fmt(exp.amount)} € {FREQ_LABEL[exp.frequency]}
                           {exp.sharePercentage < 100 && (
                             <span className="ml-1 text-indigo-500">({exp.sharePercentage} %)</span>
@@ -370,6 +371,7 @@ export default function RecurringExpensePage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )
           })}

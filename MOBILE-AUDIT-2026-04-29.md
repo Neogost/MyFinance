@@ -215,7 +215,7 @@ grep -rn "fixed inset-0.*z-50\|z-50.*fixed inset-0" frontend/src/components/ | g
 
 ---
 
-### 🔴 C3 — Wrapper `overflow-x-auto` sur les tableaux
+### 🔴 C3 — ✅ RÉSOLU (2026-04-29) — Wrapper `overflow-x-auto` sur les tableaux
 
 **Patch type** :
 ```diff
@@ -504,7 +504,7 @@ fi
 **Objectif** : éliminer les blocages critiques.
 - [x] **C1** — ✅ RÉSOLU (2026-04-29) — `z-50` → `z-60` sur 9 fichiers (10 occurrences)
 - [x] **C2** — ✅ RÉSOLU (2026-04-29) — bottom drawer sur 5 modals (3 desktop-only exclues)
-- [ ] C3 — Wrapper `overflow-x-auto` sur les 18 tableaux identifiés
+- [x] **C3** — ✅ RÉSOLU (2026-04-29) — `overflow-x-auto` sur 14 tableaux (4 desktop-only exclues)
 - [ ] M1 — Corriger les 2 widgets dashboard (`grid-cols-1 sm:grid-cols-3`)
 - [ ] Test manuel en 375 px sur les pages impactées
 
@@ -535,7 +535,7 @@ fi
 |---|---|---|---|
 | C1 — z-50 sur modals | ✅ RÉSOLU | 2026-04-29 | 0 |
 | C2 — Modals sans bottom drawer | ✅ RÉSOLU | 2026-04-29 | 0 |
-| C3 — Tableaux sans overflow-x-auto | ⏳ À faire | — | 18 fichiers |
+| C3 — Tableaux sans overflow-x-auto | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M1 — Widgets dashboard | ⏳ À faire | — | 2 fichiers |
 | M2 — Grilles formulaires | ⏳ À faire | — | 46 occurrences |
 | m1 — Simulateurs | ⏳ À faire | — | 7 pages |

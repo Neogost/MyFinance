@@ -173,6 +173,7 @@ export default function PossessionPage() {
                   </span>
                 </div>
 
+                <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
@@ -235,6 +236,7 @@ export default function PossessionPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )
           })}

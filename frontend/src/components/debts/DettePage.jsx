@@ -29,6 +29,7 @@ function AmortizationTable({ schedule }) {
     <p className="text-xs text-gray-400 px-4 py-2">Tableau indisponible (paramètres manquants)</p>
   )
   return (
+    <div className="overflow-x-auto">
     <table className="w-full border-collapse text-xs">
       <thead>
         <tr className="bg-gray-50">
@@ -51,6 +52,7 @@ function AmortizationTable({ schedule }) {
         ))}
       </tbody>
     </table>
+    </div>
   )
 }
 
@@ -131,6 +133,7 @@ function BalanceHistoryPanel({ debtId, onUpdated }) {
       ) : entries.length === 0 ? (
         <p className="text-xs text-gray-400 italic">Aucune mise à jour manuelle</p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="bg-white">
@@ -153,6 +156,7 @@ function BalanceHistoryPanel({ debtId, onUpdated }) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )

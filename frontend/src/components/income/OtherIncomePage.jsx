@@ -96,7 +96,7 @@ export default function OtherIncomePage() {
           <p className="text-sm">Cliquez sur « + Ajouter » pour en saisir un.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50">

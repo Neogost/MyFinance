@@ -181,6 +181,7 @@ export default function TaxSimulatorPage() {
           </div>
 
           {/* Détail du calcul */}
+          <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <tbody>
               <ResultRow
@@ -204,6 +205,7 @@ export default function TaxSimulatorPage() {
               <ResultRow label="Taux effectif d'imposition" value={`${result.effectiveTaxRate?.toFixed(2)} %`} highlight />
             </tbody>
           </table>
+          </div>
 
           <p className="text-xs text-gray-400 mt-5 leading-relaxed">
             Simulation non contractuelle basée sur le barème {result.year}.

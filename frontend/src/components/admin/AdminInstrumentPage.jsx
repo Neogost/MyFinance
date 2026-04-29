@@ -211,20 +211,20 @@ export default function AdminInstrumentPage() {
               Aucun instrument {label}
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
                     <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {label === 'BOURSE' ? 'ISIN' : 'Ticker'}
                     </th>
                     <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {label === 'BOURSE' ? 'Boursorama' : 'CoinGecko ID'}
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix</th>
+                    <th className="px-2 md:px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix</th>
                     <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mis à jour</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-2 md:px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
@@ -233,7 +233,7 @@ export default function AdminInstrumentPage() {
                     const dateStr = fmtDate(inst.lastPriceUpdatedAt)
                     return (
                       <tr key={inst.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                        <td className="px-4 py-3 text-sm text-gray-800 font-medium">
+                        <td className="px-2 md:px-4 py-3 text-sm text-gray-800 font-medium">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span
                               title={inst.name}
@@ -285,7 +285,7 @@ export default function AdminInstrumentPage() {
                               : <span className="text-gray-300">—</span>
                           }
                         </td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold text-gray-800 whitespace-nowrap">
+                        <td className="px-2 md:px-4 py-3 text-sm text-right font-semibold text-gray-800 whitespace-nowrap">
                           {fmt(inst.lastPrice, inst.currency)}
                         </td>
                         <td className="hidden md:table-cell px-4 py-3 text-xs">
@@ -298,7 +298,7 @@ export default function AdminInstrumentPage() {
                               : <span className="text-gray-300">Jamais</span>
                           }
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-2 md:px-4 py-3">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => setFormTarget(inst)}
