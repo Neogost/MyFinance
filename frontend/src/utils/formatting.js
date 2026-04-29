@@ -1,7 +1,7 @@
 import { MONTHS_FR_SHORT } from './constants.js'
 
 export function fmt(n) {
-  return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) ?? '—'
+  return n?.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '—'
 }
 
 export function fmtPct(n) {

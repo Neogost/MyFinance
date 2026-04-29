@@ -14,7 +14,7 @@ export default function KpiCard({ label, value, unit = '€', color, sub, labelT
           </span>
         )}
       </p>
-      <p className={`text-2xl font-bold amount ${color ?? 'text-gray-900'}`}>
+      <p className={`text-xl md:text-2xl font-bold amount whitespace-nowrap ${color ?? 'text-gray-900'}`}>
         {value != null ? `${fmt(value)} ${unit}` : '—'}
       </p>
       {sub && <p className="text-xs text-gray-400">{sub}</p>}
