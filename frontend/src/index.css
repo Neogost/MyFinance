@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Force le variant dark: à répondre à la classe html.dark (toggle React)
+   et non à prefers-color-scheme: dark (préférence OS automatique).
+   Sans cela, les classes dark: s'activent au changement de thème OS
+   indépendamment du toggle de l'application. */
+@variant dark (&:where(.dark, .dark *));
+
 /* Déclare la page en light par défaut — empêche le navigateur (Safari iOS,
    Chrome Android) d'appliquer son propre dark mode natif indépendamment du
    toggle React. html.dark surcharge en dark quand l'utilisateur l'active. */
