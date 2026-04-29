@@ -245,3 +245,42 @@ causé par des tableaux ou éléments trop larges.
 | Dropdowns dans modal | `z-10` (relatif à la modal) |
 
 Toute nouvelle modal doit utiliser `z-60` pour passer au-dessus de la bottom nav.
+
+---
+
+## 8. Fonctionnalités volontairement desktop-only
+
+Certaines features sont **intentionnellement non accessibles sur mobile**. Ce n'est pas un oubli — c'est une décision de conception assumée, documentée ici pour éviter qu'un futur développeur ne la corrige par erreur.
+
+### Règle de décision
+
+> Une feature est classée desktop-only si elle est trop complexe pour un usage mobile confortable (tableau dense, formulaire multi-champs, actions destructives irréversibles) **et** qu'il n'existe pas de version simplifiée raisonnable.
+>
+> Le pattern correct est de **cacher le déclencheur** (`hidden md:inline-flex`) plutôt que d'exposer une UI cassée ou partielle.
+
+### Features desktop-only (déclencheur masqué sur mobile)
+
+| Feature | Composant | Mécanisme | Raison |
+|---|---|---|---|
+| Mettre à jour les cours | `PatrimoineActionBar.jsx:27` | `hidden md:inline-flex` | Tableau dense multi-instruments, usage admin |
+| Taux de change | `PatrimoineActionBar.jsx:21` | `hidden md:inline-flex` | Gestion de devises, usage admin |
+| Relevés de patrimoine | `PatrimoineActionBar.jsx:15` | `hidden md:inline-flex` | Formulaire de saisie par position, usage admin |
+| Fermer une position | `PatrimoineGroupedView.jsx:62` | `hidden md:inline-flex` | Action irréversible, risque de tap accidentel |
+| Supprimer une position (×) | `PatrimoineGroupedView.jsx:68` | `hidden md:inline-flex` | Idem |
+| Supprimer un instrument (admin) | `AdminInstrumentPage.jsx:310` | `hidden md:inline-flex` | Action destructive irréversible, usage admin |
+| Graphique évolution salariale détaillée | `DashboardPage.jsx:152` | `hidden md:block` | Graphique multi-séries illisible < 640 px |
+| Sidebar navigation documentation | `DocumentationPage.jsx:258` | `hidden md:block` | Remplacée par navigation inline sur mobile |
+
+> Les modals associées aux 3 premières features (`InstrumentPriceUpdateModal`, `ExchangeRateUpdateModal`, `SnapshotPanel`) ne nécessitent pas le pattern bottom drawer — elles ne peuvent jamais être ouvertes sur mobile. Le fix `z-60` y est appliqué à titre défensif uniquement.
+
+### Éléments partiellement simplifiés (accessibles, contenu réduit)
+
+Ces éléments restent accessibles sur mobile mais avec un libellé ou un contenu allégé :
+
+| Élément | Mobile | Desktop |
+|---|---|---|
+| `AdminInstrumentPage.jsx` — bouton allocations | Icône + "Allocations" | Icône + "Mettre à jour les allocations" |
+| `AdminInstrumentPage.jsx` — bouton cours | Icône + "Cours" | Icône + "Mettre à jour les cours" |
+| `RecurringExpensePage.jsx` — montant annuel | Masqué | Affiché en gris à côté du mensuel |
+| `LoginHistoryPage.jsx` — timestamp | Format court | Format complet `jj/mm/aaaa hh:mm:ss` |
+| `TaxSimulatorPage.jsx` — hint "÷ 12 mois" | Masqué | Affiché sous le montant annuel |

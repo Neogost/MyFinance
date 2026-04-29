@@ -72,7 +72,7 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
   const hasAnyValue = Object.values(inputs).some(v => v !== '' && parseFloat(v) > 0)
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-60 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
 
         {/* En-tête */}

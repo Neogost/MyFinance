@@ -11,8 +11,8 @@ export function BalanceEditModal({ position, onSave, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-7 w-full max-w-sm">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-7 w-full sm:max-w-sm max-h-[90vh] overflow-y-auto">
         <h3 className="font-bold text-gray-900 mb-4">Mettre à jour le solde</h3>
         <p className="text-sm text-gray-500 mb-3">{position.label}</p>
         <input type="number" min="0" step="0.01" value={value}
@@ -45,8 +45,8 @@ export function EstimatedValueModal({ position, onSave, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-7 w-full max-w-sm">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-7 w-full sm:max-w-sm max-h-[90vh] overflow-y-auto">
         <h3 className="font-bold text-gray-900 mb-4">Mettre à jour la valeur estimée</h3>
         <p className="text-sm text-gray-500 mb-3">{position.label}</p>
         <input type="number" min="0" step="0.01" value={value}

@@ -111,7 +111,7 @@ function InstrumentSearch({ category, value, onChange }) {
 
       {/* Résultats */}
       {open && results.length > 0 && (
-        <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
           {results.map(inst => (
             <li key={inst.id}
               onMouseDown={() => select(inst)}
@@ -128,7 +128,7 @@ function InstrumentSearch({ category, value, onChange }) {
 
       {/* Aucun résultat → proposition de création */}
       {open && results.length === 0 && query.length >= 2 && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow">
           <p className="px-3 py-2 text-sm text-gray-400">Aucun instrument trouvé.</p>
           <button
             type="button"

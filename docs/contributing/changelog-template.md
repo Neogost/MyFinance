@@ -76,6 +76,6 @@ On suit le **versionnage sémantique** (cf. CLAUDE.md → "Gestion des versions"
 2. Ajouter la nouvelle section au sommet de `CHANGELOG.md`
 3. Commit `chore(release): bump version to X.Y.Z` (inclut pom.xml + CHANGELOG.md)
 4. Tagger : `git tag vX.Y.Z` puis `git push origin main && git push origin vX.Y.Z`
-5. Déployer via `./deploy.sh`
+5. Déployer via `./scripts/deploy.sh`
 
 La modal "Notes de version" affiche automatiquement le contenu mis à jour.

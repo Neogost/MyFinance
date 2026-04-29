@@ -10,6 +10,7 @@ export default function PatrimoineActionBar({
     <div className="flex items-start justify-between gap-3 mb-6">
       <h2 className="text-lg md:text-xl font-bold text-gray-900 shrink-0">Patrimoine</h2>
       <div className="flex flex-wrap justify-end gap-2">
+        {/* Boutons admin masqués sur mobile — features trop complexes pour un usage mobile */}
         {isAdmin && (
           <button onClick={onShowSnapshots}
             className="hidden md:inline-flex px-4 py-2 border border-violet-300 text-violet-700 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">

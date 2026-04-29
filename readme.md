@@ -77,7 +77,7 @@ npm run dev
 ## Déploiement sur NAS (Docker)
 
 Le déploiement utilise Docker via Container Station sur NAS QNAP.
-Les fichiers `deploy.sh` et `docker-compose.yml` ne sont pas versionnés (`.gitignore`) car ils contiennent des informations personnelles (IP, chemins NAS).
+Les fichiers `scripts/deploy.sh` et `docker-compose.yml` ne sont pas versionnés (`.gitignore`) car ils contiennent des informations personnelles (IP, chemins NAS).
 
 ### Prérequis NAS
 - Docker et Docker Compose installés (via Container Station)

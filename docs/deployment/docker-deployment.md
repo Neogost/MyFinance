@@ -66,7 +66,7 @@ git push origin main
 git push origin v1.3.0
 
 # 4. Déployer (voir section "Mises à jour")
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 > **Important** : le tag git et la version dans `pom.xml` doivent toujours correspondre.
@@ -122,7 +122,7 @@ ssh NAS_USER@NAS_IP "docker stop myfinance && docker cp /tmp/myfinance.db myfina
 
 ```bash
 # Depuis la racine du projet, après avoir suivi la checklist de release
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 Le script :

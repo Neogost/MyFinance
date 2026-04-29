@@ -138,6 +138,7 @@ frontend/src/
 - Gestion des dettes (projection auto vs override manuel) : `docs/architecture/diagram/activity-debt-management.mmd`
 - Ajout d'une position (wizard 6 catégories) : `docs/architecture/diagram/activity-asset-management-add-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
+- Audit responsive mobile et plan de mise en conformité : `MOBILE-AUDIT-2026-04-29.md`
 - Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
 - API authentification : `docs/api/authentication.md`
 - API tableau de bord : `docs/api/dashboard.md`
@@ -491,7 +492,7 @@ git tag v1.3.0
 git push origin main && git push origin v1.3.0
 
 # 5. Déployer
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 **Comment la version circule :**
@@ -523,7 +524,7 @@ cd frontend
 npm run dev
 
 # Déployer en production (après bump de version et tag)
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 ## Points d'attention
@@ -748,7 +749,7 @@ npm run dev
   - `docker-compose.yml` avec volume SQLite persisté sur le NAS
   - Profil Spring `docker` : HTTP port 8080, SQLite `/data/myfinance.db`, scheduler activé
   - `.dockerignore` optimisé
-  - Script `deploy.sh` pour les mises à jour (build → export → transfer → reload) — voir `docs/deployment/docker-deployment.md` pour la checklist de release avec gestion de version
+  - Script `scripts/deploy.sh` pour les mises à jour (build → export → transfer → reload) — voir `docs/deployment/docker-deployment.md` pour la checklist de release avec gestion de version
   - Documentation : `docs/deployment/docker-deployment.md`
   - Accès internet via proxy inverse QNAP + myQNAPcloud (HTTPS port 4443, SSL Let's Encrypt auto)
 

@@ -308,7 +308,7 @@ export default function AdminInstrumentPage() {
                             </button>
                             <button
                               onClick={() => { setDeleteTarget(inst); setDeleteError(null) }}
-                              className="px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"
+                              className="hidden md:inline-flex px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"
                             >
                               Supprimer
                             </button>
@@ -389,7 +389,7 @@ export default function AdminInstrumentPage() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-bold text-gray-900 mb-2">Supprimer l'instrument</h3>
             <p className="text-sm text-gray-700 mb-3">

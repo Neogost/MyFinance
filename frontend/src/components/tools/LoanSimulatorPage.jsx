@@ -342,8 +342,8 @@ export default function LoanSimulatorPage({ user }) {
 
       {/* Modal sauvegarde */}
       {showSaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowSaveModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/40" onClick={() => setShowSaveModal(false)}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl p-6 w-full sm:max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-gray-900 mb-1">Sauvegarder la simulation</h2>
             <p className="text-sm text-gray-500 mb-4">
               {loanAmount.toLocaleString('fr-FR')} € · {loanDuration} ans · {annualRate} % — mensualité {fmt(calc.totalMonthlyAfterDeferral)}
