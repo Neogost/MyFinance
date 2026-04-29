@@ -1,0 +1,75 @@
+## Barèmes retraite France — à réviser si réforme ou revalorisation annuelle
+## Réforme 2023 intégrée (âge légal 64 ans, durée 172 trimestres pour générations 1965+)
+
+retirement:
+
+  ## ── PASS (Plafond Annuel Sécurité Sociale) ───────────────────────────────
+  pass:
+    history:
+      - { year: 2024, value: 46368 }
+      - { year: 2023, value: 43992 }
+      - { year: 2022, value: 41136 }
+      - { year: 2021, value: 41136 }
+      - { year: 2020, value: 41136 }
+      - { year: 2019, value: 40524 }
+      - { year: 2018, value: 39732 }
+      - { year: 2017, value: 39228 }
+      - { year: 2016, value: 38616 }
+      - { year: 2015, value: 38040 }
+      - { year: 2014, value: 37548 }
+      - { year: 2013, value: 37032 }
+      - { year: 2012, value: 36372 }
+      - { year: 2011, value: 35352 }
+      - { year: 2010, value: 34620 }
+    growthRate: 1.5       # % annuel appliqué pour les années antérieures à l'historique
+
+  ## ── Régime de base ───────────────────────────────────────────────────────
+  baseScheme:
+    privateRate: 0.50     # Taux plein privé (50 % du SAM)
+    publicRate: 0.75      # Taux plein public (75 % du traitement indiciaire)
+    decoteByMissingTrimestre: 0.0125   # 1,25 % par trimestre manquant
+    maxDecote: 0.25                    # Décote maximale = 25 %
+    maxSurcote: 0.30                   # Surcote maximale théorique = 30 %
+    socialChargesRateBase: 9.1         # CSG 8,3 + CRDS 0,5 + CASA 0,3 (%)
+    socialChargesRateWithComplementary: 10.1  # + 1 % maladie sur complémentaire (%)
+    # Durée de cotisation requise par génération (trimestres)
+    trimestresByGeneration:
+      "1958": 167
+      "1959": 167
+      "1960": 168
+      "1961": 168
+      "1962": 169
+      "1963": 169
+      "1964": 171
+    trimestresByGenerationDefault: 172  # Générations 1965+
+    # Âge légal minimum par génération (en années, peut être décimal ex: 62.5)
+    ageMinimalByGeneration:
+      "1955": 62
+      "1956": 62
+      "1957": 62
+      "1958": 62
+      "1959": 62
+      "1960": 62
+      "1961": 62
+      "1962": 62
+      "1963": 63
+      "1964": 63
+    ageMinimalDefault: 64   # Générations 1965+
+    ageTauxPleinAuto: 67    # Taux plein automatique sans condition de durée
+
+  ## ── Agirc-Arrco ──────────────────────────────────────────────────────────
+  agircArrco:
+    pointPurchasePrice: 18.7669   # Prix d'achat du point en 2024 (€)
+    pointValue: 1.4159            # Valeur du point en 2024 (€)
+    employeeRateT1: 3.94          # % salarial tranche 1 (0–PASS) — total 7,87 % avec employeur
+    employeeRateT2: 9.86          # % salarial tranche 2 (PASS–8×PASS) — total 21,59 % avec employeur
+    coefficientSolidaritePenalty: 0.10   # Malus 10 % pendant 3 ans si pas de surcote
+    coefficientSolidariteDuration: 3     # Années de malus
+
+  ## ── RAFP (Retraite Additionnelle Fonction Publique) ───────────────────────
+  rafp:
+    pointValue: 0.04886           # Valeur du point en 2024 (€)
+    pointPurchasePrice: 1.3414    # Prix d'achat du point en 2024 (€)
+    employeeRate: 0.05            # 5 % salarial
+    employerRate: 0.05            # 5 % patronal
+    primeCapPercentage: 0.20      # Cap primes à 20 % du traitement

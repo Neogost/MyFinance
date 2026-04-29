@@ -94,6 +94,7 @@ mindmap
         Simulateur d'emprunt immobilier
         Simulateur de crédit Lombard
         Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER)
+        Simulateur retraite (CNAV · Agirc-Arrco · CNRACL)
         Déclaration de patrimoine
         Simulateur de crise
     Administration
@@ -399,7 +400,7 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 | Simulateur de crise | Implémenté |
 | Simulateur de crédit Lombard (LTV, levier, stress test, sensibilité taux) | Implémenté |
 | Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER, rendements différenciés, tooltips) | Implémenté |
-| Simulateur retraite (régime général, Agirc-Arrco, CNRACL) | Spécifié — non implémenté |
+| Simulateur retraite (CNAV, Agirc-Arrco, CNRACL/RAFP, comparaison âges, bloc PER, tooltips) | Implémenté |
 | Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
 | Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
 | Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |

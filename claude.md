@@ -833,5 +833,16 @@ npm run dev
   - Tests `SalaryContractForm.test.jsx` mis à jour pour le wizard 2 étapes (contrats publics)
   - Documentation : `docs/architecture/tools/fiscal-envelope-comparator.md`
 
+- **Simulateur retraite** (`RetirementSimulatorPage`) :
+  - Backend : `retirement-parameters.yml` (PASS 2010–2024, Agirc-Arrco, RAFP, trimestres/génération, âges légaux réforme 2023) + `RetirementParameters.java` (`@Component @ConfigurationProperties`) + `GET /api/retirement/parameters` (authentifié, lecture seule — retourne le YAML désérialisé)
+  - ⚠ `RetirementParameters` utilise `@Component` (pas `@Configuration`) pour éviter que le proxy CGLIB Spring expose des champs internes non-sérialisables à Jackson
+  - Calculs frontend : `frontend/src/utils/retirement.js` — `projectCareer`, `computeRegimeGeneral` (SAM 25 meilleures années × PASS), `computeAgircArrco` (points T1+T2), `computeRegimePublic` (IM × 75 %), `computeRAFP` (forfait), `applySocialCharges`, `simulateAtAge`, `computeRequiredPERCapital`, `computeRequiredPERContribution` (bisect)
+  - Pré-remplissage : date de naissance (`/api/auth/me`), contrat salarial actif (type, salaire/IM), TMI (`/api/tax-simulator`)
+  - Prise en charge privé (CNAV + Agirc-Arrco) et public (CNRACL + RAFP forfaitaire)
+  - Comparaison 4 âges de départ (60/62/64/67), graphique salaire→pension, bloc PER (capital + versement mensuel)
+  - Tooltips pédagogiques via **portal** `createPortal` — ne peuvent pas être coupés par les conteneurs `overflow`
+  - Tests : `RetirementControllerTest` (2 tests) — total backend 748 tests BUILD SUCCESS
+  - Documentation : `docs/architecture/tools/retirement-simulator.md`
+
 **À venir :**
-- Simulateur retraite (spécifié dans `docs/architecture/tools/retirement-simulator.md` — non implémenté)
+- (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

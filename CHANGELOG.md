@@ -1,8 +1,8 @@
 # Notes de version
 
-## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales
+## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales + Simulateur Retraite
 
-> Cette version introduit un nouveau simulateur permettant de comparer le rendement net après impôt de quatre enveloppes fiscales : PEA, CTO, Assurance-vie et PER.
+> Cette version introduit deux nouveaux simulateurs patrimoniaux : un comparateur d'enveloppes fiscales (PEA / CTO / AV / PER) et un simulateur retraite couvrant les régimes obligatoires français.
 
 ### ✨ Nouveautés
 
@@ -19,6 +19,19 @@ Répondez à la question : *« Pour un même investissement, quelle enveloppe me
 - **Graphique d'évolution** du capital brut sur la durée + comparaison par jalons (5 / 10 / 20 ans)
 - **Tableau récapitulatif** : capital brut, frais cumulés, économie fiscale à l'entrée, impôt à la sortie, capital net et rendement brut par enveloppe
 - **Tooltips pédagogiques** sur chaque concept : TMI, PFU vs barème, abattement AV, plafond PEA, plafond PER, dividendes CTO, réinvestissement éco. PER
+
+#### Simulateur Retraite (Outils → Simulateur retraite)
+
+Estimez votre future pension et planifiez l'effort d'épargne PER pour combler le manque.
+
+- **Régime Général + Agirc-Arrco (privé)** : SAM sur les 25 meilleures années plafonnées au PASS, taux de liquidation 50 % au taux plein, points Agirc-Arrco accumulés sur la carrière, coefficient de solidarité −10 % si départ sans surcote
+- **CNRACL + RAFP (fonction publique)** : pension calculée sur l'indice majoré des 6 derniers mois × 75 % au taux plein, RAFP forfaitaire
+- **Décote/surcote** : 1,25 %/trimestre manquant ou supplémentaire, barèmes 2023 par génération
+- **Pré-remplissage automatique** : date de naissance, type de contrat, salaire/indice majoré depuis le contrat salarial actif, TMI depuis le simulateur d'impôts
+- **Comparaison 4 âges de départ** (60 / 62 / 64 / 67 ans) : trimestres validés, pension nette, taux de remplacement, capital PER nécessaire, verdict
+- **Graphique** évolution des revenus nets (salaire actif → pension, avec ligne de départ retraite)
+- **Bloc PER** : capital cible et versement mensuel calculés pour combler le delta entre pension et objectif (taux de remplacement % ou montant mensuel fixe)
+- **Tooltips pédagogiques** sur tous les concepts : trimestres, SAM, PASS, Agirc-Arrco, coefficient de solidarité, RAFP, taux de remplacement, règle des 4 %…
 
 ---
 

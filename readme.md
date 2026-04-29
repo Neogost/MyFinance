@@ -19,6 +19,7 @@ Application web personnelle de gestion financière, hébergée sur NAS QNAP en r
 | Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement, section investissement locatif |
 | Simulateur de crédit Lombard | ✅ | Capacité d'emprunt selon LTV (3 scénarios + custom), effet de levier, sensibilité aux taux, stress test couplé |
 | Comparateur d'enveloppes fiscales | ✅ | PEA / CTO / Assurance-vie / PER — capital net après impôts, rendements différenciés, tooltips pédagogiques |
+| Simulateur retraite | ✅ | Régime Général (CNAV) + Agirc-Arrco + CNRACL/RAFP, comparaison 4 âges, bloc PER, tooltips pédagogiques |
 | Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net (actifs, possessions, dettes) |
 | Simulateur d'intérêts composés | ✅ | Projection d'épargne avec versements périodiques et rendement cible |
 | Bilan financier | ✅ | Actif/passif, ratio de couverture patrimoniale, projection FIRE |
@@ -152,7 +153,7 @@ cd backend
 # Frontend
 cd frontend
 npm test
-# 923 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes)
+# 923 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes, simulateur retraite)
 ```
 
 ## Documentation
