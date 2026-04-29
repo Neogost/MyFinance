@@ -416,7 +416,7 @@ done
 
 📌 **Référence conforme** : aucune page outil n'est encore parfaitement conforme — créer la première (par ex. `CompoundInterestSimulator`, le plus simple) comme **modèle** avant d'attaquer les autres.
 
-### 🟡 m2 — Documentation et admin
+### 🟡 m2 — ✅ RÉSOLU (2026-04-29) — Documentation et admin
 
 - `DocumentationPage` : encapsuler les diagrammes Mermaid dans `<div className="overflow-x-auto">` (les SVG générés peuvent dépasser la largeur).
 - Pages admin denses : appliquer les recettes `overflow-x-auto` + `hidden md:table-cell` sur les colonnes peu critiques (timestamps précis, IDs internes, User-Agent).
@@ -517,8 +517,8 @@ fi
 ### Phase 3 — Simulateurs et outils
 **Objectif** : pages outils lisibles sur mobile (sans chercher la perfection visuelle des graphiques).
 - [x] **m1** — ✅ RÉSOLU (2026-04-29) — 7 pages outils auditées et corrigées
-- [ ] Recharts : `<ResponsiveContainer>` + ajustement marges
-- [ ] Tableaux comparatifs : scroll horizontal + colonnes secondaires masquées
+- [x] Recharts : ResponsiveContainer déjà en place sur toutes les pages ✓
+- [x] Tableaux comparatifs : scroll horizontal appliqué ✓
 
 ### Phase 4 — Validation et garde-fous
 **Objectif** : prévenir la régression.
@@ -539,13 +539,13 @@ fi
 | M1 — Widgets dashboard | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M2 — Grilles formulaires | ✅ RÉSOLU | 2026-04-29 | 22 conservées intentionnellement |
 | m1 — Simulateurs | ✅ RÉSOLU | 2026-04-29 | 0 |
-| m2 — Doc / admin | ⏳ À faire | — | 6 fichiers |
+| m2 — Doc / admin | ✅ RÉSOLU | 2026-04-29 | 0 |
 
 | Phase | Statut | Date |
 |---|---|---|
-| Phase 1 — Hygiène globale | 🔄 En cours | 2026-04-29 |
-| Phase 2 — Formulaires | ⏳ À faire | — |
-| Phase 3 — Outils | ⏳ À faire | — |
+| Phase 1 — Hygiène globale | ✅ RÉSOLU | 2026-04-29 |
+| Phase 2 — Formulaires | ✅ RÉSOLU | 2026-04-29 |
+| Phase 3 — Outils | ✅ RÉSOLU | 2026-04-29 |
 | Phase 4 — Validation | ⏳ À faire | — |
 
 ---
