@@ -1,28 +1,8 @@
 # Notes de version
 
-## v1.5.1 — 29 avril 2026 — Conformité responsive mobile complète
+## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales + Simulateur Retraite + Responsive mobile
 
-> Mise en conformité de l'ensemble de l'application sur mobile (iPhone SE 375 px), sans nouvelle fonctionnalité.
-
-### 🔧 Corrections & améliorations
-
-#### Responsive mobile
-- **Modals** : toutes les modals utilisent désormais le pattern *bottom drawer* (glisse depuis le bas sur mobile, centrée sur desktop) et `z-60` pour passer au-dessus de la navigation
-- **Tableaux** : scroll horizontal sur tous les tableaux, colonnes secondaires masquées sur mobile
-- **Formulaires** : champs empilés en 1 colonne sur mobile (plus de mise en page serrée sur petit écran)
-- **Widgets dashboard** : KPIs empilés verticalement sur mobile
-- **Simulateurs** : layouts 2 panneaux corrigés, graphiques Recharts responsifs, sections "Comparaison" masquées quand inutilisables sur mobile
-- **Dark mode** : le mode sombre répond désormais uniquement au toggle de l'application — plus de changement automatique selon l'heure du jour (OS scheduled dark mode)
-
-#### Corrections d'affichage
-- Montants : `fmt()` limité à 2 décimales (plus de "2 995,081 €")
-- `KpiCard` : symbole `€` reste sur la même ligne que le montant sur mobile
-- Simulateur de crise — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
-- Comparateur enveloppes fiscales : correction du débordement horizontal des descriptions
-
-## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales + Simulateur Retraite
-
-> Cette version introduit deux nouveaux simulateurs patrimoniaux : un comparateur d'enveloppes fiscales (PEA / CTO / AV / PER) et un simulateur retraite couvrant les régimes obligatoires français.
+> Cette version introduit deux nouveaux simulateurs patrimoniaux et une mise en conformité complète de l'application sur mobile (iPhone SE 375 px).
 
 ### ✨ Nouveautés
 
@@ -52,6 +32,17 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - **Graphique** évolution des revenus nets (salaire actif → pension, avec ligne de départ retraite)
 - **Bloc PER** : capital cible et versement mensuel calculés pour combler le delta entre pension et objectif (taux de remplacement % ou montant mensuel fixe)
 - **Tooltips pédagogiques** sur tous les concepts : trimestres, SAM, PASS, Agirc-Arrco, coefficient de solidarité, RAFP, taux de remplacement, règle des 4 %…
+
+### 🔧 Corrections & améliorations
+
+#### Responsive mobile — mise en conformité complète
+- **Modals** : pattern *bottom drawer* sur toutes les modals (glisse depuis le bas sur mobile, centrée sur desktop) avec `z-60` au-dessus de la navigation
+- **Tableaux** : scroll horizontal + colonnes secondaires masquées sur mobile sur toutes les pages
+- **Formulaires** : champs empilés en 1 colonne sur mobile (fin de la mise en page serrée sur petit écran)
+- **Simulateurs** : layouts 2 panneaux corrigés, sections "Comparaison de scénarios" masquées quand inutilisables sur mobile
+- **Dark mode** : le mode sombre répond désormais uniquement au toggle de l'application — fin du changement automatique selon l'heure du jour (OS scheduled dark mode)
+- Montants : `fmt()` limité à 2 décimales (plus de "2 995,081 €")
+- Simulateur de crise — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
 
 ---
 
