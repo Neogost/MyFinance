@@ -81,7 +81,8 @@ Une nouvelle page de **mesure du rendement annualisé** du patrimoine financier 
 ### 🐛 Corrections
 
 - **Comparaison « vs théorique » du Net versé** dans les bulletins de paie : le badge d'écart était toujours vide car le code comparait à un champ inexistant (`monthlyNetSalary`) au lieu du bon champ (`monthlyNetAfterTax`)
-- **Suppression d'une dette** : correction de l'erreur "No EntityManager" qui empêchait la suppression dans certains cas
+- **Suppression d'un contrat salarial** : correction de l'erreur "No EntityManager" qui empêchait la suppression lorsque le contrat avait des révisions associées
+- **Suppression d'une dette** : correction de la même erreur "No EntityManager"
 - **Pages d'erreur 500** : les ressources statiques manquantes renvoient désormais un 404 silencieux
 
 ### 🛠 Sous le capot

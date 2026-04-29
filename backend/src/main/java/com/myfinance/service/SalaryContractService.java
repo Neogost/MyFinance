@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -130,6 +131,7 @@ public class SalaryContractService {
 
     // ── Suppression ────────────────────────────────────────────
 
+    @Transactional
     public void delete(Long id, User currentUser) {
         SalaryContract contract = getContractWithOwnershipCheck(id, currentUser);
         salaryRevisionRepository.deleteByContract(contract);
