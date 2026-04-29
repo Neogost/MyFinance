@@ -41,8 +41,9 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - **Formulaires** : champs empilés en 1 colonne sur mobile (fin de la mise en page serrée sur petit écran)
 - **Simulateurs** : layouts 2 panneaux corrigés, sections "Comparaison de scénarios" masquées quand inutilisables sur mobile
 - **Dark mode** : le mode sombre répond désormais uniquement au toggle de l'application — fin du changement automatique selon l'heure du jour (OS scheduled dark mode)
-- Montants : `fmt()` limité à 2 décimales (plus de "2 995,081 €")
-- Simulateur de crise — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
+- **Montants** : `fmt()` limité à 2 décimales (plus de "2 995,081 €")
+- **Simulateur de crise** — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
+- **Widget Matelas de sécurité** : les montants répondent désormais au toggle "masquer les valeurs"
 
 ---
 
