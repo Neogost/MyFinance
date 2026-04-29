@@ -54,6 +54,12 @@ html.dark {
   --color-purple-50:   rgba(168, 85, 247, 0.12);
 }
 
+/* ── Carousel — barre de progression ── */
+@keyframes carousel-progress {
+  from { width: 0% }
+  to   { width: 100% }
+}
+
 /* ── Mode masquage des valeurs ── */
 .hide-values .amount {
   filter: blur(6px);

@@ -45,6 +45,15 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - **Simulateur de crise** — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
 - **Widget Matelas de sécurité** : les montants répondent désormais au toggle "masquer les valeurs"
 
+#### Landing page — refonte visuelle
+- **Screenshot hero** : capture du tableau de bord intégrée sous les boutons d'action
+- **Carousel** : 5 captures de l'application (Patrimoine, Évolution, Bilan financier, Simulateur d'impôts, Dépenses) avec transition fondu, barre de progression 5 secondes et dots animés
+- **Simulateurs** : liste des 9 outils disponibles en grille avec description courte
+- **Étapes de démarrage** : ligne pointillée reliant les 3 étapes sur desktop
+- **Notes de version** : lien accessible depuis le footer avant connexion
+- **Footer** : numéro de version affiché dynamiquement
+- **PWA** : icônes carrées (180 / 167 / 152 / 192 / 512 px), splash screens iOS pour 11 résolutions (iPhone SE → iPad Pro 13"), métadonnées Open Graph, `application-name`, `format-detection`
+
 ---
 
 ## v1.4.0 — 28 avril 2026 — Lombard, contrats publics, personnalisation et sécurité

@@ -154,12 +154,16 @@ export default function App() {
 
     if (authView === 'landing') {
       return (
-        <LandingPage
-          onLogin={() => setAuthView('login')}
-          onRegister={() => setAuthView('register')}
-          onDocumentation={(docId) => { if (docId) sessionStorage.setItem('doc-page', docId); window.location.hash = 'documentation'; setCurrentPage('documentation') }}
-          onContact={() => { window.location.hash = 'contact'; setCurrentPage('contact') }}
-        />
+        <>
+          <LandingPage
+            onLogin={() => setAuthView('login')}
+            onRegister={() => setAuthView('register')}
+            onDocumentation={(docId) => { if (docId) sessionStorage.setItem('doc-page', docId); window.location.hash = 'documentation'; setCurrentPage('documentation') }}
+            onContact={() => { window.location.hash = 'contact'; setCurrentPage('contact') }}
+            onShowReleaseNotes={() => setShowReleaseNotes(true)}
+          />
+          {showReleaseNotes && <ReleaseNotesModal onClose={() => setShowReleaseNotes(false)} />}
+        </>
       )
     }
     return (

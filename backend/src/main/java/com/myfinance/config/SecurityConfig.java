@@ -135,7 +135,7 @@ public class SecurityConfig {
                 )
             )
             .authorizeHttpRequests(auth -> {
-                auth.requestMatchers("/api/auth/login", "/api/auth/register").permitAll();
+                auth.requestMatchers("/api/auth/login", "/api/auth/register", "/api/version").permitAll();
                 if (swaggerEnabled) {
                     auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll();
                 } else {
