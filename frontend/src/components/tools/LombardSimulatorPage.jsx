@@ -777,6 +777,7 @@ export default function LombardSimulatorPage() {
             )}
 
             {/* Tableau récap */}
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-xs text-gray-500">
@@ -805,6 +806,7 @@ export default function LombardSimulatorPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Effet de levier */}
@@ -858,6 +860,7 @@ export default function LombardSimulatorPage() {
           {compareWithSale && saleComparison && (
             <div className="bg-white rounded-xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3">Vente d'actifs vs Crédit Lombard</h3>
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-xs text-gray-500">
@@ -894,6 +897,7 @@ export default function LombardSimulatorPage() {
                   </tr>
                 </tbody>
               </table>
+              </div>
               <div className={`mt-3 p-3 rounded-lg text-sm font-semibold ${saleComparison.economy > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
                 {saleComparison.economy > 0
                   ? <>✓ Le crédit Lombard est plus avantageux : économie de <span className="amount">{fmtEur(saleComparison.economy)}</span></>
@@ -1003,7 +1007,7 @@ export default function LombardSimulatorPage() {
               <span className="text-xs text-gray-400">{showAmortTable ? '▲ Masquer' : '▼ Afficher'}</span>
             </button>
             {showAmortTable && (
-              <div className="mt-3 max-h-96 overflow-y-auto">
+              <div className="mt-3 max-h-96 overflow-y-auto overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-white">
                     <tr className="border-b border-gray-200 text-gray-500">

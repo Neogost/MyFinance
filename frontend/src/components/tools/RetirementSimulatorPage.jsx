@@ -365,7 +365,7 @@ export default function RetirementSimulatorPage() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
 
         {/* ══ PANNEAU GAUCHE ══════════════════════════════════════════════ */}
         <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3">

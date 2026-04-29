@@ -386,7 +386,7 @@ export default function CompoundInterestSimulatorPage() {
         ))}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
 
         {/* ── Panneau gauche ── */}
         <div className="w-full lg:w-72 lg:shrink-0 space-y-4">

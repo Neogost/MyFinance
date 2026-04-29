@@ -340,7 +340,7 @@ export default function FiscalEnvelopeComparatorPage() {
       Comparateur d'enveloppes fiscales
       <span className="text-sm font-normal text-gray-400 ml-2">PEA · CTO · Assurance-vie · PER</span>
     </h1>
-    <div className="flex flex-col lg:flex-row gap-4 items-start">
+    <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
 
       {/* ══ PANNEAU GAUCHE ══════════════════════════════════════════════════ */}
       <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-3">
