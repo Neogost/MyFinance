@@ -62,7 +62,7 @@ export default function DashboardCustomizePanel({ config, onChange, onClose }) {
       />
 
       {/* Panneau */}
-      <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-60 flex flex-col">
+      <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-60 flex flex-col">
 
         {/* En-tête */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">

@@ -182,64 +182,36 @@ grep -rn "fixed inset-0.*z-50\|z-50.*fixed inset-0" frontend/src/components/ | g
 
 > ⚠ Ne **pas** toucher `Navigation.jsx:289` (`fixed bottom-0 ... z-50`) ni `Navigation.jsx:143` (header `sticky top-0 z-50`) — ce sont les ancres de la palette z-index.
 
-### 🔴 C2 — Bottom drawer pattern sur les modals centrées
+### 🔴 C2 — ✅ RÉSOLU (2026-04-29) — Bottom drawer pattern sur les modals centrées
 
-**Avant** (`DeleteConfirmModal.jsx:3-5`) :
-```jsx
-<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-  <div className="fixed inset-0 bg-black/40" onClick={onCancel} />
-  <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 z-10">
-```
+**Correctif appliqué** :
 
-**Après** :
-```jsx
-<div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
-  <div className="absolute inset-0" onClick={onCancel} />
-  <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-6 z-10">
-```
+- `components/common/DeleteConfirmModal.jsx:3-5` — restructuré vers pattern standard : overlay fusionné dans le container racine avec `onClick={onCancel}`, `stopPropagation` sur le contenu ; `items-end sm:items-center` + `rounded-t-2xl sm:rounded-2xl` + `sm:max-w-md` + `max-h-[90vh] overflow-y-auto`
+- `components/ReleaseNotesModal.jsx:73-74` — `items-center` → `items-end sm:items-center` + `rounded-t-2xl sm:rounded-xl` + `sm:max-w-5xl` + `z-[60]` → `z-60`
+- `components/dashboard/DashboardCustomizePanel.jsx:65` — side drawer : `w-80` → `w-full sm:w-80` (plein écran mobile, 320 px desktop)
+- `components/patrimoine/ValueEditModals.jsx` × 2 — ✅ traité en session C1
+- `components/tools/LoanSimulatorPage.jsx` (modal save) — ✅ traité en session C1
+- `scripts/check-mobile-patterns.sh` — exclusions C2 ajoutées pour les 3 modals desktop-only et le side drawer
 
-**Cas particulier — `DashboardCustomizePanel.jsx`** (side drawer droite) :
-```diff
-- <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 flex flex-col">
-+ <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-60 flex flex-col">
-```
+**Non modifié (desktop-only intentionnel)** :
+- `AdminInstrumentPage.jsx:392` — modal de suppression instrument, déclencheur `hidden md:inline-flex`
+- `InstrumentPriceUpdateModal.jsx` — déclencheur `hidden md:inline-flex` (PatrimoineActionBar)
+- `ExchangeRateUpdateModal.jsx` — idem
+- `SnapshotPanel.jsx` — idem
 
-**Cas particulier — `ReleaseNotesModal.jsx`** (déjà `z-[60]`, ne corriger que `items-*`) :
-```diff
-- <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
--   <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
-+ <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center sm:p-4 bg-black/40">
-+   <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-5xl max-h-[90vh] flex flex-col"
-```
-
-🔍 **Détection des modals non drawer**
+🔍 **Détection** (pour les nouveaux composants)
 ```bash
-# Modals avec items-center mais sans items-end
-grep -rln "fixed inset-0" frontend/src/components/ | xargs grep -L "items-end"
+./scripts/check-mobile-patterns.sh 2>&1 | grep -A5 "C2"
 ```
 
-📂 **Fichiers concernés** : voir tableau C2 ci-dessus
-
-✅ **Critère de validation**
-- Le conteneur racine contient `flex items-end sm:items-center`
-- Le conteneur enfant contient `rounded-t-2xl sm:rounded-xl` (ou `rounded-2xl`)
-- `max-h-[90vh] overflow-y-auto` présent
-- `w-full sm:max-w-...` (pleine largeur mobile, contraint desktop)
+✅ **Critère de validation** : `./scripts/check-mobile-patterns.sh` affiche `✅ OK` sur C2.
 
 🧪 **Test manuel**
-1. Ouvrir la modal en 375 px : doit **glisser depuis le bas** (collée en bas, coins arrondis seulement en haut)
-2. Ouvrir la modal en ≥640 px : doit **rester centrée** comme avant
-3. Long contenu : scroll **interne** à la modal, pas de la page
-4. Click sur l'overlay sombre : ferme la modal
+1. `DeleteConfirmModal` (375 px) : glisse depuis le bas, coins arrondis seulement en haut, overlay ferme la modal au tap
+2. `ReleaseNotesModal` (375 px) : idem, contenu markdown scrolle en interne
+3. `DashboardCustomizePanel` (375 px) : panneau plein écran, ferme au tap sur la zone grisée à gauche
 
-⚠ **Risques de régression**
-- Si la modal contient un dropdown ou autocomplétion : passer à `z-10` (relatif au modal) sinon il s'affiche derrière le contenu.
-- Si la modal a un footer fixe (boutons), vérifier qu'il reste visible avec `overflow-y-auto` sur le body — pattern recommandé : `flex flex-col` sur le wrapper, `flex-1 overflow-y-auto` sur le body, footer en dehors du body.
-- Tester avec un clavier ouvert sur mobile (focus input) : la modal ne doit pas être recouverte.
-
-⏱ **Effort** : M (5 modals × 10-15 min avec test)
-
-📌 **Référence conforme** : `RecurringExpenseForm.jsx` · `DebtForm.jsx` · `BonusForm.jsx`
+📌 **Référence conforme** : `RecurringExpenseForm.jsx` · `OrderPanel.jsx`
 
 ---
 
@@ -531,7 +503,7 @@ fi
 ### Phase 1 — Hygiène globale (1 session, gros gain)
 **Objectif** : éliminer les blocages critiques.
 - [x] **C1** — ✅ RÉSOLU (2026-04-29) — `z-50` → `z-60` sur 9 fichiers (10 occurrences)
-- [ ] C2 — Appliquer le bottom drawer pattern aux 6 modals non conformes
+- [x] **C2** — ✅ RÉSOLU (2026-04-29) — bottom drawer sur 5 modals (3 desktop-only exclues)
 - [ ] C3 — Wrapper `overflow-x-auto` sur les 18 tableaux identifiés
 - [ ] M1 — Corriger les 2 widgets dashboard (`grid-cols-1 sm:grid-cols-3`)
 - [ ] Test manuel en 375 px sur les pages impactées
@@ -562,7 +534,7 @@ fi
 | Lacune | Statut | Date | Violations restantes |
 |---|---|---|---|
 | C1 — z-50 sur modals | ✅ RÉSOLU | 2026-04-29 | 0 |
-| C2 — Modals sans bottom drawer | ⏳ À faire | — | 6 fichiers |
+| C2 — Modals sans bottom drawer | ✅ RÉSOLU | 2026-04-29 | 0 |
 | C3 — Tableaux sans overflow-x-auto | ⏳ À faire | — | 18 fichiers |
 | M1 — Widgets dashboard | ⏳ À faire | — | 2 fichiers |
 | M2 — Grilles formulaires | ⏳ À faire | — | 46 occurrences |

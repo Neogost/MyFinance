@@ -70,8 +70,8 @@ export default function ReleaseNotesModal({ onClose }) {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-5xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
 
         {/* En-tête */}

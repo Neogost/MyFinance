@@ -72,10 +72,23 @@ fi
 
 # ----------------------------------------------------------------------------
 # C2 — Modals sans bottom drawer (items-center sans items-end)
+# Exclusions :
+#   Navigation.jsx           — bottom nav, pattern intentionnel
+#   DashboardCustomizePanel  — side drawer (top-right), items-end ne s'applique pas
+#   AdminInstrumentPage      — modal desktop-only (bouton déclencheur hidden md:)
+#   InstrumentPriceUpdateModal — desktop-only (PatrimoineActionBar)
+#   ExchangeRateUpdateModal    — desktop-only (PatrimoineActionBar)
+#   SnapshotPanel              — desktop-only (PatrimoineActionBar)
 # ----------------------------------------------------------------------------
 [ "$QUIET" -eq 0 ] && echo -e "${BOLD}${BLUE}🔍 C2 — Modals sans bottom drawer (items-end manquant)${NC}"
 violations=""
-for f in $(echo "$FILES" | xargs grep -lE "fixed inset-0" 2>/dev/null | grep -v "Navigation.jsx"); do
+for f in $(echo "$FILES" | xargs grep -lE "fixed inset-0" 2>/dev/null \
+  | grep -v "Navigation.jsx" \
+  | grep -v "DashboardCustomizePanel.jsx" \
+  | grep -v "AdminInstrumentPage.jsx" \
+  | grep -v "InstrumentPriceUpdateModal.jsx" \
+  | grep -v "ExchangeRateUpdateModal.jsx" \
+  | grep -v "SnapshotPanel.jsx"); do
   if ! grep -q "items-end" "$f" 2>/dev/null; then
     violations="$violations\n$f"
   fi
