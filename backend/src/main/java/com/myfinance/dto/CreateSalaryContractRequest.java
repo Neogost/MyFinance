@@ -13,7 +13,7 @@ public record CreateSalaryContractRequest(
         @Positive Float annualGrossSalary,
         // PUBLIC uniquement
         PublicSubTypeEnum publicSubType,
-        @Min(200) Integer indiceMajore,
+        @Positive Integer indiceMajore,
         // Champs communs
         @Size(max = 200) String companyName,
         @NotNull LocalDate startDate,

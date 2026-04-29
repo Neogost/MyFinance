@@ -43,7 +43,7 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
   useEffect(() => {
     const im   = parseInt(form.indiceMajore, 10)
     const date = form.startDate || new Date().toISOString().slice(0, 10)
-    if (!im || im < 200) { setGrossPreview(null); return }
+    if (!im || im < 1) { setGrossPreview(null); return }
     getPublicPointValue(date)
       .then(pv => setGrossPreview({ gross: im * pv, pointValue: pv }))
       .catch(() => setGrossPreview(null))
@@ -130,7 +130,7 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
           {/* Indice majoré — cœur du formulaire */}
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Indice majoré (IM) *</label>
-            <input name="indiceMajore" type="number" min="200" step="1"
+            <input name="indiceMajore" type="number" min="1" step="1"
               value={form.indiceMajore} onChange={handleChange}
               required placeholder="Ex. : 421" className={inputCls} />
             {grossPreview != null ? (

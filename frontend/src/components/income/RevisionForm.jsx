@@ -35,7 +35,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
     if (!isPublic) return
     const im   = parseInt(form.indiceMajore, 10)
     const date = form.effectiveDate || new Date().toISOString().slice(0, 10)
-    if (!im || im < 200) { setGrossPreview(null); return }
+    if (!im || im < 1) { setGrossPreview(null); return }
     getPublicPointValue(date)
       .then(pv => setGrossPreview({ gross: im * pv, pointValue: pv }))
       .catch(() => setGrossPreview(null))
@@ -88,7 +88,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Nouvel indice majoré (IM) *</label>
               <input
-                name="indiceMajore" type="number" min="200" step="1"
+                name="indiceMajore" type="number" min="1" step="1"
                 value={form.indiceMajore} onChange={handleChange}
                 required placeholder="Ex. : 435"
                 className={inputCls}
