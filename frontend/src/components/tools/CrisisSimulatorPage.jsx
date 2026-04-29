@@ -472,13 +472,17 @@ export default function CrisisSimulatorPage({ user }) {
             const badgeCls = isDown ? 'bg-red-100 text-red-700' : isUp ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
             return (
               <div key={cat}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">{CATEGORY_LABELS[cat]}</span>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-400 amount">{fmtEur(before)}</span>
+                <div className="mb-2">
+                  {/* Ligne 1 : label + badge */}
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className="text-sm font-medium text-gray-700">{CATEGORY_LABELS[cat]}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${badgeCls}`}>{fmtPct(drawdown)}</span>
+                  </div>
+                  {/* Ligne 2 : avant → après (format compact) */}
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="amount">{fmtEurShort(before)}</span>
                     <span className="text-gray-300">→</span>
-                    <span className={`font-semibold amount ${isDown ? 'text-red-600' : isUp ? 'text-emerald-600' : 'text-gray-700'}`}>{fmtEur(after)}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeCls}`}>{fmtPct(drawdown)}</span>
+                    <span className={`font-semibold amount ${isDown ? 'text-red-600' : isUp ? 'text-emerald-600' : 'text-gray-700'}`}>{fmtEurShort(after)}</span>
                   </div>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
