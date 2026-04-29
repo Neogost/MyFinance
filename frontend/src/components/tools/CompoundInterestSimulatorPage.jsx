@@ -752,7 +752,7 @@ export default function CompoundInterestSimulatorPage() {
             )}
 
             {withdrawalRate > 0 && (
-              <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
+              <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="text-center bg-indigo-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500 mb-1">Retrait annuel estimé</p>
                   <p className="text-base font-semibold text-indigo-700">{fmt(annualWithdrawal)} / an</p>

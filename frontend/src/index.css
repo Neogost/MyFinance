@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Déclare la page en light par défaut — empêche le navigateur (Safari iOS,
+   Chrome Android) d'appliquer son propre dark mode natif indépendamment du
+   toggle React. html.dark surcharge en dark quand l'utilisateur l'active. */
+:root {
+  color-scheme: light;
+}
+
 /* ── Mode nuit ── */
 html.dark {
   color-scheme: dark;

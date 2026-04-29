@@ -306,7 +306,7 @@ grep -rn "grid-cols-[2-9]" frontend/src/components/dashboard/ | grep -v "md:grid
 
 📌 **Référence conforme** : `DashboardPage.jsx:129,177,196` (`grid-cols-1 md:grid-cols-3 gap-4 md:gap-6`)
 
-### 🟠 M2 — Grilles dans formulaires modaux
+### 🟠 M2 — ✅ RÉSOLU (2026-04-29) — Grilles dans formulaires modaux
 
 **Patch mécanique** sur tout `*Form.jsx` :
 ```diff
@@ -510,7 +510,7 @@ fi
 
 ### Phase 2 — Formulaires modaux
 **Objectif** : tous les formulaires utilisables confortablement <400 px.
-- [ ] M2 — Auditer chaque `*Form.jsx` listé, corriger les `grid-cols-N` → `grid-cols-1 md:grid-cols-N` (46 occurrences)
+- [x] **M2** — ✅ RÉSOLU (2026-04-29) — 22 occurrences corrigées, 22 intentionnellement conservées (paires date/nombre, boutons radio, KPIs compacts)
 - [ ] Vérifier au passage le bottom drawer pattern + `z-60`
 - [ ] Test manuel formulaire par formulaire
 
@@ -537,7 +537,7 @@ fi
 | C2 — Modals sans bottom drawer | ✅ RÉSOLU | 2026-04-29 | 0 |
 | C3 — Tableaux sans overflow-x-auto | ✅ RÉSOLU | 2026-04-29 | 0 |
 | M1 — Widgets dashboard | ✅ RÉSOLU | 2026-04-29 | 0 |
-| M2 — Grilles formulaires | ⏳ À faire | — | 46 occurrences |
+| M2 — Grilles formulaires | ✅ RÉSOLU | 2026-04-29 | 22 conservées intentionnellement |
 | m1 — Simulateurs | ⏳ À faire | — | 7 pages |
 | m2 — Doc / admin | ⏳ À faire | — | 6 fichiers |
 

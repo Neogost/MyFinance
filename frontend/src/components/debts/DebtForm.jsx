@@ -152,7 +152,7 @@ export default function DebtForm({ debt, onSubmit, onCancel }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           {/* Type + Libellé */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Type *</label>
               <select name="type" value={form.type} onChange={handleChange} className={inputCls}>
@@ -168,7 +168,7 @@ export default function DebtForm({ debt, onSubmit, onCancel }) {
           </div>
 
           {/* Établissement + Devise */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Établissement prêteur</label>
               <input name="lender" type="text" value={form.lender} onChange={handleChange}
@@ -182,7 +182,7 @@ export default function DebtForm({ debt, onSubmit, onCancel }) {
           </div>
 
           {/* Capital initial + Taux annuel */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Capital initial (€) *</label>
               <input name="initialCapital" type="number" min="0.01" step="0.01"
@@ -198,7 +198,7 @@ export default function DebtForm({ debt, onSubmit, onCancel }) {
           </div>
 
           {/* Mensualité + Taux assurance */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Mensualité hors assurance (€)</label>
               <input name="monthlyPayment" type="number" min="0" step="0.01"

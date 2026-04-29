@@ -183,7 +183,7 @@ export default function AdminInstrumentPage() {
       {updateReport && (
         <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs">
           <p className="font-semibold text-emerald-700 mb-2">Mise à jour terminée</p>
-          <div className="grid grid-cols-3 gap-x-8 gap-y-1 text-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-1 text-gray-600">
             <span>Cours mis à jour</span><span className="font-medium text-emerald-700 col-span-2">{updateReport.instrumentsUpdated}</span>
             <span>Cours en échec</span><span className={`font-medium col-span-2 ${updateReport.instrumentsFailed > 0 ? 'text-red-600' : ''}`}>{updateReport.instrumentsFailed}</span>
             <span>Taux de change</span><span className="font-medium col-span-2">{updateReport.ratesUpdated}</span>

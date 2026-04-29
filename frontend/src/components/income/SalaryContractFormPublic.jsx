@@ -158,7 +158,7 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
           </div>
 
           {/* Ticket restaurant */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Valeur du ticket restaurant (€)</label>
               <input name="mealVoucherAmount" type="number" min="0" step="0.01"

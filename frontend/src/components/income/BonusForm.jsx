@@ -91,7 +91,7 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
           </div>
 
           {/* Montant + champ de date selon le type */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Montant brut (€) *</label>
               <input

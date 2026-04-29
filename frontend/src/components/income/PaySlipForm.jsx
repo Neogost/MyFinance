@@ -91,7 +91,7 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Net versé (€) *</label>
               <input name="netSalary" type="number" min="0" step="0.01" value={form.netSalary} onChange={handleChange} required placeholder="2680.00" className={inputCls} />

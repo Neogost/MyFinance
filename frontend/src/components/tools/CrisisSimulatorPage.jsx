@@ -324,7 +324,7 @@ export default function CrisisSimulatorPage({ user }) {
         <p className="text-sm text-gray-500 mb-5">{scenario.description}</p>
 
         {scenarioId === 'custom' && (
-          <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-5 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-5 p-4 bg-gray-50 rounded-lg">
             {CATEGORY_ORDER.map(cat => (
               <div key={cat}>
                 <div className="flex justify-between items-center mb-1">
@@ -364,7 +364,7 @@ export default function CrisisSimulatorPage({ user }) {
       </div>
 
       {/* Synthèse avant / après */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: 'Patrimoine brut', before: patrimoineBrutBefore, after: patrimoineBrutAfter },
           { label: 'Patrimoine net',  before: patrimoineNetBefore,  after: patrimoineNetAfter  },
@@ -573,7 +573,7 @@ export default function CrisisSimulatorPage({ user }) {
             <span className="text-sm font-bold text-indigo-600 w-10 text-right shrink-0">{reinvestPct} %</span>
           </div>
           {reinvestPct > 0 ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-500 mb-1">Montant réinvesti</p>
                 <p className="text-lg font-bold text-indigo-600 amount">{fmtEur(reinvestAmount)}</p>
@@ -672,7 +672,7 @@ export default function CrisisSimulatorPage({ user }) {
             La crise retarde-t-elle votre indépendance financière ? Calculé avec un rendement long terme de {Math.round(LONG_TERM_RETURN * 100)} % / an.
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Objectif FIRE</p>
               <p className="text-lg font-bold text-gray-800 amount">{fmtEur(fireTarget)}</p>
@@ -730,7 +730,7 @@ export default function CrisisSimulatorPage({ user }) {
           Le score de résilience (0–10) mesure la capacité de votre patrimoine à absorber la crise simulée.
           Il est calculé comme la moyenne pondérée de trois composantes :
         </p>
-        <div className="grid grid-cols-3 gap-4 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
           {[
             { title: 'Perte patrimoniale (40 %)',    formula: '10 × (1 − |perte| / 50 %)',          desc: '10 si aucune perte, 0 si ≥ 50 % du patrimoine brut est perdu. Linéaire entre les deux.' },
             { title: 'Couverture du matelas (30 %)', formula: 'min(10 ; mois couverts × 10 / 6)',   desc: '10 si le matelas couvre ≥ 6 mois de dépenses, 0 si le matelas est vide. Capé à 10.' },

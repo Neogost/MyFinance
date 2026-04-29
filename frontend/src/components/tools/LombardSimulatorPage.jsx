@@ -686,7 +686,7 @@ export default function LombardSimulatorPage() {
             </div>
 
             {stressScenarioId === 'custom' && (
-              <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
                 {CATEGORY_ORDER.map(cat => (
                   <div key={cat}>
                     <div className="flex justify-between text-xs mb-1">
@@ -714,7 +714,7 @@ export default function LombardSimulatorPage() {
                 <span className="text-sm font-semibold text-gray-800">{CRISIS_SCENARIOS[stressScenarioId].label}</span>
                 <StatusBadge status={stressRisk.status} />
               </div>
-              <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
                   <p className="text-gray-500">Portefeuille après choc</p>
                   <p className="font-bold text-gray-800 amount">{fmtEur(stressedTotal)}</p>
@@ -747,7 +747,7 @@ export default function LombardSimulatorPage() {
                   </span>
                   <span className="text-xs text-purple-700">Choc BOURSE : {(reinvestDrawdown * 100).toFixed(0)} %</span>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                   <div>
                     <p className="text-gray-500">Capital réinvesti</p>
                     <p className="font-bold text-gray-800 amount">{fmtEur(effectiveAmount)}</p>

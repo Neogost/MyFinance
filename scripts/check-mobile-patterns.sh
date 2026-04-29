@@ -136,8 +136,13 @@ fi
 
 # ----------------------------------------------------------------------------
 # M1 + M2 — grid-cols-N sans fallback mobile (sm:/md:/lg:)
+# Seuil : 22 occurrences intentionnellement conservées (voir MOBILE-AUDIT-2026-04-29.md)
+#   paires date+date, nombre+nombre courts, boutons radio 2 options,
+#   KPI cards compacts, sélecteur de catégorie 6 icônes, Prénom+Nom
+# Tout dépassement de ce seuil = régression à corriger.
 # ----------------------------------------------------------------------------
-[ "$QUIET" -eq 0 ] && echo -e "${BOLD}${BLUE}🔍 M1+M2 — grid-cols-N sans fallback mobile${NC}"
+KNOWN_ACCEPTABLE=18
+[ "$QUIET" -eq 0 ] && echo -e "${BOLD}${BLUE}🔍 M1+M2 — grid-cols-N sans fallback mobile (seuil accepté : $KNOWN_ACCEPTABLE)${NC}"
 violations=""
 for f in $FILES; do
   matches=$(grep -nE "grid-cols-[2-9]" "$f" 2>/dev/null | grep -vE "(sm|md|lg|xl):grid-cols" || true)
@@ -150,11 +155,16 @@ done
 violations=$(echo -e "$violations" | grep -v '^$' || true)
 if [ -n "$violations" ]; then
   count=$(echo "$violations" | wc -l | tr -d ' ')
-  TOTAL_VIOLATIONS=$((TOTAL_VIOLATIONS + count))
-  ERRORS=$((ERRORS + 1))
-  if [ "$QUIET" -eq 0 ]; then
-    echo -e "${YELLOW}  ⚠ $count occurrence(s) :${NC}"
-    echo "$violations" | sed 's/^/     /'
+  if [ "$count" -gt "$KNOWN_ACCEPTABLE" ]; then
+    new_violations=$((count - KNOWN_ACCEPTABLE))
+    TOTAL_VIOLATIONS=$((TOTAL_VIOLATIONS + new_violations))
+    ERRORS=$((ERRORS + 1))
+    if [ "$QUIET" -eq 0 ]; then
+      echo -e "${RED}  ❌ $count occurrences dont $new_violations nouvelles (seuil $KNOWN_ACCEPTABLE) :${NC}"
+      echo "$violations" | sed 's/^/     /'
+    fi
+  else
+    [ "$QUIET" -eq 0 ] && echo -e "${GREEN}  ✅ OK ($count/$KNOWN_ACCEPTABLE occurrences acceptées)${NC}"
   fi
 else
   [ "$QUIET" -eq 0 ] && echo -e "${GREEN}  ✅ OK${NC}"

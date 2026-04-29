@@ -274,7 +274,7 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
         </div>
 
         {/* ── Synthèse 2 colonnes ─────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
 
           {/* Colonne Patrimoine */}
           <div className="overflow-x-auto">

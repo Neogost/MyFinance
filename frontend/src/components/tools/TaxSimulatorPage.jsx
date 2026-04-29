@@ -164,7 +164,7 @@ export default function TaxSimulatorPage() {
           </h3>
 
           {/* KPIs */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
             <div className="bg-indigo-50 rounded-xl p-3 md:p-5 text-center">
               <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-1 leading-tight">Impôt annuel</p>
               <p className="text-lg md:text-2xl font-bold text-indigo-700 amount">{fmt(result.totalEstimatedTax)}</p>
