@@ -2,8 +2,10 @@ package com.myfinance.service;
 
 import com.myfinance.config.PublicSectorParameters;
 import com.myfinance.config.TaxParameters;
+import com.myfinance.domain.ContractTypeEnum;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
+import com.myfinance.domain.SalaryRevision;
 import com.myfinance.domain.User;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
@@ -295,5 +297,63 @@ class SalaryContractServiceTest {
 
         verify(salaryRevisionRepository).deleteByContract(activeContract);
         verify(salaryContractRepository).delete(activeContract);
+    }
+
+    // ── Contrat PUBLIC — révision avec nouvel indice majoré ────
+
+    @Test
+    void findById_contratPublic_utiliseLIndiceDeLaRevisionActive() {
+        SalaryContract publicContract = SalaryContract.builder()
+                .id(2L).user(owner)
+                .contractType(ContractTypeEnum.PUBLIC)
+                .indiceMajore(400)
+                .startDate(LocalDate.of(2022, 9, 1)).endDate(null)
+                .paidMonthsPerYear(12).weeklyHours(35f)
+                .mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
+                .isCadre(false)
+                .build();
+
+        SalaryRevision revision = SalaryRevision.builder()
+                .id(5L).contract(publicContract)
+                .effectiveDate(LocalDate.of(2024, 1, 1))
+                .indiceMajore(450)   // nouvel indice après avancement d'échelon
+                .build();
+
+        when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(publicContract));
+        when(salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))
+                .thenReturn(java.util.Optional.of(revision));
+        when(pointValueService.getAnnualValueAt(LocalDate.of(2024, 1, 1))).thenReturn(5.0);
+
+        SalaryContractDto result = salaryContractService.findById(2L, owner);
+
+        // Brut = indiceMajore_révision × valeur_du_point = 450 × 5.0 = 2250 (et non 400 × 5.0 = 2000)
+        assertThat(result.annualGrossSalary()).isEqualTo(2250f);
+        assertThat(result.activeRevisionId()).isEqualTo(5L);
+    }
+
+    @Test
+    void findById_contratPublic_sansRevision_utiliseLIndiceDuContrat() {
+        SalaryContract publicContract = SalaryContract.builder()
+                .id(2L).user(owner)
+                .contractType(ContractTypeEnum.PUBLIC)
+                .indiceMajore(400)
+                .startDate(LocalDate.of(2022, 9, 1)).endDate(null)
+                .paidMonthsPerYear(12).weeklyHours(35f)
+                .mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
+                .isCadre(false)
+                .build();
+
+        when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(publicContract));
+        when(salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))
+                .thenReturn(java.util.Optional.empty());
+        when(pointValueService.getAnnualValueAt(LocalDate.of(2022, 9, 1))).thenReturn(5.0);
+
+        SalaryContractDto result = salaryContractService.findById(2L, owner);
+
+        // Sans révision : brut = indiceMajore_contrat × valeur_du_point = 400 × 5.0 = 2000
+        assertThat(result.annualGrossSalary()).isEqualTo(2000f);
+        assertThat(result.activeRevisionId()).isNull();
     }
 }

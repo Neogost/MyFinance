@@ -208,14 +208,19 @@ public class SalaryContractService {
         ContractTypeEnum type = contract.getContractType() != null
                 ? contract.getContractType() : ContractTypeEnum.PRIVATE;
 
-        if (type == ContractTypeEnum.PUBLIC && contract.getIndiceMajore() != null) {
-            // Pour PUBLIC : recalcul du brut depuis l'indice à la date effective (révision ou début du contrat)
+        // Indice effectif : révision active en priorité, sinon indice de base du contrat
+        Integer effectiveIndiceMajore = activeRevision
+                .map(SalaryRevision::getIndiceMajore)
+                .orElse(contract.getIndiceMajore());
+
+        if (type == ContractTypeEnum.PUBLIC && effectiveIndiceMajore != null) {
+            // Pour PUBLIC : recalcul du brut depuis l'indice effectif × valeur du point à la date de la révision
             LocalDate refDate = activeRevision
                     .map(SalaryRevision::getEffectiveDate)
                     .orElse(contract.getStartDate());
             double pv = pointValueService.getAnnualValueAt(refDate);
             pointValueUsed   = (float) pv;
-            effectiveSalary  = (float) (contract.getIndiceMajore() * pv);
+            effectiveSalary  = (float) (effectiveIndiceMajore * pv);
         } else {
             effectiveSalary = activeRevision
                     .map(SalaryRevision::getAnnualGrossSalary)
