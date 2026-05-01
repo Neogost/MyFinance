@@ -7,6 +7,7 @@ import { getExpenseSummary } from '../../api/expenses'
 import { getPossessionsSummary } from '../../api/possessions'
 import { getDebtsSummary } from '../../api/debts'
 import { PROJECTION_RATES } from '../patrimoine/constants'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const ASSET_LABELS = {
   BOURSE:        'Bourse',
@@ -95,6 +96,8 @@ function TotalRow({ label, amount, color = 'text-gray-900' }) {
 }
 
 export default function BilanFinancierPage({ user }) {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.bilan') }, [])
   const [period,   setPeriod]   = useState('MONTHLY')
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)

@@ -9,10 +9,13 @@ import { NumInput, AmountPctInput, Section, PropertyTypeToggle } from './LoanSim
 import RentalInvestmentSection from './RentalInvestmentSection'
 import { useLoanCalculations } from '../../hooks/useLoanCalculations'
 import LoanResultsPanel from './LoanResultsPanel'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
 export default function LoanSimulatorPage({ user }) {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('tools.loan') }, [])
   // Revenus
   const [apiIncome, setApiIncome]           = useState(null)
   const [incomeLoading, setIncomeLoading]   = useState(true)
@@ -161,12 +164,14 @@ export default function LoanSimulatorPage({ user }) {
       setSavedSimulations(prev => [created, ...prev])
       setSaveName('')
       setShowSaveModal(false)
+      trackEvent('FEATURE_USE', 'tools.loan.save')
     } finally {
       setSaving(false)
     }
   }
 
   function handleLoad(sim) {
+    trackEvent('FEATURE_USE', 'tools.loan.load')
     const p = sim.parameters
     setPropertyPrice(p.propertyPrice ?? 250000)
     setSurface(p.surface ?? 0)

@@ -3,6 +3,7 @@ import { getUsers } from '../../api/users'
 import { getAdminSnapshots, deleteAdminSnapshot } from '../../api/patrimoine'
 import ManualSnapshotModal from './ManualSnapshotModal'
 import { Amount } from './utils'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 function fmtDate(isoDate) {
   if (!isoDate) return '—'
@@ -14,6 +15,8 @@ function fmtDateShort(isoDate) {
 }
 
 export default function AdminSnapshotPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('admin.snapshot') }, [])
   const [users,           setUsers]           = useState([])
   const [selectedUserId,  setSelectedUserId]  = useState('')
   const [snapshots,       setSnapshots]       = useState([])

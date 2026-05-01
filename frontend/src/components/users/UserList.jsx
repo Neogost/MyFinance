@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { getUsers, createUser, updateUser, deleteUser } from '../../api/users'
 import UserForm from './UserForm'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
 export default function UserList() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('admin.user') }, [])
   const [users, setUsers]           = useState([])
   const [userToEdit, setUserToEdit] = useState(null)
   const [loading, setLoading]       = useState(true)
@@ -28,9 +31,11 @@ export default function UserList() {
     if (userToEdit?.id) {
       const updated = await updateUser(userToEdit.id, formData)
       setUsers(us => us.map(u => u.id === updated.id ? updated : u))
+      trackEvent('FEATURE_USE', 'admin.user.edit')
     } else {
       const created = await createUser(formData)
       setUsers(us => [...us, created])
+      trackEvent('FEATURE_USE', 'admin.user.create')
     }
     setUserToEdit(null)
   }
@@ -40,6 +45,7 @@ export default function UserList() {
     try {
       await deleteUser(deleteTarget.id)
       setUsers(us => us.filter(u => u.id !== deleteTarget.id))
+      trackEvent('FEATURE_USE', 'admin.user.delete')
       setDeleteTarget(null)
     } finally {
       setDeleting(false)

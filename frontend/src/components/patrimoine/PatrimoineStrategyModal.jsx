@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { savePatrimoineTargets } from '../../api/patrimoine'
 import { CATEGORY_META } from './constants'
 
@@ -14,6 +15,7 @@ export default function PatrimoineStrategyModal({ onClose, targets, onSave }) {
   })
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState(null)
+  const { trackEvent } = useAnalytics()
 
   async function handleSave() {
     setSaving(true)
@@ -25,6 +27,7 @@ export default function PatrimoineStrategyModal({ onClose, targets, onSave }) {
         if (!isNaN(v) && v > 0) payload[cat] = v
       })
       const updated = await savePatrimoineTargets(payload)
+      trackEvent('FEATURE_USE', 'patrimoine.strategy.save')
       onSave(updated)
       onClose()
     } catch {

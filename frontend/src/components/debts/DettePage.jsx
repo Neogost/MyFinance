@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getDebts, getDebtsSummary, createDebt, updateDebt, deleteDebt, getBalanceEntries, addBalanceEntry, deleteBalanceEntry } from '../../api/debts'
 import { useCrud } from '../../hooks/useCrud'
 import DebtForm from './DebtForm'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { fmt, fmtPct, formatDate } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const TYPE_META = {
   IMMOBILIER:   { label: 'Immobilier',            color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
@@ -57,6 +58,7 @@ function AmortizationTable({ schedule }) {
 }
 
 function BalanceHistoryPanel({ debtId, onUpdated }) {
+  const { trackEvent } = useAnalytics()
   const [entries, setEntries]   = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm]         = useState({ entryDate: new Date().toISOString().split('T')[0], balance: '', note: '' })
@@ -80,6 +82,7 @@ function BalanceHistoryPanel({ debtId, onUpdated }) {
       const updated = await getBalanceEntries(debtId)
       setEntries(updated)
       onUpdated()
+      trackEvent('FORM_SUBMIT', 'debts.balance_entry.submit')
     } finally {
       setLoading(false)
     }
@@ -264,6 +267,8 @@ function DebtRow({ debt, onEdit, onDelete, onUpdated }) {
 }
 
 export default function DettePage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('debts.main') }, [])
   const [summary, setSummary] = useState(null)
   const [filter,  setFilter]  = useState('ALL')
 
@@ -278,9 +283,9 @@ export default function DettePage() {
       setSummary(s)
       return d
     },
-    create:       createDebt,
-    update:       updateDebt,
-    remove:       deleteDebt,
+    create:       async (d) => { const r = await createDebt(d); trackEvent('FEATURE_USE', 'debts.debt.create', { type: d.type }); return r },
+    update:       async (id, d) => { const r = await updateDebt(id, d); trackEvent('FEATURE_USE', 'debts.debt.edit'); return r },
+    remove:       async (id) => { await deleteDebt(id); trackEvent('FEATURE_USE', 'debts.debt.delete') },
     errorMessage: 'Impossible de charger les dettes.',
   })
 
@@ -305,7 +310,7 @@ export default function DettePage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Dettes & Emprunts</h2>
         <button
-          onClick={() => setFormTarget(null)}
+          onClick={() => { trackEvent('BUTTON_CLICK', 'debts.debt.open_form'); setFormTarget(null) }}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter

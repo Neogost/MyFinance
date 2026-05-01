@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { updatePersonalInfo } from '../../api/auth'
 import { labelCls } from '../../components/common/formStyles.js'
 
@@ -28,6 +29,7 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
     jobTitle:        user.jobTitle        ?? '',
   })
   const [saving,  setSaving]  = useState(false)
+  const { trackEvent } = useAnalytics()
   const [success, setSuccess] = useState(false)
   const [error,   setError]   = useState(null)
 
@@ -54,6 +56,7 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
       })
       onUpdate?.(updated)
       setSuccess(true)
+      trackEvent('FORM_SUBMIT', 'auth.profile.update_personal')
     } catch {
       setError('Impossible d\'enregistrer les informations.')
     } finally {

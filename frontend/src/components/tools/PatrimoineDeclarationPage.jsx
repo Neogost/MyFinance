@@ -6,6 +6,7 @@ import { getExpenseSummary } from '../../api/expenses'
 import { getPossessions } from '../../api/possessions'
 import { getDebts } from '../../api/debts'
 import { simulateTax } from '../../api/tools'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const fmtEur = (n) => n == null ? '—' : n.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' €'
 const fmtDate = (d) => {
@@ -127,6 +128,8 @@ function CategoryTable({ title, rows, totalLabel }) {
 }
 
 export default function PatrimoineDeclarationPage({ user, onNavigate }) {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.patrimoine_declaration') }, [])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
   const [positions,        setPositions]        = useState([])

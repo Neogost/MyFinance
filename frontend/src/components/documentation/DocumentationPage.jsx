@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { DOC_TREE, findFirstLeaf } from '../../docs/index.js'
@@ -213,6 +214,8 @@ function findNodeById(nodes, id) {
 
 // ── Page principale ────────────────────────────────────────────────
 export default function DocumentationPage({ user = null }) {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('app.documentation') }, [])
   const visibleTree = useMemo(() =>
     user?.role === 'ADMIN'
       ? DOC_TREE

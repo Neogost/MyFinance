@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getLoginHistory } from '../../api/admin'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 function formatDateTime(iso) {
   const d = new Date(iso)
@@ -27,6 +28,8 @@ const ROW_BG = {
 }
 
 export default function LoginHistoryPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('admin.login_history') }, [])
   const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)

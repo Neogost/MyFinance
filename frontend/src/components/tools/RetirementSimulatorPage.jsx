@@ -9,6 +9,7 @@ import { getMe } from '../../api/auth'
 import { getSalaryContracts } from '../../api/income'
 import { simulateTax } from '../../api/tools'
 import { inferTMI } from '../../data/fiscal-envelopes'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import {
   projectCareer,
   computeRegimeGeneral,
@@ -150,6 +151,8 @@ const CustomTooltipChart = ({ active, payload, label }) => {
 // ── Page principale ───────────────────────────────────────────────────────────
 
 export default function RetirementSimulatorPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.retirement') }, [])
   // Référentiel
   const [params,        setParams]        = useState(null)
   const [loadingParams, setLoadingParams] = useState(true)

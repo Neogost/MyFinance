@@ -6,6 +6,7 @@ import {
 import { simulateTax } from '../../api/tools'
 import { compareEnvelopes } from '../../utils/fiscalEnvelopes'
 import { FISCAL_PARAMS, inferTMI } from '../../data/fiscal-envelopes'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 // ── Formatage ────────────────────────────────────────────────────────────────
 
@@ -235,6 +236,8 @@ const CustomTooltipBar = ({ active, payload, label }) => {
 const DEFAULT_RETURNS = { cto: 7, pea: 6.5, av: 3.5, per: 4.5 }
 
 export default function FiscalEnvelopeComparatorPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.fiscal_envelope') }, [])
   // Versements
   const [initialAmount,      setInitialAmount]      = useState(10000)
   const [monthlyContrib,     setMonthlyContrib]     = useState(300)

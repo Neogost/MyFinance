@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getBonuses, createBonus, updateBonus, deleteBonus } from '../../api/income'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import BonusForm from './BonusForm'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
@@ -38,6 +39,8 @@ export default function BonusPanel({ contractId, onBonusChange }) {
 
   useEffect(() => { fetchBonuses() }, [contractId])
 
+  const { trackEvent } = useAnalytics()
+
   async function fetchBonuses() {
     try {
       setLoading(true)
@@ -52,9 +55,11 @@ export default function BonusPanel({ contractId, onBonusChange }) {
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       const updated = await updateBonus(contractId, formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'revenus.bonus.edit')
       setBonuses(bs => bs.map(b => b.id === updated.id ? updated : b))
     } else {
       const created = await createBonus(contractId, payload)
+      trackEvent('FEATURE_USE', 'revenus.bonus.create')
       setBonuses(bs => [...bs, created])
     }
     setFormTarget(undefined)
@@ -64,6 +69,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
   async function handleDelete(bonus) {
     if (!confirm(`Supprimer la prime « ${bonus.label} » ?`)) return
     await deleteBonus(contractId, bonus.id)
+    trackEvent('FEATURE_USE', 'revenus.bonus.delete')
     setBonuses(bs => bs.filter(b => b.id !== bonus.id))
     onBonusChange?.()
   }

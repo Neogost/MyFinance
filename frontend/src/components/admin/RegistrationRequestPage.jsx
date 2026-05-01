@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getRegistrations, approveRegistration, rejectRegistration } from '../../api/registrations'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 function formatDate(iso) {
   const d = new Date(iso)
@@ -15,6 +16,8 @@ const STATUS_CLS    = {
 }
 
 export default function RegistrationRequestPage({ onPendingCountChange }) {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('admin.registration') }, [])
   const [requests, setRequests]   = useState([])
   const [filter, setFilter]       = useState('PENDING')
   const [loading, setLoading]     = useState(true)
@@ -45,6 +48,7 @@ export default function RegistrationRequestPage({ onPendingCountChange }) {
     setActionError(null)
     try {
       const updated = await approveRegistration(id)
+      trackEvent('FEATURE_USE', 'admin.registration.approve')
       setRequests(rs => rs.map(r => r.id === id ? updated : r))
       if (onPendingCountChange) {
         const count = await getRegistrations('PENDING')
@@ -62,6 +66,7 @@ export default function RegistrationRequestPage({ onPendingCountChange }) {
     setActionError(null)
     try {
       const updated = await rejectRegistration(id)
+      trackEvent('FEATURE_USE', 'admin.registration.reject')
       setRequests(rs => rs.map(r => r.id === id ? updated : r))
       if (onPendingCountChange) {
         const count = await getRegistrations('PENDING')

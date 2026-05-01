@@ -3,6 +3,7 @@ import { getInstruments, createInstrument, updateInstrument, deleteInstrument, r
 import AdminInstrumentForm from './AdminInstrumentForm'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -24,6 +25,8 @@ function isStale(iso) {
 }
 
 export default function AdminInstrumentPage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('admin.instrument') }, [])
   const [instruments,   setInstruments]   = useState([])
   const [formTarget,    setFormTarget]    = useState(undefined)
   const [loading,       setLoading]       = useState(true)
@@ -70,6 +73,7 @@ export default function AdminInstrumentPage() {
     setUpdateReport(null)
     setUpdateError(null)
     try {
+      trackEvent('FEATURE_USE', 'admin.instrument.update_prices')
       const report = await runMarketDataUpdate()
       setUpdateReport(report)
       setInstruments(await getInstruments())

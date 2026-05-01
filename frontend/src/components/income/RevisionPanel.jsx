@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getRevisions, createRevision, updateRevision, deleteRevision } from '../../api/income'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import RevisionForm from './RevisionForm'
 
 export default function RevisionPanel({ contractId, contractType, activeRevisionId, onRevisionChange }) {
@@ -9,6 +10,8 @@ export default function RevisionPanel({ contractId, contractType, activeRevision
   const [error, setError]           = useState(null)
 
   useEffect(() => { fetchRevisions() }, [contractId])
+
+  const { trackEvent } = useAnalytics()
 
   async function fetchRevisions() {
     try {
@@ -24,9 +27,11 @@ export default function RevisionPanel({ contractId, contractType, activeRevision
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       const updated = await updateRevision(contractId, formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'revenus.revision.edit')
       setRevisions(rs => rs.map(r => r.id === updated.id ? updated : r))
     } else {
       const created = await createRevision(contractId, payload)
+      trackEvent('FEATURE_USE', 'revenus.revision.create')
       setRevisions(rs => [created, ...rs])
     }
     setFormTarget(undefined)
@@ -36,6 +41,7 @@ export default function RevisionPanel({ contractId, contractType, activeRevision
   async function handleDelete(revision) {
     if (!confirm(`Supprimer la révision du ${revision.effectiveDate} ?`)) return
     await deleteRevision(contractId, revision.id)
+    trackEvent('FEATURE_USE', 'revenus.revision.delete')
     setRevisions(rs => rs.filter(r => r.id !== revision.id))
     onRevisionChange?.()
   }

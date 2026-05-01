@@ -10,6 +10,7 @@ import { getExpenseSummary } from '../../api/expenses'
 import { getSalaryContracts } from '../../api/income'
 import { computeSafetyNetTarget } from '../../utils/safetyNet'
 import { SCENARIOS, SCENARIO_ORDER, CATEGORY_ORDER, CATEGORY_LABELS } from './crisisScenarios'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const LONG_TERM_RETURN = 0.07
 
@@ -75,6 +76,8 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 export default function CrisisSimulatorPage({ user }) {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.crisis') }, [])
   const [scenarioId,      setScenarioId]      = useState('subprime-2008')
   const [customPcts,      setCustomPcts]      = useState({ BOURSE: -30, IMMO_PAPIER: -15, IMMO_PHYSIQUE: -10, CRYPTO: -50, LIVRET: 0, LIQUIDITE: 0 })
   const [jobLoss,         setJobLoss]         = useState(false)

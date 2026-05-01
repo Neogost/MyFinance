@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { updateFiscalProfile, getBaremeKilometrique } from '../../api/auth'
 import { getSalaryContracts } from '../../api/income'
 
@@ -71,6 +72,7 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
   const [fiscalParts, setFiscalParts] = useState(user.fiscalParts ?? '')
   const [flatRate,    setFlatRate]    = useState(user.useFlatRateDeduction ?? true)
   const [saving,  setSaving]  = useState(false)
+  const { trackEvent } = useAnalytics()
   const [success, setSuccess] = useState(false)
   const [error,   setError]   = useState(null)
   const [bareme,  setBareme]  = useState(null)
@@ -189,6 +191,7 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
       const updated = await updateFiscalProfile(payload)
       onUpdate?.(updated)
       setSuccess(true)
+      trackEvent('FORM_SUBMIT', 'auth.profile.update_fiscal')
     } catch {
       setError("Impossible d'enregistrer le profil fiscal.")
     } finally {

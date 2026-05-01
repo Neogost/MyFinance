@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getPossessions, getPossessionsSummary, createPossession, updatePossession, deletePossession } from '../../api/possessions'
 import PossessionForm from './PossessionForm'
 import { fmt, formatDate } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useCrud } from '../../hooks/useCrud'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const CATEGORY_META = {
   VEHICULE:       { label: 'Véhicule',                 color: 'bg-indigo-100 text-indigo-700 dark:text-indigo-300',   dot: 'bg-indigo-400' },
@@ -18,6 +19,8 @@ const CATEGORY_META = {
 
 
 export default function PossessionPage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('possessions.main') }, [])
   const [summary, setSummary] = useState(null)
   const [filter,  setFilter]  = useState('ALL')
 
@@ -32,9 +35,9 @@ export default function PossessionPage() {
       setSummary(sum)
       return poss
     },
-    create:       createPossession,
-    update:       updatePossession,
-    remove:       deletePossession,
+    create:       async (d) => { const r = await createPossession(d); trackEvent('FEATURE_USE', 'possessions.possession.create', { category: d.category }); return r },
+    update:       async (id, d) => { const r = await updatePossession(id, d); trackEvent('FEATURE_USE', 'possessions.possession.edit'); return r },
+    remove:       async (id) => { await deletePossession(id); trackEvent('FEATURE_USE', 'possessions.possession.delete') },
     errorMessage: 'Impossible de charger les possessions.',
   })
 
@@ -55,7 +58,7 @@ export default function PossessionPage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Passifs — Grandes possessions</h2>
         <button
-          onClick={() => setFormTarget(null)}
+          onClick={() => { trackEvent('BUTTON_CLICK', 'possessions.possession.open_form'); setFormTarget(null) }}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter

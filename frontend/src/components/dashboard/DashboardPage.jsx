@@ -20,6 +20,7 @@ import SectorExposureWidget from './SectorExposureWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { getPositions } from '../../api/patrimoine'
 import DashboardCustomizePanel, { DEFAULT_WIDGET_CONFIG } from './DashboardCustomizePanel'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 function SectionTitle({ title, subtitle }) {
   return (
@@ -37,6 +38,8 @@ function sumActive(positions) {
 }
 
 export default function DashboardPage({ user, familyMode, onNavigate }) {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('dashboard.main') }, [])
   const [familyPositions,  setFamilyPositions]  = useState(null)
   const [memberBreakdown,  setMemberBreakdown]  = useState(null)
   const [hasSalaryData,    setHasSalaryData]    = useState(null)

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getOrders, createOrder, updateOrder, deleteOrder } from '../../api/patrimoine'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
 const ORDER_TYPE_LABELS = {
@@ -189,6 +190,8 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
 
   useEffect(() => { fetchOrders() }, [position.id])
 
+  const { trackEvent } = useAnalytics()
+
   async function fetchOrders() {
     try {
       setLoading(true)
@@ -203,9 +206,11 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       const updated = await updateOrder(position.id, formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'patrimoine.order.edit')
       setOrders(os => os.map(o => o.id === updated.id ? updated : o))
     } else {
       const created = await createOrder(position.id, payload)
+      trackEvent('FEATURE_USE', 'patrimoine.order.create')
       setOrders(os => [created, ...os])
     }
     setFormTarget(undefined)
@@ -215,6 +220,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   async function handleDelete(order) {
     try {
       await deleteOrder(position.id, order.id)
+      trackEvent('FEATURE_USE', 'patrimoine.order.delete')
       setOrders(os => os.filter(o => o.id !== order.id))
       onOrdersChanged?.()
     } catch {

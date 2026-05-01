@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getPaySlips, createPaySlip, updatePaySlip, deletePaySlip, getRevisions } from '../../api/income'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import PaySlipForm from './PaySlipForm'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
@@ -16,6 +17,8 @@ export default function PaySlipPanel({ contractId, projection: contract }) {
   const [error, setError]           = useState(null)
 
   useEffect(() => { fetchData() }, [contractId])
+
+  const { trackEvent } = useAnalytics()
 
   async function fetchData() {
     try {
@@ -36,9 +39,11 @@ export default function PaySlipPanel({ contractId, projection: contract }) {
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       const updated = await updatePaySlip(contractId, formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'revenus.pay_slip.edit')
       setSlips(ss => ss.map(s => s.id === updated.id ? updated : s))
     } else {
       const created = await createPaySlip(contractId, payload)
+      trackEvent('FEATURE_USE', 'revenus.pay_slip.create')
       setSlips(ss => [...ss, created].sort((a, b) => b.period.localeCompare(a.period)))
     }
     setFormTarget(undefined)
@@ -47,6 +52,7 @@ export default function PaySlipPanel({ contractId, projection: contract }) {
   async function handleDelete(slip) {
     if (!confirm(`Supprimer le bulletin de ${formatPeriod(slip.period)} ?`)) return
     await deletePaySlip(contractId, slip.id)
+    trackEvent('FEATURE_USE', 'revenus.pay_slip.delete')
     setSlips(ss => ss.filter(s => s.id !== slip.id))
   }
 

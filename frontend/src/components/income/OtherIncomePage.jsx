@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getOtherIncomes, createOtherIncome, updateOtherIncome, deleteOtherIncome } from '../../api/income'
 import OtherIncomeForm from './OtherIncomeForm'
 import { formatDate } from '../../utils/formatting.js'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useCrud } from '../../hooks/useCrud'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const TYPE_LABELS = {
   LOCATIF:      { label: 'Locatif',       color: 'bg-blue-100 text-blue-700 dark:text-blue-300' },
@@ -13,6 +14,8 @@ const TYPE_LABELS = {
 }
 
 export default function OtherIncomePage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('revenus.other_income') }, [])
   const [filter, setFilter] = useState('ALL')
 
   const {
@@ -22,9 +25,9 @@ export default function OtherIncomePage() {
     handleSubmit, handleDelete, confirmDelete,
   } = useCrud({
     fetchAll:     getOtherIncomes,
-    create:       createOtherIncome,
-    update:       updateOtherIncome,
-    remove:       deleteOtherIncome,
+    create:       async (d) => { const r = await createOtherIncome(d); trackEvent('FEATURE_USE', 'revenus.other_income.create'); return r },
+    update:       async (id, d) => { const r = await updateOtherIncome(id, d); trackEvent('FEATURE_USE', 'revenus.other_income.edit'); return r },
+    remove:       async (id) => { await deleteOtherIncome(id); trackEvent('FEATURE_USE', 'revenus.other_income.delete') },
     errorMessage: 'Impossible de charger les revenus.',
   })
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getBenefits, createBenefit, updateBenefit, deleteBenefit } from '../../api/income'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import BenefitForm from './BenefitForm'
 
 export default function BenefitPanel({ contractId, onBenefitChange }) {
@@ -9,6 +10,8 @@ export default function BenefitPanel({ contractId, onBenefitChange }) {
   const [error, setError]           = useState(null)
 
   useEffect(() => { fetchBenefits() }, [contractId])
+
+  const { trackEvent } = useAnalytics()
 
   async function fetchBenefits() {
     try {
@@ -24,9 +27,11 @@ export default function BenefitPanel({ contractId, onBenefitChange }) {
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       const updated = await updateBenefit(contractId, formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'revenus.benefit.edit')
       setBenefits(bs => bs.map(b => b.id === updated.id ? updated : b))
     } else {
       const created = await createBenefit(contractId, payload)
+      trackEvent('FEATURE_USE', 'revenus.benefit.create')
       setBenefits(bs => [...bs, created])
     }
     setFormTarget(undefined)
@@ -36,6 +41,7 @@ export default function BenefitPanel({ contractId, onBenefitChange }) {
   async function handleDelete(benefit) {
     if (!confirm(`Supprimer l'avantage « ${benefit.label} » ?`)) return
     await deleteBenefit(contractId, benefit.id)
+    trackEvent('FEATURE_USE', 'revenus.benefit.delete')
     setBenefits(bs => bs.filter(b => b.id !== benefit.id))
     onBenefitChange?.()
   }

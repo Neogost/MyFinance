@@ -23,9 +23,12 @@ import PatrimoineStrategyModal from './PatrimoineStrategyModal'
 import CategoryStrategyBar from './CategoryStrategyBar'
 import PatrimoineActionBar from './PatrimoineActionBar'
 import PatrimoineFilters from './PatrimoineFilters'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 
 export default function PatrimoinePage({ currentUser, familyMode }) {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('patrimoine.main') }, [])
   const [positions, setPositions]             = useState([])
   const [snapshots, setSnapshots]             = useState([])
   const [formTarget, setFormTarget]           = useState(undefined)
@@ -130,9 +133,11 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
     if (formTarget?.id) {
       const updated = await updatePosition(formTarget.id, payload)
       setPositions(ps => ps.map(p => p.id === updated.id ? updated : p))
+      trackEvent('FEATURE_USE', 'patrimoine.position.edit', { category: payload.category })
     } else {
       const created = await createPosition(payload)
       setPositions(ps => [created, ...ps])
+      trackEvent('FEATURE_USE', 'patrimoine.position.create', { category: payload.category })
     }
     setFormTarget(undefined)
   }
@@ -150,6 +155,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   }
 
   async function handleClose(position) {
+    trackEvent('FEATURE_USE', 'patrimoine.position.close', { category: position.category })
     try {
       const updated = await closePosition(position.id)
       setPositions(ps => ps.map(p => p.id === updated.id ? updated : p))
@@ -161,6 +167,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   async function handleDelete(position) {
     try {
       await deletePosition(position.id)
+      trackEvent('FEATURE_USE', 'patrimoine.position.delete', { category: position.category })
       setPositions(ps => ps.filter(p => p.id !== position.id))
     } catch {
       setError('Impossible de supprimer la position.')
@@ -342,7 +349,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
         onShowExchangeRates={() => setShowExchangeRateUpdate(true)}
         onShowPriceUpdate={() => setShowPriceUpdate(true)}
         onShowStrategy={() => setShowStrategy(true)}
-        onAddPosition={() => setFormTarget(null)}
+        onAddPosition={() => { trackEvent('BUTTON_CLICK', 'patrimoine.position.open_form'); setFormTarget(null) }}
       />
 
       {/* ── Synthèse globale ── */}

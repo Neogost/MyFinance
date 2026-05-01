@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import {
   getMyGroup, createGroup, renameGroup, dissolveGroup, leaveGroup,
   removeMember, sendInvitation, getPendingInvitations, acceptInvitation, refuseInvitation
@@ -19,6 +20,8 @@ export default function FamilyGroupPanel({ onGroupChange }) {
   const [saving,      setSaving]      = useState(false)
 
   useEffect(() => { fetchAll() }, [])
+
+  const { trackEvent } = useAnalytics()
 
   async function fetchAll() {
     try {
@@ -44,6 +47,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       setRenameName(g.name)
       setCreateName('')
       onGroupChange?.(g)
+      trackEvent('FEATURE_USE', 'family.group.create')
     } catch {
       setError('Impossible de créer le groupe.')
     } finally {
@@ -60,6 +64,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       setGroup(g)
       setShowRename(false)
       onGroupChange?.(g)
+      trackEvent('FEATURE_USE', 'family.group.rename')
     } catch {
       setError('Impossible de renommer le groupe.')
     } finally {
@@ -74,6 +79,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       await dissolveGroup()
       setGroup(null)
       onGroupChange?.(null)
+      trackEvent('FEATURE_USE', 'family.group.dissolve')
     } catch {
       setError('Impossible de dissoudre le groupe.')
     } finally {
@@ -88,6 +94,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       await leaveGroup()
       setGroup(null)
       onGroupChange?.(null)
+      trackEvent('FEATURE_USE', 'family.group.leave')
     } catch {
       setError('Impossible de quitter le groupe.')
     } finally {
@@ -100,6 +107,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
     try {
       await removeMember(member.id)
       setGroup(g => ({ ...g, members: g.members.filter(m => m.id !== member.id) }))
+      trackEvent('FEATURE_USE', 'family.group.remove_member')
     } catch {
       setError('Impossible de retirer ce membre.')
     }
@@ -118,6 +126,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
       const refreshed = await getMyGroup()
       setGroup(refreshed)
       setInviteLogin('')
+      trackEvent('FEATURE_USE', 'family.invitation.send')
       setInviteInfo('Si l\'utilisateur existe et n\'a pas déjà été invité, il recevra l\'invitation.')
     } catch (err) {
       const msg = err.response?.data?.message
@@ -130,6 +139,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
   async function handleAccept(inv) {
     try {
       const g = await acceptInvitation(inv.id)
+    trackEvent('FEATURE_USE', 'family.invitation.accept')
       setGroup(g)
       setInvitations(is => is.filter(i => i.id !== inv.id))
       onGroupChange?.(g)
@@ -142,6 +152,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
   async function handleRefuse(inv) {
     try {
       await refuseInvitation(inv.id)
+    trackEvent('FEATURE_USE', 'family.invitation.refuse')
       setInvitations(is => is.filter(i => i.id !== inv.id))
     } catch {
       setError('Impossible de refuser l\'invitation.')

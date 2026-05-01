@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine
@@ -191,6 +192,8 @@ function CustomTooltip({ active, payload, label }) {
 // ── Composant principal ───────────────────────────────────────────────────────
 
 export default function CompoundInterestSimulatorPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.compound_interest') }, [])
   // Base
   const [initialAmount, setInitialAmount]     = useState(10000)
   const [annualRate, setAnnualRate]           = useState(7)

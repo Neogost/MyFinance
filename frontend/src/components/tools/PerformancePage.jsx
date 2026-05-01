@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getPerformanceGlobal, getPerformancePositions } from '../../api/performance'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
@@ -165,6 +166,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function PerformancePage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.performance') }, [])
   const [periodIdx,      setPeriodIdx]      = useState(0)
   const [benchmarkInput, setBenchmarkInput] = useState('')
   const [global,         setGlobal]         = useState(null)

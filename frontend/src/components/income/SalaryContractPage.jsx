@@ -11,8 +11,11 @@ import BonusPanel from './BonusPanel'
 import BenefitPanel from './BenefitPanel'
 import RevisionPanel from './RevisionPanel'
 import OnCallPanel from './OnCallPanel'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 export default function SalaryContractPage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('revenus.salary_contract') }, [])
   const [contracts, setContracts] = useState([])
   const [selected, setSelected]   = useState(null)   // contrat affiché en détail
   const [formTarget, setFormTarget] = useState(undefined)  // undefined = fermé, null = création, obj = édition
@@ -93,10 +96,12 @@ export default function SalaryContractPage() {
       const updated = await updateSalaryContract(formTarget.id, payload)
       setContracts(cs => cs.map(c => c.id === updated.id ? updated : c))
       setSelected(updated)
+      trackEvent('FEATURE_USE', 'revenus.salary_contract.edit')
     } else {
       const created = await createSalaryContract(payload)
       setContracts(cs => [...cs, created])
       setSelected(created)
+      trackEvent('FEATURE_USE', 'revenus.salary_contract.create')
     }
     setFormTarget(undefined)
   }
@@ -105,6 +110,7 @@ export default function SalaryContractPage() {
     setDeleting(true)
     try {
       await deleteSalaryContract(deleteTarget.id)
+      trackEvent('FEATURE_USE', 'revenus.salary_contract.delete')
       const remaining = contracts.filter(c => c.id !== deleteTarget.id)
       setContracts(remaining)
       setSelected(remaining[0] ?? null)
@@ -123,7 +129,7 @@ export default function SalaryContractPage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Revenus salariaux</h2>
         <button
-          onClick={() => setFormTarget(null)}
+          onClick={() => { trackEvent('BUTTON_CLICK', 'revenus.salary_contract.open_form'); setFormTarget(null) }}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Nouveau contrat

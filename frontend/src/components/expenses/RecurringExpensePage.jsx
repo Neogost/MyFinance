@@ -4,6 +4,7 @@ import RecurringExpenseForm from './RecurringExpenseForm'
 import { fmt } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const CATEGORY_META = {
   LOGEMENT:    { label: 'Logement',               color: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
@@ -20,6 +21,8 @@ const CATEGORY_META = {
 const FREQ_LABEL = { MONTHLY: 'mensuel', ANNUAL: 'annuel' }
 
 export default function RecurringExpensePage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('expenses.recurring') }, [])
   const [expenses,          setExpenses]          = useState([])
   const [summary,           setSummary]           = useState(null)
   const [formTarget,        setFormTarget]        = useState(undefined)
@@ -82,8 +85,10 @@ export default function RecurringExpensePage() {
   async function handleSubmit(payload) {
     if (formTarget?.id) {
       await updateExpense(formTarget.id, payload)
+      trackEvent('FEATURE_USE', 'expenses.recurring.edit')
     } else {
       await createExpense(payload)
+      trackEvent('FEATURE_USE', 'expenses.recurring.create', { category: payload.category })
     }
     setFormTarget(undefined)
     await fetchAll()
@@ -93,6 +98,7 @@ export default function RecurringExpensePage() {
 
   async function confirmDelete() {
     await deleteExpense(deleteTarget.id)
+    trackEvent('FEATURE_USE', 'expenses.recurring.delete')
     setExpenses(es => es.filter(e => e.id !== deleteTarget.id))
     setSummary(await getExpenseSummary())
     setDeleteTarget(null)
@@ -120,7 +126,7 @@ export default function RecurringExpensePage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Dépenses récurrentes</h2>
         <button
-          onClick={() => setFormTarget(null)}
+          onClick={() => { trackEvent('BUTTON_CLICK', 'expenses.recurring.open_form'); setFormTarget(null) }}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter

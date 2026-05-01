@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { updateSafetyNet } from '../../api/auth'
 import { getExpenseSummary } from '../../api/expenses'
 import { getSalaryContracts } from '../../api/income'
@@ -31,6 +32,7 @@ export default function SafetyNetPanel({ user, onUpdate }) {
   const [months,  setMonths]  = useState(user.safetyNetMonths ?? '')
   const [amount,  setAmount]  = useState(user.safetyNetAmount ?? '')
   const [saving,  setSaving]  = useState(false)
+  const { trackEvent } = useAnalytics()
   const [success, setSuccess] = useState(false)
   const [error,   setError]   = useState(null)
 
@@ -66,6 +68,7 @@ export default function SafetyNetPanel({ user, onUpdate }) {
       const updated = await updateSafetyNet(payload)
       onUpdate?.(updated)
       setSuccess(true)
+      trackEvent('FORM_SUBMIT', 'auth.profile.update_safety_net')
     } catch (err) {
       setError(err.response?.data?.message ?? 'Impossible d\'enregistrer les paramètres.')
     } finally {

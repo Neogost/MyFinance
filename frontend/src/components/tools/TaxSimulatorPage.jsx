@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getOtherIncomes } from '../../api/income'
 import { simulateTax } from '../../api/tools'
 import { inputCls } from '../../components/common/formStyles.js'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -25,6 +26,8 @@ function ResultRow({ label, value, highlight }) {
 }
 
 export default function TaxSimulatorPage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('tools.tax_simulator') }, [])
   const [year, setYear]               = useState(CURRENT_YEAR)
   const [salarySource, setSalarySource] = useState('PROJECTION_CONTRAT')
   const [allIncomes, setAllIncomes]   = useState([])
@@ -62,7 +65,9 @@ export default function TaxSimulatorPage() {
     setResult(null)
     try {
       const includedIncomes = [...checkedIds]
-      setResult(await simulateTax({ year, salarySource, includedIncomes }))
+      const res = await simulateTax({ year, salarySource, includedIncomes })
+      setResult(res)
+      trackEvent('FEATURE_USE', 'tools.tax_simulator.simulate')
     } catch (err) {
       setError(err.response?.data?.message ?? 'Une erreur est survenue. Vérifiez que votre contrat ou vos bulletins sont renseignés.')
     } finally {

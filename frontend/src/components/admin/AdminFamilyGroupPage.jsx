@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { adminGetAllGroups, adminDissolveGroup, adminRemoveMember } from '../../api/familyGroup'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 export default function AdminFamilyGroupPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('admin.family_group') }, [])
   const [groups,    setGroups]    = useState([])
   const [expanded,  setExpanded]  = useState(new Set())
   const [loading,   setLoading]   = useState(true)

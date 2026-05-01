@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAnalytics } from '../hooks/useAnalytics'
 import logo from '../assets/logo.png'
 
 function NavBtn({ page, label, currentPage, onNavigate, onClose }) {
@@ -125,11 +126,12 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const [incomeOpen,     setIncomeOpen]     = useState(false)
   const [toolsOpen,      setToolsOpen]      = useState(false)
   const [adminOpen,      setAdminOpen]      = useState(false)
+  const { trackEvent } = useAnalytics()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
-  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','performance'].includes(currentPage)
+  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','performance'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
@@ -221,6 +223,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ['admin-family-groups',  'Regroupements familiaux',    0],
                       ['admin-instruments',    'Instruments financiers',     0],
                       ['admin-registrations',  "Demandes d'inscription",     pendingRegistrations],
+                      ['admin-analytics',      'Analytics',                  0],
                       ['performance',          'Performance (en travaux)',   0],
                     ].map(([page, label, badge]) => (
                       <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
@@ -242,16 +245,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
         {/* ── Droite desktop ── */}
         <div className="hidden md:flex items-center gap-3 text-sm">
-          <button onClick={onToggleHideValues} title={hideValues ? 'Afficher les valeurs' : 'Masquer les valeurs'}
+          <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_hide_values'); onToggleHideValues() }} title={hideValues ? 'Afficher les valeurs' : 'Masquer les valeurs'}
             className={`p-1.5 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
           </button>
-          <button onClick={onToggleDarkMode} title={darkMode ? 'Passer en mode clair' : 'Passer en mode nuit'}
+          <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_dark_mode'); onToggleDarkMode() }} title={darkMode ? 'Passer en mode clair' : 'Passer en mode nuit'}
             className={`p-1.5 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <DarkModeIcon dark={darkMode} />
           </button>
           {user.familyGroupId && (
-            <button onClick={onToggleFamilyMode}
+            <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_family_mode'); onToggleFamilyMode() }}
               title={familyMode ? 'Mode Foyer actif — cliquer pour désactiver' : 'Activer le Mode Foyer'}
               className={`p-1.5 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
               <HomeIcon />
@@ -275,7 +278,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             <DarkModeIcon dark={darkMode} />
           </button>
           {user.familyGroupId && (
-            <button onClick={onToggleFamilyMode}
+            <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_family_mode'); onToggleFamilyMode() }}
               className={`p-2 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
               <HomeIcon />
             </button>
@@ -368,6 +371,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Regroupements familiaux"   page="admin-family-groups" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
+                <MobileMenuItem label="Analytics"               page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Performance (en travaux)"  page="performance"         currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
               </>
             )}
@@ -391,7 +395,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                   v{appVersion}
                   <span className="mx-1.5 text-gray-300">·</span>
                   <button
-                    onClick={() => { onShowReleaseNotes?.(); closeMobile() }}
+                    onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.open_release_notes'); onShowReleaseNotes?.(); closeMobile() }}
                     className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
                   >
                     Notes de version

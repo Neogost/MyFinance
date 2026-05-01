@@ -16,6 +16,7 @@ import {
   computeLeverageImpact, computeRateSensitivity, compareLtvScenarios,
 } from './lombardSimulatorUtils'
 import { SCENARIOS as CRISIS_SCENARIOS, SCENARIO_ORDER as CRISIS_ORDER } from './crisisScenarios'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const fmtEur  = (n) => n == null || isNaN(n) ? '—' : Math.round(n).toLocaleString('fr-FR') + ' €'
 const fmtPct  = (n) => n == null || isNaN(n) ? '—' : `${n.toFixed(1)} %`
@@ -44,6 +45,8 @@ function StatusBadge({ status }) {
 }
 
 export default function LombardSimulatorPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('tools.lombard') }, [])
   const [positions,        setPositions]        = useState([])
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
