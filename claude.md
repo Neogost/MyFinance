@@ -399,6 +399,24 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `POST` | `/api/admin/market-data/run` | ADMIN | Déclencher manuellement la mise à jour des cours + snapshot mensuel |
 
+### Analytics — Tracking (public)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `POST` | `/api/analytics/track` | Authentifié | Enregistrer un event comportemental (PAGE_VIEW, FEATURE_USE, BUTTON_CLICK, FORM_SUBMIT) |
+| `POST` | `/api/analytics/error` | Authentifié | Remonter une erreur frontend |
+| `PUT` | `/api/profile/analytics-opt-out` | Authentifié | Activer/désactiver le suivi de son usage |
+
+### Analytics — Administration (admin)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/admin/analytics/top-events` | ADMIN | Top events sur une période (filtrable par type) |
+| `GET` | `/api/admin/analytics/timeline` | ADMIN | Série temporelle d'un event_name |
+| `GET` | `/api/admin/analytics/journey/{sessionId}` | ADMIN | Reconstitution du parcours d'une session |
+| `GET` | `/api/admin/analytics/errors` | ADMIN | Erreurs groupées par fingerprint |
+| `GET` | `/api/admin/analytics/errors/{fingerprint}` | ADMIN | Occurrences d'une erreur (paginées) |
+| `GET` | `/api/admin/analytics/health` | ADMIN | Synthèse santé : KPIs + timeline erreurs |
+| `DELETE` | `/api/admin/analytics/purge` | ADMIN | Supprimer les données antérieures à N jours |
+
 ### Version de l'application
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -828,7 +846,7 @@ npm run dev
   - **Frontend** : formulaire en 2 steps (`SalaryContractTypeStep` → `SalaryContractFormPrivate` ou `SalaryContractFormPublic`), aperçu brut temps réel sur l'IM, `RevisionForm` conditionnel (indice ou brut selon type)
   - **Migration** : `backend/migrations/006_backfill_contract_type_public_sector.sql` (Phase 2 — à exécuter après déploiement)
   - **Documentation** : `docs/architecture/salary-public-sector.md`, `docs/api/salary-contracts.md` mis à jour
-  - Tests : 746 tests BUILD SUCCESS
+  - Tests : 746 tests BUILD SUCCESS (758 après ajout temps partiel)
 
 - **Comparateur d'enveloppes fiscales** (`FiscalEnvelopeComparatorPage`) :
   - Outil purement frontend — aucun endpoint backend nouveau, pré-remplissage TMI via `GET /api/tax-simulator`
@@ -854,6 +872,20 @@ npm run dev
   - Tooltips pédagogiques via **portal** `createPortal` — ne peuvent pas être coupés par les conteneurs `overflow`
   - Tests : `RetirementControllerTest` (2 tests) — total backend 748 tests BUILD SUCCESS
   - Documentation : `docs/architecture/tools/retirement-simulator.md`
+
+- **Temps partiel (quotité de travail)** : champ `partTimePercentage` (Float, défaut `100.0`) sur `SalaryContract`. Le salaire saisi est l'ETP ; la quotité réduit `effectiveSalary` avant tout calcul dans `SalaryContractService.toDto()` et `TaxSimulatorService.salaryIncomeFromContract()`. Impacts : projections (brut, net imposable, net d'impôt), simulateur d'impôts, graphique d'évolution salariale, VS théorique bulletins, badge dans l'en-tête contrat. Migration : `008_add_part_time_percentage.sql`. Spec : `docs/architecture/salary.md` (section *1ter. Temps partiel*).
+
+- **Analytics d'usage et santé technique** :
+  - Tables `analytics_events` et `error_logs` (epoch ms, 7 index) + colonne `users.analytics_opt_out`. Migration : `009_add_analytics_tables.sql`.
+  - `AnalyticsService` : tracking `@Async` single-thread, whitelist metadata, fingerprint SHA-256, conversion LocalDateTime→epoch ms pour toutes les requêtes SQLite natives
+  - `AnalyticsRetentionService` : purge planifiée (`@Scheduled`) + manuelle via `DELETE /api/admin/analytics/purge`
+  - `AnalyticsController` (POST track/error) + rate-limit filter + `GlobalExceptionHandler` étendu (5xx + 403 + 404 `/api/*`)
+  - Page admin Analytics (3 onglets : Engagement, Parcours, Santé) avec session ID copiable et navigation directe vers le parcours depuis une erreur
+  - Opt-out utilisateur : `User.analyticsOptOut` + toggle dans Mon Profil
+  - Instrumentation complète : 26 pages (`PAGE_VIEW`), CRUD complet de tous les modules (`FEATURE_USE`), formulaires profil (`FORM_SUBMIT`), toggles UI (`BUTTON_CLICK`)
+  - Convention de nommage : `module.feature.action` (3 segments snake_case) — validée côté backend
+  - Tests : 793 tests BUILD SUCCESS
+  - Documentation : `docs/architecture/analytics.md` + section Analytics dans `docs/architecture/decisions/PATTERNS-frontend.md`
 
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

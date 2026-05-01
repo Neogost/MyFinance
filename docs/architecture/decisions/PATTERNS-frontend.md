@@ -362,11 +362,73 @@ function formatDate(iso) {
 
 ---
 
-## 7. Checklist ajout d'un nouveau module
+## 7. Analytics — instrumentation systématique
+
+Toute nouvelle page **et** toute nouvelle action métier doivent être instrumentées dans la PR
+qui les livre. Référence complète : [`docs/architecture/analytics.md`](../analytics.md).
+
+### Convention de nommage `event_name`
+
+Format hiérarchique strict en **3 segments** séparés par des points :
+
+```
+{module}.{feature}.{action}
+```
+
+- `module` — grand domaine fonctionnel (`patrimoine`, `revenus`, `tools`, `expenses`, `debts`, `admin`, `auth`, `family`, `app`)
+- `feature` — fonctionnalité précise (`position`, `lombard`, `salary_contract`, `recurring`, …)
+- `action` — verbe (`view`, `create`, `edit`, `delete`, `simulate`, `submit`, `export`)
+
+Tout en `snake_case`, validation regex côté backend — un event mal formé est rejeté.
+
+### Pattern de référence
+
+```jsx
+import { useAnalytics } from '../../hooks/useAnalytics'
+
+export default function MaPage() {
+  const { trackPageView, trackEvent } = useAnalytics()
+
+  // 1. Page view au montage — préfixe sur 2 segments (module.feature)
+  useEffect(() => { trackPageView('patrimoine.position') }, [])
+
+  // 2. Action métier — event_name complet 3 segments + metadata sans données financières
+  async function handleCreate(data) {
+    await createPosition(data)
+    trackEvent('FEATURE_USE', 'patrimoine.position.create', { category: data.category })
+    fetchAll()
+  }
+}
+```
+
+### Whitelist des clés `metadata`
+
+**Interdites :** tout montant, prix, taux, salaire, valeur d'actif, ISIN, ticker, label personnel.
+
+**Autorisées :** `duration_ms`, `result_count`, `filter_used`, `category`, `view_mode`, `contract_type`, `envelope`.
+
+Toute clé hors whitelist est silencieusement ignorée côté backend — pas d'erreur visible, mais
+aucune donnée persistée non plus.
+
+### Quand utiliser quel `event_type`
+
+| Type | Quand l'utiliser |
+|------|------------------|
+| `PAGE_VIEW` | Toujours, dès le montage de la page (méthode `trackPageView`) |
+| `FEATURE_USE` | Action métier qui produit un effet (créer, simuler, exporter, sauvegarder) |
+| `BUTTON_CLICK` | Clic sur un bouton secondaire qui ne déclenche pas une feature complète (toggle, ouverture de modal) |
+| `FORM_SUBMIT` | Soumission de formulaire — préférer `FEATURE_USE` si l'effet métier est central |
+
+---
+
+## 8. Checklist ajout d'un nouveau module
 
 - [ ] `src/api/<domaine>.js` — couche API
 - [ ] `src/components/<domaine>/MaPage.jsx` — page principale
 - [ ] `src/components/<domaine>/MonForm.jsx` — formulaire modal
 - [ ] Import + route dans `App.jsx`
 - [ ] Bouton ou dropdown dans `Navigation.jsx`
+- [ ] **Analytics** — `trackPageView('<module>.<feature>')` au montage de la page
+- [ ] **Analytics** — `trackEvent('FEATURE_USE', '<module>.<feature>.<action>')` sur chaque action métier (CRUD, simulation, export)
+- [ ] **Analytics** — vérifier que les `metadata` ne contiennent aucune donnée financière (whitelist)
 - [ ] `isMonModulePage` dans `Navigation.jsx` si bouton actif requis

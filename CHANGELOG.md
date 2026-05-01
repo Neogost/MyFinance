@@ -1,5 +1,44 @@
 # Notes de version
 
+## v1.6.0 — *en cours*
+
+> Temps partiel, analytics d'usage et corrections.
+
+### ✨ Nouveautés
+
+#### Contrats à temps partiel (Revenus → Salariat)
+
+Il est maintenant possible de déclarer un contrat à **temps partiel** en précisant la quotité de travail.
+
+- **Saisie du salaire en ETP** : le salaire (ou l'indice majoré pour les contrats publics) est toujours saisi en équivalent temps plein — la quotité s'applique automatiquement
+- **Quotité au % près** : de 10 % à 100 % (ex : `70.0` = 7/10e, `80.0` = 4/5e, `50.0` = mi-temps)
+- **Label dynamique** dans le formulaire : « Temps plein », « 4/5e », « 7/10e », « Mi-temps » selon la valeur saisie
+- **Badge orange** dans l'en-tête du contrat, visible uniquement si la quotité est inférieure à 100 %
+- **Projections cohérentes** : brut mensuel, net imposable, net d'impôt, taux horaire/journalier — tous calculés sur le brut temps partiel réel
+- **Simulateur d'impôts** : prend en compte la quotité lors de la projection du contrat salarial
+- **Graphique d'évolution salariale** : affiche le brut temps partiel réel, pas le brut ETP
+- **Bandeau informatif** dans la grille de projections indiquant la quotité et le brut ETP correspondant
+
+#### Analytics d'usage (Administration → Analytics)
+
+Système de suivi du comportement utilisateur et de la santé technique, 100 % auto-hébergé.
+
+- **Page admin Analytics** (3 onglets) :
+  - **Engagement** : top features, top boutons, pages les plus vues, timeline d'un event au clic
+  - **Parcours** : reconstitution de la session d'un utilisateur par session ID
+  - **Santé** : KPIs d'erreurs, tableau groupé par type avec stack trace, taux d'erreur
+- **Session ID copiable** depuis les erreurs : chaque occurrence affiche son identifiant de session avec un bouton copier 📋 et un lien direct vers l'onglet Parcours
+- **Nettoyage manuel** : bouton "Nettoyer" avec sélection du seuil de rétention (events et erreurs séparément)
+- **Opt-out** : toggle "Suivi de mon usage" dans Mon profil — désactive le tracking comportemental tout en conservant la capture des erreurs techniques
+- **Instrumentation complète** : 26 pages (`PAGE_VIEW`), toutes les actions CRUD des modules Patrimoine, Revenus, Dépenses, Dettes, Possessions (`FEATURE_USE`), soumissions de formulaires profil (`FORM_SUBMIT`), toggles UI et ouvertures de formulaire (`BUTTON_CLICK`)
+
+### 🐛 Corrections
+
+- **Pied de page** : le numéro de version et le lien "Notes de version" sont désormais toujours visibles dès le premier rendu, sans attendre la réponse de l'API `/api/version`
+- **Mise à jour automatique des cours** : correction de la récupération des prix Boursorama — les URLs `/cours/{symbol}/` redirigent désormais vers `/bourse/trackers/cours/{symbol}/` (HTTP 301) ; le client suivait incorrectement `followRedirects(false)` et parsait la page de redirection vide
+
+---
+
 ## v1.5.0 — 1 mai 2026 — Simulateurs, responsive mobile et améliorations revenus
 
 > Cette version introduit deux nouveaux simulateurs patrimoniaux, une mise en conformité complète sur mobile, des améliorations significatives de la gestion des revenus salariaux, et un audit complet du mode sombre.
