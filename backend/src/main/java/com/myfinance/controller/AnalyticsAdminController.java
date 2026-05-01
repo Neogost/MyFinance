@@ -54,6 +54,12 @@ public class AnalyticsAdminController {
         return ResponseEntity.ok(analyticsService.getJourney(sessionId));
     }
 
+    @Operation(summary = "Erreurs survenues pendant une session")
+    @GetMapping("/journey/{sessionId}/errors")
+    public ResponseEntity<List<ErrorLogDto>> journeyErrors(@PathVariable String sessionId) {
+        return ResponseEntity.ok(analyticsService.getJourneyErrors(sessionId));
+    }
+
     @Operation(summary = "Erreurs groupées par fingerprint")
     @GetMapping("/errors")
     public ResponseEntity<List<ErrorGroupDto>> errors(

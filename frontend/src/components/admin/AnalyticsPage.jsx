@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { getTopEvents, getTimeline, getJourney, getErrors, getErrorOccurrences, getHealth, purgeAnalytics } from '../../api/analytics'
+import { getTopEvents, getTimeline, getJourney, getJourneyErrors, getErrors, getErrorOccurrences, getHealth, purgeAnalytics } from '../../api/analytics'
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -141,8 +141,9 @@ function EngagementTab({ period }) {
 
 function JourneyTab({ initialSessionId }) {
   const [sessionId, setSessionId] = useState(initialSessionId ?? '')
-  const [events,    setEvents]    = useState(null)
+  const [timeline,  setTimeline]  = useState(null)
   const [loading,   setLoading]   = useState(false)
+  const [stats,     setStats]     = useState(null)
 
   useEffect(() => {
     if (initialSessionId) { setSessionId(initialSessionId); load(initialSessionId) }
@@ -152,13 +153,27 @@ function JourneyTab({ initialSessionId }) {
     const sid = (id ?? sessionId).trim()
     if (!sid) return
     setLoading(true)
-    getJourney(sid)
-      .then(setEvents)
-      .catch(() => setEvents([]))
+    Promise.all([getJourney(sid), getJourneyErrors(sid)])
+      .then(([events, errors]) => {
+        // Fusion et tri chronologique — on tague chaque item avec son type source
+        const merged = [
+          ...events.map(e => ({ ...e, _kind: 'event' })),
+          ...errors.map(e => ({ ...e, _kind: 'error' })),
+        ].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        setTimeline(merged)
+        setStats({ events: events.length, errors: errors.length })
+      })
+      .catch(() => setTimeline([]))
       .finally(() => setLoading(false))
   }
 
-  const TYPE_COLOR = { PAGE_VIEW: 'bg-blue-100 text-blue-700', FEATURE_USE: 'bg-green-100 text-green-700', BUTTON_CLICK: 'bg-amber-100 text-amber-700', FORM_SUBMIT: 'bg-purple-100 text-purple-700' }
+  const TYPE_COLOR = {
+    PAGE_VIEW:    'bg-blue-100 text-blue-700',
+    FEATURE_USE:  'bg-green-100 text-green-700',
+    BUTTON_CLICK: 'bg-amber-100 text-amber-700',
+    FORM_SUBMIT:  'bg-purple-100 text-purple-700',
+  }
+  const LEVEL_COLOR = { ERROR: 'text-red-600', WARN: 'text-orange-500', FATAL: 'text-red-800' }
 
   return (
     <div className="space-y-4">
@@ -180,23 +195,92 @@ function JourneyTab({ initialSessionId }) {
         </button>
       </div>
 
+      {/* KPIs de la session */}
+      {stats && (
+        <div className="flex gap-3 text-xs">
+          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full font-medium">
+            {stats.events} événement{stats.events !== 1 ? 's' : ''}
+          </span>
+          <span className={`px-2.5 py-1 rounded-full font-medium ${
+            stats.errors > 0 ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-500'
+          }`}>
+            {stats.errors} erreur{stats.errors !== 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+
       {loading && <p className="text-sm text-gray-400 text-center py-4">Chargement…</p>}
 
-      {events && !loading && (
-        events.length === 0
+      {timeline && !loading && (
+        timeline.length === 0
           ? <p className="text-sm text-gray-400 text-center py-4">Aucun événement pour cette session</p>
           : (
-            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
-              {events.map((ev, i) => (
-                <div key={i} className="flex items-center gap-3 px-5 py-3">
-                  <span className="text-xs text-gray-400 w-32 shrink-0">{fmtDate(ev.createdAt)}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${TYPE_COLOR[ev.eventType] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {ev.eventType}
-                  </span>
-                  <span className="text-sm text-gray-700 font-mono truncate">{ev.eventName}</span>
-                  {ev.page && <span className="text-xs text-gray-400 shrink-0">— {ev.page}</span>}
-                </div>
-              ))}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Ligne de temps verticale */}
+              <div className="divide-y divide-gray-50">
+                {timeline.map((item, i) => {
+                  const isError = item._kind === 'error'
+                  return (
+                    <div
+                      key={i}
+                      className={`flex gap-3 px-5 py-3 ${isError ? 'bg-red-50/60' : ''}`}
+                    >
+                      {/* Indicateur timeline */}
+                      <div className="flex flex-col items-center pt-0.5 shrink-0">
+                        <div className={`w-2.5 h-2.5 rounded-full mt-0.5 ${
+                          isError ? 'bg-red-500' : 'bg-indigo-300'
+                        }`} />
+                        {i < timeline.length - 1 && (
+                          <div className={`w-px flex-1 mt-1 min-h-[12px] ${
+                            isError ? 'bg-red-200' : 'bg-gray-200'
+                          }`} />
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0 pb-1">
+                        {/* Ligne principale */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-gray-400 shrink-0">{fmtDate(item.createdAt)}</span>
+
+                          {isError ? (
+                            <>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-700 shrink-0">
+                                {item.source} {item.level}
+                              </span>
+                              <span className={`text-xs font-semibold shrink-0 ${LEVEL_COLOR[item.level] ?? 'text-red-600'}`}>
+                                {item.errorType}
+                              </span>
+                              {item.requestMethod && item.requestPath && (
+                                <span className="text-xs font-mono bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                                  {item.requestMethod} {item.requestPath}
+                                </span>
+                              )}
+                              {item.httpStatus && (
+                                <span className="text-xs font-bold text-red-500 shrink-0">
+                                  HTTP {item.httpStatus}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${TYPE_COLOR[item.eventType] ?? 'bg-gray-100 text-gray-600'}`}>
+                                {item.eventType}
+                              </span>
+                              <span className="text-sm text-gray-700 font-mono truncate">{item.eventName}</span>
+                              {item.page && <span className="text-xs text-gray-400 shrink-0">— {item.page}</span>}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Message d'erreur (si présent) */}
+                        {isError && item.message && (
+                          <p className="text-xs text-red-600 mt-1 truncate">{item.message}</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )
       )}

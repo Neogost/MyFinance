@@ -36,6 +36,8 @@ public interface ErrorLogRepository extends JpaRepository<ErrorLog, Long> {
 
     Page<ErrorLog> findByFingerprintOrderByCreatedAtDesc(String fingerprint, Pageable pageable);
 
+    List<ErrorLog> findBySessionIdOrderByCreatedAtAsc(String sessionId);
+
     @Query(value = "SELECT COUNT(*) FROM error_logs WHERE created_at >= :fromMs AND created_at <= :toMs",
            nativeQuery = true)
     long countByCreatedAtBetween(@Param("fromMs") long fromMs, @Param("toMs") long toMs);

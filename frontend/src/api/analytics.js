@@ -46,6 +46,9 @@ export const getTimeline = (params) =>
 export const getJourney = (sessionId) =>
   api.get(`/api/admin/analytics/journey/${sessionId}`).then(r => r.data)
 
+export const getJourneyErrors = (sessionId) =>
+  api.get(`/api/admin/analytics/journey/${sessionId}/errors`).then(r => r.data)
+
 export const getErrors = (params) =>
   api.get('/api/admin/analytics/errors', { params }).then(r => r.data)
 

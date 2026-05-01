@@ -138,6 +138,13 @@ public class AnalyticsService {
                 .toList();
     }
 
+    public List<ErrorLogDto> getJourneyErrors(String sessionId) {
+        return errorLogRepository.findBySessionIdOrderByCreatedAtAsc(sessionId)
+                .stream()
+                .map(ErrorLogDto::from)
+                .toList();
+    }
+
     public List<ErrorGroupDto> getErrorGroups(ErrorSource source, ErrorLevel level,
                                               LocalDateTime from, LocalDateTime to) {
         // nativeQuery : passer les enums en String
