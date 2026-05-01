@@ -47,7 +47,7 @@ public class BoursoramaClient {
             Document doc = Jsoup.connect(url)
                     .userAgent(USER_AGENT)
                     .timeout(10_000)
-                    .followRedirects(false)
+                    .followRedirects(true)
                     .get();
 
             Element el = doc.selectFirst("span.c-instrument--last[data-ist-last]");
@@ -82,7 +82,7 @@ public class BoursoramaClient {
             Document doc = Jsoup.connect(url)
                     .userAgent(USER_AGENT)
                     .timeout(15_000)
-                    .followRedirects(false)
+                    .followRedirects(true)
                     .get();
 
             for (Element script : doc.select("script")) {
