@@ -1,6 +1,7 @@
 package com.myfinance.repository;
 
 import com.myfinance.domain.AnalyticsEvent;
+import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -46,6 +47,10 @@ public interface AnalyticsEventRepository extends JpaRepository<AnalyticsEvent, 
             @Param("toMs") long toMs);
 
     List<AnalyticsEvent> findBySessionIdOrderByCreatedAtAsc(String sessionId);
+
+    long countByUser(User user);
+
+    void deleteByUser(User user);
 
     @Query(value = "SELECT COUNT(*) FROM analytics_events WHERE created_at >= :fromMs AND created_at <= :toMs",
            nativeQuery = true)

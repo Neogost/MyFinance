@@ -6,6 +6,7 @@ import FiscalProfilePanel from '../profile/FiscalProfilePanel'
 import PersonalInfoPanel from '../profile/PersonalInfoPanel'
 import SafetyNetPanel from '../profile/SafetyNetPanel'
 import AnalyticsOptOutPanel from '../profile/AnalyticsOptOutPanel'
+import DeleteAccountModal from '../profile/DeleteAccountModal'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 const labelCls = 'text-sm font-semibold text-gray-700'
@@ -35,9 +36,11 @@ function PasswordHints({ password }) {
   )
 }
 
-export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }) {
+export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate, onAccountDeleted }) {
   const { trackPageView, trackEvent } = useAnalytics()
   useEffect(() => { trackPageView('auth.profile') }, [])
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteMode,      setDeleteMode]      = useState('account') // 'account' | 'data-only'
   const [form, setForm]       = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [error, setError]     = useState(null)
   const [success, setSuccess] = useState(false)
@@ -154,6 +157,39 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
       <FamilyGroupPanel onGroupChange={onGroupChange} />
       <SafetyNetPanel user={user} onUpdate={onUserUpdate} />
       <AnalyticsOptOutPanel user={user} onUpdate={onUserUpdate} />
+
+      {/* Zone de danger */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-red-100">
+        <h2 className="text-base font-semibold text-red-700 mb-2">Zone de danger</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Ces actions sont définitives et irréversibles. Toutes vos données seront effacées immédiatement.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => { trackEvent('BUTTON_CLICK', 'auth.profile.open_delete_data'); setDeleteMode('data-only'); setShowDeleteModal(true) }}
+            className="px-4 py-2 text-sm font-medium text-orange-600 border border-orange-300 rounded-lg hover:bg-orange-50 transition"
+          >
+            Supprimer uniquement mes données
+          </button>
+          <button
+            onClick={() => { trackEvent('BUTTON_CLICK', 'auth.profile.open_delete_account'); setDeleteMode('account'); setShowDeleteModal(true) }}
+            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
+          >
+            Supprimer mon compte et mes données
+          </button>
+        </div>
+      </div>
+
+      {showDeleteModal && (
+        <DeleteAccountModal
+          user={user}
+          mode={deleteMode}
+          onClose={() => setShowDeleteModal(false)}
+          onDeleted={deleteMode === 'data-only'
+            ? () => { setShowDeleteModal(false); window.location.reload() }
+            : onAccountDeleted}
+        />
+      )}
     </div>
   )
 }

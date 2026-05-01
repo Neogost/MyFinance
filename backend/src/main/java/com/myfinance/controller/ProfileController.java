@@ -1,10 +1,8 @@
 package com.myfinance.controller;
 
 import com.myfinance.domain.User;
-import com.myfinance.dto.UpdateFiscalProfileRequest;
-import com.myfinance.dto.UpdatePersonalInfoRequest;
-import com.myfinance.dto.UpdateSafetyNetRequest;
-import com.myfinance.dto.UserDto;
+import com.myfinance.dto.*;
+import com.myfinance.service.ProfileDataService;
 import com.myfinance.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final ProfileDataService profileDataService;
 
     @Operation(summary = "Mettre à jour le matelas de sécurité")
     @ApiResponse(responseCode = "200", description = "Paramètres mis à jour",
@@ -64,5 +63,31 @@ public class ProfileController {
             @RequestParam boolean optOut,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updateAnalyticsOptOut(currentUser, optOut));
+    }
+
+    @Operation(summary = "Résumé des données qui seraient supprimées")
+    @ApiResponse(responseCode = "200", description = "Compteurs par catégorie")
+    @GetMapping("/data-summary")
+    public ResponseEntity<DataSummaryDto> getDataSummary(
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(profileDataService.getSummary(currentUser));
+    }
+
+    @Operation(summary = "Supprimer toutes ses données et son compte")
+    @ApiResponse(responseCode = "204", description = "Compte et données supprimés")
+    @DeleteMapping("/data")
+    public ResponseEntity<Void> deleteAllData(
+            @AuthenticationPrincipal User currentUser) {
+        profileDataService.deleteAllData(currentUser);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Supprimer toutes ses données sans supprimer le compte")
+    @ApiResponse(responseCode = "204", description = "Données supprimées, compte conservé")
+    @DeleteMapping("/data-only")
+    public ResponseEntity<Void> deleteDataOnly(
+            @AuthenticationPrincipal User currentUser) {
+        profileDataService.deleteDataOnly(currentUser);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -430,5 +430,20 @@ aucune donnée persistée non plus.
 - [ ] Bouton ou dropdown dans `Navigation.jsx`
 - [ ] **Analytics** — `trackPageView('<module>.<feature>')` au montage de la page
 - [ ] **Analytics** — `trackEvent('FEATURE_USE', '<module>.<feature>.<action>')` sur chaque action métier (CRUD, simulation, export)
+- [ ] **Analytics** — `trackEvent('BUTTON_CLICK', '<module>.<feature>.<action>')` sur chaque bouton secondaire (ouverture de modal, toggle, navigation)
+- [ ] **Analytics** — `trackEvent('FORM_SUBMIT', '<module>.<feature>.<action>')` sur les soumissions de formulaire profil / paramètres
 - [ ] **Analytics** — vérifier que les `metadata` ne contiennent aucune donnée financière (whitelist)
 - [ ] `isMonModulePage` dans `Navigation.jsx` si bouton actif requis
+
+### Analytics — ajout d'une fonctionnalité sur un module existant
+
+Même règle, même obligation. Chaque action utilisateur doit être instrumentée :
+
+| Cas | Type d'événement |
+|-----|-----------------|
+| Nouvelle action métier (créer, supprimer, valider) | `FEATURE_USE` |
+| Nouveau bouton ouvrant un modal ou un panel | `BUTTON_CLICK` |
+| Nouveau formulaire soumis | `FORM_SUBMIT` |
+| Nouvelle sous-page / onglet | `PAGE_VIEW` |
+
+> **Règle non négociable** : une fonctionnalité sans événement analytics est considérée comme incomplète, au même titre qu'une fonctionnalité sans test.

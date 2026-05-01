@@ -275,7 +275,7 @@ export default function App() {
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
 
-        {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
+        {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} onAccountDeleted={handleLogout} />}
       </main>
 
       <footer className="hidden md:block text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-gray-100">

@@ -9,6 +9,7 @@ import com.myfinance.dto.UpdateFiscalProfileRequest;
 import com.myfinance.dto.UpdatePersonalInfoRequest;
 import com.myfinance.dto.UpdateSafetyNetRequest;
 import com.myfinance.dto.UserDto;
+import com.myfinance.service.ProfileDataService;
 import com.myfinance.service.ProfileService;
 import com.myfinance.support.WithMockCustomUser;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -35,6 +38,7 @@ class ProfileControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockitoBean ProfileService profileService;
+    @MockitoBean ProfileDataService profileDataService;
 
     private UserDto dto(SafetyNetMode mode, Double months, Double amount) {
         return new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
@@ -234,5 +238,39 @@ class ProfileControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ── DELETE /api/profile/data ───────────────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void deleteAllData_retourne204() throws Exception {
+        doNothing().when(profileDataService).deleteAllData(any());
+
+        mockMvc.perform(delete("/api/profile/data"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteAllData_sansAuthentification_retourne401() throws Exception {
+        mockMvc.perform(delete("/api/profile/data"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── DELETE /api/profile/data-only ─────────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void deleteDataOnly_retourne204() throws Exception {
+        doNothing().when(profileDataService).deleteDataOnly(any());
+
+        mockMvc.perform(delete("/api/profile/data-only"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteDataOnly_sansAuthentification_retourne401() throws Exception {
+        mockMvc.perform(delete("/api/profile/data-only"))
+                .andExpect(status().isUnauthorized());
     }
 }
