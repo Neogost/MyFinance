@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import { updateAnalyticsOptOut } from '../../api/analytics'
 
+const TRACKED_ACTIONS = [
+  { icon: '📄', label: 'Pages visitées',       detail: 'Quelles sections de l\'application sont consultées' },
+  { icon: '✅', label: 'Actions effectuées',   detail: 'Créations, modifications, suppressions de données (sans les valeurs)' },
+  { icon: '🖱', label: 'Boutons cliqués',       detail: 'Ouverture de formulaires, toggles (mode nuit, masquer valeurs…)' },
+  { icon: '📝', label: 'Formulaires soumis',   detail: 'Mise à jour du profil, changement de mot de passe' },
+]
+
 export default function AnalyticsOptOutPanel({ user, onUpdate }) {
-  const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState(null)
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState(null)
+  const [details, setDetails] = useState(false)
 
   async function handleToggle() {
     setSaving(true)
@@ -23,19 +31,8 @@ export default function AnalyticsOptOutPanel({ user, onUpdate }) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
-      <h2 className="text-base font-semibold text-gray-900 mb-4">Suivi de l'usage</h2>
-
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm text-gray-700">
-            {optOut
-              ? 'Le suivi de votre usage est désactivé. Aucun événement de navigation ne sera enregistré.'
-              : 'Le suivi de votre usage est actif. Il aide à améliorer les fonctionnalités de l\'application.'}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            Les erreurs techniques restent toujours capturées pour assurer la stabilité de l'application.
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-gray-900">Suivi de l'usage</h2>
         <button
           onClick={handleToggle}
           disabled={saving}
@@ -50,7 +47,46 @@ export default function AnalyticsOptOutPanel({ user, onUpdate }) {
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+      <p className="text-sm text-gray-600 mb-3">
+        {optOut
+          ? 'Le suivi est désactivé — aucun événement de navigation n\'est enregistré.'
+          : 'Le suivi est actif — il permet d\'identifier les fonctionnalités les plus utilisées pour orienter les améliorations.'}
+      </p>
+
+      {/* Types d'actions suivies */}
+      <div className="rounded-lg border border-gray-100 overflow-hidden mb-3">
+        <button
+          onClick={() => setDetails(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-medium text-gray-500 hover:bg-gray-50 transition text-left"
+        >
+          <span>Quels types d'actions sont {optOut ? 'seraient' : 'sont'} suivies ?</span>
+          <span className="text-gray-400">{details ? '▲' : '▼'}</span>
+        </button>
+        {details && (
+          <div className="border-t border-gray-100 divide-y divide-gray-50">
+            {TRACKED_ACTIONS.map(a => (
+              <div key={a.label} className="flex items-start gap-3 px-4 py-2.5">
+                <span className="text-base shrink-0 mt-0.5">{a.icon}</span>
+                <div>
+                  <p className="text-xs font-medium text-gray-700">{a.label}</p>
+                  <p className="text-xs text-gray-400">{a.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Ce qui n'est jamais suivi */}
+      <div className="flex items-start gap-2 text-xs text-gray-400">
+        <span className="text-green-500 shrink-0 mt-0.5">🔒</span>
+        <span>
+          Les <strong className="text-gray-500">montants, prix, salaires et données personnelles</strong> ne sont jamais enregistrés.
+          Les <strong className="text-gray-500">erreurs techniques</strong> sont toujours capturées indépendamment de ce réglage.
+        </span>
+      </div>
+
+      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
     </div>
   )
 }
