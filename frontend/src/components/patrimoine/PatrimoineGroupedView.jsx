@@ -1,8 +1,80 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, OWNERSHIP_TYPES } from './constants'
 import { fmt, Amount } from './utils'
 
 const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
+
+function AllocationTooltipContent({ instrument, rect }) {
+  const geo    = instrument?.countryAllocation ?? []
+  const sector = instrument?.sectorAllocation  ?? []
+
+  if (!geo.length && !sector.length) return null
+
+  const hasBoth = geo.length > 0 && sector.length > 0
+  const style = {
+    position: 'fixed',
+    top:  rect.bottom + 8,
+    left: rect.left,
+    zIndex: 9999,
+    width: hasBoth ? 440 : 220,
+  }
+
+  const Section = ({ title, entries, barColor }) => (
+    <div className="flex-1 min-w-0">
+      <p className="font-semibold text-gray-300 uppercase tracking-wide mb-1.5" style={{ fontSize: '10px' }}>{title}</p>
+      <div className="flex flex-col gap-1">
+        {entries.map(a => {
+          const name = a.country ?? a.sector
+          const pct  = Number(a.percentage)
+          return (
+            <div key={name} className="flex items-center gap-1.5">
+              <div className="flex-1 bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div className={`h-full ${barColor} rounded-full`} style={{ width: `${pct}%` }} />
+              </div>
+              <span className="text-gray-200 w-20 truncate text-right">{name}</span>
+              <span className="text-gray-400 w-8 text-right shrink-0">{pct.toFixed(0)} %</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  return createPortal(
+    <div style={style} className="bg-gray-900 text-white rounded-lg shadow-2xl p-3 text-xs pointer-events-none flex gap-3">
+      {geo.length > 0    && <Section title="Géographie" entries={geo}    barColor="bg-indigo-400" />}
+      {hasBoth           && <div className="w-px bg-gray-700 self-stretch" />}
+      {sector.length > 0 && <Section title="Secteurs"   entries={sector} barColor="bg-teal-400"  />}
+    </div>,
+    document.body
+  )
+}
+
+function AllocationLabel({ instrument, label }) {
+  const [rect, setRect] = useState(null)
+  const spanRef = useRef(null)
+
+  const show = useCallback(() => {
+    if (window.innerWidth < 768) return
+    if (spanRef.current) setRect(spanRef.current.getBoundingClientRect())
+  }, [])
+  const hide = useCallback(() => setRect(null), [])
+
+  return (
+    <>
+      <span
+        ref={spanRef}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        className="text-sm font-medium text-gray-900 truncate max-w-[10ch] md:max-w-none cursor-help underline decoration-dotted underline-offset-2 decoration-gray-400"
+      >
+        {label}
+      </span>
+      {rect && <AllocationTooltipContent instrument={instrument} rect={rect} />}
+    </>
+  )
+}
 const OWNERSHIP_LABEL = Object.fromEntries(OWNERSHIP_TYPES.map(({ value, label }) => [value, label]))
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -96,7 +168,10 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium text-gray-900 truncate max-w-[10ch] md:max-w-none">{position.label}</span>
+              {position.category === 'BOURSE' && (position.instrument?.countryAllocation?.length > 0 || position.instrument?.sectorAllocation?.length > 0)
+                ? <AllocationLabel instrument={position.instrument} label={position.label} />
+                : <span className="text-sm font-medium text-gray-900 truncate max-w-[10ch] md:max-w-none">{position.label}</span>
+              }
               {stale && (
                 <span
                   title={`Cours non mis à jour depuis plus de 30 jours (${new Date(position.instrument.lastPriceUpdatedAt).toLocaleDateString('fr-FR')})`}

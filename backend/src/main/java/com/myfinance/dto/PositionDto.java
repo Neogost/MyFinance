@@ -48,20 +48,29 @@ public record PositionDto(
 
         PositionComputedDto computed = computeTotals(position, orders, exchangeRates);
 
-        return build(position, orderDtos, computed);
+        return build(position, orderDtos, computed, null);
     }
 
     /** Version sans ordres — pour la liste (évite le N+1 query) */
     public static PositionDto fromWithoutOrders(Position position, List<PositionOrder> orders,
                                                 Map<String, BigDecimal> exchangeRates) {
         PositionComputedDto computed = computeTotals(position, orders, exchangeRates);
-        return build(position, null, computed);
+        return build(position, null, computed, null);
     }
 
-    private static PositionDto build(Position position, List<PositionOrderDto> orderDtos, PositionComputedDto computed) {
-        InstrumentDto instrumentDto = position.getInstrument() != null
-                ? InstrumentDto.from(position.getInstrument())
-                : null;
+    /** Version sans ordres avec allocations pré-chargées (évite le N+1 query sur les allocations) */
+    public static PositionDto fromWithoutOrders(Position position, List<PositionOrder> orders,
+                                                Map<String, BigDecimal> exchangeRates,
+                                                InstrumentDto instrumentDto) {
+        PositionComputedDto computed = computeTotals(position, orders, exchangeRates);
+        return build(position, null, computed, instrumentDto);
+    }
+
+    private static PositionDto build(Position position, List<PositionOrderDto> orderDtos,
+                                     PositionComputedDto computed, InstrumentDto overrideInstrumentDto) {
+        InstrumentDto instrumentDto = overrideInstrumentDto != null
+                ? overrideInstrumentDto
+                : (position.getInstrument() != null ? InstrumentDto.from(position.getInstrument()) : null);
 
         return new PositionDto(
                 position.getId(),

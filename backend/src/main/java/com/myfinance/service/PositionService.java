@@ -3,7 +3,9 @@ package com.myfinance.service;
 import com.myfinance.domain.*;
 import com.myfinance.dto.*;
 import com.myfinance.repository.ExchangeRateRepository;
+import com.myfinance.repository.InstrumentAllocationRepository;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.InstrumentSectorAllocationRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import com.myfinance.repository.PositionSnapshotRepository;
@@ -30,6 +32,8 @@ public class PositionService {
     private final PositionSnapshotRepository positionSnapshotRepository;
     private final InstrumentRepository instrumentRepository;
     private final ExchangeRateRepository exchangeRateRepository;
+    private final InstrumentAllocationRepository instrumentAllocationRepository;
+    private final InstrumentSectorAllocationRepository instrumentSectorAllocationRepository;
 
     // ── Lecture : positions ────────────────────────────────────
 
@@ -48,9 +52,40 @@ public class PositionService {
 
         Map<String, BigDecimal> exchangeRates = loadExchangeRates();
 
+        // Batch-load des allocations géographiques et sectorielles pour les positions BOURSE
+        List<Instrument> bourseInstruments = positions.stream()
+                .filter(p -> p.getCategory() == AssetCategory.BOURSE && p.getInstrument() != null)
+                .map(Position::getInstrument)
+                .distinct()
+                .toList();
+
+        Map<Long, List<InstrumentAllocationDto>> countryAllocMap = bourseInstruments.isEmpty()
+                ? Map.of()
+                : instrumentAllocationRepository.findByInstrumentInOrderByPercentageDesc(bourseInstruments)
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                a -> a.getInstrument().getId(),
+                                Collectors.mapping(InstrumentAllocationDto::from, Collectors.toList())));
+
+        Map<Long, List<InstrumentSectorAllocationDto>> sectorAllocMap = bourseInstruments.isEmpty()
+                ? Map.of()
+                : instrumentSectorAllocationRepository.findByInstrumentInOrderByPercentageDesc(bourseInstruments)
+                        .stream()
+                        .collect(Collectors.groupingBy(
+                                a -> a.getInstrument().getId(),
+                                Collectors.mapping(InstrumentSectorAllocationDto::from, Collectors.toList())));
+
         return positions.stream()
                 .map(p -> {
                     List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(p);
+                    if (p.getCategory() == AssetCategory.BOURSE && p.getInstrument() != null) {
+                        Long instrId = p.getInstrument().getId();
+                        InstrumentDto instrDto = InstrumentDto.from(
+                                p.getInstrument(),
+                                countryAllocMap.getOrDefault(instrId, List.of()),
+                                sectorAllocMap.getOrDefault(instrId, List.of()));
+                        return PositionDto.fromWithoutOrders(p, orders, exchangeRates, instrDto);
+                    }
                     return PositionDto.fromWithoutOrders(p, orders, exchangeRates);
                 })
                 .toList();
