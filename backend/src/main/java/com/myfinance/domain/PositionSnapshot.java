@@ -29,7 +29,7 @@ public class PositionSnapshot {
     @JoinColumn(name = "portfolio_snapshot_id", nullable = false)
     private PortfolioSnapshot portfolioSnapshot;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "position_id", nullable = false)
     private Position position;
