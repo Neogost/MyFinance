@@ -244,18 +244,16 @@ export default function App() {
         {currentPage === 'profile' && <ChangePasswordForm user={user} onGroupChange={handleGroupChange} onUserUpdate={setUser} />}
       </main>
 
-      {appVersion && (
-        <footer className="hidden md:block text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-gray-100">
-          MyFinance v{appVersion}
-          <span className="text-gray-300 mx-2">·</span>
-          <button
-            onClick={() => setShowReleaseNotes(true)}
-            className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
-          >
-            Notes de version
-          </button>
-        </footer>
-      )}
+      <footer className="hidden md:block text-center text-xs text-gray-400 py-3 border-t border-gray-200 bg-gray-100">
+        MyFinance{appVersion ? ` v${appVersion}` : ''}
+        <span className="text-gray-300 mx-2">·</span>
+        <button
+          onClick={() => setShowReleaseNotes(true)}
+          className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
+        >
+          Notes de version
+        </button>
+      </footer>
 
       {showReleaseNotes && <ReleaseNotesModal onClose={() => setShowReleaseNotes(false)} />}
     </div>
