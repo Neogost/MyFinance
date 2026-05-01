@@ -8,6 +8,28 @@ function formatPaymentDate(iso) {
   return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
+function formatPeriod(iso) {
+  if (!iso) return null
+  const [year, month] = iso.split('-')
+  return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
+}
+
+function MensuellePeriod({ bonus }) {
+  const start = formatPeriod(bonus.startDate)
+  const end   = formatPeriod(bonus.endDate)
+  const today = new Date().toISOString().slice(0, 10)
+  const active = bonus.startDate <= today && (!bonus.endDate || bonus.endDate >= today)
+  return (
+    <span className="flex items-center gap-1.5">
+      {active
+        ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Active" />
+        : <span className="w-1.5 h-1.5 rounded-full bg-gray-300 shrink-0" title="Terminée" />
+      }
+      {end ? `${start} → ${end}` : `Depuis ${start}`}
+    </span>
+  )
+}
+
 export default function BonusPanel({ contractId, onBonusChange }) {
   const [bonuses, setBonuses]       = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
@@ -46,7 +68,8 @@ export default function BonusPanel({ contractId, onBonusChange }) {
     onBonusChange?.()
   }
 
-  const total = bonuses.reduce((s, b) => s + b.grossAmount, 0)
+  const annuellesTotal   = bonuses.filter(b => b.type === 'ANNUELLE').reduce((s, b) => s + b.grossAmount, 0)
+  const mensuellesTotaux = bonuses.filter(b => b.type === 'MENSUELLE').reduce((s, b) => s + b.grossAmount, 0)
 
   if (loading) return <p className="text-gray-400 text-sm mt-4">Chargement des primes…</p>
   if (error)   return <p className="text-sm text-red-600 mt-4">{error}</p>
@@ -54,14 +77,19 @@ export default function BonusPanel({ contractId, onBonusChange }) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">
-          {bonuses.length} prime{bonuses.length > 1 ? 's' : ''}
-          {bonuses.length > 0 && (
-            <span className="ml-2 font-semibold text-gray-700">
-              — Total brut : <span className="amount">{total.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
+        <div className="text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+          <span>{bonuses.length} prime{bonuses.length > 1 ? 's' : ''}</span>
+          {annuellesTotal > 0 && (
+            <span className="font-semibold text-gray-700">
+              Annuelles : <span className="amount">{annuellesTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €/an</span>
             </span>
           )}
-        </p>
+          {mensuellesTotaux > 0 && (
+            <span className="font-semibold text-gray-700">
+              Mensuelles : <span className="amount">{mensuellesTotaux.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €/mois</span>
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setFormTarget(null)}
           className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition"
@@ -79,7 +107,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
               <tr className="bg-gray-50">
                 <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Versement</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Période / Versement</th>
                 <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Montant brut</th>
                 <th className="px-3 py-2"></th>
               </tr>
@@ -90,18 +118,23 @@ export default function BonusPanel({ contractId, onBonusChange }) {
                   <td className="px-3 py-2.5">
                     {bonus.type === 'ANNUELLE'
                       ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:text-blue-300">Annuelle</span>
-                      : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:text-amber-300">Exceptionnelle</span>
+                      : bonus.type === 'MENSUELLE'
+                        ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:text-violet-300">Mensuelle</span>
+                        : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:text-amber-300">Exceptionnelle</span>
                     }
                   </td>
                   <td className="px-3 py-2.5 font-medium text-gray-800">{bonus.label}</td>
                   <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">
                     {bonus.type === 'ANNUELLE'
                       ? `Chaque année en ${MONTHS_FR_SHORT[(bonus.paymentMonth ?? 1) - 1]}`
-                      : formatPaymentDate(bonus.paymentDate)
+                      : bonus.type === 'MENSUELLE'
+                        ? <MensuellePeriod bonus={bonus} />
+                        : formatPaymentDate(bonus.paymentDate)
                     }
                   </td>
                   <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
                     {bonus.grossAmount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    {bonus.type === 'MENSUELLE' && <span className="text-xs font-normal text-gray-400 ml-1">/mois</span>}
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1 justify-end">

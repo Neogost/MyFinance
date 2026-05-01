@@ -33,8 +33,23 @@ export default function SalaryContractPage() {
 
   function fetchAnnualBonuses(contractId) {
     if (!contractId) { setAnnualBonuses([]); return }
+    const today = new Date().toISOString().slice(0, 10)
     getBonuses(contractId)
-      .then(bs => setAnnualBonuses(bs.filter(b => b.type === 'ANNUELLE')))
+      .then(bs => {
+        const forProjection = bs
+          .filter(b => {
+            if (b.type === 'ANNUELLE') return true
+            if (b.type === 'MENSUELLE') {
+              return b.startDate <= today && (!b.endDate || b.endDate >= today)
+            }
+            return false // EXCEPTIONNELLE exclue des projections récurrentes
+          })
+          .map(b => b.type === 'MENSUELLE'
+            ? { ...b, grossAmount: b.grossAmount * 12 }  // normalise en équivalent annuel
+            : b
+          )
+        setAnnualBonuses(forProjection)
+      })
       .catch(() => setAnnualBonuses([]))
   }
 
@@ -158,7 +173,7 @@ export default function SalaryContractPage() {
                   : <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Non-cadre</span>
                 }
                 {annualBonuses.length > 0 && (
-                  <span>Primes : <strong className="text-blue-700 amount">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €</strong></span>
+                  <span>Primes : <strong className="text-blue-700 amount">{annualBonuses.reduce((s, b) => s + b.grossAmount, 0).toLocaleString('fr-FR')} €/an</strong></span>
                 )}
               </div>
             </div>

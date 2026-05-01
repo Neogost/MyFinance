@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { MONTHS_FR_LONG } from '../../utils/constants.js'
 
-const EMPTY = { type: 'ANNUELLE', label: '', grossAmount: '', paymentDate: '', paymentMonth: '' }
+const EMPTY = { type: 'ANNUELLE', label: '', grossAmount: '', paymentDate: '', paymentMonth: '', startDate: '', endDate: '' }
 
 export default function BonusForm({ bonus, onSubmit, onCancel }) {
   const isEdit = Boolean(bonus)
@@ -13,12 +13,13 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
   useEffect(() => {
     if (bonus) {
       setForm({
-        type: bonus.type,
-        label: bonus.label,
-        grossAmount: bonus.grossAmount,
-        // paymentDate est "YYYY-MM-DD", on garde juste "YYYY-MM" pour l'input type="month"
-        paymentDate: bonus.paymentDate ? bonus.paymentDate.slice(0, 7) : '',
+        type:         bonus.type,
+        label:        bonus.label,
+        grossAmount:  bonus.grossAmount,
+        paymentDate:  bonus.paymentDate ? bonus.paymentDate.slice(0, 7) : '',
         paymentMonth: bonus.paymentMonth ?? '',
+        startDate:    bonus.startDate ?? '',
+        endDate:      bonus.endDate   ?? '',
       })
     } else {
       setForm(EMPTY)
@@ -35,12 +36,13 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
     setLoading(true)
     try {
       const payload = {
-        type: form.type,
-        label: form.label,
-        grossAmount: parseFloat(form.grossAmount),
-        // EXCEPTIONNELLE : convertit "YYYY-MM" en "YYYY-MM-01" pour le backend
-        paymentDate: form.type === 'EXCEPTIONNELLE' ? `${form.paymentDate}-01` : null,
-        paymentMonth: form.type === 'ANNUELLE' ? parseInt(form.paymentMonth) : null,
+        type:         form.type,
+        label:        form.label,
+        grossAmount:  parseFloat(form.grossAmount),
+        paymentDate:  form.type === 'EXCEPTIONNELLE' ? `${form.paymentDate}-01` : null,
+        paymentMonth: form.type === 'ANNUELLE'       ? parseInt(form.paymentMonth) : null,
+        startDate:    form.type === 'MENSUELLE'      ? form.startDate || null : null,
+        endDate:      form.type === 'MENSUELLE'      ? (form.endDate || null) : null,
       }
       await onSubmit(payload)
     } catch {
@@ -62,12 +64,12 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
           {/* Type de prime */}
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Type de prime *</label>
-            <div className="flex gap-3">
-              {[['ANNUELLE', 'Annuelle'], ['EXCEPTIONNELLE', 'Exceptionnelle']].map(([val, lbl]) => (
+            <div className="flex gap-2">
+              {[['ANNUELLE', 'Annuelle'], ['EXCEPTIONNELLE', 'Exceptionnelle'], ['MENSUELLE', 'Mensuelle']].map(([val, lbl]) => (
                 <button
                   key={val}
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, type: val, paymentDate: '', paymentMonth: '' }))}
+                  onClick={() => setForm(f => ({ ...f, type: val, paymentDate: '', paymentMonth: '', startDate: '', endDate: '' }))}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition ${
                     form.type === val
                       ? 'bg-indigo-600 text-white border-indigo-600'
@@ -85,48 +87,77 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
             <label className={labelCls}>Nom de la prime *</label>
             <input
               name="label" type="text" value={form.label} onChange={handleChange}
-              required placeholder="ex : 13ème mois, Prime Macron…"
+              required placeholder={form.type === 'MENSUELLE' ? 'ex : Prime transport, Astreinte mensuelle…' : 'ex : 13ème mois, Prime Macron…'}
               className={inputCls}
             />
           </div>
 
-          {/* Montant + champ de date selon le type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Montant */}
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>
+              Montant brut (€) *
+              {form.type === 'MENSUELLE' && <span className="text-gray-400 font-normal ml-1">— par mois</span>}
+            </label>
+            <input
+              name="grossAmount" type="number" min="0.01" step="0.01"
+              value={form.grossAmount} onChange={handleChange}
+              required placeholder="1000.00"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Champ conditionnel selon le type */}
+          {form.type === 'EXCEPTIONNELLE' && (
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Montant brut (€) *</label>
+              <label className={labelCls}>Mois de versement *</label>
               <input
-                name="grossAmount" type="number" min="0.01" step="0.01"
-                value={form.grossAmount} onChange={handleChange}
-                required placeholder="1000.00"
+                name="paymentDate" type="month" value={form.paymentDate}
+                onChange={handleChange} required
                 className={inputCls}
               />
             </div>
+          )}
 
-            {form.type === 'EXCEPTIONNELLE' ? (
+          {form.type === 'ANNUELLE' && (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>Mois de versement *</label>
+              <select
+                name="paymentMonth" value={form.paymentMonth}
+                onChange={handleChange} required
+                className={inputCls}
+              >
+                <option value="">— Choisir —</option>
+                {MONTHS_FR_LONG.map((m, i) => (
+                  <option key={i + 1} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {form.type === 'MENSUELLE' && (
+            <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Mois de versement *</label>
+                <label className={labelCls}>Date de début *</label>
                 <input
-                  name="paymentDate" type="month" value={form.paymentDate}
+                  name="startDate" type="date" value={form.startDate}
                   onChange={handleChange} required
                   className={inputCls}
                 />
               </div>
-            ) : (
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Mois de versement *</label>
-                <select
-                  name="paymentMonth" value={form.paymentMonth}
-                  onChange={handleChange} required
+                <label className={labelCls}>
+                  Date de fin
+                  <span className="text-gray-400 font-normal ml-1">— optionnelle (vide = indéfinie)</span>
+                </label>
+                <input
+                  name="endDate" type="date" value={form.endDate}
+                  onChange={handleChange}
+                  min={form.startDate || undefined}
                   className={inputCls}
-                >
-                  <option value="">— Choisir —</option>
-                  {MONTHS_FR_LONG.map((m, i) => (
-                    <option key={i + 1} value={i + 1}>{m}</option>
-                  ))}
-                </select>
+                />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 

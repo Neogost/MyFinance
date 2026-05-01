@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -28,7 +29,7 @@ public class ContractBonusService {
 
     public List<ContractBonusDto> findAllByContract(Long contractId, User currentUser) {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
-        return contractBonusRepository.findByContractOrderByTypeAscPaymentMonthAscPaymentDateDesc(contract)
+        return contractBonusRepository.findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(contract)
                 .stream()
                 .map(ContractBonusDto::from)
                 .toList();
@@ -38,7 +39,7 @@ public class ContractBonusService {
 
     public ContractBonusDto create(Long contractId, CreateContractBonusRequest request, User currentUser) {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
-        validateRequest(request.type(), request.paymentDate(), request.paymentMonth());
+        validateRequest(request.type(), request.paymentDate(), request.paymentMonth(), request.startDate(), request.endDate());
 
         ContractBonus bonus = ContractBonus.builder()
                 .contract(contract)
@@ -47,6 +48,8 @@ public class ContractBonusService {
                 .type(request.type())
                 .paymentDate(request.type() == BonusTypeEnum.EXCEPTIONNELLE ? request.paymentDate() : null)
                 .paymentMonth(request.type() == BonusTypeEnum.ANNUELLE ? request.paymentMonth() : null)
+                .startDate(request.type() == BonusTypeEnum.MENSUELLE ? request.startDate() : null)
+                .endDate(request.type() == BonusTypeEnum.MENSUELLE ? request.endDate() : null)
                 .build();
 
         ContractBonusDto dto = ContractBonusDto.from(contractBonusRepository.save(bonus));
@@ -60,13 +63,15 @@ public class ContractBonusService {
                                    UpdateContractBonusRequest request, User currentUser) {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         ContractBonus bonus = getBonusForContract(bonusId, contract);
-        validateRequest(request.type(), request.paymentDate(), request.paymentMonth());
+        validateRequest(request.type(), request.paymentDate(), request.paymentMonth(), request.startDate(), request.endDate());
 
         bonus.setLabel(request.label());
         bonus.setGrossAmount(request.grossAmount());
         bonus.setType(request.type());
         bonus.setPaymentDate(request.type() == BonusTypeEnum.EXCEPTIONNELLE ? request.paymentDate() : null);
         bonus.setPaymentMonth(request.type() == BonusTypeEnum.ANNUELLE ? request.paymentMonth() : null);
+        bonus.setStartDate(request.type() == BonusTypeEnum.MENSUELLE ? request.startDate() : null);
+        bonus.setEndDate(request.type() == BonusTypeEnum.MENSUELLE ? request.endDate() : null);
 
         ContractBonusDto dto = ContractBonusDto.from(contractBonusRepository.save(bonus));
         log.info("[user:{}] Prime modifiée #{} [contrat #{}, type: {}]", currentUser.getId(), bonusId, contractId, request.type());
@@ -82,9 +87,10 @@ public class ContractBonusService {
         log.info("[user:{}] Prime supprimée #{} [contrat #{}]", currentUser.getId(), bonusId, contractId);
     }
 
-    // ── Validation ────────────────────────────────────────────
+    // ── Validation ─────────────────────────────────────────────
 
-    private void validateRequest(BonusTypeEnum type, java.time.LocalDate paymentDate, Integer paymentMonth) {
+    private void validateRequest(BonusTypeEnum type, LocalDate paymentDate,
+                                  Integer paymentMonth, LocalDate startDate, LocalDate endDate) {
         if (type == BonusTypeEnum.EXCEPTIONNELLE && paymentDate == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Une prime exceptionnelle doit avoir une date de versement.");
@@ -93,9 +99,17 @@ public class ContractBonusService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Une prime annuelle doit préciser le mois de versement.");
         }
+        if (type == BonusTypeEnum.MENSUELLE && startDate == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Une prime mensuelle doit avoir une date de début.");
+        }
+        if (type == BonusTypeEnum.MENSUELLE && endDate != null && startDate != null && endDate.isBefore(startDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La date de fin doit être postérieure à la date de début.");
+        }
     }
 
-    // ── Vérification appartenance prime ───────────────────────
+    // ── Vérification appartenance prime ────────────────────────
 
     private ContractBonus getBonusForContract(Long bonusId, SalaryContract contract) {
         ContractBonus bonus = contractBonusRepository.findById(bonusId)

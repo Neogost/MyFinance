@@ -42,4 +42,8 @@ public class ContractBonus {
 
     // Pour ANNUELLE : mois de versement (1 = janvier … 12 = décembre)
     private Integer paymentMonth;
+
+    // Pour MENSUELLE : date de début (incluse) et date de fin optionnelle (null = indéfinie)
+    private LocalDate startDate;
+    private LocalDate endDate;
 }

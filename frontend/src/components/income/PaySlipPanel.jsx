@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getPaySlips, createPaySlip, updatePaySlip, deletePaySlip } from '../../api/income'
+import { getPaySlips, createPaySlip, updatePaySlip, deletePaySlip, getRevisions } from '../../api/income'
 import PaySlipForm from './PaySlipForm'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
 
@@ -8,18 +8,24 @@ function formatPeriod(iso) {
   return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
-export default function PaySlipPanel({ contractId, projection }) {
-  const [slips, setSlips]       = useState([])
+export default function PaySlipPanel({ contractId, projection: contract }) {
+  const [slips, setSlips]           = useState([])
+  const [revisions, setRevisions]   = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(null)
 
-  useEffect(() => { fetchSlips() }, [contractId])
+  useEffect(() => { fetchData() }, [contractId])
 
-  async function fetchSlips() {
+  async function fetchData() {
     try {
       setLoading(true)
-      setSlips(await getPaySlips(contractId))
+      const [slipsData, revisionsData] = await Promise.all([
+        getPaySlips(contractId),
+        getRevisions(contractId),
+      ])
+      setSlips(slipsData)
+      setRevisions(revisionsData)
     } catch {
       setError('Impossible de charger les bulletins.')
     } finally {
@@ -44,7 +50,45 @@ export default function PaySlipPanel({ contractId, projection }) {
     setSlips(ss => ss.filter(s => s.id !== slip.id))
   }
 
-  // Calcul de l'écart réel vs théorique
+  // Retourne les valeurs théoriques (brut + net mensuel) en vigueur à la période du bulletin.
+  // Pour PRIVATE : brut de la révision active à cette date, ou salaire de base du contrat.
+  // Pour PUBLIC  : indiceMajore × valeur du point actuelle (approximation, point value stable).
+  // Net : ratio net/brut du contrat courant appliqué au brut historique (taux de cotisation fixes).
+  function projectionAtPeriod(slip) {
+    const slipDate = slip.period // YYYY-MM-DD — la comparaison lexicographique ISO fonctionne
+
+    const activeRevision = revisions
+      .filter(r => r.effectiveDate <= slipDate)
+      .sort((a, b) => b.effectiveDate.localeCompare(a.effectiveDate))[0]
+
+    let historicalAnnualGross = null
+    if (activeRevision) {
+      if (activeRevision.annualGrossSalary != null) {
+        historicalAnnualGross = activeRevision.annualGrossSalary
+      } else if (activeRevision.indiceMajore != null && contract?.pointValueUsed != null) {
+        // PUBLIC : approximation avec la valeur du point actuelle
+        historicalAnnualGross = activeRevision.indiceMajore * contract.pointValueUsed
+      }
+    } else {
+      // Aucune révision n'était en vigueur : salaire de base du contrat
+      historicalAnnualGross = contract?.baseGrossSalary ?? contract?.annualGrossSalary ?? null
+    }
+
+    if (historicalAnnualGross == null || !contract?.paidMonthsPerYear) {
+      return { gross: contract?.monthlyGrossSalary ?? null, net: contract?.monthlyNetAfterTax ?? null }
+    }
+
+    const monthlyGross = historicalAnnualGross / contract.paidMonthsPerYear
+
+    // Net proportionnel : net/brut ratio stable quand les taux de cotisation ne changent pas
+    let monthlyNet = null
+    if (contract.monthlyNetAfterTax != null && contract.monthlyGrossSalary > 0) {
+      monthlyNet = monthlyGross * (contract.monthlyNetAfterTax / contract.monthlyGrossSalary)
+    }
+
+    return { gross: monthlyGross, net: monthlyNet }
+  }
+
   function diff(real, theoretical) {
     if (real == null || theoretical == null) return null
     return real - theoretical
@@ -99,41 +143,44 @@ export default function PaySlipPanel({ contractId, projection }) {
               </tr>
             </thead>
             <tbody>
-              {slips.map(slip => (
-                <tr key={slip.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                  <td className="px-3 py-2.5 font-medium text-gray-800">{formatPeriod(slip.period)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-700 amount">
-                    {slip.grossSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                  </td>
-                  <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
-                    <DiffBadge value={diff(slip.grossSalary, projection?.monthlyGrossSalary)} />
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
-                    {slip.netSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                  </td>
-                  <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
-                    <DiffBadge value={diff(slip.netSalary, projection?.monthlyNetAfterTax)} />
-                  </td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 hidden md:table-cell amount">
-                    {slip.incomeTaxWithholding?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => setFormTarget(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
-                        Modifier
-                      </button>
-                      <button onClick={() => setFormTarget({ ...slip, id: undefined, period: '' })}
-                        title="Dupliquer ce bulletin (la période sera à choisir)"
-                        className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
-                        Dupliquer
-                      </button>
-                      <button onClick={() => handleDelete(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition">
-                        Supprimer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {slips.map(slip => {
+                const proj = projectionAtPeriod(slip)
+                return (
+                  <tr key={slip.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
+                    <td className="px-3 py-2.5 font-medium text-gray-800">{formatPeriod(slip.period)}</td>
+                    <td className="px-3 py-2.5 text-right text-gray-700 amount">
+                      {slip.grossSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </td>
+                    <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
+                      <DiffBadge value={diff(slip.grossSalary, proj.gross)} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-indigo-700 amount">
+                      {slip.netSalary?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </td>
+                    <td className="px-3 py-2.5 text-right hidden sm:table-cell amount">
+                      <DiffBadge value={diff(slip.netSalary, proj.net)} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-gray-500 hidden md:table-cell amount">
+                      {slip.incomeTaxWithholding?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex gap-1 justify-end">
+                        <button onClick={() => setFormTarget(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
+                          Modifier
+                        </button>
+                        <button onClick={() => setFormTarget({ ...slip, id: undefined, period: '' })}
+                          title="Dupliquer ce bulletin (la période sera à choisir)"
+                          className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
+                          Dupliquer
+                        </button>
+                        <button onClick={() => handleDelete(slip)} className="px-2 py-1 border border-gray-300 rounded text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition">
+                          Supprimer
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

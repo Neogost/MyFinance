@@ -11,7 +11,9 @@ public record ContractBonusDto(
         Float grossAmount,
         BonusTypeEnum type,
         LocalDate paymentDate,   // non null si type = EXCEPTIONNELLE
-        Integer paymentMonth     // non null si type = ANNUELLE (1–12)
+        Integer paymentMonth,    // non null si type = ANNUELLE (1–12)
+        LocalDate startDate,     // non null si type = MENSUELLE
+        LocalDate endDate        // nullable si type = MENSUELLE (null = indéfinie)
 ) {
     public static ContractBonusDto from(ContractBonus bonus) {
         return new ContractBonusDto(
@@ -20,7 +22,9 @@ public record ContractBonusDto(
                 bonus.getGrossAmount(),
                 bonus.getType(),
                 bonus.getPaymentDate(),
-                bonus.getPaymentMonth()
+                bonus.getPaymentMonth(),
+                bonus.getStartDate(),
+                bonus.getEndDate()
         );
     }
 }

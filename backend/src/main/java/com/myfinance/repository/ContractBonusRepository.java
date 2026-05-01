@@ -8,6 +8,6 @@ import java.util.List;
 
 public interface ContractBonusRepository extends JpaRepository<ContractBonus, Long> {
 
-    // Annuelles d'abord (triées par mois), puis exceptionnelles (triées par date desc)
-    List<ContractBonus> findByContractOrderByTypeAscPaymentMonthAscPaymentDateDesc(SalaryContract contract);
+    // Annuelles (par mois), puis exceptionnelles (par date desc), puis mensuelles (par startDate)
+    List<ContractBonus> findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(SalaryContract contract);
 }

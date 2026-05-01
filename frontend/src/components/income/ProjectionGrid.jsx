@@ -115,7 +115,10 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
         </div>
         {annualBonuses.map(b => (
           <div key={b.id} className="flex justify-between gap-4">
-            <span className="text-gray-300">{b.label}</span>
+            <span className="text-gray-300">
+              {b.label}
+              {b.type === 'MENSUELLE' && <span className="ml-1 text-xs text-violet-400">(mensuelle)</span>}
+            </span>
             <span className="font-semibold text-blue-300 amount">+{fmt(b.grossAmount / bonusDivisor)}</span>
           </div>
         ))}

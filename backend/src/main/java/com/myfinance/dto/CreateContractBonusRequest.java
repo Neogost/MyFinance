@@ -14,6 +14,8 @@ public record CreateContractBonusRequest(
         @NotBlank @Size(max = 200) String label,
         @NotNull @Positive Float grossAmount,
         @NotNull BonusTypeEnum type,
-        LocalDate paymentDate,   // requis si type = EXCEPTIONNELLE
-        @Min(1) @Max(12) Integer paymentMonth  // requis si type = ANNUELLE
+        LocalDate paymentDate,                  // requis si type = EXCEPTIONNELLE
+        @Min(1) @Max(12) Integer paymentMonth,  // requis si type = ANNUELLE
+        LocalDate startDate,                    // requis si type = MENSUELLE
+        LocalDate endDate                       // optionnel si type = MENSUELLE (null = indéfinie)
 ) {}
