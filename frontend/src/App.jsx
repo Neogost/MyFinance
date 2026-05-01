@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ErrorBoundary from './components/ErrorBoundary'
+import AnalyticsPage from './components/admin/AnalyticsPage'
 import ErrorPage from './components/ErrorPage'
 import LoginForm from './components/LoginForm'
 import Navigation from './components/Navigation'
@@ -30,6 +31,7 @@ import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
 import { logout, getMe, getAppVersion } from './api/auth'
 import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
+import { logFrontendError } from './hooks/useAnalytics'
 import LandingPage from './components/LandingPage'
 import DocumentationPage from './components/documentation/DocumentationPage'
 import ContactPage from './components/ContactPage'
@@ -55,12 +57,25 @@ export default function App() {
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
-    setUnauthorizedHandler(() => { setUser(null); setAuthView('landing') })
+    setUnauthorizedHandler(() => { setUser(null); setAuthView('landing'); clearAnalyticsSession() })
     setServerErrorHandler(status => setAppError(status))
+
+    // Capture globale des erreurs JS non gérées
+    const onError = (event) => {
+      logFrontendError(event.error?.name ?? 'Error', event.message, event.error?.stack, window.location.hash)
+    }
+    const onUnhandledRejection = (event) => {
+      const reason = event.reason
+      logFrontendError('UnhandledPromiseRejection', String(reason?.message ?? reason), reason?.stack, window.location.hash)
+    }
+    window.addEventListener('error', onError)
+    window.addEventListener('unhandledrejection', onUnhandledRejection)
 
     getMe()
       .then(u => {
         setUser(u)
+        // Restauration de session : génère un sessionId si absent (rechargement de page)
+        if (!sessionStorage.getItem('analytics-session-id')) initAnalyticsSession(u)
         getAppVersion().then(setAppVersion).catch(() => {})
         if (u?.role === 'ADMIN') {
           getRegistrations('PENDING').then(list => setPendingRegistrations(list.length)).catch(() => {})
@@ -68,6 +83,11 @@ export default function App() {
       })
       .catch(() => {}) // session expirée ou absente → affiche le login
       .finally(() => setAuthLoading(false))
+
+    return () => {
+      window.removeEventListener('error', onError)
+      window.removeEventListener('unhandledrejection', onUnhandledRejection)
+    }
   }, [])
 
   useEffect(() => {
@@ -86,8 +106,20 @@ export default function App() {
     setDarkMode(v => !v)
   }
 
+  function initAnalyticsSession(u) {
+    const id = crypto.randomUUID()
+    sessionStorage.setItem('analytics-session-id', id)
+    sessionStorage.setItem('analytics-opt-out', String(u?.analyticsOptOut ?? false))
+  }
+
+  function clearAnalyticsSession() {
+    sessionStorage.removeItem('analytics-session-id')
+    sessionStorage.removeItem('analytics-opt-out')
+  }
+
   async function handleLogout() {
     await logout()
+    clearAnalyticsSession()
     window.location.hash = ''
     setUser(null)
     setCurrentPage('dashboard')
@@ -101,7 +133,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations']
+    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
     window.location.hash = page
     setCurrentPage(page)
@@ -168,7 +200,7 @@ export default function App() {
     }
     return (
       <LoginForm
-        onSuccess={setUser}
+        onSuccess={u => { initAnalyticsSession(u); setUser(u) }}
         initialShowRegister={authView === 'register'}
         onBackToHome={() => setAuthView('landing')}
       />
@@ -238,6 +270,8 @@ export default function App() {
         {currentPage === 'admin-registrations' && user.role === 'ADMIN' && (
           <RegistrationRequestPage onPendingCountChange={setPendingRegistrations} />
         )}
+
+        {currentPage === 'admin-analytics' && user.role === 'ADMIN' && <AnalyticsPage />}
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
 

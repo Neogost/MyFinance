@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import ErrorPage from './ErrorPage'
+import { logFrontendError } from '../hooks/useAnalytics'
 
 /**
  * Capture les erreurs JavaScript non gérées pendant le rendu React.
@@ -17,6 +18,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info.componentStack)
+    logFrontendError(error.name ?? 'Error', error.message, error.stack, window.location.hash)
   }
 
   handleRetry = () => {

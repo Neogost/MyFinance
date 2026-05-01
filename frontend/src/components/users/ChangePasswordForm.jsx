@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAnalytics } from '../../hooks/useAnalytics'
 import { changePassword } from '../../api/users'
 import FamilyGroupPanel from '../profile/FamilyGroupPanel'
 import FiscalProfilePanel from '../profile/FiscalProfilePanel'
 import PersonalInfoPanel from '../profile/PersonalInfoPanel'
 import SafetyNetPanel from '../profile/SafetyNetPanel'
+import AnalyticsOptOutPanel from '../profile/AnalyticsOptOutPanel'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 const labelCls = 'text-sm font-semibold text-gray-700'
@@ -34,6 +36,8 @@ function PasswordHints({ password }) {
 }
 
 export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }) {
+  const { trackPageView, trackEvent } = useAnalytics()
+  useEffect(() => { trackPageView('auth.profile') }, [])
   const [form, setForm]       = useState({ currentPassword: '', newPassword: '', confirm: '' })
   const [error, setError]     = useState(null)
   const [success, setSuccess] = useState(false)
@@ -62,6 +66,7 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
         newPassword:     form.newPassword,
       })
       setSuccess(true)
+      trackEvent('FORM_SUBMIT', 'auth.profile.change_password')
       setForm({ currentPassword: '', newPassword: '', confirm: '' })
     } catch (err) {
       const status = err.response?.status
@@ -148,6 +153,7 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate }
       <FiscalProfilePanel user={user} onUpdate={onUserUpdate} />
       <FamilyGroupPanel onGroupChange={onGroupChange} />
       <SafetyNetPanel user={user} onUpdate={onUserUpdate} />
+      <AnalyticsOptOutPanel user={user} onUpdate={onUserUpdate} />
     </div>
   )
 }

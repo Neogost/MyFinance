@@ -1,0 +1,579 @@
+import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { getTopEvents, getTimeline, getJourney, getErrors, getErrorOccurrences, getHealth, purgeAnalytics } from '../../api/analytics'
+
+// ── Helpers ────────────────────────────────────────────────
+
+function periodDates(days) {
+  const to   = new Date()
+  const from = new Date(Date.now() - days * 86400000)
+  return {
+    from: from.toISOString().slice(0, 19),
+    to:   to.toISOString().slice(0, 19),
+  }
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+function fmtNum(n) {
+  return n?.toLocaleString('fr-FR') ?? '—'
+}
+
+const LEVEL_COLOR = { ERROR: 'text-red-600', WARN: 'text-orange-500', FATAL: 'text-red-800' }
+const SOURCE_BADGE = { BACKEND: 'bg-indigo-100 text-indigo-700', FRONTEND: 'bg-orange-100 text-orange-700' }
+
+// ── Onglet Engagement ──────────────────────────────────────
+
+function EngagementTab({ period }) {
+  const [topFeatures, setTopFeatures] = useState([])
+  const [topButtons,  setTopButtons]  = useState([])
+  const [topPages,    setTopPages]    = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [timeline,    setTimeline]    = useState(null)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+
+  useEffect(() => {
+    setLoading(true)
+    const p = periodDates(period)
+    Promise.all([
+      getTopEvents({ type: 'FEATURE_USE', ...p, limit: 10 }),
+      getTopEvents({ type: 'BUTTON_CLICK', ...p, limit: 10 }),
+      getTopEvents({ type: 'PAGE_VIEW', ...p, limit: 10 }),
+    ]).then(([feat, btn, pv]) => {
+      setTopFeatures(feat)
+      setTopButtons(btn)
+      setTopPages(pv)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [period])
+
+  function loadTimeline(name) {
+    setSelectedEvent(name)
+    getTimeline({ name, ...periodDates(period) }).then(setTimeline).catch(() => setTimeline([]))
+  }
+
+  const maxFeat = topFeatures[0]?.count ?? 1
+  const maxBtn  = topButtons[0]?.count  ?? 1
+  const maxPage = topPages[0]?.count    ?? 1
+
+  if (loading) return <p className="text-sm text-gray-400 py-8 text-center">Chargement…</p>
+
+  return (
+    <div className="space-y-6">
+      {/* Grille 3 colonnes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[
+          { title: 'Features les plus utilisées', data: topFeatures, max: maxFeat },
+          { title: 'Boutons les plus cliqués',    data: topButtons,  max: maxBtn  },
+          { title: 'Pages les plus vues',         data: topPages,    max: maxPage },
+        ].map(({ title, data, max }) => (
+          <div key={title} className="bg-white rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">{title}</h3>
+            {data.length === 0
+              ? <p className="text-xs text-gray-400">Aucune donnée</p>
+              : (
+                <ul className="space-y-2">
+                  {data.map(e => (
+                    <li key={e.eventName}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <button
+                          onClick={() => loadTimeline(e.eventName)}
+                          className="text-xs text-gray-700 hover:text-indigo-600 transition truncate text-left"
+                        >
+                          {e.eventName}
+                        </button>
+                        <span className="text-xs font-semibold text-gray-500 ml-2 shrink-0">{fmtNum(e.count)}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${(e.count / max) * 100}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+          </div>
+        ))}
+      </div>
+
+      {/* Timeline de l'event sélectionné */}
+      {selectedEvent && timeline && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700">Évolution — <span className="text-indigo-600 font-mono">{selectedEvent}</span></h3>
+            <button onClick={() => { setSelectedEvent(null); setTimeline(null) }} className="text-xs text-gray-400 hover:text-gray-600">✕ fermer</button>
+          </div>
+          {timeline.length === 0
+            ? <p className="text-xs text-gray-400">Pas de données sur cette période</p>
+            : (
+              <div className="overflow-x-auto">
+                <div className="flex items-end gap-1 h-24 min-w-max">
+                  {timeline.map(pt => {
+                    const maxCount = Math.max(...timeline.map(p => p.count))
+                    return (
+                      <div key={pt.day} className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs text-gray-400">{pt.count}</span>
+                        <div
+                          className="w-6 bg-indigo-400 rounded-t"
+                          style={{ height: `${(pt.count / maxCount) * 72}px` }}
+                          title={`${pt.day} : ${pt.count}`}
+                        />
+                        <span className="text-xs text-gray-400" style={{ writingMode: 'vertical-rl', fontSize: 9 }}>
+                          {pt.day?.slice(5)}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Onglet Parcours ────────────────────────────────────────
+
+function JourneyTab({ initialSessionId }) {
+  const [sessionId, setSessionId] = useState(initialSessionId ?? '')
+  const [events,    setEvents]    = useState(null)
+  const [loading,   setLoading]   = useState(false)
+
+  useEffect(() => {
+    if (initialSessionId) { setSessionId(initialSessionId); load(initialSessionId) }
+  }, [initialSessionId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function load(id) {
+    const sid = (id ?? sessionId).trim()
+    if (!sid) return
+    setLoading(true)
+    getJourney(sid)
+      .then(setEvents)
+      .catch(() => setEvents([]))
+      .finally(() => setLoading(false))
+  }
+
+  const TYPE_COLOR = { PAGE_VIEW: 'bg-blue-100 text-blue-700', FEATURE_USE: 'bg-green-100 text-green-700', BUTTON_CLICK: 'bg-amber-100 text-amber-700', FORM_SUBMIT: 'bg-purple-100 text-purple-700' }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Session ID (UUID)"
+          value={sessionId}
+          onChange={e => setSessionId(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && load()}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition font-mono"
+        />
+        <button
+          onClick={() => load()}
+          disabled={loading || !sessionId.trim()}
+          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+        >
+          Charger
+        </button>
+      </div>
+
+      {loading && <p className="text-sm text-gray-400 text-center py-4">Chargement…</p>}
+
+      {events && !loading && (
+        events.length === 0
+          ? <p className="text-sm text-gray-400 text-center py-4">Aucun événement pour cette session</p>
+          : (
+            <div className="bg-white rounded-xl shadow-sm divide-y divide-gray-100">
+              {events.map((ev, i) => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3">
+                  <span className="text-xs text-gray-400 w-32 shrink-0">{fmtDate(ev.createdAt)}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${TYPE_COLOR[ev.eventType] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {ev.eventType}
+                  </span>
+                  <span className="text-sm text-gray-700 font-mono truncate">{ev.eventName}</span>
+                  {ev.page && <span className="text-xs text-gray-400 shrink-0">— {ev.page}</span>}
+                </div>
+              ))}
+            </div>
+          )
+      )}
+    </div>
+  )
+}
+
+// ── Modal détail d'une erreur ──────────────────────────────
+
+function CopyButton({ text, title = 'Copier' }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }).catch(() => {})
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={title}
+      className="shrink-0 text-gray-400 hover:text-indigo-600 transition"
+    >
+      {copied ? '✓' : '📋'}
+    </button>
+  )
+}
+
+function ErrorDetailModal({ fingerprint, onClose, onViewJourney }) {
+  const [occurrences, setOccurrences] = useState(null)
+  const [loading,     setLoading]     = useState(true)
+
+  useEffect(() => {
+    getErrorOccurrences(fingerprint, { page: 0, size: 10 })
+      .then(data => setOccurrences(data.content ?? []))
+      .catch(() => setOccurrences([]))
+      .finally(() => setLoading(false))
+  }, [fingerprint])
+
+  return createPortal(
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-900 text-sm">Détail des occurrences</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+          {loading && <p className="text-sm text-gray-400 text-center py-4">Chargement…</p>}
+          {!loading && occurrences?.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Aucune occurrence</p>}
+          {occurrences?.map((occ, i) => (
+            <div key={i} className="border border-gray-100 rounded-lg p-4 space-y-2">
+
+              {/* Ligne 1 — date, requête HTTP, statut */}
+              <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+                <span>{fmtDate(occ.createdAt)}</span>
+                {occ.requestMethod && (
+                  <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                    {occ.requestMethod} {occ.requestPath}
+                  </span>
+                )}
+                {occ.httpStatus && <span className="font-semibold text-red-500">HTTP {occ.httpStatus}</span>}
+              </div>
+
+              {/* Ligne 2 — session ID avec copier + lien parcours */}
+              {occ.sessionId && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-400 shrink-0">Session</span>
+                  <span className="font-mono text-gray-600 truncate">{occ.sessionId}</span>
+                  <CopyButton text={occ.sessionId} title="Copier le session ID" />
+                  {onViewJourney && (
+                    <button
+                      onClick={() => { onViewJourney(occ.sessionId); onClose() }}
+                      className="shrink-0 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition"
+                    >
+                      Voir le parcours →
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm text-gray-700">{occ.message}</p>
+              {occ.stackTrace && (
+                <pre className="text-xs text-gray-500 bg-gray-50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40">
+                  {occ.stackTrace}
+                </pre>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+// ── Onglet Santé ───────────────────────────────────────────
+
+function HealthTab({ period, onViewJourney }) {
+  const [health,          setHealth]          = useState(null)
+  const [errorGroups,     setErrorGroups]     = useState([])
+  const [loading,         setLoading]         = useState(true)
+  const [selectedFingerprint, setSelectedFingerprint] = useState(null)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    const p = periodDates(period)
+    Promise.all([
+      getHealth(p),
+      getErrors(p),
+    ]).then(([h, groups]) => {
+      setHealth(h)
+      setErrorGroups(groups)
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [period])
+
+  useEffect(() => { load() }, [load])
+
+  if (loading) return <p className="text-sm text-gray-400 py-8 text-center">Chargement…</p>
+
+  return (
+    <div className="space-y-6">
+      {/* KPIs */}
+      {health && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Events (période)',  value: fmtNum(health.totalEvents7d),  color: 'text-indigo-600' },
+            { label: 'Erreurs (période)', value: fmtNum(health.totalErrors7d),  color: 'text-red-600'    },
+            { label: 'Backend',           value: fmtNum(health.backendErrors7d), color: 'text-orange-600' },
+            { label: 'Taux d\'erreur',    value: `${health.errorRatePercent} %`, color: health.errorRatePercent > 5 ? 'text-red-600' : 'text-green-600' },
+          ].map(kpi => (
+            <div key={kpi.label} className="bg-white rounded-xl shadow-sm p-4 text-center">
+              <p className={`text-2xl font-bold ${kpi.color}`}>{kpi.value}</p>
+              <p className="text-xs text-gray-500 mt-1">{kpi.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tableau des erreurs groupées */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">Erreurs groupées par type</h3>
+          <span className="text-xs text-gray-400">{errorGroups.length} groupe{errorGroups.length !== 1 ? 's' : ''}</span>
+        </div>
+        {errorGroups.length === 0
+          ? <p className="text-sm text-gray-400 text-center py-8">Aucune erreur sur cette période</p>
+          : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                    <th className="px-5 py-3 font-medium">Type</th>
+                    <th className="px-3 py-3 font-medium">Source</th>
+                    <th className="px-3 py-3 font-medium">Niveau</th>
+                    <th className="px-3 py-3 font-medium">Occurrences</th>
+                    <th className="px-3 py-3 font-medium">Dernier vu</th>
+                    <th className="px-3 py-3 font-medium">Message</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {errorGroups.map(g => (
+                    <tr
+                      key={g.fingerprint}
+                      className="hover:bg-gray-50 cursor-pointer transition"
+                      onClick={() => setSelectedFingerprint(g.fingerprint)}
+                    >
+                      <td className="px-5 py-3 font-mono text-xs text-gray-700 max-w-[200px] truncate">{g.errorType}</td>
+                      <td className="px-3 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[g.source] ?? ''}`}>{g.source}</span>
+                      </td>
+                      <td className={`px-3 py-3 text-xs font-semibold ${LEVEL_COLOR[g.level] ?? ''}`}>{g.level}</td>
+                      <td className="px-3 py-3 font-semibold text-gray-700">{fmtNum(g.count)}</td>
+                      <td className="px-3 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDate(g.lastSeen)}</td>
+                      <td className="px-3 py-3 text-xs text-gray-500 max-w-[250px] truncate">{g.message}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+      </div>
+
+      {selectedFingerprint && (
+        <ErrorDetailModal
+          fingerprint={selectedFingerprint}
+          onClose={() => setSelectedFingerprint(null)}
+          onViewJourney={onViewJourney}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Page principale ────────────────────────────────────────
+
+const TABS = [
+  { id: 'engagement', label: 'Engagement' },
+  { id: 'parcours',   label: 'Parcours'   },
+  { id: 'sante',      label: 'Santé'      },
+]
+
+const PERIODS = [
+  { label: '7 jours',  value: 7  },
+  { label: '30 jours', value: 30 },
+  { label: '90 jours', value: 90 },
+]
+
+import { useAnalytics } from '../../hooks/useAnalytics'
+
+export default function AnalyticsPage() {
+  const { trackPageView } = useAnalytics()
+  useEffect(() => { trackPageView('admin.analytics') }, [])
+  const [tab,              setTab]              = useState('engagement')
+  const [period,           setPeriod]           = useState(7)
+  const [journeySessionId, setJourneySessionId] = useState(null)
+
+  function handleViewJourney(sessionId) {
+    setJourneySessionId(sessionId)
+    setTab('parcours')
+  }
+  const [purging,     setPurging]     = useState(false)
+  const [purgeResult, setPurgeResult] = useState(null)
+  const [purgeError,  setPurgeError]  = useState(null)
+  const [showPurge,   setShowPurge]   = useState(false)
+  const [eventsDays,  setEventsDays]  = useState(90)
+  const [errorsDays,  setErrorsDays]  = useState(180)
+
+  async function handlePurge() {
+    setPurging(true)
+    setPurgeError(null)
+    setPurgeResult(null)
+    try {
+      const result = await purgeAnalytics({ eventsDays, errorsDays })
+      setPurgeResult(result)
+      setShowPurge(false)
+    } catch {
+      setPurgeError('Erreur lors de la suppression.')
+    } finally {
+      setPurging(false)
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Usage et santé technique de l'application</p>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Bouton nettoyage */}
+          <button
+            onClick={() => { setShowPurge(true); setPurgeResult(null); setPurgeError(null) }}
+            className="px-3 py-1.5 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition font-medium"
+          >
+            🗑 Nettoyer
+          </button>
+
+          {/* Sélecteur période (masqué pour l'onglet Parcours) */}
+          {tab !== 'parcours' && (
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              {PERIODS.map(p => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`px-3 py-1.5 text-sm rounded-md transition font-medium ${
+                    period === p.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Résultat purge */}
+      {purgeResult && (
+        <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center justify-between">
+          <span>
+            Nettoyage terminé — <strong>{purgeResult.deletedEvents}</strong> événement{purgeResult.deletedEvents !== 1 ? 's' : ''} et{' '}
+            <strong>{purgeResult.deletedErrors}</strong> erreur{purgeResult.deletedErrors !== 1 ? 's' : ''} supprimés
+            (antérieurs à {purgeResult.olderThanDays} jours).
+          </span>
+          <button onClick={() => setPurgeResult(null)} className="text-green-500 hover:text-green-700 ml-4">✕</button>
+        </div>
+      )}
+
+      {/* Modal confirmation purge */}
+      {showPurge && createPortal(
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowPurge(false)} />
+          <div className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md p-6 space-y-5">
+            <h3 className="text-base font-semibold text-gray-900">Nettoyer les données analytics</h3>
+            <p className="text-sm text-gray-500">
+              Supprime définitivement les événements et erreurs antérieurs aux seuils choisis.
+              Cette action est irréversible.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-600">Événements — garder les</label>
+                <select
+                  value={eventsDays}
+                  onChange={e => setEventsDays(Number(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition"
+                >
+                  {[7, 30, 60, 90, 180, 365].map(d => (
+                    <option key={d} value={d}>{d} derniers jours</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-600">Erreurs — garder les</label>
+                <select
+                  value={errorsDays}
+                  onChange={e => setErrorsDays(Number(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition"
+                >
+                  {[30, 60, 90, 180, 365].map(d => (
+                    <option key={d} value={d}>{d} derniers jours</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {purgeError && <p className="text-sm text-red-600">{purgeError}</p>}
+
+            <div className="flex gap-3 justify-end pt-1">
+              <button
+                onClick={() => setShowPurge(false)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handlePurge}
+                disabled={purging}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+              >
+                {purging ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Onglets */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-6">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`pb-3 text-sm font-medium border-b-2 transition ${
+                tab === t.id
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Contenu */}
+      {tab === 'engagement' && <EngagementTab period={period} />}
+      {tab === 'parcours'   && <JourneyTab initialSessionId={journeySessionId} />}
+      {tab === 'sante'      && <HealthTab period={period} onViewJourney={handleViewJourney} />}
+    </div>
+  )
+}
