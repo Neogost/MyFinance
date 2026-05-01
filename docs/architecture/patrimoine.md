@@ -701,6 +701,87 @@ Section fixe en bas de page expliquant : PRU, Plus-value %, % du patrimoine, bar
 
 ---
 
+## Export CSV
+
+L'utilisateur peut exporter ses données de patrimoine directement depuis la page Patrimoine via le bouton **Export CSV**.
+
+### Accès
+
+Bouton visible pour tous les utilisateurs (authentifiés). Aucun endpoint backend dédié — l'export est entièrement généré côté frontend à partir des données déjà chargées en mémoire et des ordres récupérés à la volée.
+
+### Fonctionnement
+
+Un modal s'ouvre avec deux options :
+
+| Mode | Comportement |
+|------|-------------|
+| **Tout exporter** | Toutes les positions actives (+ clôturées si option cochée) et leurs mouvements |
+| **Sélection** | L'utilisateur choisit les positions à inclure via des cases à cocher groupées par catégorie |
+
+Un toggle commun permet d'**inclure ou exclure les positions clôturées** dans les deux modes.
+
+### Fichiers générés
+
+Deux fichiers CSV sont téléchargés successivement :
+
+#### `positions_YYYY-MM-DD.csv`
+
+Une ligne par position sélectionnée.
+
+| Colonne | Source |
+|---------|--------|
+| Nom | `position.label` |
+| Partenaire | `position.partner` |
+| Catégorie | Label FR de `AssetCategory` |
+| Sous-type | `position.assetSubType` |
+| Enveloppe fiscale | Label FR de `FiscalEnvelope` |
+| Statut | Active / Clôturée |
+| Propriété | Label FR de `OwnershipType` |
+| ISIN | `position.instrument.isin` |
+| Ticker | `position.instrument.ticker` |
+| Devise | `position.instrument.currency` |
+| Quantité | `computed.quantity` |
+| Prix unitaire (€) | `computed.unitPriceEur` |
+| Valeur actuelle (€) | `computed.currentValueEur` |
+| Montant investi (€) | `computed.investedAmountEur` |
+| Plus-value (€) | `computed.capitalGainEur` |
+| Plus-value (%) | `computed.capitalGainPct` |
+| Date création | `position.createdAt` |
+| Date clôture | `position.closedAt` |
+
+#### `mouvements_YYYY-MM-DD.csv`
+
+Une ligne par mouvement (`PositionOrder`) de chaque position sélectionnée. Les ordres sont récupérés via `GET /api/positions/{id}/orders` au moment de l'export (requêtes parallèles).
+
+| Colonne | Source |
+|---------|--------|
+| Position | `position.label` |
+| Catégorie | Label FR de `AssetCategory` |
+| Type | Label FR de `OrderType` (Achat, Vente, Dépôt…) |
+| Date | `order.orderDate` |
+| Quantité | `order.quantity` |
+| Prix unitaire | `order.unitPrice` |
+| Montant (€) | `order.amount` |
+| Taux de change | `order.exchangeRate` |
+| Frais | `order.fees` |
+| Notes | `order.notes` |
+
+### Format
+
+- Séparateur : **point-virgule** (`;`) — compatible Excel FR sans configuration
+- Encodage : **UTF-8 avec BOM** (`﻿`) — garantit l'affichage correct des caractères accentués dans Excel
+- Décimales : virgule (`,`) — convention FR
+- Composant : `frontend/src/components/patrimoine/ExportCsvModal.jsx`
+
+### Analytics
+
+| Événement | Moment |
+|-----------|--------|
+| `BUTTON_CLICK patrimoine.export.open_csv` | Clic sur le bouton "Export CSV" |
+| `FEATURE_USE patrimoine.export.csv` | Export effectué avec succès (metadata : `mode`, `count`) |
+
+---
+
 ## Lien avec les Revenus Complémentaires
 
 Si `position.includeInIncomeProjection = true`, la projection mensuelle des intérêts de la position est rendue disponible pour alimenter le module **Revenus Complémentaires** (`OtherIncome`). Ce lien est optionnel et activable par position.

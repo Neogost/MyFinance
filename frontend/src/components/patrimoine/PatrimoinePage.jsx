@@ -23,6 +23,7 @@ import PatrimoineStrategyModal from './PatrimoineStrategyModal'
 import CategoryStrategyBar from './CategoryStrategyBar'
 import PatrimoineActionBar from './PatrimoineActionBar'
 import PatrimoineFilters from './PatrimoineFilters'
+import ExportCsvModal from './ExportCsvModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 
@@ -39,6 +40,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
   const [showSnapshots, setShowSnapshots]                   = useState(false)
   const [showStrategy, setShowStrategy]                     = useState(false)
+  const [showExportCsv, setShowExportCsv]                   = useState(false)
   const [targets, setTargets]                               = useState({})
   const [referentiel,      setReferentiel]      = useState(null)
   const [snExpensesSummary, setSnExpensesSummary] = useState(null)
@@ -349,6 +351,7 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
         onShowExchangeRates={() => setShowExchangeRateUpdate(true)}
         onShowPriceUpdate={() => setShowPriceUpdate(true)}
         onShowStrategy={() => setShowStrategy(true)}
+        onExportCsv={() => { trackEvent('BUTTON_CLICK', 'patrimoine.export.open_csv'); setShowExportCsv(true) }}
         onAddPosition={() => { trackEvent('BUTTON_CLICK', 'patrimoine.position.open_form'); setFormTarget(null) }}
       />
 
@@ -663,6 +666,14 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
           targets={targets}
           onClose={() => setShowStrategy(false)}
           onSave={setTargets}
+        />
+      )}
+
+      {showExportCsv && (
+        <ExportCsvModal
+          positions={positions}
+          onClose={() => setShowExportCsv(false)}
+          onTrackEvent={trackEvent}
         />
       )}
     </div>

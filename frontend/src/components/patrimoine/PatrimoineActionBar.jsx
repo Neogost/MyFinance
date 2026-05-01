@@ -4,6 +4,7 @@ export default function PatrimoineActionBar({
   onShowExchangeRates,
   onShowPriceUpdate,
   onShowStrategy,
+  onExportCsv,
   onAddPosition,
 }) {
   return (
@@ -29,6 +30,10 @@ export default function PatrimoineActionBar({
             Mettre à jour les cours
           </button>
         )}
+        <button onClick={onExportCsv}
+          className="px-3 md:px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-50 transition">
+          Export CSV
+        </button>
         <button onClick={onShowStrategy}
           className="px-3 md:px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-50 transition">
           Stratégie
