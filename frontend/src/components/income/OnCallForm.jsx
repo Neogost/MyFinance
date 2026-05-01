@@ -68,7 +68,7 @@ export default function OnCallForm({ onCall, onSubmit, onCancel }) {
           </div>
 
           {annualPreview != null && (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 text-sm text-indigo-700">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300">
               Revenu annuel estimé : <span className="font-semibold amount">
                 {annualPreview.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
               </span>

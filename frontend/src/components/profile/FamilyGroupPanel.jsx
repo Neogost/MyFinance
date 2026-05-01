@@ -277,7 +277,7 @@ export default function FamilyGroupPanel({ onGroupChange }) {
                     <MemberBadge memberId={m.id} />
                     <span className="text-sm text-gray-800">{m.firstName} {m.lastName}</span>
                     {m.id === group.owner.id && (
-                      <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">Owner</span>
+                      <span className="text-xs bg-indigo-100 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-semibold">Owner</span>
                     )}
                   </div>
                   {isOwner && m.id !== group.owner.id && (

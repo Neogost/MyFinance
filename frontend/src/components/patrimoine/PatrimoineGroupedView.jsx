@@ -40,17 +40,17 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
     <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
       {isLiquidite ? (
         <button onClick={() => onUpdateBalance(position)}
-          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
           Solde
         </button>
       ) : isImmoPhysique ? (
         <button onClick={() => onUpdateEstimatedValue(position)}
-          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
           Valeur
         </button>
       ) : (
         <button onClick={() => onViewOrders(position)}
-          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+          className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
           Mvts
         </button>
       )}
@@ -73,7 +73,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 }
 
-function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false }) {
+function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false, showTaux = false }) {
   const fiscal        = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c             = position.computed ?? {}
   const gain          = parseFloat(c.capitalGainEur ?? 0)
@@ -100,7 +100,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
               {stale && (
                 <span
                   title={`Cours non mis à jour depuis plus de 30 jours (${new Date(position.instrument.lastPriceUpdatedAt).toLocaleDateString('fr-FR')})`}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 whitespace-nowrap"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 dark:text-orange-300 whitespace-nowrap"
                 >
                   Cours obsolète
                 </span>
@@ -130,7 +130,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
             </span>
           )}
           {isImmo && position.ownershipType && position.ownershipType !== 'PLEINE_PROPRIETE' && (
-            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:text-purple-300">
               {OWNERSHIP_LABEL[position.ownershipType] ?? position.ownershipType}
             </span>
           )}
@@ -171,12 +171,14 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
         )}
       </td>
 
-      {/* Taux annuel */}
-      <td className="hidden md:table-cell py-2 px-2 text-right">
-        {position.annualRate != null && (
-          <span className="text-xs font-medium text-gray-500">{position.annualRate} %/an</span>
-        )}
-      </td>
+      {/* Taux annuel (LIVRET uniquement) */}
+      {showTaux && (
+        <td className="hidden md:table-cell py-2 px-2 text-right">
+          {position.annualRate != null && (
+            <span className="text-xs font-medium text-gray-500">{position.annualRate} %/an</span>
+          )}
+        </td>
+      )}
 
       {/* Actions */}
       <td className="py-2 pl-2 pr-3">
@@ -238,6 +240,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
         const pct         = grandTotal > 0 ? (total / grandTotal) * 100 : 0
         const isCollapsed = collapsed.has(partner)
         const cats        = CATEGORY_ORDER.filter(cat => byCategory[cat])
+        const hasTaux     = cats.includes('LIVRET')
 
         return (
           <div key={partner} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -273,7 +276,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                     <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Valeur actuelle</th>
                     <th className="hidden md:table-cell text-right text-xs text-gray-400 font-normal py-1.5 px-2">Investi</th>
                     <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Plus-value</th>
-                    <th className="hidden md:table-cell text-right text-xs text-gray-400 font-normal py-1.5 px-2">Taux</th>
+                    {hasTaux && <th className="hidden md:table-cell text-right text-xs text-gray-400 font-normal py-1.5 px-2">Taux</th>}
                     <th className="py-1.5 px-3" />
                   </tr>
                 </thead>
@@ -289,7 +292,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                       <Fragment key={cat}>
                         {/* Sous-en-tête catégorie */}
                         <tr className="bg-gray-50/70 border-y border-gray-100">
-                          <td colSpan={7} className="py-1.5 pl-6 pr-4">
+                          <td colSpan={hasTaux ? 7 : 6} className="py-1.5 pl-6 pr-4">
                             <div className="flex items-center justify-between">
                               <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                 <span>{meta.icon}</span>
@@ -317,6 +320,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                             onUpdateEstimatedValue={onUpdateEstimatedValue}
                             onViewOrders={onViewOrders}
                             readOnly={readOnly}
+                            showTaux={hasTaux && position.category === 'LIVRET'}
                           />
                         ))}
                       </Fragment>
@@ -348,7 +352,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                         </div>
                       )}
                     </td>
-                    <td colSpan={2} />
+                    <td colSpan={hasTaux ? 2 : 1} />
                   </tr>
                 </tbody>
               </table>
@@ -402,7 +406,7 @@ export function PatrimoineLegend() {
           Représentation visuelle du poids du partenaire dans l'ensemble du patrimoine affiché.
           Triés par valeur décroissante.
         </LegendItem>
-        <LegendItem term={<><span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600">Cours obsolète</span></>}>
+        <LegendItem term={<><span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 dark:text-orange-300">Cours obsolète</span></>}>
           Le dernier cours connu de l'instrument date de plus de 30 jours.
           La valeur actuelle affichée peut ne plus refléter le marché — pensez à mettre à jour les cours.
         </LegendItem>
@@ -414,9 +418,9 @@ export function PatrimoineLegend() {
           Avancement vers l'objectif patrimonial défini par catégorie (bouton « Stratégie & Objectifs »).
           Basée sur vos propres positions, même en mode Foyer.
           <span className="flex flex-wrap gap-2 mt-1">
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">En cours</span>
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">Atteint</span>
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold">Dépassé</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-semibold">En cours</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-semibold">Atteint</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:text-red-300 font-semibold">Dépassé</span>
           </span>
         </LegendItem>
         <LegendItem term="Indicateur Matelas (cartes LIVRET & LIQUIDITE)">

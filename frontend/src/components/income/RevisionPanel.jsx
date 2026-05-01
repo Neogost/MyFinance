@@ -78,7 +78,7 @@ export default function RevisionPanel({ contractId, contractType, activeRevision
                   <td className="px-3 py-2.5 font-medium text-gray-800">
                     {r.effectiveDate}
                     {r.id === activeRevisionId && (
-                      <span className="ml-2 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">Active</span>
+                      <span className="ml-2 px-1.5 py-0.5 bg-indigo-100 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-full">Active</span>
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{r.label ?? '—'}</td>

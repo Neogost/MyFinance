@@ -89,8 +89,8 @@ export default function BonusPanel({ contractId, onBonusChange }) {
                 <tr key={bonus.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
                   <td className="px-3 py-2.5">
                     {bonus.type === 'ANNUELLE'
-                      ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Annuelle</span>
-                      : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Exceptionnelle</span>
+                      ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:text-blue-300">Annuelle</span>
+                      : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:text-amber-300">Exceptionnelle</span>
                     }
                   </td>
                   <td className="px-3 py-2.5 font-medium text-gray-800">{bonus.label}</td>

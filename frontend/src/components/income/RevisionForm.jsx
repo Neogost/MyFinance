@@ -70,8 +70,8 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
-      <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-gray-900 mb-6">
           {isEdit ? 'Modifier la révision' : 'Ajouter une révision salariale'}
         </h2>
 
@@ -94,7 +94,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
                 className={inputCls}
               />
               {grossPreview != null ? (
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-2">
+                <p className="text-xs text-indigo-600 bg-indigo-50 rounded-lg px-3 py-2">
                   Nouveau traitement brut annuel :{' '}
                   <strong>
                     {grossPreview.gross.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
@@ -121,7 +121,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
             <label className={labelCls}>Libellé</label>
             <input
               name="label" type="text" value={form.label} onChange={handleChange}
-              placeholder={isPublic ? 'ex : Avancement d\'échelon 2025, Changement de grade…' : 'ex : Augmentation annuelle 2025, Promotion…'}
+              placeholder={isPublic ? "ex : Avancement d'échelon 2025, Changement de grade…" : 'ex : Augmentation annuelle 2025, Promotion…'}
               className={inputCls}
             />
           </div>
@@ -129,7 +129,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex justify-end gap-3 mt-2">
-            <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-gray-400 transition">
+            <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition">
               Annuler
             </button>
             <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">

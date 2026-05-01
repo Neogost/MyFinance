@@ -614,8 +614,8 @@ export default function LombardSimulatorPage() {
                       {ltvComparison.map(s => (
                         <td key={s.name} className="py-2 px-2 text-right">
                           {s.exceeded
-                            ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">✗ Dépasse</span>
-                            : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ OK</span>}
+                            ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:text-red-300">✗ Dépasse</span>
+                            : <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:text-emerald-300">✓ OK</span>}
                         </td>
                       ))}
                     </tr>

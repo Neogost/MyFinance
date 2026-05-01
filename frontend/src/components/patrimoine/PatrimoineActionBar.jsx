@@ -19,13 +19,13 @@ export default function PatrimoineActionBar({
         )}
         {isAdmin && (
           <button onClick={onShowExchangeRates}
-            className="hidden md:inline-flex px-4 py-2 border border-teal-300 text-teal-700 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
+            className="hidden md:inline-flex px-4 py-2 border border-teal-300 text-teal-700 dark:text-teal-300 bg-teal-50 rounded-lg text-sm font-semibold hover:bg-teal-100 transition">
             Taux de change
           </button>
         )}
         {isAdmin && (
           <button onClick={onShowPriceUpdate}
-            className="hidden md:inline-flex px-4 py-2 border border-indigo-300 text-indigo-700 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
+            className="hidden md:inline-flex px-4 py-2 border border-indigo-300 text-indigo-700 dark:text-indigo-300 bg-indigo-50 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition">
             Mettre à jour les cours
           </button>
         )}

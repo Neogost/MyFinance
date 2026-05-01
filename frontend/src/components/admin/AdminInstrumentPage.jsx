@@ -139,7 +139,7 @@ export default function AdminInstrumentPage() {
           <button
             onClick={handleAllocationUpdate}
             disabled={allocating}
-            className="flex items-center gap-2 px-3 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-100 disabled:opacity-60 transition"
+            className="flex items-center gap-2 px-3 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-semibold hover:bg-emerald-100 disabled:opacity-60 transition"
           >
             {allocating
               ? <><span className="animate-spin inline-block">⟳</span> Allocations…</>
@@ -149,7 +149,7 @@ export default function AdminInstrumentPage() {
           <button
             onClick={handleUpdate}
             disabled={updating}
-            className="flex items-center gap-2 px-3 py-2 border border-indigo-300 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-100 disabled:opacity-60 transition"
+            className="flex items-center gap-2 px-3 py-2 border border-indigo-300 bg-indigo-50 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-100 disabled:opacity-60 transition"
           >
             {updating
               ? <><span className="animate-spin inline-block">⟳</span> Mise à jour…</>

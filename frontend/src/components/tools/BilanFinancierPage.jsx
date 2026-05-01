@@ -68,7 +68,7 @@ function BilanRow({ label, amount, badge, dimmed = false }) {
       <td className={`px-3 md:px-5 py-2.5 text-sm ${dimmed ? 'text-gray-400 italic' : 'text-gray-800'}`}>
         {label}
         {badge && (
-          <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">
+          <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:text-amber-300 rounded-full font-medium">
             {badge}
           </span>
         )}

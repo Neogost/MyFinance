@@ -247,7 +247,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
       </div>
 
       {contract.annualNetAfterTax == null && (
-        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-xs text-amber-700">
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-xs text-amber-700 dark:text-amber-300">
           Le net d'impôt n'est pas calculé car votre profil fiscal (quotient familial) n'est pas renseigné.
           Complétez-le dans <span className="font-semibold">Profil &gt; Profil fiscal</span>.
         </div>
@@ -255,7 +255,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
 
       {contract.mealVoucherAmount > 0 && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-2">
             Tickets restaurant <span className="font-normal normal-case">(base 19 j/mois)</span>
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
@@ -265,11 +265,11 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
             </div>
             <div>
               <span className="text-gray-500">Votre part ({contract.mealVoucherEmployeeRate}%) : </span>
-              <span className="font-semibold text-red-600 amount">−{fmt(contract.employeeMonthlyMealVoucherCost)}</span>
+              <span className="font-semibold text-red-600 dark:text-red-400 amount">−{fmt(contract.employeeMonthlyMealVoucherCost)}</span>
             </div>
             <div>
               <span className="text-gray-500">Part employeur : </span>
-              <span className="font-semibold text-green-600 amount">+{fmt(contract.employerMonthlyMealVoucherCost)}</span>
+              <span className="font-semibold text-green-600 dark:text-green-400 amount">+{fmt(contract.employerMonthlyMealVoucherCost)}</span>
             </div>
           </div>
         </div>
@@ -277,20 +277,20 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
 
       {onCalls.length > 0 && (
         <div className="mt-3 bg-violet-50 border border-violet-200 rounded-lg p-4">
-          <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-2">
             Astreintes <span className="font-normal normal-case">(revenu brut annuel estimé)</span>
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             {onCalls.map(oc => (
               <div key={oc.id}>
                 <span className="text-gray-500">{oc.estimatedWeeksPerYear} sem. × {fmt(oc.weeklyFlatRate)} : </span>
-                <span className="font-semibold text-violet-700 amount">+{fmt(oc.annualOnCallIncome)} / an</span>
+                <span className="font-semibold text-violet-700 dark:text-violet-300 amount">+{fmt(oc.annualOnCallIncome)} / an</span>
               </div>
             ))}
             {onCalls.length > 1 && (
               <div>
                 <span className="text-gray-500">Total : </span>
-                <span className="font-semibold text-violet-700 amount">+{fmt(totalAnnualOnCalls)} / an</span>
+                <span className="font-semibold text-violet-700 dark:text-violet-300 amount">+{fmt(totalAnnualOnCalls)} / an</span>
               </div>
             )}
           </div>
@@ -299,14 +299,14 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
 
       {benefits.length > 0 && (
         <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide mb-2">
             Avantages en nature <span className="font-normal normal-case">(inclus dans le net d'impôt)</span>
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             {benefits.map(b => (
               <div key={b.id}>
                 <span className="text-gray-500">{b.label} : </span>
-                <span className="font-semibold text-green-700 amount">+{fmt(b.monthlyAmount)} / mois</span>
+                <span className="font-semibold text-green-700 dark:text-green-300 amount">+{fmt(b.monthlyAmount)} / mois</span>
               </div>
             ))}
           </div>

@@ -54,9 +54,12 @@ export default function PaySlipPanel({ contractId, projection }) {
     if (value == null) return null
     const positive = value >= 0
     return (
-      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-        positive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+      <span className={`inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded ${
+        positive
+          ? 'bg-green-100 text-green-700 dark:text-green-300'
+          : 'bg-red-100 text-red-700 dark:text-red-300'
       }`}>
+        <span aria-hidden="true">{positive ? '▲' : '▼'}</span>
         {positive ? '+' : ''}{value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
       </span>
     )

@@ -227,7 +227,7 @@ export default function ManualSnapshotModal({ users, snapshot, initialUserId, on
                             )}
                             <p className={`font-medium ${isClosed ? 'text-gray-500' : 'text-gray-900'}`}>{pos.label}</p>
                             {isClosed && (
-                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 text-xs rounded font-medium">Fermée</span>
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 text-xs rounded font-medium">Fermée</span>
                             )}
                           </div>
                           <p className="text-xs text-gray-400">

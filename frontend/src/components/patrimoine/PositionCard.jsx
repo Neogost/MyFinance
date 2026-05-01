@@ -140,17 +140,17 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
             <>
               {isLiquidite ? (
                 <button onClick={() => onUpdateBalance(position)}
-                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition">
                   Màj solde
                 </button>
               ) : isImmoPhysique ? (
                 <button onClick={() => onUpdateEstimatedValue(position)}
-                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition">
                   Màj valeur
                 </button>
               ) : (
                 <button onClick={() => onViewOrders(position)}
-                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition">
+                  className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition">
                   Mouvements
                 </button>
               )}

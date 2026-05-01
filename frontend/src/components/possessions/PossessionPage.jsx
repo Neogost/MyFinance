@@ -7,12 +7,12 @@ import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useCrud } from '../../hooks/useCrud'
 
 const CATEGORY_META = {
-  VEHICULE:       { label: 'Véhicule',                 color: 'bg-indigo-100 text-indigo-700',   dot: 'bg-indigo-400' },
-  INFORMATIQUE:   { label: 'Informatique & High-tech',  color: 'bg-cyan-100 text-cyan-700',       dot: 'bg-cyan-400' },
-  ELECTROMENAGER: { label: 'Électroménager & Maison',   color: 'bg-amber-100 text-amber-700',     dot: 'bg-amber-400' },
-  MOBILIER:       { label: 'Mobilier & Décoration',     color: 'bg-lime-100 text-lime-700',       dot: 'bg-lime-500' },
-  COLLECTION:     { label: 'Collection',                color: 'bg-pink-100 text-pink-700',       dot: 'bg-pink-400' },
-  LOISIRS:        { label: 'Loisirs & Sport',           color: 'bg-teal-100 text-teal-700',       dot: 'bg-teal-400' },
+  VEHICULE:       { label: 'Véhicule',                 color: 'bg-indigo-100 text-indigo-700 dark:text-indigo-300',   dot: 'bg-indigo-400' },
+  INFORMATIQUE:   { label: 'Informatique & High-tech',  color: 'bg-cyan-100 text-cyan-700',                            dot: 'bg-cyan-400' },
+  ELECTROMENAGER: { label: 'Électroménager & Maison',   color: 'bg-amber-100 text-amber-700 dark:text-amber-300',     dot: 'bg-amber-400' },
+  MOBILIER:       { label: 'Mobilier & Décoration',     color: 'bg-lime-100 text-lime-700',                            dot: 'bg-lime-500' },
+  COLLECTION:     { label: 'Collection',                color: 'bg-pink-100 text-pink-700',                            dot: 'bg-pink-400' },
+  LOISIRS:        { label: 'Loisirs & Sport',           color: 'bg-teal-100 text-teal-700 dark:text-teal-300',        dot: 'bg-teal-400' },
   AUTRE:          { label: 'Autre',                     color: 'bg-gray-100 text-gray-600',       dot: 'bg-gray-400' },
 }
 
@@ -200,7 +200,7 @@ export default function PossessionPage() {
                             {fmt(p.effectiveCurrentValue)} €
                           </span>
                           {p.isManualOverride && (
-                            <span className="ml-1 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Manuel</span>
+                            <span className="ml-1 text-xs bg-green-100 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full">Manuel</span>
                           )}
                         </td>
                         <td className="hidden md:table-cell px-4 py-3 text-right">

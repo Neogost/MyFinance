@@ -128,7 +128,7 @@ export default function TaxSimulatorPage() {
                   />
                   <span className="text-sm text-gray-700 flex-1">{income.label}</span>
                   {income.specificTaxRate != null && (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:text-orange-300">
                       Taux fixe {income.specificTaxRate}%
                     </span>
                   )}

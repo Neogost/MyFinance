@@ -6,9 +6,9 @@ import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useCrud } from '../../hooks/useCrud'
 
 const TYPE_LABELS = {
-  LOCATIF:      { label: 'Locatif',       color: 'bg-blue-100 text-blue-700' },
-  DIVIDENDE:    { label: 'Dividende',     color: 'bg-violet-100 text-violet-700' },
-  AIDE_SOCIALE: { label: 'Aide sociale',  color: 'bg-green-100 text-green-700' },
+  LOCATIF:      { label: 'Locatif',       color: 'bg-blue-100 text-blue-700 dark:text-blue-300' },
+  DIVIDENDE:    { label: 'Dividende',     color: 'bg-violet-100 text-violet-700 dark:text-violet-300' },
+  AIDE_SOCIALE: { label: 'Aide sociale',  color: 'bg-green-100 text-green-700 dark:text-green-300' },
   AUTRE:        { label: 'Autre',         color: 'bg-gray-100 text-gray-600' },
 }
 
@@ -122,9 +122,9 @@ export default function OtherIncomePage() {
                       {income.isTaxable === false ? (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Non imposable</span>
                       ) : income.specificTaxRate != null ? (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Taux fixe {income.specificTaxRate}%</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:text-orange-300">Taux fixe {income.specificTaxRate}%</span>
                       ) : (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Barème</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:text-green-300">Barème</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 amount whitespace-nowrap">

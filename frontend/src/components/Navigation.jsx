@@ -324,7 +324,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
             {/* Identité utilisateur */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 mb-1">
-              <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 dark:text-indigo-300 font-bold text-sm flex items-center justify-center shrink-0">
                 {user.firstName?.[0]}{user.lastName?.[0]}
               </div>
               <div className="min-w-0">

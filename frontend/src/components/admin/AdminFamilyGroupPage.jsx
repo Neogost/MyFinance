@@ -95,7 +95,7 @@ export default function AdminFamilyGroupPage() {
                       {group.members?.length ?? 0} membre{(group.members?.length ?? 0) !== 1 ? 's' : ''}
                     </span>
                     {group.invitations?.filter(i => i.status === 'PENDING').length > 0 && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold shrink-0">
+                      <span className="text-xs bg-amber-100 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-semibold shrink-0">
                         {group.invitations.filter(i => i.status === 'PENDING').length} invitation{group.invitations.filter(i => i.status === 'PENDING').length > 1 ? 's' : ''} en attente
                       </span>
                     )}
@@ -129,7 +129,7 @@ export default function AdminFamilyGroupPage() {
                             <span className="text-sm text-gray-800 truncate">{m.firstName} {m.lastName}</span>
                             <span className="hidden sm:inline text-xs text-gray-400 shrink-0">({m.login})</span>
                             {m.id === group.owner.id && (
-                              <span className="text-xs bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold shrink-0">Owner</span>
+                              <span className="text-xs bg-indigo-100 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-semibold shrink-0">Owner</span>
                             )}
                           </div>
                           <button
@@ -155,8 +155,8 @@ export default function AdminFamilyGroupPage() {
                               <span className="hidden sm:inline text-gray-400"> ({inv.invitedUser.login})</span>
                             </span>
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              inv.status === 'PENDING'  ? 'bg-amber-100 text-amber-700'  :
-                              inv.status === 'ACCEPTED' ? 'bg-green-100 text-green-700'  :
+                              inv.status === 'PENDING'  ? 'bg-amber-100 text-amber-700 dark:text-amber-300'  :
+                              inv.status === 'ACCEPTED' ? 'bg-green-100 text-green-700 dark:text-green-300'  :
                                                           'bg-gray-100  text-gray-500'
                             }`}>
                               {inv.status === 'PENDING' ? 'En attente' : inv.status === 'ACCEPTED' ? 'Acceptée' : 'Refusée'}
