@@ -73,8 +73,8 @@ export default function SalaryContractFormPrivate({ contract, onSubmit, onCancel
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
-      <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl p-8 w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-bold text-gray-900 mb-6">
           🏢 {isEdit ? 'Modifier le contrat' : 'Nouveau contrat — Entreprise privée'}
         </h2>
 
@@ -125,12 +125,12 @@ export default function SalaryContractFormPrivate({ contract, onSubmit, onCancel
             </div>
           </div>
 
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 flex flex-col gap-3">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Cotisations salariales</p>
+          <div className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cotisations salariales</p>
 
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" name="isCadre" checked={form.isCadre} onChange={handleChange} className="accent-indigo-600 w-4 h-4" />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Statut cadre <span className="text-gray-400 font-normal">(APEC applicable)</span></span>
+              <span className="text-sm text-gray-700">Statut cadre <span className="text-gray-400 font-normal">(APEC applicable)</span></span>
             </label>
 
             <div className="flex flex-col gap-1.5">
@@ -144,7 +144,7 @@ export default function SalaryContractFormPrivate({ contract, onSubmit, onCancel
           {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
 
           <div className="flex justify-end gap-3 mt-2">
-            <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:border-gray-400 transition">
+            <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:border-gray-400 transition">
               Annuler
             </button>
             <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition">
