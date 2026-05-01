@@ -1,8 +1,8 @@
 # Notes de version
 
-## v1.5.0 — 29 avril 2026 — Comparateur d'enveloppes fiscales + Simulateur Retraite + Responsive mobile
+## v1.5.0 — 1 mai 2026 — Simulateurs, responsive mobile et améliorations revenus
 
-> Cette version introduit deux nouveaux simulateurs patrimoniaux et une mise en conformité complète de l'application sur mobile (iPhone SE 375 px).
+> Cette version introduit deux nouveaux simulateurs patrimoniaux, une mise en conformité complète sur mobile, des améliorations significatives de la gestion des revenus salariaux, et un audit complet du mode sombre.
 
 ### ✨ Nouveautés
 
@@ -33,17 +33,35 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - **Bloc PER** : capital cible et versement mensuel calculés pour combler le delta entre pension et objectif (taux de remplacement % ou montant mensuel fixe)
 - **Tooltips pédagogiques** sur tous les concepts : trimestres, SAM, PASS, Agirc-Arrco, coefficient de solidarité, RAFP, taux de remplacement, règle des 4 %…
 
-### 🔧 Corrections & améliorations
+#### Primes mensuelles (Revenus → Salariat → Primes)
+
+Un nouveau type de prime **Mensuelle** est disponible en complément des primes Annuelles et Exceptionnelles.
+
+- **Montant mensuel brut** saisi directement (ex. : prime transport, astreinte mensuelle)
+- **Période de validité** : date de début obligatoire + date de fin optionnelle — si aucune date de fin, la prime est considérée comme indéfinie
+- **Indicateur actif/terminé** : point vert si la prime est en cours, gris si expirée
+- **Projection automatique** : les primes mensuelles actives sont intégrées dans les projections de revenus (équivalent annuel ×12) ; les primes expirées sont exclues
+- **Totaux séparés** dans le panneau primes : total annuel (primes Annuelles) et total mensuel (primes Mensuelles)
+
+### 🔧 Améliorations
 
 #### Responsive mobile — mise en conformité complète
 - **Modals** : pattern *bottom drawer* sur toutes les modals (glisse depuis le bas sur mobile, centrée sur desktop) avec `z-60` au-dessus de la navigation
 - **Tableaux** : scroll horizontal + colonnes secondaires masquées sur mobile sur toutes les pages
 - **Formulaires** : champs empilés en 1 colonne sur mobile (fin de la mise en page serrée sur petit écran)
 - **Simulateurs** : layouts 2 panneaux corrigés, sections "Comparaison de scénarios" masquées quand inutilisables sur mobile
-- **Dark mode** : le mode sombre répond désormais uniquement au toggle de l'application — fin du changement automatique selon l'heure du jour (OS scheduled dark mode)
 - **Montants** : `fmt()` limité à 2 décimales (plus de "2 995,081 €")
 - **Simulateur de crise** — Impact par catégorie : labels longs sur ligne dédiée, montants compacts (`k€`)
 - **Widget Matelas de sécurité** : les montants répondent désormais au toggle "masquer les valeurs"
+
+#### Dark mode — contraste et accessibilité
+- **Badges colorés** : les textes sur fonds colorés translucides (indigo, amber, green, red, blue, orange, teal, violet, purple) sont maintenant lisibles en mode sombre — `dark:text-{color}-300` sur tous les badges concernés dans 16 fichiers
+- **Accessibilité daltoniens** : les badges d'écart dans les bulletins de paie affichent désormais ▲ (positif) et ▼ (négatif) en complément de la couleur rouge/vert
+- **Toggle React uniquement** : le mode sombre répond désormais uniquement au toggle de l'application — fin du changement automatique selon la préférence OS (OS scheduled dark mode)
+
+#### Bulletins de paie — comparaison historique
+- Les colonnes **« vs théorique »** (brut et net) comparent désormais avec le salaire **en vigueur au moment du bulletin**, et non plus avec le salaire actuel du contrat
+- Pour chaque bulletin, la révision salariale active à sa date est automatiquement sélectionnée — si aucune révision n'était en vigueur, c'est le salaire de base du contrat qui sert de référence
 
 #### Landing page — refonte visuelle
 - **Screenshot hero** : capture du tableau de bord intégrée sous les boutons d'action
@@ -61,6 +79,12 @@ Estimez votre future pension et planifiez l'effort d'épargne PER pour combler l
 - Icônes SVG officielles LinkedIn et GitHub (couleurs de marque)
 - Bouton "← Retour" dans le header et lien "← Accueil" dans le footer
 - Padding adaptatif `p-5 md:p-8` sur mobile
+
+### 🐛 Corrections
+
+- **Projections contrats PUBLIC avec révision d'indice** : l'indice majoré (IM) de la révision active était ignoré — le calcul utilisait toujours l'IM de base du contrat même après un avancement d'échelon
+- **Modales de contrat salarial en dark mode** : les modales "Modifier le contrat" (privé, public, choix du type) apparaissaient en blanc en mode sombre à cause d'une classe `dark:bg-gray-800` qui écrasait les variables CSS du thème
+- **Révision salariale** : la modale de création/modification apparaissait également en blanc en dark mode (même cause)
 
 ---
 
