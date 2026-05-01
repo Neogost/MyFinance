@@ -87,6 +87,12 @@ public class User implements UserDetails {
 
     private Double safetyNetAmount; // Utilisé pour FIXED_AMOUNT
 
+    // ── Analytics ─────────────────────────────────────────────
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean analyticsOptOut = false;
+
     // ── Regroupement familial ──────────────────────────────────
 
     @ToString.Exclude

@@ -149,6 +149,13 @@ public class ProfileService {
         return f != null ? f : 0f;
     }
 
+    public UserDto updateAnalyticsOptOut(User currentUser, boolean optOut) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+        user.setAnalyticsOptOut(optOut);
+        return UserDto.from(userRepository.save(user));
+    }
+
     private void validate(UpdateSafetyNetRequest request) {
         if (request.safetyNetMode() == null) return;
 

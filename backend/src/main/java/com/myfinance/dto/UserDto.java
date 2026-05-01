@@ -35,7 +35,8 @@ public record UserDto(
         Float realExpensesDoubleResidence,
         Float realExpensesOther,
         Integer realExpensesTeleworkDays,
-        Float realExpensesTeleworkEmployerDaily
+        Float realExpensesTeleworkEmployerDaily,
+        boolean analyticsOptOut
 ) {
     public static UserDto from(User user) {
         return new UserDto(
@@ -67,7 +68,8 @@ public record UserDto(
                 user.getRealExpensesDoubleResidence(),
                 user.getRealExpensesOther(),
                 user.getRealExpensesTeleworkDays(),
-                user.getRealExpensesTeleworkEmployerDaily()
+                user.getRealExpensesTeleworkEmployerDaily(),
+                user.isAnalyticsOptOut()
         );
     }
 }

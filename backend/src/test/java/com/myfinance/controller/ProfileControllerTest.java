@@ -39,13 +39,13 @@ class ProfileControllerTest {
     private UserDto dto(SafetyNetMode mode, Double months, Double amount) {
         return new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 null, null, null, null, mode, months, amount, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, false);
     }
 
     private UserDto dtoPersonal(String birthPlace, String birthPostalCode, String jobTitle) {
         return new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 null, null, null, null, null, null, null, birthPlace, birthPostalCode, jobTitle,
-                null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, false);
     }
 
     // ── PUT /api/profile/safety-net ────────────────────────────
@@ -135,7 +135,7 @@ class ProfileControllerTest {
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
         UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 1.0f, false, 1400f, null, null, null, null, null, null, null,
-                null, null, null, 600f, null, null, null, 300f, null, null, null, null, null);
+                null, null, null, 600f, null, null, null, 300f, null, null, null, null, null, false);
         when(profileService.updateFiscalProfile(any(), any())).thenReturn(dto);
 
         mockMvc.perform(put("/api/profile/fiscal")
@@ -154,7 +154,7 @@ class ProfileControllerTest {
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
         UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 2.0f, true, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, false);
         when(profileService.updateFiscalProfile(any(), any())).thenReturn(dto);
 
         mockMvc.perform(put("/api/profile/fiscal")

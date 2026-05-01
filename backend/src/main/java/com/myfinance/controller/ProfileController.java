@@ -55,4 +55,14 @@ public class ProfileController {
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(profileService.updatePersonalInfo(currentUser, request));
     }
+
+    @Operation(summary = "Activer ou désactiver le tracking analytics")
+    @ApiResponse(responseCode = "200", description = "Préférence mise à jour",
+        content = @Content(schema = @Schema(implementation = UserDto.class)))
+    @PutMapping("/analytics-opt-out")
+    public ResponseEntity<UserDto> updateAnalyticsOptOut(
+            @RequestParam boolean optOut,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(profileService.updateAnalyticsOptOut(currentUser, optOut));
+    }
 }
