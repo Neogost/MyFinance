@@ -50,4 +50,19 @@ public interface AnalyticsEventRepository extends JpaRepository<AnalyticsEvent, 
     @Query(value = "SELECT COUNT(*) FROM analytics_events WHERE created_at >= :fromMs AND created_at <= :toMs",
            nativeQuery = true)
     long countByCreatedAtBetween(@Param("fromMs") long fromMs, @Param("toMs") long toMs);
+
+    @Query(value = "SELECT COUNT(DISTINCT session_id) FROM analytics_events WHERE created_at >= :fromMs AND created_at <= :toMs",
+           nativeQuery = true)
+    long countDistinctSessionsByCreatedAtBetween(@Param("fromMs") long fromMs, @Param("toMs") long toMs);
+
+    @Query(value = """
+        SELECT strftime('%Y-%m-%d', created_at/1000, 'unixepoch') as day,
+               COUNT(DISTINCT session_id) as sessions,
+               COUNT(id) as events
+        FROM analytics_events
+        WHERE created_at >= :fromMs AND created_at <= :toMs
+        GROUP BY day
+        ORDER BY day ASC
+    """, nativeQuery = true)
+    List<Object[]> findDailyRetention(@Param("fromMs") long fromMs, @Param("toMs") long toMs);
 }

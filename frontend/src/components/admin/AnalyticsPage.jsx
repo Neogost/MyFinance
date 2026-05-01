@@ -1,16 +1,92 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { getTopEvents, getTimeline, getJourney, getJourneyErrors, getErrors, getErrorOccurrences, getHealth, purgeAnalytics } from '../../api/analytics'
+import { getEngagementSummary, getRetention, getTopEvents, getTimeline, getJourney, getJourneyErrors, getErrors, getErrorOccurrences, getHealth, purgeAnalytics } from '../../api/analytics'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid, BarChart, Bar } from 'recharts'
 
 // ── Helpers ────────────────────────────────────────────────
 
 function periodDates(days) {
   const to   = new Date()
   const from = new Date(Date.now() - days * 86400000)
-  return {
-    from: from.toISOString().slice(0, 19),
-    to:   to.toISOString().slice(0, 19),
-  }
+  return { from: from.toISOString().slice(0, 19), to: to.toISOString().slice(0, 19) }
+}
+
+function previousPeriodDates(days) {
+  const to   = new Date(Date.now() - days * 86400000)
+  const from = new Date(Date.now() - 2 * days * 86400000)
+  return { from: from.toISOString().slice(0, 19), to: to.toISOString().slice(0, 19) }
+}
+
+// ── Labels lisibles ────────────────────────────────────────
+
+const EVENT_LABELS = {
+  'dashboard.main.view': 'Tableau de bord', 'patrimoine.main.view': 'Patrimoine',
+  'revenus.salary_contract.view': 'Contrats salariaux', 'revenus.other_income.view': 'Revenus complémentaires',
+  'expenses.recurring.view': 'Dépenses récurrentes', 'debts.main.view': 'Dettes',
+  'possessions.main.view': 'Possessions', 'tools.tax_simulator.view': 'Simulateur impôts',
+  'tools.bilan.view': 'Bilan financier', 'tools.loan.view': 'Simulateur emprunt',
+  'tools.lombard.view': 'Simulateur Lombard', 'tools.crisis.view': 'Simulateur crise',
+  'tools.fiscal_envelope.view': 'Enveloppes fiscales', 'tools.retirement.view': 'Simulateur retraite',
+  'tools.compound_interest.view': 'Intérêts composés', 'tools.performance.view': 'Performance',
+  'tools.patrimoine_declaration.view': 'Déclaration patrimoine',
+  'admin.instrument.view': 'Instruments', 'admin.snapshot.view': 'Relevés',
+  'admin.login_history.view': 'Connexions', 'admin.user.view': 'Utilisateurs',
+  'admin.analytics.view': 'Analytics', 'auth.profile.view': 'Mon profil',
+  'admin.family_group.view': 'Groupes familiaux', 'admin.registration.view': "Inscriptions",
+  'app.documentation.view': 'Documentation',
+  'patrimoine.position.create': 'Créer position', 'patrimoine.position.edit': 'Modifier position',
+  'patrimoine.position.delete': 'Supprimer position', 'patrimoine.position.close': 'Clôturer position',
+  'patrimoine.order.create': 'Passer un ordre', 'patrimoine.order.edit': 'Modifier un ordre',
+  'patrimoine.order.delete': 'Supprimer un ordre', 'patrimoine.strategy.save': 'Sauvegarder stratégie',
+  'revenus.salary_contract.create': 'Créer contrat', 'revenus.salary_contract.edit': 'Modifier contrat',
+  'revenus.salary_contract.delete': 'Supprimer contrat',
+  'revenus.pay_slip.create': 'Ajouter bulletin', 'revenus.pay_slip.edit': 'Modifier bulletin', 'revenus.pay_slip.delete': 'Supprimer bulletin',
+  'revenus.bonus.create': 'Ajouter prime', 'revenus.bonus.edit': 'Modifier prime', 'revenus.bonus.delete': 'Supprimer prime',
+  'revenus.revision.create': 'Ajouter révision', 'revenus.revision.edit': 'Modifier révision', 'revenus.revision.delete': 'Supprimer révision',
+  'revenus.benefit.create': 'Ajouter avantage', 'revenus.benefit.edit': 'Modifier avantage', 'revenus.benefit.delete': 'Supprimer avantage',
+  'revenus.other_income.create': 'Ajouter revenu', 'revenus.other_income.edit': 'Modifier revenu', 'revenus.other_income.delete': 'Supprimer revenu',
+  'expenses.recurring.create': 'Ajouter dépense', 'expenses.recurring.edit': 'Modifier dépense', 'expenses.recurring.delete': 'Supprimer dépense',
+  'debts.debt.create': 'Créer dette', 'debts.debt.edit': 'Modifier dette', 'debts.debt.delete': 'Supprimer dette',
+  'debts.balance_entry.submit': 'Saisir capital restant',
+  'possessions.possession.create': 'Ajouter bien', 'possessions.possession.edit': 'Modifier bien', 'possessions.possession.delete': 'Supprimer bien',
+  'tools.tax_simulator.simulate': 'Simuler imposition', 'tools.loan.save': 'Sauvegarder simulation', 'tools.loan.load': 'Charger simulation',
+  'admin.registration.approve': 'Approuver inscription', 'admin.registration.reject': 'Rejeter inscription',
+  'admin.user.create': 'Créer utilisateur', 'admin.user.edit': 'Modifier utilisateur', 'admin.user.delete': 'Supprimer utilisateur',
+  'admin.instrument.update_prices': 'Mettre à jour les cours',
+  'family.group.create': 'Créer groupe', 'family.group.rename': 'Renommer groupe',
+  'family.group.dissolve': 'Dissoudre groupe', 'family.group.leave': 'Quitter groupe',
+  'family.group.remove_member': 'Retirer un membre',
+  'family.invitation.send': 'Envoyer invitation', 'family.invitation.accept': 'Accepter invitation', 'family.invitation.refuse': 'Refuser invitation',
+  'app.ui.toggle_dark_mode': 'Mode nuit', 'app.ui.toggle_hide_values': 'Masquer valeurs',
+  'app.ui.toggle_family_mode': 'Mode foyer', 'app.ui.open_release_notes': 'Notes de version',
+  'patrimoine.position.open_form': '+ Ajouter position', 'revenus.salary_contract.open_form': '+ Nouveau contrat',
+  'expenses.recurring.open_form': '+ Ajouter dépense', 'debts.debt.open_form': '+ Ajouter dette',
+  'possessions.possession.open_form': '+ Ajouter bien',
+  'auth.profile.change_password': 'Changer mot de passe', 'auth.profile.update_fiscal': 'Profil fiscal',
+  'auth.profile.update_personal': 'Infos personnelles', 'auth.profile.update_safety_net': 'Matelas sécurité',
+}
+
+const MODULE_LABELS = {
+  patrimoine: 'Patrimoine', revenus: 'Revenus', expenses: 'Dépenses', debts: 'Dettes',
+  possessions: 'Possessions', tools: 'Outils', admin: 'Administration',
+  auth: 'Profil', app: 'Application', family: 'Famille', dashboard: 'Tableau de bord',
+}
+
+const MODULE_COLORS = [
+  '#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6',
+  '#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4',
+]
+
+function eventLabel(name) { return EVENT_LABELS[name] ?? name }
+function moduleLabel(mod)  { return MODULE_LABELS[mod] ?? mod }
+
+function trendIcon(curr, prev) {
+  if (!prev || prev === 0) return null
+  const pct = Math.round(((curr - prev) / prev) * 100)
+  if (Math.abs(pct) < 5) return <span className="text-gray-400 text-xs">≈</span>
+  return pct > 0
+    ? <span className="text-green-600 text-xs font-semibold">↑ {pct}%</span>
+    : <span className="text-red-500 text-xs font-semibold">↓ {Math.abs(pct)}%</span>
 }
 
 function fmtDate(iso) {
@@ -27,25 +103,67 @@ const SOURCE_BADGE = { BACKEND: 'bg-indigo-100 text-indigo-700', FRONTEND: 'bg-o
 
 // ── Onglet Engagement ──────────────────────────────────────
 
+function EventBar({ e, prevMap, max, onTimeline }) {
+  const prev = prevMap?.[e.eventName]
+  return (
+    <li>
+      <div className="flex items-center justify-between mb-0.5 gap-1">
+        <button
+          onClick={() => onTimeline(e.eventName)}
+          className="text-xs text-gray-700 hover:text-indigo-600 transition truncate text-left flex-1"
+          title={e.eventName}
+        >
+          {eventLabel(e.eventName)}
+        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {trendIcon(e.count, prev)}
+          <span className="text-xs font-semibold text-gray-500">{fmtNum(e.count)}</span>
+        </div>
+      </div>
+      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(e.count / max) * 100}%` }} />
+      </div>
+    </li>
+  )
+}
+
 function EngagementTab({ period }) {
-  const [topFeatures, setTopFeatures] = useState([])
-  const [topButtons,  setTopButtons]  = useState([])
-  const [topPages,    setTopPages]    = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [timeline,    setTimeline]    = useState(null)
+  const [summary,       setSummary]       = useState(null)
+  const [topFeatures,   setTopFeatures]   = useState([])
+  const [topButtons,    setTopButtons]    = useState([])
+  const [topPages,      setTopPages]      = useState([])
+  const [prevFeatures,  setPrevFeatures]  = useState({})
+  const [prevButtons,   setPrevButtons]   = useState({})
+  const [prevPages,     setPrevPages]     = useState({})
+  const [retention,     setRetention]     = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [timeline,      setTimeline]      = useState(null)
   const [selectedEvent, setSelectedEvent] = useState(null)
+  const [moduleExpand,  setModuleExpand]  = useState({})
+  const [search,        setSearch]        = useState('')
 
   useEffect(() => {
     setLoading(true)
-    const p = periodDates(period)
+    const p  = periodDates(period)
+    const pp = previousPeriodDates(period)
     Promise.all([
-      getTopEvents({ type: 'FEATURE_USE', ...p, limit: 10 }),
-      getTopEvents({ type: 'BUTTON_CLICK', ...p, limit: 10 }),
-      getTopEvents({ type: 'PAGE_VIEW', ...p, limit: 10 }),
-    ]).then(([feat, btn, pv]) => {
+      getEngagementSummary(p),
+      getTopEvents({ type: 'FEATURE_USE',  ...p,  limit: 20 }),
+      getTopEvents({ type: 'BUTTON_CLICK', ...p,  limit: 20 }),
+      getTopEvents({ type: 'PAGE_VIEW',    ...p,  limit: 30 }),
+      getTopEvents({ type: 'FEATURE_USE',  ...pp, limit: 20 }),
+      getTopEvents({ type: 'BUTTON_CLICK', ...pp, limit: 20 }),
+      getTopEvents({ type: 'PAGE_VIEW',    ...pp, limit: 30 }),
+      getRetention(p),
+    ]).then(([sum, feat, btn, pv, pfeat, pbtn, ppv, ret]) => {
+      setSummary(sum)
       setTopFeatures(feat)
       setTopButtons(btn)
       setTopPages(pv)
+      setPrevFeatures(Object.fromEntries(pfeat.map(e => [e.eventName, e.count])))
+      setPrevButtons(Object.fromEntries(pbtn.map(e => [e.eventName, e.count])))
+      setPrevPages(Object.fromEntries(ppv.map(e => [e.eventName, e.count])))
+      setRetention(ret)
     }).catch(() => {}).finally(() => setLoading(false))
   }, [period])
 
@@ -54,57 +172,239 @@ function EngagementTab({ period }) {
     getTimeline({ name, ...periodDates(period) }).then(setTimeline).catch(() => setTimeline([]))
   }
 
-  const maxFeat = topFeatures[0]?.count ?? 1
-  const maxBtn  = topButtons[0]?.count  ?? 1
-  const maxPage = topPages[0]?.count    ?? 1
+  // ── Groupement par module ─────────────────────────────────
+  function groupByModule(events) {
+    const groups = {}
+    events.forEach(e => {
+      const mod = e.eventName.split('.')[0]
+      if (!groups[mod]) groups[mod] = { module: mod, total: 0, items: [] }
+      groups[mod].total += e.count
+      groups[mod].items.push(e)
+    })
+    return Object.values(groups).sort((a, b) => b.total - a.total)
+  }
+
+  // ── Funnel open_form → action ─────────────────────────────
+  function computeFunnel() {
+    const allEvents = [...topFeatures, ...topButtons]
+    const countMap = Object.fromEntries(allEvents.map(e => [e.eventName, e.count]))
+    const funnelPairs = [
+      ['patrimoine.position.open_form',          'patrimoine.position.create'],
+      ['revenus.salary_contract.open_form',       'revenus.salary_contract.create'],
+      ['expenses.recurring.open_form',            'expenses.recurring.create'],
+      ['debts.debt.open_form',                    'debts.debt.create'],
+      ['possessions.possession.open_form',        'possessions.possession.create'],
+    ]
+    return funnelPairs
+      .filter(([from]) => countMap[from] > 0)
+      .map(([from, to]) => {
+        const opens   = countMap[from] ?? 0
+        const creates = countMap[to]   ?? 0
+        return { from, to, opens, creates, rate: opens === 0 ? 0 : Math.round((creates / opens) * 100) }
+      })
+  }
+
+  // Filtre recherche (sur event_name ET label lisible)
+  const q = search.toLowerCase().trim()
+  function filtered(list) {
+    if (!q) return list
+    return list.filter(e => e.eventName.toLowerCase().includes(q) || eventLabel(e.eventName).toLowerCase().includes(q))
+  }
+
+  const filteredFeatures = filtered(topFeatures)
+  const filteredButtons  = filtered(topButtons)
+  const filteredPages    = filtered(topPages)
+
+  const modules = groupByModule(topFeatures)
+  const funnel  = computeFunnel()
+  const maxFeat = filteredFeatures[0]?.count ?? 1
+  const maxBtn  = filteredButtons[0]?.count  ?? 1
+  const maxPage = filteredPages[0]?.count    ?? 1
+
+  // Données camembert pages vues
+  const pieData = topPages.slice(0, 10).map(e => ({
+    name: eventLabel(e.eventName),
+    value: e.count,
+  }))
+  const PIE_COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16']
 
   if (loading) return <p className="text-sm text-gray-400 py-8 text-center">Chargement…</p>
 
   return (
     <div className="space-y-6">
-      {/* Grille 3 colonnes */}
+
+      {/* ── KPIs globaux ─────────────────────────────────────── */}
+      {summary && (
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: 'Événements',        value: fmtNum(summary.totalEvents),    color: 'text-indigo-600' },
+            { label: 'Sessions uniques',  value: fmtNum(summary.uniqueSessions), color: 'text-teal-600'   },
+            { label: 'Events / session',  value: summary.avgEventsPerSession,    color: 'text-amber-600'  },
+          ].map(k => (
+            <div key={k.label} className="bg-white rounded-xl shadow-sm p-4 text-center">
+              <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+              <p className="text-xs text-gray-500 mt-1">{k.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Barre de recherche ───────────────────────────────── */}
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Rechercher un event ou une fonctionnalité…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition bg-white shadow-sm"
+        />
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        )}
+      </div>
+
+      {/* ── Features + Boutons + Pages ───────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {[
-          { title: 'Features les plus utilisées', data: topFeatures, max: maxFeat },
-          { title: 'Boutons les plus cliqués',    data: topButtons,  max: maxBtn  },
-          { title: 'Pages les plus vues',         data: topPages,    max: maxPage },
-        ].map(({ title, data, max }) => (
+          { title: 'Features les plus utilisées', data: filteredFeatures, max: maxFeat, prevMap: prevFeatures },
+          { title: 'Boutons les plus cliqués',    data: filteredButtons,  max: maxBtn,  prevMap: prevButtons  },
+          { title: 'Pages les plus vues',         data: filteredPages.slice(0,10), max: maxPage, prevMap: prevPages },
+        ].map(({ title, data, max, prevMap }) => (
           <div key={title} className="bg-white rounded-xl shadow-sm p-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">{title}</h3>
             {data.length === 0
-              ? <p className="text-xs text-gray-400">Aucune donnée</p>
-              : (
-                <ul className="space-y-2">
-                  {data.map(e => (
-                    <li key={e.eventName}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <button
-                          onClick={() => loadTimeline(e.eventName)}
-                          className="text-xs text-gray-700 hover:text-indigo-600 transition truncate text-left"
-                        >
-                          {e.eventName}
-                        </button>
-                        <span className="text-xs font-semibold text-gray-500 ml-2 shrink-0">{fmtNum(e.count)}</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500 rounded-full"
-                          style={{ width: `${(e.count / max) * 100}%` }}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              ? <p className="text-xs text-gray-400">{search ? 'Aucun résultat' : 'Aucune donnée'}</p>
+              : <ul className="space-y-2">{data.map(e => <EventBar key={e.eventName} e={e} prevMap={prevMap} max={max} onTimeline={loadTimeline} />)}</ul>}
           </div>
         ))}
       </div>
 
-      {/* Timeline de l'event sélectionné */}
+      {/* ── Rétention — sessions actives par jour ────────────── */}
+      {retention.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700">Sessions actives par jour</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Sessions uniques (barre) · Events totaux (ligne)</p>
+            </div>
+            {(() => {
+              const avg = Math.round(retention.reduce((s, d) => s + d.sessions, 0) / retention.length * 10) / 10
+              return <span className="text-xs text-teal-600 font-semibold bg-teal-50 px-2.5 py-1 rounded-full">Moy. {avg} sessions/jour</span>
+            })()}
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={retention} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={d => d?.slice(5)} />
+              <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+              <Tooltip
+                formatter={(v, n) => [fmtNum(v), n === 'sessions' ? 'Sessions' : 'Events']}
+                labelFormatter={l => l}
+              />
+              <Bar dataKey="sessions" fill="#14b8a6" radius={[3,3,0,0]} name="sessions" />
+              <Line type="monotone" dataKey="events" stroke="#6366f1" strokeWidth={2} dot={false} name="events" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* ── Camembert pages vues ─────────────────────────────── */}
+      {pieData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Répartition des pages vues</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={65}
+                outerRadius={100}
+                paddingAngle={2}
+                dataKey="value"
+                label={({ name, percent }) => percent > 0.05 ? `${Math.round(percent * 100)}%` : ''}
+                labelLine={false}
+              >
+                {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(v, n) => [fmtNum(v), n]} />
+              <Legend iconType="circle" iconSize={8} formatter={v => <span className="text-xs text-gray-600">{v}</span>} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* ── Funnel open_form → create ────────────────────────── */}
+      {funnel.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Funnel — Intention → Création</h3>
+          <div className="space-y-3">
+            {funnel.map(f => (
+              <div key={f.from} className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4">
+                <span className="text-xs text-gray-600 truncate">{eventLabel(f.from).replace('+ ', '')}</span>
+                <div className="text-right">
+                  <span className="text-xs text-gray-400">{fmtNum(f.opens)} ouvertures</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-gray-400">→ {fmtNum(f.creates)} créations</span>
+                </div>
+                <div className="text-right min-w-[52px]">
+                  <span className={`text-sm font-bold ${f.rate >= 70 ? 'text-green-600' : f.rate >= 40 ? 'text-amber-500' : 'text-red-500'}`}>
+                    {f.rate}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-3">Taux de conversion : ouvertures du formulaire → actions créées</p>
+        </div>
+      )}
+
+      {/* ── Groupement par module ────────────────────────────── */}
+      {modules.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Actions par module (FEATURE_USE)</h3>
+          <div className="space-y-2">
+            {modules.map((g, i) => (
+              <div key={g.module}>
+                <button
+                  onClick={() => setModuleExpand(m => ({ ...m, [g.module]: !m[g.module] }))}
+                  className="w-full flex items-center gap-3 py-1.5 hover:bg-gray-50 rounded-lg transition px-2"
+                >
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: MODULE_COLORS[i % MODULE_COLORS.length] }} />
+                  <span className="text-sm font-medium text-gray-700 flex-1 text-left">{moduleLabel(g.module)}</span>
+                  <span className="text-sm font-semibold text-gray-500">{fmtNum(g.total)}</span>
+                  <div className="h-1.5 w-24 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${(g.total / (modules[0]?.total ?? 1)) * 100}%`, background: MODULE_COLORS[i % MODULE_COLORS.length] }} />
+                  </div>
+                  <span className="text-xs text-gray-400">{moduleExpand[g.module] ? '▲' : '▼'}</span>
+                </button>
+                {moduleExpand[g.module] && (
+                  <ul className="ml-7 mt-1 space-y-1 pb-2">
+                    {g.items.map(e => (
+                      <li key={e.eventName} className="flex items-center justify-between text-xs text-gray-500 py-0.5">
+                        <button onClick={() => loadTimeline(e.eventName)} className="hover:text-indigo-600 transition text-left truncate flex-1">
+                          {eventLabel(e.eventName)}
+                        </button>
+                        <span className="font-semibold ml-2 shrink-0">{fmtNum(e.count)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Timeline de l'event sélectionné ─────────────────── */}
       {selectedEvent && timeline && (
         <div className="bg-white rounded-xl shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-700">Évolution — <span className="text-indigo-600 font-mono">{selectedEvent}</span></h3>
+            <h3 className="text-sm font-semibold text-gray-700">
+              Évolution — <span className="text-indigo-600">{eventLabel(selectedEvent)}</span>
+            </h3>
             <button onClick={() => { setSelectedEvent(null); setTimeline(null) }} className="text-xs text-gray-400 hover:text-gray-600">✕ fermer</button>
           </div>
           {timeline.length === 0
@@ -117,14 +417,8 @@ function EngagementTab({ period }) {
                     return (
                       <div key={pt.day} className="flex flex-col items-center gap-0.5">
                         <span className="text-xs text-gray-400">{pt.count}</span>
-                        <div
-                          className="w-6 bg-indigo-400 rounded-t"
-                          style={{ height: `${(pt.count / maxCount) * 72}px` }}
-                          title={`${pt.day} : ${pt.count}`}
-                        />
-                        <span className="text-xs text-gray-400" style={{ writingMode: 'vertical-rl', fontSize: 9 }}>
-                          {pt.day?.slice(5)}
-                        </span>
+                        <div className="w-6 bg-indigo-400 rounded-t" style={{ height: `${(pt.count / maxCount) * 72}px` }} title={`${pt.day} : ${pt.count}`} />
+                        <span className="text-xs text-gray-400" style={{ writingMode: 'vertical-rl', fontSize: 9 }}>{pt.day?.slice(5)}</span>
                       </div>
                     )
                   })}
@@ -401,6 +695,11 @@ function HealthTab({ period, onViewJourney }) {
 
   useEffect(() => { load() }, [load])
 
+  // Badge "Nouvelle erreur" — firstSeen dans les dernières 24h
+  const now24h = Date.now() - 24 * 3600 * 1000
+  function isNew(g) { return g.firstSeen && new Date(g.firstSeen).getTime() > now24h }
+  const newCount = errorGroups.filter(isNew).length
+
   if (loading) return <p className="text-sm text-gray-400 py-8 text-center">Chargement…</p>
 
   return (
@@ -422,10 +721,45 @@ function HealthTab({ period, onViewJourney }) {
         </div>
       )}
 
+      {/* Graphique erreurs/jour (BACKEND vs FRONTEND) */}
+      {health?.errorTimeline?.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Erreurs par jour</h3>
+          {(() => {
+            // Transformer [{day, source, count}] en [{day, BACKEND, FRONTEND}]
+            const byDay = {}
+            health.errorTimeline.forEach(({ day, source, count }) => {
+              if (!byDay[day]) byDay[day] = { day }
+              byDay[day][source] = count
+            })
+            const chartData = Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day))
+            return (
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={d => d?.slice(5)} />
+                  <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip formatter={(v, n) => [fmtNum(v), n]} />
+                  <Bar dataKey="BACKEND"  fill="#6366f1" radius={[3,3,0,0]} name="Backend"  stackId="a" />
+                  <Bar dataKey="FRONTEND" fill="#f59e0b" radius={[3,3,0,0]} name="Frontend" stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            )
+          })()}
+        </div>
+      )}
+
       {/* Tableau des erreurs groupées */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Erreurs groupées par type</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-gray-700">Erreurs groupées par type</h3>
+            {newCount > 0 && (
+              <span className="text-xs bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full">
+                {newCount} nouvelle{newCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
           <span className="text-xs text-gray-400">{errorGroups.length} groupe{errorGroups.length !== 1 ? 's' : ''}</span>
         </div>
         {errorGroups.length === 0
@@ -450,7 +784,14 @@ function HealthTab({ period, onViewJourney }) {
                       className="hover:bg-gray-50 cursor-pointer transition"
                       onClick={() => setSelectedFingerprint(g.fingerprint)}
                     >
-                      <td className="px-5 py-3 font-mono text-xs text-gray-700 max-w-[200px] truncate">{g.errorType}</td>
+                      <td className="px-5 py-3 font-mono text-xs text-gray-700 max-w-[200px]">
+                        <div className="flex items-center gap-1.5 truncate">
+                          {isNew(g) && (
+                            <span className="shrink-0 text-xs bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">Nouveau</span>
+                          )}
+                          <span className="truncate">{g.errorType}</span>
+                        </div>
+                      </td>
                       <td className="px-3 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SOURCE_BADGE[g.source] ?? ''}`}>{g.source}</span>
                       </td>

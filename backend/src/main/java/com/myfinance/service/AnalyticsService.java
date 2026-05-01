@@ -115,6 +115,25 @@ public class AnalyticsService {
 
     // ── Agrégations admin ──────────────────────────────────────
 
+    public List<RetentionPointDto> getRetention(LocalDateTime from, LocalDateTime to) {
+        return analyticsEventRepository.findDailyRetention(toMs(from), toMs(to))
+                .stream()
+                .map(row -> new RetentionPointDto(
+                        (String) row[0],
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue()))
+                .toList();
+    }
+
+    public EngagementSummaryDto getEngagementSummary(LocalDateTime from, LocalDateTime to) {
+        long fromMs = toMs(from);
+        long toMs   = toMs(to);
+        long totalEvents    = analyticsEventRepository.countByCreatedAtBetween(fromMs, toMs);
+        long uniqueSessions = analyticsEventRepository.countDistinctSessionsByCreatedAtBetween(fromMs, toMs);
+        double avg = uniqueSessions == 0 ? 0.0 : Math.round((totalEvents * 10.0) / uniqueSessions) / 10.0;
+        return new EngagementSummaryDto(totalEvents, uniqueSessions, avg);
+    }
+
     public List<TopEventDto> getTopEvents(EventType eventType, LocalDateTime from,
                                           LocalDateTime to, int limit) {
         String eventTypeStr = eventType != null ? eventType.name() : null;
@@ -257,7 +276,7 @@ public class AnalyticsService {
         try {
             ObjectNode parsed = (ObjectNode) objectMapper.readTree(rawMetadata);
             ObjectNode filtered = objectMapper.createObjectNode();
-            parsed.fields().forEachRemaining(entry -> {
+            parsed.properties().forEach(entry -> {
                 if (ALLOWED_METADATA_KEYS.contains(entry.getKey())) {
                     filtered.set(entry.getKey(), entry.getValue());
                 }

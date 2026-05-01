@@ -37,6 +37,12 @@ export const updateAnalyticsOptOut = (optOut) =>
 
 // ── Endpoints admin ────────────────────────────────────────
 
+export const getEngagementSummary = (params) =>
+  api.get('/api/admin/analytics/engagement-summary', { params }).then(r => r.data)
+
+export const getRetention = (params) =>
+  api.get('/api/admin/analytics/retention', { params }).then(r => r.data)
+
 export const getTopEvents = (params) =>
   api.get('/api/admin/analytics/top-events', { params }).then(r => r.data)
 

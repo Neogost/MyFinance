@@ -29,6 +29,22 @@ public class AnalyticsAdminController {
     private final AnalyticsService analyticsService;
     private final AnalyticsRetentionService retentionService;
 
+    @Operation(summary = "Rétention quotidienne — sessions et events par jour")
+    @GetMapping("/retention")
+    public ResponseEntity<List<RetentionPointDto>> retention(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return ResponseEntity.ok(analyticsService.getRetention(from, to));
+    }
+
+    @Operation(summary = "Résumé d'engagement sur une période")
+    @GetMapping("/engagement-summary")
+    public ResponseEntity<EngagementSummaryDto> engagementSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return ResponseEntity.ok(analyticsService.getEngagementSummary(from, to));
+    }
+
     @Operation(summary = "Top events sur une période")
     @GetMapping("/top-events")
     public ResponseEntity<List<AnalyticsService.TopEventDto>> topEvents(
