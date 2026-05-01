@@ -851,14 +851,17 @@ export default function AnalyticsPage() {
   const [showPurge,   setShowPurge]   = useState(false)
   const [eventsDays,  setEventsDays]  = useState(90)
   const [errorsDays,  setErrorsDays]  = useState(180)
+  const [purgeAll,    setPurgeAll]    = useState(false)
 
   async function handlePurge() {
     setPurging(true)
     setPurgeError(null)
     setPurgeResult(null)
     try {
-      const result = await purgeAnalytics({ eventsDays, errorsDays })
-      setPurgeResult(result)
+      // eventsDays=0 / errorsDays=0 → cutoff = now → supprime tout
+      const params = purgeAll ? { eventsDays: 0, errorsDays: 0 } : { eventsDays, errorsDays }
+      const result = await purgeAnalytics(params)
+      setPurgeResult({ ...result, all: purgeAll })
       setShowPurge(false)
     } catch {
       setPurgeError('Erreur lors de la suppression.')
@@ -908,9 +911,10 @@ export default function AnalyticsPage() {
       {purgeResult && (
         <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700 flex items-center justify-between">
           <span>
-            Nettoyage terminé — <strong>{purgeResult.deletedEvents}</strong> événement{purgeResult.deletedEvents !== 1 ? 's' : ''} et{' '}
-            <strong>{purgeResult.deletedErrors}</strong> erreur{purgeResult.deletedErrors !== 1 ? 's' : ''} supprimés
-            (antérieurs à {purgeResult.olderThanDays} jours).
+            {purgeResult.all
+              ? <>Toutes les données supprimées — <strong>{purgeResult.deletedEvents}</strong> événement{purgeResult.deletedEvents !== 1 ? 's' : ''} et <strong>{purgeResult.deletedErrors}</strong> erreur{purgeResult.deletedErrors !== 1 ? 's' : ''}.</>
+              : <>Nettoyage terminé — <strong>{purgeResult.deletedEvents}</strong> événement{purgeResult.deletedEvents !== 1 ? 's' : ''} et <strong>{purgeResult.deletedErrors}</strong> erreur{purgeResult.deletedErrors !== 1 ? 's' : ''} supprimés (antérieurs à {purgeResult.olderThanDays} jours).</>
+            }
           </span>
           <button onClick={() => setPurgeResult(null)} className="text-green-500 hover:text-green-700 ml-4">✕</button>
         </div>
@@ -923,17 +927,22 @@ export default function AnalyticsPage() {
           <div className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md p-6 space-y-5">
             <h3 className="text-base font-semibold text-gray-900">Nettoyer les données analytics</h3>
             <p className="text-sm text-gray-500">
-              Supprime définitivement les événements et erreurs antérieurs aux seuils choisis.
-              Cette action est irréversible.
+              {purgeAll
+                ? 'Toutes les données analytics seront supprimées définitivement.'
+                : 'Supprime définitivement les événements et erreurs antérieurs aux seuils choisis.'
+              }
+              {' '}Cette action est irréversible.
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Sélecteurs de rétention — désactivés si "Tout supprimer" */}
+            <div className={`grid grid-cols-2 gap-4 transition-opacity ${purgeAll ? 'opacity-40 pointer-events-none' : ''}`}>
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-gray-600">Événements — garder les</label>
                 <select
                   value={eventsDays}
                   onChange={e => setEventsDays(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition"
+                  disabled={purgeAll}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition disabled:bg-gray-50"
                 >
                   {[7, 30, 60, 90, 180, 365].map(d => (
                     <option key={d} value={d}>{d} derniers jours</option>
@@ -945,7 +954,8 @@ export default function AnalyticsPage() {
                 <select
                   value={errorsDays}
                   onChange={e => setErrorsDays(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition"
+                  disabled={purgeAll}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 transition disabled:bg-gray-50"
                 >
                   {[30, 60, 90, 180, 365].map(d => (
                     <option key={d} value={d}>{d} derniers jours</option>
@@ -954,11 +964,31 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
+            {/* Toggle "Tout supprimer" */}
+            <label className="flex items-center gap-3 cursor-pointer select-none group">
+              <div
+                onClick={() => setPurgeAll(v => !v)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${purgeAll ? 'bg-red-500' : 'bg-gray-200'}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${purgeAll ? 'translate-x-[18px]' : 'translate-x-1'}`} />
+              </div>
+              <span className={`text-sm font-medium ${purgeAll ? 'text-red-600' : 'text-gray-600'}`}>
+                Tout supprimer <span className="font-normal text-gray-400">(ignorer les seuils)</span>
+              </span>
+            </label>
+
+            {purgeAll && (
+              <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
+                <span className="shrink-0">⚠️</span>
+                <span>L'intégralité de l'historique analytics sera supprimée. Les graphiques et statistiques seront vides jusqu'à la prochaine activité.</span>
+              </div>
+            )}
+
             {purgeError && <p className="text-sm text-red-600">{purgeError}</p>}
 
             <div className="flex gap-3 justify-end pt-1">
               <button
-                onClick={() => setShowPurge(false)}
+                onClick={() => { setShowPurge(false); setPurgeAll(false) }}
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
               >
                 Annuler
@@ -966,9 +996,11 @@ export default function AnalyticsPage() {
               <button
                 onClick={handlePurge}
                 disabled={purging}
-                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                className={`px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition ${
+                  purgeAll ? 'bg-red-700 hover:bg-red-800' : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
-                {purging ? 'Suppression…' : 'Supprimer'}
+                {purging ? 'Suppression…' : purgeAll ? 'Tout supprimer' : 'Supprimer'}
               </button>
             </div>
           </div>
