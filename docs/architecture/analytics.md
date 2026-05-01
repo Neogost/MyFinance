@@ -235,12 +235,16 @@ Tous protégés par `@PreAuthorize("hasRole('ADMIN')")`.
 
 | Méthode | URL | Description |
 |---------|-----|-------------|
-| `GET` | `/api/admin/analytics/top-events?type=&from=&to=&limit=` | Top features / boutons |
-| `GET` | `/api/admin/analytics/timeline?name=&from=&to=&granularity=` | Série temporelle d'un event |
-| `GET` | `/api/admin/analytics/journey/{sessionId}` | Parcours utilisateur |
-| `GET` | `/api/admin/analytics/errors?source=&level=&from=&to=` | Erreurs groupées par fingerprint |
-| `GET` | `/api/admin/analytics/errors/{fingerprint}?page=&size=` | Détail d'une erreur (occurrences) |
-| `GET` | `/api/admin/analytics/health?from=&to=` | Synthèse : event count, error rate, top 3 erreurs |
+| `GET` | `/api/admin/analytics/engagement-summary?from=&to=` | KPIs : events totaux, sessions uniques, events/session |
+| `GET` | `/api/admin/analytics/retention?from=&to=` | Sessions uniques et events totaux par jour (`RetentionPointDto`) |
+| `GET` | `/api/admin/analytics/top-events?type=&from=&to=&limit=` | Top features / boutons / pages |
+| `GET` | `/api/admin/analytics/timeline?name=&from=&to=` | Série temporelle quotidienne d'un event_name |
+| `GET` | `/api/admin/analytics/journey/{sessionId}` | Events du parcours d'une session |
+| `GET` | `/api/admin/analytics/journey/{sessionId}/errors` | Erreurs survenues pendant une session |
+| `GET` | `/api/admin/analytics/errors?source=&level=&from=&to=` | Erreurs groupées par fingerprint (count, firstSeen, lastSeen) |
+| `GET` | `/api/admin/analytics/errors/{fingerprint}?page=&size=` | Occurrences d'une erreur (paginées, avec sessionId) |
+| `GET` | `/api/admin/analytics/health?from=&to=` | KPIs erreurs + timeline erreurs/jour par source |
+| `DELETE` | `/api/admin/analytics/purge?eventsDays=90&errorsDays=180` | Suppression des données antérieures aux seuils |
 
 ---
 
@@ -313,23 +317,38 @@ Route : `admin-analytics`. Accessible depuis le menu Administration.
 
 ```
 Onglet 1 : Engagement
-├── Cards KPI : sessions actives 7j, events totaux 7j, taux d'erreur global
-├── Top 10 features (BarChart horizontal)
-├── Top 10 boutons cliqués (BarChart horizontal)
-├── Pages les plus vues (table)
-└── Sélecteur période : 7j / 30j / 90j
+├── Sélecteur période : 7j / 30j / 90j
+├── KPIs : events totaux · sessions uniques · events/session moyen
+├── Barre de recherche filtrante (event_name ET label français, temps réel)
+├── 3 colonnes (avec indicateur tendance ↑/↓ vs période précédente) :
+│   ├── Features les plus utilisées (FEATURE_USE)
+│   ├── Boutons les plus cliqués (BUTTON_CLICK)
+│   └── Pages les plus vues (PAGE_VIEW)
+│       → clic sur une ligne : timeline quotidienne de cet event
+├── Graphique rétention : sessions uniques/jour (barres) + events totaux (ligne)
+│   Moyenne sessions/jour affichée en badge
+├── Camembert Recharts : répartition des 10 pages les plus vues (donut)
+├── Funnel open_form → create : taux de conversion par module
+│   (vert ≥ 70 % · orange ≥ 40 % · rouge < 40 %)
+└── Groupement par module : total FEATURE_USE par domaine, accordéon pour le détail
 
 Onglet 2 : Parcours
-├── Filtre : utilisateur ou session_id
-├── Timeline verticale des events de la session (avec heure, type, name, page)
-└── Marqueurs rouges sur les erreurs survenues pendant la session
+├── Saisie du session ID (UUID) + bouton Charger
+├── Compteur : N événements · N erreurs
+└── Timeline verticale unifiée (events + erreurs triés chronologiquement)
+    ├── Events : cercle indigo, badge type coloré, event_name + page
+    └── Erreurs : cercle rouge, fond rouge pâle, source/level/type/path/message
 
 Onglet 3 : Santé technique
-├── Cards KPI : erreurs 24h, erreurs 7j, taux d'erreur, top error type
-├── Tableau des erreurs groupées (fingerprint, count, premier/dernier vu, message)
-│   ├── Tri par count desc par défaut
-│   └── Click sur une ligne → modal avec stack trace + dernières occurrences
-└── Graphique : erreurs/jour sur 30 jours (LineChart, BACKEND vs FRONTEND)
+├── 4 KPIs : events (période) · erreurs · erreurs backend · taux d'erreur %
+├── Graphique barres empilées erreurs/jour (BACKEND indigo · FRONTEND amber)
+├── Tableau des erreurs groupées (fingerprint, count, firstSeen/lastSeen, message)
+│   ├── Badge "X nouvelles" en tête si des erreurs ont firstSeen < 24h
+│   ├── Badge "Nouveau" inline par ligne concernée
+│   └── Click → modal : session ID copiable (📋) + lien "Voir le parcours →"
+│       (bascule directement sur l'onglet Parcours avec le session ID pré-rempli)
+└── Bouton "🗑 Nettoyer" : modal de confirmation avec sélection des seuils
+    de rétention indépendants (events / erreurs), affiche le résultat (lignes supprimées)
 ```
 
 ---
@@ -458,8 +477,26 @@ Côté frontend (Vite) :
 
 ## Fonctionnalités supplémentaires livrées (hors spec initiale)
 
-- **Nettoyage manuel des données** : endpoint `DELETE /api/admin/analytics/purge?eventsDays=90&errorsDays=180` avec résultat (nombre de lignes supprimées). Bouton "🗑 Nettoyer" dans la page admin avec modal de confirmation et sélecteurs de rétention indépendants pour les events et les erreurs.
-- **Session ID copiable depuis les erreurs** : dans la modal de détail d'une erreur (onglet Santé), chaque occurrence affiche son `session_id` avec un bouton copier (📋) et un lien "Voir le parcours →" qui bascule directement sur l'onglet Parcours avec le session ID pré-rempli et le parcours chargé automatiquement.
+- **Nettoyage manuel des données** : endpoint `DELETE /api/admin/analytics/purge?eventsDays=90&errorsDays=180` avec résultat (nombre de lignes supprimées). Bouton "🗑 Nettoyer" dans la page admin avec modal de confirmation et sélecteurs de rétention indépendants.
+
+- **Session ID copiable + navigation directe vers le parcours** : dans la modal de détail d'une erreur (onglet Santé), chaque occurrence affiche son `session_id` avec un bouton copier (📋) et un lien "Voir le parcours →" qui bascule sur l'onglet Parcours avec le session ID pré-rempli et le parcours chargé automatiquement.
+
+- **Timeline unifiée Parcours** : l'onglet Parcours fusionne les events et les erreurs de la session (deux appels parallèles : `GET /journey/{id}` + `GET /journey/{id}/errors`) et les affiche dans une ligne de temps chronologique unique. Les erreurs sont visuellement distinguées (cercle rouge, fond coloré, message inline).
+
+- **Onglet Engagement enrichi** :
+  - Labels français : mapping complet `module.feature.action` → libellé lisible (ex : `patrimoine.position.create` → "Créer position")
+  - KPIs globaux : events totaux, sessions uniques (COUNT DISTINCT session_id), events/session
+  - Indicateurs de tendance : ↑/↓ % calculé par double appel API sur la période précédente de même durée
+  - Barre de recherche filtrante sur les 3 colonnes (nom technique ET label)
+  - Graphique de rétention : sessions uniques/jour + events totaux (BarChart + Line mixte, Recharts)
+  - Camembert Recharts (donut) : répartition des 10 pages les plus vues
+  - Funnel open_form → create : taux de conversion par module, code couleur vert/orange/rouge
+  - Groupement par module : total FEATURE_USE par domaine fonctionnel, accordéon dépliable
+
+- **Onglet Santé enrichi** :
+  - Graphique barres empilées erreurs/jour (BACKEND vs FRONTEND), données issues de `health.errorTimeline`
+  - Badge "X nouvelles" et badge "Nouveau" inline : erreurs dont `firstSeen` est dans les dernières 24h
+
 - **Adaptation SQLite epoch ms** : toutes les requêtes d'agrégation natives utilisent des paramètres `long` (epoch ms) au lieu de `LocalDateTime`, conformément au comportement de stockage de Hibernate avec SQLite.
 
 ---

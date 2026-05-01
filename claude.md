@@ -409,12 +409,15 @@ frontend/src/
 ### Analytics — Administration (admin)
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
+| `GET` | `/api/admin/analytics/engagement-summary` | ADMIN | KPIs : events totaux, sessions uniques, events/session |
+| `GET` | `/api/admin/analytics/retention` | ADMIN | Sessions uniques et events par jour |
 | `GET` | `/api/admin/analytics/top-events` | ADMIN | Top events sur une période (filtrable par type) |
 | `GET` | `/api/admin/analytics/timeline` | ADMIN | Série temporelle d'un event_name |
-| `GET` | `/api/admin/analytics/journey/{sessionId}` | ADMIN | Reconstitution du parcours d'une session |
+| `GET` | `/api/admin/analytics/journey/{sessionId}` | ADMIN | Events du parcours d'une session |
+| `GET` | `/api/admin/analytics/journey/{sessionId}/errors` | ADMIN | Erreurs survenues pendant une session |
 | `GET` | `/api/admin/analytics/errors` | ADMIN | Erreurs groupées par fingerprint |
-| `GET` | `/api/admin/analytics/errors/{fingerprint}` | ADMIN | Occurrences d'une erreur (paginées) |
-| `GET` | `/api/admin/analytics/health` | ADMIN | Synthèse santé : KPIs + timeline erreurs |
+| `GET` | `/api/admin/analytics/errors/{fingerprint}` | ADMIN | Occurrences d'une erreur (paginées, avec sessionId) |
+| `GET` | `/api/admin/analytics/health` | ADMIN | Synthèse santé : KPIs + timeline erreurs/jour |
 | `DELETE` | `/api/admin/analytics/purge` | ADMIN | Supprimer les données antérieures à N jours |
 
 ### Version de l'application
