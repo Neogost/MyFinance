@@ -49,6 +49,10 @@ public class SalaryContract {
     // PRIVATE : saisi par l'utilisateur. PUBLIC : calculé depuis indiceMajore × valeur du point (nullable)
     private Float annualGrossSalary;
 
+    // Quotité de travail en % (ex : 70.0 = 7/10e). Défaut 100.0 = temps plein
+    @Column(nullable = false)
+    private Float partTimePercentage;
+
     @Column(nullable = false)
     private Integer paidMonthsPerYear;
 

@@ -206,8 +206,24 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     </div>
   )
 
+  const isPartTime = contract.partTimePercentage != null && contract.partTimePercentage < 100
+
   return (
     <div className="mt-6">
+      {isPartTime && (
+        <div className="mb-4 flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm text-orange-700 dark:text-orange-300">
+          <span>⏱</span>
+          <span>
+            Contrat à <strong>{contract.partTimePercentage} %</strong> — projections calculées sur le brut temps partiel
+            {contract.baseGrossSalary != null && contract.baseGrossSalary !== contract.annualGrossSalary && (
+              <span className="text-orange-500 ml-1">
+                ({contract.baseGrossSalary?.toLocaleString('fr-FR')} € ETP × {contract.partTimePercentage} %)
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+
       <h3 className="text-sm font-semibold text-gray-700 mb-3">Projections calculées</h3>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">

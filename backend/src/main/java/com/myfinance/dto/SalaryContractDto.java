@@ -30,8 +30,9 @@ public record SalaryContractDto(
         String companyName,
         LocalDate startDate,
         LocalDate endDate,
-        Float annualGrossSalary,      // brut effectif (révision active ou contrat de base)
-        Float baseGrossSalary,        // brut du contrat de base
+        Float annualGrossSalary,      // brut effectif après quotité (= ETP × partTimePercentage / 100)
+        Float baseGrossSalary,        // brut ETP du contrat de base (avant quotité)
+        Float partTimePercentage,     // quotité de travail en % (100.0 = temps plein)
         Long activeRevisionId,
         Integer paidMonthsPerYear,
         Float weeklyHours,
@@ -99,6 +100,7 @@ public record SalaryContractDto(
                 c.getEndDate(),
                 effectiveSalary,
                 c.getAnnualGrossSalary(),
+                c.getPartTimePercentage() != null ? c.getPartTimePercentage() : 100f,
                 activeRevisionId,
                 paidMonths,
                 c.getWeeklyHours(),

@@ -80,6 +80,7 @@ public class SalaryContractService {
                 .mealVoucherEmployeeRate(request.mealVoucherEmployeeRate())
                 .isCadre(request.isPublic() ? false : request.isCadre())
                 .employeePrevoyanceRate(request.employeePrevoyanceRate())
+                .partTimePercentage(request.partTimePercentage() != null ? request.partTimePercentage() : 100f)
                 .build();
 
         SalaryContractDto dto = toDto(salaryContractRepository.save(contract), user);
@@ -123,6 +124,7 @@ public class SalaryContractService {
         contract.setMealVoucherAmount(request.mealVoucherAmount());
         contract.setMealVoucherEmployeeRate(request.mealVoucherEmployeeRate());
         contract.setEmployeePrevoyanceRate(request.employeePrevoyanceRate());
+        contract.setPartTimePercentage(request.partTimePercentage() != null ? request.partTimePercentage() : 100f);
 
         SalaryContractDto dto = toDto(salaryContractRepository.save(contract), contract.getUser());
         log.info("[user:{}] Contrat salarial modifié #{}", currentUser.getId(), id);
@@ -227,8 +229,12 @@ public class SalaryContractService {
                     .orElse(contract.getAnnualGrossSalary() != null ? contract.getAnnualGrossSalary() : 0f);
         }
 
-        log.debug("[user:{}] Projection contrat #{} ({}) — brut effectif: {} €",
-                contractOwner.getId(), contract.getId(), type, effectiveSalary);
+        // Application de la quotité de travail (ETP → brut réellement perçu)
+        float partTime = contract.getPartTimePercentage() != null ? contract.getPartTimePercentage() : 100f;
+        effectiveSalary = effectiveSalary * partTime / 100f;
+
+        log.debug("[user:{}] Projection contrat #{} ({}) — brut effectif: {} € (quotité: {}%)",
+                contractOwner.getId(), contract.getId(), type, effectiveSalary, partTime);
 
         return SalaryContractDto.from(contract, taxParameters, publicSectorParameters,
                 contractOwner, taxSimulatorService, annualBenefits,

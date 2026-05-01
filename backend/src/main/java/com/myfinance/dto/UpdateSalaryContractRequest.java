@@ -20,5 +20,7 @@ public record UpdateSalaryContractRequest(
         @NotNull @PositiveOrZero Float mealVoucherAmount,
         @NotNull @DecimalMin("0.0") @DecimalMax("100.0") Float mealVoucherEmployeeRate,
         Boolean isCadre,
-        @DecimalMin("0.0") @DecimalMax("1.0") Float employeePrevoyanceRate
+        @DecimalMin("0.0") @DecimalMax("1.0") Float employeePrevoyanceRate,
+        // Quotité de travail en % (ex : 70.0 = 7/10e). null traité comme 100.0
+        @DecimalMin("0.1") @DecimalMax("100.0") Float partTimePercentage
 ) {}

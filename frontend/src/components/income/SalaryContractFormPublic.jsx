@@ -10,7 +10,7 @@ const EMPTY = {
   weeklyHours: '35',
   mealVoucherAmount: '0',
   mealVoucherEmployeeRate: '50',
-  employeePrevoyanceRate: '',
+  employeePrevoyanceRate: '', partTimePercentage: '100',
 }
 
 export default function SalaryContractFormPublic({ contract, onSubmit, onCancel }) {
@@ -33,6 +33,8 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
         mealVoucherEmployeeRate: contract.mealVoucherEmployeeRate ?? '50',
         employeePrevoyanceRate:  contract.employeePrevoyanceRate != null
           ? (contract.employeePrevoyanceRate * 100).toFixed(2) : '',
+        partTimePercentage:      contract.partTimePercentage != null
+          ? String(contract.partTimePercentage) : '100',
       })
     } else {
       setForm(EMPTY)
@@ -72,6 +74,7 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
         isCadre:                 false,
         employeePrevoyanceRate:  form.employeePrevoyanceRate !== ''
           ? parseFloat(form.employeePrevoyanceRate) / 100 : null,
+        partTimePercentage:      parseFloat(form.partTimePercentage) || 100,
       })
     } catch (err) {
       const status = err.response?.status
@@ -177,6 +180,32 @@ export default function SalaryContractFormPublic({ contract, onSubmit, onCancel 
             <input name="employeePrevoyanceRate" type="number" min="0" max="100" step="0.01"
               value={form.employeePrevoyanceRate} onChange={handleChange}
               placeholder="Ex. : 1.5" className={inputCls} />
+          </div>
+
+          {/* Quotité de travail */}
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>
+              Quotité de travail (%)
+              <span className="ml-2 text-gray-400 font-normal text-xs">
+                {parseFloat(form.partTimePercentage) === 100
+                  ? '— Temps plein'
+                  : parseFloat(form.partTimePercentage) === 80
+                    ? '— 4/5e'
+                    : parseFloat(form.partTimePercentage) === 70
+                      ? '— 7/10e'
+                      : parseFloat(form.partTimePercentage) === 50
+                        ? '— Mi-temps'
+                        : `— ${form.partTimePercentage} %`}
+              </span>
+            </label>
+            <input
+              name="partTimePercentage" type="number" min="10" max="100" step="0.1"
+              value={form.partTimePercentage} onChange={handleChange}
+              className={inputCls}
+            />
+            <p className="text-xs text-gray-400">
+              L'indice majoré saisi correspond au temps plein. La quotité réduit toutes les projections calculées.
+            </p>
           </div>
 
           {error && (

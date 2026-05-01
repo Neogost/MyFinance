@@ -34,7 +34,8 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 | `companyName` | `String` | Nom de l'entreprise — nullable |
 | `startDate` | `LocalDate` | Date de début du contrat |
 | `endDate` | `LocalDate` | Date de fin — `null` = contrat en cours |
-| `annualGrossSalary` | `Float` | Salaire brut annuel (en €) |
+| `annualGrossSalary` | `Float` | Salaire brut annuel **équivalent temps plein** (en €) |
+| `partTimePercentage` | `Float` | Quotité de travail en % (ex : `70.0` = 7/10e). Défaut : `100.0` |
 | `paidMonthsPerYear` | `Integer` | Nombre de mois de paie (12 ou 13) |
 | `weeklyHours` | `Float` | Heures travaillées par semaine |
 | `mealVoucherAmount` | `Float` | Valeur faciale d'un ticket restaurant (en €) |
@@ -42,28 +43,37 @@ Stocker les informations contractuelles pour générer des **estimations** annue
 | `isCadre` | `Boolean` | `true` = statut cadre (APEC applicable). `null` traité comme `false` |
 | `employeePrevoyanceRate` | `Float` | Taux prévoyance/mutuelle salarié en décimal (ex : `0.015` = 1,5%). Nullable |
 
-**Règle** : un seul contrat peut avoir `endDate = null` par utilisateur (contrat actif).
+**Règles :**
+- Un seul contrat peut avoir `endDate = null` par utilisateur (contrat actif).
+- `partTimePercentage` est un attribut du contrat (pas de la révision) : si la quotité change, le contrat est mis à jour directement. Les révisions salariales portent uniquement sur le salaire ETP.
+- `annualGrossSalary` et `indiceMajore` représentent toujours le **salaire équivalent temps plein (ETP)**. La quotité est appliquée en dernier pour obtenir le salaire réellement perçu.
 
 ### Projections calculées — `SalaryProjectionDto` (non persisté)
 
 Les projections distinguent quatre niveaux de rémunération :
 
 ```
-Super brut (coût employeur)  →  Brut  →  Net imposable  →  Net d'impôt
+Brut ETP × quotité  →  Brut effectif  →  Net imposable  →  Net d'impôt
+                                                          ↑
+                                               Super brut (coût employeur)
 ```
 
+- **Brut ETP** : `annualGrossSalary` saisi (ou `indiceMajore × pointValue` pour PUBLIC). Représente le salaire à temps plein.
+- **Brut effectif** : `annualGrossSalary × (partTimePercentage / 100)`. C'est la base de tous les calculs suivants.
 - **Net imposable** : base de revenu après cotisations salariales déductibles, avant impôt. C'est la valeur transmise au Simulateur des impôts.
 - **Net d'impôt** : montant réellement perçu après impôt estimé, en ajoutant les avantages en nature (qui ne sont pas dans l'assiette fiscale salariale).
 
+> **Temps partiel** : la quotité `partTimePercentage` est appliquée une seule fois sur le brut ETP pour obtenir le `effectiveSalary`. Toutes les projections (net imposable, net d'impôt, super brut, taux horaire/journalier) dérivent de ce brut effectif réduit. Un contrat à 100 % se comporte exactement comme avant (multiplicateur neutre).
+
 #### Champs super brut (coût employeur)
 
-Le **super brut** est une estimation du coût total employeur, calculée par application d'un taux forfaitaire de cotisations patronales sur le brut annuel.
+Le **super brut** est une estimation du coût total employeur, calculée par application d'un taux forfaitaire de cotisations patronales sur le **brut effectif** (après quotité).
 
 > Il s'agit d'une **approximation indicative** — les cotisations patronales réelles dépendent de la taille de l'entreprise, de la convention collective, du niveau de salaire (passage du PASS) et du taux de prévoyance patronale. Un calcul détaillé pourrait être ajouté ultérieurement.
 
 | Champ | Formule |
 |-------|---------|
-| `annualSuperGross` | `annualGrossSalary × (1 + EMPLOYER_FLAT_RATE)` |
+| `annualSuperGross` | `effectiveSalary × (1 + EMPLOYER_FLAT_RATE)` |
 | `monthlySuperGross` | `annualSuperGross ÷ paidMonthsPerYear` |
 | `dailySuperGross` | `annualSuperGross ÷ 228` |
 | `hourlySuperGross` | `annualSuperGross ÷ annualWorkingHours` |
@@ -75,19 +85,21 @@ tax:
   employer-flat-rate: 0.45
 ```
 
-> **Exemple** : 45 000 € brut → super brut estimé ≈ 65 250 €
+> **Exemple** : ETP 45 000 € à 70 % → brut effectif 31 500 € → super brut estimé ≈ 45 675 €
 
 #### Champs bruts et net imposable
 
+`effectiveSalary = annualGrossSalary × (partTimePercentage / 100)` — toutes les formules ci-dessous utilisent cette valeur réduite.
+
 | Champ | Formule |
 |-------|---------|
-| `annualNetImposable` | `NetImposableCalculator.calculer(annualGrossSalary, isCadre, employeePrevoyanceRate, taxParams)` |
-| `monthlyGrossSalary` | `annualGrossSalary ÷ paidMonthsPerYear` |
+| `annualNetImposable` | `NetImposableCalculator.calculer(effectiveSalary, isCadre, employeePrevoyanceRate, taxParams)` |
+| `monthlyGrossSalary` | `effectiveSalary ÷ paidMonthsPerYear` |
 | `monthlyNetImposable` | `annualNetImposable ÷ paidMonthsPerYear` |
 | `annualWorkingHours` | `weeklyHours × (228 ÷ 5)` |
-| `hourlyGrossSalary` | `annualGrossSalary ÷ annualWorkingHours` |
+| `hourlyGrossSalary` | `effectiveSalary ÷ annualWorkingHours` |
 | `hourlyNetImposable` | `annualNetImposable ÷ annualWorkingHours` |
-| `dailyGrossSalary` | `annualGrossSalary ÷ 228` |
+| `dailyGrossSalary` | `effectiveSalary ÷ 228` |
 | `dailyNetImposable` | `annualNetImposable ÷ 228` |
 | `employeeMonthlyMealVoucherCost` | `mealVoucherAmount × (employeeRate ÷ 100) × 19` |
 | `employerMonthlyMealVoucherCost` | `mealVoucherAmount × ((100 − employeeRate) ÷ 100) × 19` |
@@ -115,6 +127,58 @@ tax:
 | Jours travaillés / an | `228` | Convention standard (tooltip explicatif prévu dans l'IHM) |
 | Jours travaillés / mois | `19` | 228 ÷ 12, arrondi |
 | Jours / semaine ouvrée | `5` | |
+
+---
+
+## 1ter. Temps partiel — Quotité de travail
+
+### Principe
+
+Le champ `partTimePercentage` (Float, plage `0.1–100.0`, défaut `100.0`) exprime la **quotité de travail** du salarié par rapport à un temps plein. Il est saisi au % près (ex : `70.0` pour un 7/10e, `80.0` pour un 4/5e).
+
+L'utilisateur saisit toujours son salaire en **équivalent temps plein (ETP)** — c'est la valeur brute inscrite au contrat de travail comme référence. La quotité est appliquée une seule fois en entrée de la chaîne de calcul pour obtenir le salaire réellement perçu.
+
+```
+effectiveSalary = annualGrossSalary_ETP × (partTimePercentage / 100)
+```
+
+Pour les contrats PUBLIC :
+
+```
+effectiveSalary = indiceMajore × pointValue × (partTimePercentage / 100)
+```
+
+### Impact sur les projections
+
+Toutes les projections (brut mensuel, net imposable, net d'impôt, taux horaire/journalier, super brut) dérivent de `effectiveSalary`. Aucun ajustement supplémentaire n'est nécessaire dans les formules : le multiplicateur est appliqué en amont dans `SalaryContractService.toDto()`.
+
+### Impact sur les révisions salariales
+
+Les révisions (`SalaryRevision`) portent sur le **salaire ETP** (ou l'indice pour PUBLIC). La quotité du contrat s'applique automatiquement sur la révision active lors du calcul du `effectiveSalary`. Si la quotité change (ex : passage de 70 % à 80 %), le contrat est mis à jour directement — ce n'est pas une révision salariale.
+
+### Impact sur les bulletins de paie — VS Théorique
+
+Les colonnes *« vs théorique »* dans le panneau Bulletins de paie comparent le brut/net réel au `monthlyGrossSalary` et `monthlyNetAfterTax` du contrat — qui incluent déjà la quotité. La comparaison est donc cohérente avec le temps partiel sans modification supplémentaire.
+
+### Impact sur les graphiques de revenus (tableau de bord)
+
+Le graphique d'évolution salariale utilise les bulletins de paie réels (`MonthlyPaySlip.grossSalary`) et non les projections. Il n'est donc pas affecté. Les widgets de projection (grille théorique) utilisent les valeurs du DTO, déjà réduites par la quotité.
+
+### Règles de validation
+
+| Règle | Contrainte |
+|-------|------------|
+| Valeur min | `0.1` (interdit les contrats à 0 %) |
+| Valeur max | `100.0` |
+| Précision | 0,1 % (Float) |
+| Défaut | `100.0` — un contrat à temps plein se comporte exactement comme avant |
+| Contrat PUBLIC | La quotité s'applique après `indiceMajore × pointValue` |
+
+### Affichage IHM
+
+- **Formulaire contrat** : slider ou champ numérique de `10` à `100` (pas de `0.1`), avec valeur par défaut 100 et label dynamique (ex : *"70 % — 7/10e"*, *"80 % — 4/5e"*, *"100 % — Temps plein"*)
+- **En-tête contrat** : badge affiché uniquement si `partTimePercentage < 100` (ex : badge *"70 %"*)
+- **Grille de projections** : bandeau informatif si temps partiel actif, indiquant le brut ETP et la quotité appliquée
 
 ---
 

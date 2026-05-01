@@ -33,6 +33,8 @@ GET /api/salary-contracts
     "startDate": "2023-01-01",
     "endDate": null,
     "annualGrossSalary": 45000.0,
+    "baseGrossSalary": 45000.0,
+    "partTimePercentage": 100.0,
     "paidMonthsPerYear": 12,
     "weeklyHours": 35.0,
     "mealVoucherAmount": 9.5,
@@ -133,7 +135,8 @@ Content-Type: application/json
   "mealVoucherAmount": 9.5,
   "mealVoucherEmployeeRate": 50.0,
   "isCadre": false,
-  "employeePrevoyanceRate": 0.015
+  "employeePrevoyanceRate": 0.015,
+  "partTimePercentage": 70.0
 }
 ```
 
@@ -171,6 +174,7 @@ Content-Type: application/json
 | `mealVoucherAmount` | `number` | oui | ≥ 0 | Valeur faciale du ticket restaurant (€) |
 | `mealVoucherEmployeeRate` | `number` | oui | 0–100 | Part salarié du ticket restaurant (%) |
 | `employeePrevoyanceRate` | `number` | non | 0,0–1,0 | Taux prévoyance/mutuelle salarié en décimal |
+| `partTimePercentage` | `number` | non | 0,1–100 | Quotité de travail en % (défaut : `100.0` = temps plein). Le salaire saisi est l'ETP ; toutes les projections sont réduites proportionnellement. |
 
 #### Champs spécifiques PRIVATE
 

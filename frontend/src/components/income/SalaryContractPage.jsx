@@ -166,6 +166,11 @@ export default function SalaryContractPage() {
               </div>
               <div className="flex flex-wrap gap-3 text-sm text-gray-600">
                 <span>Brut annuel : <strong className="text-gray-900 amount">{selected.annualGrossSalary?.toLocaleString('fr-FR')} €</strong></span>
+                {selected.partTimePercentage != null && selected.partTimePercentage < 100 && (
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 dark:text-orange-300 text-xs font-semibold rounded-full">
+                    ⏱ {selected.partTimePercentage} % — temps partiel
+                  </span>
+                )}
                 <span>{selected.paidMonthsPerYear} mois / an</span>
                 <span>{selected.weeklyHours} h / sem.</span>
                 {selected.isCadre

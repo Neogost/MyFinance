@@ -68,17 +68,25 @@ function buildYearlyData(contracts, revisionsMap) {
       .filter(r => new Date(r.effectiveDate) <= dec31)
       .sort((a, b) => new Date(b.effectiveDate) - new Date(a.effectiveDate))[0]
 
-    const brut = activeRevision?.annualGrossSalary
-      ?? activeContract.baseGrossSalary
-      ?? activeContract.annualGrossSalary
+    // Quotité de travail (1.0 = temps plein)
+    const partTimeRatio = (activeContract.partTimePercentage ?? 100) / 100
 
-    // Les ratios sont constants pour un contrat donné (isCadre + prevoyance ne changent pas)
-    const baseBrut = activeContract.baseGrossSalary ?? activeContract.annualGrossSalary
-    const netImposable = baseBrut > 0 && activeContract.annualNetImposable != null
-      ? brut * (activeContract.annualNetImposable / baseBrut)
+    // Brut ETP (révision ou base du contrat), puis application de la quotité
+    const etpBrut = activeRevision?.annualGrossSalary
+      ?? activeContract.baseGrossSalary
+      ?? null
+    const brut = etpBrut != null
+      ? etpBrut * partTimeRatio
+      : activeContract.annualGrossSalary  // déjà réduit par quotité dans le DTO
+
+    // annualNetImposable et annualNetAfterTax sont calculés sur le brut effectif courant
+    // → utiliser annualGrossSalary (brut effectif) comme dénominateur du ratio, pas le brut ETP
+    const effectiveBrut = activeContract.annualGrossSalary
+    const netImposable = effectiveBrut > 0 && activeContract.annualNetImposable != null
+      ? brut * (activeContract.annualNetImposable / effectiveBrut)
       : null
-    const netAfterTax = baseBrut > 0 && activeContract.annualNetAfterTax != null
-      ? brut * (activeContract.annualNetAfterTax / baseBrut)
+    const netAfterTax = effectiveBrut > 0 && activeContract.annualNetAfterTax != null
+      ? brut * (activeContract.annualNetAfterTax / effectiveBrut)
       : null
 
     // Valeurs brutes conservées pour le tooltip

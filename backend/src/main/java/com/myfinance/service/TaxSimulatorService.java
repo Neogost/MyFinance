@@ -167,11 +167,15 @@ public class TaxSimulatorService {
 
         if (contract.getAnnualGrossSalary() == null) return 0f;
 
-        // Révision salariale active à la date de référence
+        // Révision salariale active à la date de référence (brut ETP)
         float effectiveSalary = salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(contract, referenceDate)
                 .map(com.myfinance.domain.SalaryRevision::getAnnualGrossSalary)
                 .orElse(contract.getAnnualGrossSalary());
+
+        // Application de la quotité de travail (ETP → brut réellement perçu)
+        float partTimeRatio = contract.getPartTimePercentage() != null ? contract.getPartTimePercentage() / 100f : 1f;
+        effectiveSalary = effectiveSalary * partTimeRatio;
 
         boolean isCadre = Boolean.TRUE.equals(contract.getIsCadre());
         float salaryNetImposable = NetImposableCalculator.calculer(

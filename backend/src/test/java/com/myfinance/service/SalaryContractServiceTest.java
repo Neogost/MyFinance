@@ -61,6 +61,7 @@ class SalaryContractServiceTest {
                 .startDate(LocalDate.of(2023, 1, 1))
                 .endDate(null)
                 .annualGrossSalary(45000f)
+                .partTimePercentage(100f)
                 .paidMonthsPerYear(12)
                 .weeklyHours(35f)
                 .mealVoucherAmount(9.5f)
@@ -162,7 +163,7 @@ class SalaryContractServiceTest {
     @Test
     void create_creeLeContratEtRetourneLeDtoAvecProjections() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                null, 50000f, null, null, null, LocalDate.of(2024, 1, 1), null, 12, 35f, 10f, 50f, false, null);
+                null, 50000f, null, null, null, LocalDate.of(2024, 1, 1), null, 12, 35f, 10f, 50f, false, null, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(false);
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> {
@@ -171,6 +172,7 @@ class SalaryContractServiceTest {
                     .id(2L).user(owner)
                     .startDate(c.getStartDate()).endDate(c.getEndDate())
                     .annualGrossSalary(c.getAnnualGrossSalary())
+                    .partTimePercentage(c.getPartTimePercentage())
                     .paidMonthsPerYear(c.getPaidMonthsPerYear())
                     .weeklyHours(c.getWeeklyHours())
                     .mealVoucherAmount(c.getMealVoucherAmount())
@@ -191,7 +193,7 @@ class SalaryContractServiceTest {
     @Test
     void create_leve409_siContratActifExisteDeja() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                null, 50000f, null, null, null, LocalDate.of(2024, 1, 1), null, 12, 35f, 10f, 50f, false, null);
+                null, 50000f, null, null, null, LocalDate.of(2024, 1, 1), null, 12, 35f, 10f, 50f, false, null, null);
 
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);
 
@@ -206,7 +208,7 @@ class SalaryContractServiceTest {
     @Test
     void create_accepteContratCloture_memeSiUnAutreEstActif() {
         CreateSalaryContractRequest request = new CreateSalaryContractRequest(
-                null, 40000f, null, null, null, LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 12, 35f, 0f, 0f, false, null);
+                null, 40000f, null, null, null, LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31), 12, 35f, 0f, 0f, false, null, null);
 
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -219,7 +221,7 @@ class SalaryContractServiceTest {
     @Test
     void update_modifieLeContrat() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                48000f, null, null, null, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 13, 35f, 9.5f, 60f, false, null);
+                48000f, null, null, null, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31), 13, 35f, 9.5f, 60f, false, null, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
         when(salaryContractRepository.save(any(SalaryContract.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -233,7 +235,7 @@ class SalaryContractServiceTest {
     @Test
     void update_leve403_siPasLeProprietaire() {
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                48000f, null, null, null, LocalDate.of(2023, 1, 1), null, 12, 35f, 9.5f, 50f, false, null);
+                48000f, null, null, null, LocalDate.of(2023, 1, 1), null, 12, 35f, 9.5f, 50f, false, null, null);
 
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
 
@@ -249,12 +251,12 @@ class SalaryContractServiceTest {
                 .id(2L).user(owner)
                 .startDate(LocalDate.of(2022, 1, 1))
                 .endDate(LocalDate.of(2022, 12, 31))
-                .annualGrossSalary(40000f).paidMonthsPerYear(12)
+                .annualGrossSalary(40000f).partTimePercentage(100f).paidMonthsPerYear(12)
                 .weeklyHours(35f).mealVoucherAmount(0f).mealVoucherEmployeeRate(0f)
                 .isCadre(false)
                 .build();
         UpdateSalaryContractRequest request = new UpdateSalaryContractRequest(
-                40000f, null, null, null, LocalDate.of(2022, 1, 1), null, 12, 35f, 0f, 0f, false, null);
+                40000f, null, null, null, LocalDate.of(2022, 1, 1), null, 12, 35f, 0f, 0f, false, null, null);
 
         when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(closedContract));
         when(salaryContractRepository.existsByUserAndEndDateIsNull(owner)).thenReturn(true);
@@ -306,7 +308,7 @@ class SalaryContractServiceTest {
         SalaryContract publicContract = SalaryContract.builder()
                 .id(2L).user(owner)
                 .contractType(ContractTypeEnum.PUBLIC)
-                .indiceMajore(400)
+                .indiceMajore(400).partTimePercentage(100f)
                 .startDate(LocalDate.of(2022, 9, 1)).endDate(null)
                 .paidMonthsPerYear(12).weeklyHours(35f)
                 .mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
@@ -337,7 +339,7 @@ class SalaryContractServiceTest {
         SalaryContract publicContract = SalaryContract.builder()
                 .id(2L).user(owner)
                 .contractType(ContractTypeEnum.PUBLIC)
-                .indiceMajore(400)
+                .indiceMajore(400).partTimePercentage(100f)
                 .startDate(LocalDate.of(2022, 9, 1)).endDate(null)
                 .paidMonthsPerYear(12).weeklyHours(35f)
                 .mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
@@ -355,5 +357,39 @@ class SalaryContractServiceTest {
         // Sans révision : brut = indiceMajore_contrat × valeur_du_point = 400 × 5.0 = 2000
         assertThat(result.annualGrossSalary()).isEqualTo(2000f);
         assertThat(result.activeRevisionId()).isNull();
+    }
+
+    // ── Temps partiel ──────────────────────────────────────────
+
+    @Test
+    void findById_tempsPartiel_reduitleBrutEffectif() {
+        SalaryContract partTimeContract = SalaryContract.builder()
+                .id(3L).user(owner)
+                .startDate(LocalDate.of(2023, 1, 1)).endDate(null)
+                .annualGrossSalary(45000f).partTimePercentage(70f)
+                .paidMonthsPerYear(12).weeklyHours(35f)
+                .mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
+                .isCadre(false)
+                .build();
+
+        when(salaryContractRepository.findById(3L)).thenReturn(Optional.of(partTimeContract));
+
+        SalaryContractDto result = salaryContractService.findById(3L, owner);
+
+        // Brut effectif = 45 000 × 70 % = 31 500 €
+        assertThat(result.annualGrossSalary()).isEqualTo(31500f);
+        assertThat(result.partTimePercentage()).isEqualTo(70f);
+        // Net imposable calculé sur le brut réduit (31 500) et non sur le brut ETP (45 000)
+        assertThat(result.annualNetImposable()).isLessThan(35000f);
+    }
+
+    @Test
+    void findById_tempsPlein_neutre() {
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+
+        SalaryContractDto result = salaryContractService.findById(1L, owner);
+        // 100 % → pas de réduction
+        assertThat(result.annualGrossSalary()).isEqualTo(45000f);
+        assertThat(result.partTimePercentage()).isEqualTo(100f);
     }
 }
