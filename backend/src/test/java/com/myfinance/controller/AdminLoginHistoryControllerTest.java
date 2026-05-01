@@ -58,7 +58,7 @@ class AdminLoginHistoryControllerTest {
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[0].login").value("kevin"))
                 .andExpect(jsonPath("$.content[0].eventType").value("SUCCESS"))
-                .andExpect(jsonPath("$.totalElements").value(2));
+                .andExpect(jsonPath("$.page.totalElements").value(2));
     }
 
     @Test
