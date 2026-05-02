@@ -52,12 +52,24 @@ export default function DimensionDonut({
 
   const centerColor = allGood ? 'text-emerald-600' : goodCount >= totalCount / 2 ? 'text-amber-600' : 'text-red-600'
 
-  const tooltipFmt = (value, name, props) => {
-    const entry = props?.payload
-    if (entry?.isOther) return [`${value.toFixed(1)} % (non configuré)`, name]
-    const dev = entry?.deviation
-    const sign = dev >= 0 ? '+' : ''
-    return [`${value.toFixed(1)} % · cible ${entry?.target?.toFixed(0)} % (${sign}${dev?.toFixed(1)} pt)`, name]
+  function DonutTooltip({ active, payload }) {
+    if (!active || !payload?.[0]) return null
+    const e = payload[0].payload
+    const style = { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 12px', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', fontSize: 12 }
+    if (e.isOther) return (
+      <div style={style}>
+        <span className="text-gray-400">{e.value.toFixed(1)} % non configuré</span>
+      </div>
+    )
+    const sign = e.deviation >= 0 ? '+' : ''
+    return (
+      <div style={style} className="min-w-[130px]">
+        <p className="font-semibold text-gray-800 mb-1">{e.name}</p>
+        <p className="text-gray-500">réel <span className="font-medium text-gray-800">{e.value.toFixed(1)} %</span></p>
+        <p className="text-gray-500">cible <span className="text-gray-700">{e.target.toFixed(0)} %</span></p>
+        <p className={`font-semibold mt-0.5 ${DEVIATION_TEXT(e.deviation)}`}>écart {sign}{e.deviation.toFixed(1)} pt</p>
+      </div>
+    )
   }
 
   return (
@@ -85,7 +97,7 @@ export default function DimensionDonut({
             >
               {slices.map((s, i) => <Cell key={i} fill={s.fill} />)}
             </Pie>
-            <Tooltip formatter={tooltipFmt} />
+            <Tooltip content={<DonutTooltip />} wrapperStyle={{ zIndex: 50 }} />
           </PieChart>
         </ResponsiveContainer>
         {/* Étiquette centrale */}
