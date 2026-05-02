@@ -143,7 +143,7 @@ const STEPS = [
   { num: '3', title: 'Visualisez & pilotez',     desc: 'Tableau de bord, objectifs, projections — tout au même endroit.' },
 ]
 
-export default function LandingPage({ onLogin, onRegister, onDocumentation, onContact, onShowReleaseNotes }) {
+export default function LandingPage({ onLogin, onRegister, onDocumentation, onContact, onShowReleaseNotes, onSimulators }) {
   const [version, setVersion] = useState(null)
 
   useEffect(() => {
@@ -161,6 +161,12 @@ export default function LandingPage({ onLogin, onRegister, onDocumentation, onCo
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <img src={logo} alt="MyFinance" className="h-10 w-auto" />
           <div className="flex items-center gap-3">
+            <button
+              onClick={onSimulators}
+              className="hidden sm:inline px-4 py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 transition"
+            >
+              Simulateurs
+            </button>
             <button
               onClick={onDocumentation}
               className="hidden sm:inline px-4 py-2 text-sm font-medium text-gray-500 hover:text-indigo-600 transition"

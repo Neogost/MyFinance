@@ -235,7 +235,7 @@ const CustomTooltipBar = ({ active, payload, label }) => {
 // Rendements par défaut réalistes par enveloppe
 const DEFAULT_RETURNS = { cto: 7, pea: 6.5, av: 3.5, per: 4.5 }
 
-export default function FiscalEnvelopeComparatorPage() {
+export default function FiscalEnvelopeComparatorPage({ user }) {
   const { trackPageView } = useAnalytics()
   useEffect(() => { trackPageView('tools.fiscal_envelope') }, [])
   // Versements
@@ -277,6 +277,7 @@ export default function FiscalEnvelopeComparatorPage() {
 
   // Chargement de la TMI depuis l'API
   useEffect(() => {
+    if (!user) { setTmiLoading(false); return }
     simulateTax()
       .then(res => {
         const revenuParPart = res.totalTaxableIncome && res.fiscalParts

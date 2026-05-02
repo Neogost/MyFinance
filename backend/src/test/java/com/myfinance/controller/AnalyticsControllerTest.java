@@ -56,14 +56,15 @@ class AnalyticsControllerTest {
     }
 
     @Test
-    void track_sansAuthentification_retourne401() throws Exception {
+    void track_sansAuthentification_retourne204() throws Exception {
+        // Endpoint public — accessible en mode anonyme (simulateurs publics)
         TrackEventRequest request = new TrackEventRequest(
                 EventType.FEATURE_USE, "patrimoine.position.create", null, null);
 
         mockMvc.perform(post("/api/analytics/track")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isNoContent());
     }
 
     // ── POST /api/analytics/error ──────────────────────────────
@@ -94,13 +95,14 @@ class AnalyticsControllerTest {
     }
 
     @Test
-    void trackError_sansAuthentification_retourne401() throws Exception {
+    void trackError_sansAuthentification_retourne204() throws Exception {
+        // Endpoint public — accessible en mode anonyme
         TrackErrorRequest request = new TrackErrorRequest(
                 "TypeError", "msg", null, null, null);
 
         mockMvc.perform(post("/api/analytics/error")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isNoContent());
     }
 }

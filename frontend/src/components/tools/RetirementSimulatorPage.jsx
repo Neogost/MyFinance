@@ -150,7 +150,7 @@ const CustomTooltipChart = ({ active, payload, label }) => {
 
 // ── Page principale ───────────────────────────────────────────────────────────
 
-export default function RetirementSimulatorPage() {
+export default function RetirementSimulatorPage({ user }) {
   const { trackPageView } = useAnalytics()
   useEffect(() => { trackPageView('tools.retirement') }, [])
   // Référentiel
@@ -191,16 +191,19 @@ export default function RetirementSimulatorPage() {
 
   // ── Effects de pré-remplissage ────────────────────────────────────────────
   useEffect(() => {
+    // getRetirementParameters est public (pas d'auth requise)
     getRetirementParameters()
       .then(setParams)
       .catch(() => {})
       .finally(() => setLoadingParams(false))
 
+    if (!user) return // pré-remplissage profil uniquement si connecté
+
     getMe()
-      .then(user => {
-        if (user?.birthDate) {
-          setBirthDate(user.birthDate)
-          const yearOfBirth   = new Date(user.birthDate).getFullYear()
+      .then(me => {
+        if (me?.birthDate) {
+          setBirthDate(me.birthDate)
+          const yearOfBirth   = new Date(me.birthDate).getFullYear()
           const careerStart   = yearOfBirth + 22
           setCareerStartYear(careerStart)
           const yearsWorked   = CURRENT_YEAR - careerStart

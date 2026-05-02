@@ -116,12 +116,13 @@ export default function LoanSimulatorPage({ user }) {
   const [saving, setSaving]                 = useState(false)
 
   useEffect(() => {
+    if (!user) { setIncomeLoading(false); return }
     setIncomeLoading(true)
     simulateTax()
       .then(data => setApiIncome(data.salaryIncome ? Math.round(data.salaryIncome / 12) : null))
       .catch(() => setApiIncome(null))
       .finally(() => setIncomeLoading(false))
-  }, [])
+  }, [user])
 
   useEffect(() => {
     if (!showMonthly || !showTable) return
@@ -139,10 +140,11 @@ export default function LoanSimulatorPage({ user }) {
   }, [showMonthly, showTable])
 
   useEffect(() => {
+    if (!user) return
     getLoanSimulations()
       .then(setSavedSimulations)
       .catch(() => {})
-  }, [])
+  }, [user])
 
   function getSimulationParameters() {
     return {
@@ -333,6 +335,7 @@ export default function LoanSimulatorPage({ user }) {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Simulateur d'Emprunt Immobilier</h1>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {user && <>
           <button onClick={() => { setSaveName(`Simulation du ${new Date().toLocaleDateString('fr-FR')}`); setShowSaveModal(true) }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-sm font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -347,6 +350,7 @@ export default function LoanSimulatorPage({ user }) {
             </svg>
             Mes simulations {savedSimulations.length > 0 && <span className="bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{savedSimulations.length}</span>}
           </button>
+          </>}
           <button onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -388,7 +392,7 @@ export default function LoanSimulatorPage({ user }) {
       )}
 
       {/* Modal — simulations sauvegardées */}
-      {showLoadPanel && (
+      {user && showLoadPanel && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60" onClick={() => setShowLoadPanel(false)}>
           <div className="bg-white rounded-t-2xl sm:rounded-xl w-full sm:max-w-md max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
@@ -428,28 +432,34 @@ export default function LoanSimulatorPage({ user }) {
 
           {/* Revenus */}
           <Section title="Revenus" accent={!!apiIncome && !incomeLoading}>
+            {user && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">
+                  Revenu net mensuel
+                  {apiIncome && !incomeLoading && <span className="ml-1.5 text-indigo-400 font-medium">depuis votre profil</span>}
+                </p>
+                {incomeLoading
+                  ? <p className="text-sm text-gray-400 italic py-1">Chargement…</p>
+                  : apiIncome
+                  ? <p className="text-lg font-semibold text-indigo-700 amount">{fmt(apiIncome)}/mois</p>
+                  : <p className="text-sm text-gray-400 italic">Aucun contrat actif — saisir manuellement</p>
+                }
+              </div>
+            )}
             <div>
-              <p className="text-xs text-gray-500 mb-1">
-                Revenu net mensuel
-                {apiIncome && !incomeLoading && <span className="ml-1.5 text-indigo-400 font-medium">depuis votre profil</span>}
-              </p>
-              {incomeLoading
-                ? <p className="text-sm text-gray-400 italic py-1">Chargement…</p>
-                : apiIncome
-                ? <p className="text-lg font-semibold text-indigo-700 amount">{fmt(apiIncome)}/mois</p>
-                : <p className="text-sm text-gray-400 italic">Aucun contrat actif — saisir manuellement</p>
-              }
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Surcharger le revenu mensuel net (€)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {user ? 'Surcharger le revenu mensuel net (€)' : 'Revenu mensuel net (€)'}
+              </label>
               <input type="number" value={incomeOverride} min={0} step={100}
                 onChange={e => setIncomeOverride(e.target.value)}
                 placeholder={'Ex : 3500'}
                 className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
-              <p className="text-xs text-gray-400 mt-0.5">
-                {incomeOverride !== '' ? 'Revenu de profil ignoré pour les calculs' : 'Laisser vide pour utiliser le profil'}
-              </p>
+              {user && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {incomeOverride !== '' ? 'Revenu de profil ignoré pour les calculs' : 'Laisser vide pour utiliser le profil'}
+                </p>
+              )}
             </div>
             {/* Revenus co-emprunteurs */}
             {additionalIncomes.map((inc) => {
@@ -526,10 +536,12 @@ export default function LoanSimulatorPage({ user }) {
                 </div>
               )
             })}
-            <button onClick={addAdditionalIncome}
-              className="w-full py-1.5 border border-dashed border-indigo-300 rounded-md text-sm text-indigo-500 hover:bg-indigo-50 transition">
-              + Ajouter un revenu (co-emprunteur)
-            </button>
+            {user && (
+              <button onClick={addAdditionalIncome}
+                className="w-full py-1.5 border border-dashed border-indigo-300 rounded-md text-sm text-indigo-500 hover:bg-indigo-50 transition">
+                + Ajouter un revenu (co-emprunteur)
+              </button>
+            )}
 
             {monthlyIncome > 0 && (
               <div className="text-xs bg-white rounded-md p-2.5 border border-indigo-100 space-y-1">

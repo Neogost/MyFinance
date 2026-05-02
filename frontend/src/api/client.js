@@ -34,7 +34,7 @@ api.interceptors.response.use(
     const isLoginEndpoint = url.includes('/api/auth/login')
     const isAnalyticsEndpoint = url.includes('/api/analytics/')
 
-    if (status === 401 && _onUnauthorized && !isLoginEndpoint) {
+    if (status === 401 && _onUnauthorized && !isLoginEndpoint && !isAnalyticsEndpoint) {
       _onUnauthorized()
     } else if (status >= 500 && _onServerError) {
       _onServerError(status)

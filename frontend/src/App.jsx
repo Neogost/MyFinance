@@ -57,7 +57,12 @@ export default function App() {
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
-    setUnauthorizedHandler(() => { setUser(null); setAuthView('landing'); clearAnalyticsSession() })
+    setUnauthorizedHandler(() => {
+      // Ne pas rediriger vers le login si on est sur une page publique
+      const page = window.location.hash.slice(1)
+      if (['compound-interest', 'loan-simulator', 'retirement', 'fiscal-envelopes'].includes(page)) return
+      setUser(null); setAuthView('landing'); clearAnalyticsSession()
+    })
     setServerErrorHandler(status => setAppError(status))
 
     // Capture globale des erreurs JS non gérées
@@ -184,12 +189,73 @@ export default function App() {
       return <ContactPage onLogin={() => setAuthView('login')} onHome={() => { window.location.hash = ''; setCurrentPage('dashboard') }} />
     }
 
+    // Pages accessibles sans connexion
+    const PUBLIC_SIMULATORS = ['compound-interest', 'loan-simulator', 'retirement', 'fiscal-envelopes']
+    const PUBLIC_NAV = [
+      { page: 'loan-simulator',    label: 'Emprunt' },
+      { page: 'compound-interest', label: 'Intérêts composés' },
+      { page: 'retirement',        label: 'Retraite' },
+      { page: 'fiscal-envelopes',  label: 'Enveloppes fiscales' },
+    ]
+    if (PUBLIC_SIMULATORS.includes(currentPage) && authView === 'landing') {
+      return (
+        <ErrorBoundary>
+          <div className="min-h-screen bg-gray-100">
+            <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
+              {/* Barre principale : logo | tabs centrés | connexion */}
+              <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 flex items-center gap-4">
+                <img src={logo} alt="MyFinance" className="h-7 w-auto cursor-pointer shrink-0" onClick={() => { window.location.hash = ''; setCurrentPage('dashboard') }} />
+
+                {/* Tabs — centrés sur desktop, scrollables sur mobile */}
+                <nav className="flex-1 flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
+                  {PUBLIC_NAV.map(({ page, label }) => (
+                    <button
+                      key={page}
+                      onClick={() => { window.location.hash = page; setCurrentPage(page) }}
+                      className={`relative whitespace-nowrap px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                        currentPage === page
+                          ? 'text-indigo-700 bg-indigo-50'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      {label}
+                      {currentPage === page && (
+                        <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-indigo-600 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </nav>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-gray-400 hidden md:block">Mode anonyme</span>
+                  <button
+                    onClick={() => setAuthView('login')}
+                    className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm"
+                  >
+                    Connexion
+                  </button>
+                </div>
+              </div>
+            </header>
+            <main className="p-4 md:p-8 pb-8 overflow-x-hidden">
+              {currentPage === 'compound-interest' && <CompoundInterestSimulatorPage />}
+              {currentPage === 'loan-simulator'    && <LoanSimulatorPage user={null} />}
+              {currentPage === 'retirement'        && <RetirementSimulatorPage user={null} />}
+              {currentPage === 'fiscal-envelopes'  && <FiscalEnvelopeComparatorPage user={null} />}
+            </main>
+          </div>
+        </ErrorBoundary>
+      )
+    }
+
     if (authView === 'landing') {
       return (
         <>
           <LandingPage
             onLogin={() => setAuthView('login')}
             onRegister={() => setAuthView('register')}
+            onSimulators={() => { window.location.hash = 'loan-simulator'; setCurrentPage('loan-simulator') }}
             onDocumentation={(docId) => { if (docId) sessionStorage.setItem('doc-page', docId); window.location.hash = 'documentation'; setCurrentPage('documentation') }}
             onContact={() => { window.location.hash = 'contact'; setCurrentPage('contact') }}
             onShowReleaseNotes={() => setShowReleaseNotes(true)}
@@ -253,8 +319,8 @@ export default function App() {
 
         {currentPage === 'crisis-simulator' && <CrisisSimulatorPage user={user} />}
         {currentPage === 'lombard-simulator'  && <LombardSimulatorPage />}
-        {currentPage === 'fiscal-envelopes'  && <FiscalEnvelopeComparatorPage />}
-        {currentPage === 'retirement'         && <RetirementSimulatorPage />}
+        {currentPage === 'fiscal-envelopes'  && <FiscalEnvelopeComparatorPage user={user} />}
+        {currentPage === 'retirement'         && <RetirementSimulatorPage user={user} />}
         {currentPage === 'performance'       && user.role === 'ADMIN' && <PerformancePage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}

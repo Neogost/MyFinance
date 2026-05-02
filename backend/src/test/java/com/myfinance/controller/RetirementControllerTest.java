@@ -31,8 +31,9 @@ class RetirementControllerTest {
     }
 
     @Test
-    void getParameters_sansAuthentification_retourne401() throws Exception {
+    void getParameters_sansAuthentification_retourne200() throws Exception {
+        // Endpoint public — accessible sans session
         mockMvc.perform(get("/api/retirement/parameters"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isOk());
     }
 }

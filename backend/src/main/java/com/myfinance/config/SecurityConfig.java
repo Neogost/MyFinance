@@ -136,6 +136,8 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/auth/login", "/api/auth/register", "/api/version").permitAll();
+                auth.requestMatchers("/api/retirement/parameters").permitAll();
+                auth.requestMatchers("/api/analytics/track", "/api/analytics/error").permitAll();
                 if (swaggerEnabled) {
                     auth.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll();
                 } else {
