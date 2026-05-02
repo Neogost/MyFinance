@@ -59,6 +59,10 @@ public class Position {
     @Enumerated(EnumType.STRING)
     private OwnershipType ownershipType;
 
+    /** Usage du bien : résidence principale, locatif, secondaire — IMMO_PHYSIQUE uniquement */
+    @Enumerated(EnumType.STRING)
+    private PropertyUsage propertyUsage;
+
     private String address;
 
     private BigDecimal estimatedCurrentValue; // saisie manuelle

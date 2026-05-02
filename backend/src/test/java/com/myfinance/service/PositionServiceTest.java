@@ -4,6 +4,7 @@ import com.myfinance.domain.*;
 import com.myfinance.dto.*;
 import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import com.myfinance.repository.PositionSnapshotRepository;
@@ -34,6 +35,7 @@ class PositionServiceTest {
     @Mock PositionSnapshotRepository positionSnapshotRepository;
     @Mock InstrumentRepository instrumentRepository;
     @Mock ExchangeRateRepository exchangeRateRepository;
+    @Mock OtherIncomeRepository otherIncomeRepository;
     @InjectMocks PositionService positionService;
 
     User owner;
@@ -157,7 +159,7 @@ class PositionServiceTest {
     void create_livret_sauvegardeEtRetourneLDto() {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIVRET, "BNP Parisbas", "Livret A", "EUR",
-                FiscalEnvelope.NONE, null, null, null, null, null, null, null,
+                FiscalEnvelope.NONE, null, null, null, null, null, null, null, null,
                 null, new BigDecimal("3.00"), null, true);
 
         when(positionRepository.save(any(Position.class))).thenAnswer(inv -> {
@@ -184,7 +186,7 @@ class PositionServiceTest {
     void create_liquidite_initialiseLeBalance() {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.LIQUIDITE, "Swile", "Ticket Restaurant", "EUR",
-                null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null,
                 new BigDecimal("525.79"), false);
 
         when(positionRepository.save(any(Position.class))).thenAnswer(inv -> {
@@ -209,7 +211,7 @@ class PositionServiceTest {
     void create_bourse_resolutionInstrument() {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.BOURSE, "SaxoBank", "Lyxor PEA", "EUR",
-                FiscalEnvelope.PEA, 10L, AssetSubType.ETF, null, null, null, null, null,
+                FiscalEnvelope.PEA, 10L, AssetSubType.ETF, null, null, null, null, null, null,
                 null, null, null, false);
 
         when(instrumentRepository.findById(10L)).thenReturn(Optional.of(instrument));
@@ -236,7 +238,7 @@ class PositionServiceTest {
     void create_bourse_instrumentInexistant_leve404() {
         CreatePositionRequest request = new CreatePositionRequest(
                 AssetCategory.BOURSE, "SaxoBank", "ETF", "EUR",
-                FiscalEnvelope.PEA, 99L, AssetSubType.ETF, null, null, null, null, null,
+                FiscalEnvelope.PEA, 99L, AssetSubType.ETF, null, null, null, null, null, null,
                 null, null, null, false);
 
         when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
@@ -320,6 +322,7 @@ class PositionServiceTest {
     @Test
     void delete_supprimeLesOrdresPuisLaPosition() {
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(otherIncomeRepository.findByPosition(livret)).thenReturn(List.of());
 
         positionService.delete(1L, owner);
 
@@ -342,6 +345,7 @@ class PositionServiceTest {
     @Test
     void delete_autorisePourAdmin() {
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(otherIncomeRepository.findByPosition(livret)).thenReturn(List.of());
 
         assertThatNoException().isThrownBy(() -> positionService.delete(1L, admin));
         verify(positionOrderRepository).deleteByPosition(livret);

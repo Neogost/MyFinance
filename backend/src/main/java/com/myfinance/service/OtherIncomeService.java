@@ -1,12 +1,14 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.OtherIncome;
+import com.myfinance.domain.Position;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
 import com.myfinance.dto.CreateOtherIncomeRequest;
 import com.myfinance.dto.OtherIncomeDto;
 import com.myfinance.dto.UpdateOtherIncomeRequest;
 import com.myfinance.repository.OtherIncomeRepository;
+import com.myfinance.repository.PositionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import java.util.List;
 public class OtherIncomeService {
 
     private final OtherIncomeRepository otherIncomeRepository;
+    private final PositionRepository positionRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -42,6 +45,7 @@ public class OtherIncomeService {
                 .date(request.date())
                 .isTaxable(request.isTaxable() != null ? request.isTaxable() : true)
                 .specificTaxRate(request.specificTaxRate())
+                .position(resolvePosition(request.positionId()))
                 .build();
 
         OtherIncomeDto dto = OtherIncomeDto.from(otherIncomeRepository.save(income));
@@ -60,6 +64,7 @@ public class OtherIncomeService {
         income.setDate(request.date());
         income.setIsTaxable(request.isTaxable() != null ? request.isTaxable() : true);
         income.setSpecificTaxRate(request.specificTaxRate());
+        income.setPosition(resolvePosition(request.positionId()));
 
         OtherIncomeDto dto = OtherIncomeDto.from(otherIncomeRepository.save(income));
         log.info("[user:{}] Revenu complémentaire modifié #{} [type: {}]", currentUser.getId(), id, request.type());
@@ -74,7 +79,7 @@ public class OtherIncomeService {
         log.info("[user:{}] Revenu complémentaire supprimé #{}", currentUser.getId(), id);
     }
 
-    // ── Vérification propriété ─────────────────────────────────
+    // ── Helpers privés ─────────────────────────────────────────
 
     private OtherIncome getIncomeWithOwnershipCheck(Long id, User currentUser) {
         OtherIncome income = otherIncomeRepository.findById(id)
@@ -89,5 +94,12 @@ public class OtherIncomeService {
                     "Accès non autorisé à ce revenu");
         }
         return income;
+    }
+
+    private Position resolvePosition(Long positionId) {
+        if (positionId == null) return null;
+        return positionRepository.findById(positionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Position introuvable : " + positionId));
     }
 }

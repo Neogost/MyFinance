@@ -21,6 +21,7 @@ public record PositionDto(
         AssetSubType assetSubType,
         // IMMO_PHYSIQUE
         OwnershipType ownershipType,
+        PropertyUsage propertyUsage,
         String address,
         BigDecimal estimatedCurrentValue,
         LocalDate acquisitionDate,
@@ -82,6 +83,7 @@ public record PositionDto(
                 instrumentDto,
                 position.getAssetSubType(),
                 position.getOwnershipType(),
+                position.getPropertyUsage(),
                 position.getAddress(),
                 position.getEstimatedCurrentValue(),
                 position.getAcquisitionDate(),

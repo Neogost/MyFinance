@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import { getPositions } from '../../api/patrimoine'
 
 const TYPES = [
   { value: 'LOCATIF',      label: 'Revenu locatif' },
@@ -8,13 +9,22 @@ const TYPES = [
   { value: 'AUTRE',        label: 'Autre' },
 ]
 
-const EMPTY = { type: 'LOCATIF', label: '', amount: '', date: '', isTaxable: true, specificTaxRate: '' }
+const EMPTY = {
+  type: 'LOCATIF',
+  label: '',
+  amount: '',
+  date: '',
+  isTaxable: true,
+  specificTaxRate: '',
+  positionId: '',
+}
 
 export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
   const isEdit = Boolean(income)
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [immoPositions, setImmoPositions] = useState([])
 
   useEffect(() => {
     setForm(income
@@ -25,18 +35,28 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
           date:            income.date,
           isTaxable:       income.isTaxable ?? true,
           specificTaxRate: income.specificTaxRate ?? '',
+          positionId:      income.positionId ?? '',
         }
       : EMPTY
     )
+    setError(null)
   }, [income])
+
+  // Charger les biens IMMO_PHYSIQUE actifs (pour le sélecteur LOCATIF)
+  useEffect(() => {
+    getPositions({ category: 'IMMO_PHYSIQUE', status: 'ACTIVE' })
+      .then(setImmoPositions)
+      .catch(() => setImmoPositions([]))
+  }, [])
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
     setForm(f => ({
       ...f,
       [name]: type === 'checkbox' ? checked : value,
-      // Effacer le taux si on coche "non imposable"
       ...(name === 'isTaxable' && !checked ? { specificTaxRate: '' } : {}),
+      // Réinitialiser le bien associé si on change de type
+      ...(name === 'type' && value !== 'LOCATIF' ? { positionId: '' } : {}),
     }))
   }
 
@@ -49,6 +69,7 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
         ...form,
         amount:          parseFloat(form.amount),
         specificTaxRate: form.specificTaxRate !== '' ? parseFloat(form.specificTaxRate) : null,
+        positionId:      form.positionId !== '' ? parseInt(form.positionId) : null,
       })
     } catch {
       setError('Une erreur est survenue.')
@@ -71,6 +92,22 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
               {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
+
+          {/* Bien immobilier associé — LOCATIF uniquement */}
+          {form.type === 'LOCATIF' && immoPositions.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>Bien immobilier associé</label>
+              <select name="positionId" value={form.positionId} onChange={handleChange} className={inputCls}>
+                <option value="">— Aucun bien associé —</option>
+                {immoPositions.map(p => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400">
+                Associer ce loyer à un bien permet de calculer le rendement locatif dans les objectifs patrimoniaux.
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Description *</label>

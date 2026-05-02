@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { getInstruments, createInstrument } from '../../api/patrimoine'
-import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, FISCAL_ENVELOPES_BY_CATEGORY, ASSET_SUB_TYPES, OWNERSHIP_TYPES } from './constants'
+import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, FISCAL_ENVELOPES_BY_CATEGORY, ASSET_SUB_TYPES, OWNERSHIP_TYPES, PROPERTY_USAGE_TYPES } from './constants'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 
 const EMPTY_FORM = {
   partner: '', label: '', currency: 'EUR',
   fiscalEnvelope: 'NONE', assetSubType: '', instrumentId: null,
-  ownershipType: 'PLEINE_PROPRIETE', address: '', estimatedCurrentValue: '',
+  ownershipType: 'PLEINE_PROPRIETE', propertyUsage: '', address: '', estimatedCurrentValue: '',
   acquisitionDate: '', acquisitionPrice: '',
   commissionRate: '', annualRate: '', currentBalance: '',
   includeInIncomeProjection: false,
@@ -22,9 +22,11 @@ function InstrumentSearch({ category, value, onChange }) {
   const [creating, setCreating]           = useState(false)
   const [newName, setNewName]             = useState('')
   const [newCurrency, setNewCurrency]     = useState('EUR')
-  const [newStablePrice, setNewStablePrice] = useState(false)
-  const [createLoading, setCreateLoading] = useState(false)
-  const [createError, setCreateError]     = useState(null)
+  const [newStablePrice, setNewStablePrice]     = useState(false)
+  const [newCryptoType, setNewCryptoType]       = useState('')
+  const [newCryptoNetwork, setNewCryptoNetwork] = useState('')
+  const [createLoading, setCreateLoading]       = useState(false)
+  const [createError, setCreateError]           = useState(null)
   const debounceRef                       = useRef(null)
 
   useEffect(() => {
@@ -66,6 +68,8 @@ function InstrumentSearch({ category, value, onChange }) {
     setNewName('')
     setNewCurrency('EUR')
     setNewStablePrice(false)
+    setNewCryptoType('')
+    setNewCryptoNetwork('')
     setCreateError(null)
   }
 
@@ -76,11 +80,13 @@ function InstrumentSearch({ category, value, onChange }) {
     try {
       const payload = {
         category,
-        isin:        category === 'BOURSE' ? query.trim().toUpperCase() : null,
-        ticker:      category === 'CRYPTO' ? query.trim().toUpperCase() : null,
-        name:        newName.trim(),
-        currency:    newCurrency,
-        stablePrice: newStablePrice,
+        isin:          category === 'BOURSE' ? query.trim().toUpperCase() : null,
+        ticker:        category === 'CRYPTO' ? query.trim().toUpperCase() : null,
+        name:          newName.trim(),
+        currency:      newCurrency,
+        stablePrice:   newStablePrice,
+        cryptoType:    category === 'CRYPTO' ? (newCryptoType || null) : null,
+        cryptoNetwork: category === 'CRYPTO' ? (newCryptoNetwork || null) : null,
       }
       const created = await createInstrument(payload)
       select(created)
@@ -158,6 +164,32 @@ function InstrumentSearch({ category, value, onChange }) {
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          {category === 'CRYPTO' && (
+            <>
+              <select value={newCryptoType} onChange={e => setNewCryptoType(e.target.value)} className={inputCls}>
+                <option value="">Type de crypto (optionnel)</option>
+                <option value="STABLECOIN">Stablecoin (USDC, USDT…)</option>
+                <option value="STORE_OF_VALUE">Store of value (BTC, PAXG…)</option>
+                <option value="SMART_CONTRACT">Smart contract platform (ETH, SOL…)</option>
+                <option value="LAYER_2">Layer 2 (MATIC, ARB, OP…)</option>
+                <option value="DEFI">DeFi (AAVE, UNI…)</option>
+                <option value="OTHER">Autre</option>
+              </select>
+              <select value={newCryptoNetwork} onChange={e => setNewCryptoNetwork(e.target.value)} className={inputCls}>
+                <option value="">Réseau / Blockchain (optionnel)</option>
+                <option value="BITCOIN">Bitcoin</option>
+                <option value="ETHEREUM">Ethereum</option>
+                <option value="SOLANA">Solana</option>
+                <option value="POLYGON">Polygon</option>
+                <option value="AVALANCHE">Avalanche</option>
+                <option value="BNB_CHAIN">BNB Chain</option>
+                <option value="ARBITRUM">Arbitrum</option>
+                <option value="OPTIMISM">Optimism</option>
+                <option value="BASE">Base</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </>
+          )}
           <label className="flex items-center gap-2 cursor-pointer text-xs text-indigo-700 select-none">
             <input
               type="checkbox"
@@ -210,6 +242,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         assetSubType:              position.assetSubType ?? '',
         instrumentId:              position.instrument?.id ?? null,
         ownershipType:             position.ownershipType ?? 'PLEINE_PROPRIETE',
+        propertyUsage:             position.propertyUsage ?? '',
         address:                   position.address ?? '',
         estimatedCurrentValue:     position.estimatedCurrentValue ?? '',
         acquisitionDate:           position.acquisitionDate ?? '',
@@ -254,6 +287,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         assetSubType:              form.assetSubType || null,
         instrumentId:              instrument?.id ?? null,
         ownershipType:             form.ownershipType || null,
+        propertyUsage:             form.propertyUsage || null,
         address:                   form.address || null,
         estimatedCurrentValue:     form.estimatedCurrentValue !== '' ? parseFloat(form.estimatedCurrentValue) : null,
         acquisitionDate:           form.acquisitionDate || null,
@@ -466,11 +500,19 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className={labelCls}>Valeur estimée (€)</label>
-                      <input name="estimatedCurrentValue" type="number" min="0" step="0.01"
-                        value={form.estimatedCurrentValue} onChange={handleChange}
-                        placeholder="ex : 200000" className={inputCls} />
+                      <label className={labelCls}>Utilisation du bien</label>
+                      <select name="propertyUsage" value={form.propertyUsage} onChange={handleChange} className={inputCls}>
+                        {PROPERTY_USAGE_TYPES.map(t => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
                     </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className={labelCls}>Valeur estimée (€)</label>
+                    <input name="estimatedCurrentValue" type="number" min="0" step="0.01"
+                      value={form.estimatedCurrentValue} onChange={handleChange}
+                      placeholder="ex : 200000" className={inputCls} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">

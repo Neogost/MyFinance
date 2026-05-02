@@ -19,6 +19,7 @@ public record UpdatePositionRequest(
         AssetSubType assetSubType,
         // IMMO_PHYSIQUE
         OwnershipType ownershipType,
+        PropertyUsage propertyUsage,
         @Size(max = 300) String address,
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal estimatedCurrentValue,
         LocalDate acquisitionDate,

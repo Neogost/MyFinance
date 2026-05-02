@@ -45,4 +45,9 @@ public class OtherIncome {
     private Boolean isTaxable; // Ce revenu est-il imposable ?
 
     private Float specificTaxRate; // Taux fixe en % (ex : 30.0 pour flat tax) — null = barème IRPP normal
+
+    /** Bien immobilier IMMO_PHYSIQUE associé — LOCATIF uniquement, nullable */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "position_id")
+    private Position position;
 }

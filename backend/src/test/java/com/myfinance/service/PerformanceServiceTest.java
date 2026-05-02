@@ -58,7 +58,7 @@ class PerformanceServiceTest {
     /** Crée un PositionDto minimal compatible avec le record (21 champs). */
     private PositionDto buildPositionDto(Long id, AssetCategory cat, PositionComputedDto computed) {
         return new PositionDto(id, cat, null, "Label", "EUR",
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null,
                 null, null, null, false, PositionStatus.ACTIVE, LocalDateTime.now(), null, computed);
     }
 

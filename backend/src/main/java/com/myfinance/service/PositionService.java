@@ -34,6 +34,7 @@ public class PositionService {
     private final ExchangeRateRepository exchangeRateRepository;
     private final InstrumentAllocationRepository instrumentAllocationRepository;
     private final InstrumentSectorAllocationRepository instrumentSectorAllocationRepository;
+    private final com.myfinance.repository.OtherIncomeRepository otherIncomeRepository;
 
     // ── Lecture : positions ────────────────────────────────────
 
@@ -112,6 +113,7 @@ public class PositionService {
                 .instrument(instrument)
                 .assetSubType(request.assetSubType())
                 .ownershipType(request.ownershipType())
+                .propertyUsage(request.propertyUsage())
                 .address(request.address())
                 .estimatedCurrentValue(request.estimatedCurrentValue())
                 .acquisitionDate(request.acquisitionDate())
@@ -145,6 +147,7 @@ public class PositionService {
         position.setInstrument(instrument);
         position.setAssetSubType(request.assetSubType());
         position.setOwnershipType(request.ownershipType());
+        position.setPropertyUsage(request.propertyUsage());
         position.setAddress(request.address());
         position.setEstimatedCurrentValue(request.estimatedCurrentValue());
         position.setAcquisitionDate(request.acquisitionDate());
@@ -206,6 +209,12 @@ public class PositionService {
     @Transactional
     public void delete(Long id, User currentUser) {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
+        // Détacher les revenus locatifs liés avant suppression (SQLite n'applique pas ON DELETE SET NULL sans PRAGMA)
+        otherIncomeRepository.findByPosition(position)
+                .forEach(income -> {
+                    income.setPosition(null);
+                    otherIncomeRepository.save(income);
+                });
         positionSnapshotRepository.deleteByPosition(position);
         positionOrderRepository.deleteByPosition(position);
         positionRepository.delete(position);

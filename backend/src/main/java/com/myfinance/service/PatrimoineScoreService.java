@@ -26,7 +26,7 @@ public class PatrimoineScoreService {
 
     public PatrimoineScoreDto computeScore(User user) {
         List<PositionDto> positions = positionService.findAllByUser(user, null, PositionStatus.ACTIVE);
-        Map<String, Double> targets = patrimoineTargetService.getTargets(user);
+        Map<String, Double> targets = patrimoineTargetService.getTargets(user).targets();
         DebtSummaryDto debtSummary = debtService.getSummary(user);
         ExpenseSummaryDto expenseSummary = recurringExpenseService.getSummary(user);
         List<PortfolioSnapshotDto> snapshots = portfolioSnapshotService.findAllByUser(user);

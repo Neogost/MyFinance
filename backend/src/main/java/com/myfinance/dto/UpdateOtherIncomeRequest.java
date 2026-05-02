@@ -14,5 +14,6 @@ public record UpdateOtherIncomeRequest(
         @NotNull @Positive Float amount,
         @NotNull LocalDate date,
         Boolean isTaxable,      // null → true par défaut dans le service
-        Float specificTaxRate   // null → barème IRPP normal
+        Float specificTaxRate,  // null → barème IRPP normal
+        Long positionId         // bien IMMO_PHYSIQUE associé (LOCATIF uniquement, nullable)
 ) {}

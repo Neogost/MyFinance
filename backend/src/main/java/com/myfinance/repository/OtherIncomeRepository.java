@@ -1,6 +1,7 @@
 package com.myfinance.repository;
 
 import com.myfinance.domain.OtherIncome;
+import com.myfinance.domain.Position;
 import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +16,6 @@ public interface OtherIncomeRepository extends JpaRepository<OtherIncome, Long> 
     List<OtherIncome> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
 
     void deleteByUser(User user);
+
+    List<OtherIncome> findByPosition(Position position);
 }

@@ -41,6 +41,14 @@ export const OWNERSHIP_TYPES = [
   { value: 'USUFRUIT',         label: 'Usufruit' },
 ]
 
+export const PROPERTY_USAGE_TYPES = [
+  { value: '',                    label: '— Non renseigné —' },
+  { value: 'RESIDENCE_PRINCIPALE', label: 'Résidence principale' },
+  { value: 'LOCATIF',              label: 'Locatif' },
+  { value: 'SECONDAIRE_LOISIRS',   label: 'Résidence secondaire / Loisirs' },
+  { value: 'AUTRE',                label: 'Autre' },
+]
+
 // Taux de rendement annuel moyen par catégorie — utilisés pour la projection patrimoniale
 // Sources : rendements historiques long terme (MSCI World, Livret A, SCPI, indices immo)
 export const PROJECTION_RATES = {
