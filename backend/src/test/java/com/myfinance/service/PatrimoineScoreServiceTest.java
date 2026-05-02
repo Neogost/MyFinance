@@ -161,7 +161,8 @@ class PatrimoineScoreServiceTest {
     void computeScore_avecTroisObjectifs_ajouteLeBonusDePoints() {
         stubDataComplet();
         when(patrimoineTargetService.getTargets(user))
-                .thenReturn(Map.of("BOURSE", 50000.0, "LIVRET", 10000.0, "LIQUIDITE", 5000.0));
+                .thenReturn(new PatrimoineTargetsDto(
+                        Map.of("BOURSE", 50000.0, "LIVRET", 10000.0, "LIQUIDITE", 5000.0), Map.of(), Map.of()));
 
         PatrimoineScoreDto result = service.computeScore(user);
 
@@ -200,7 +201,8 @@ class PatrimoineScoreServiceTest {
 
         when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
                 .thenReturn(List.of(bourse, livret, liquidite, immo));
-        when(patrimoineTargetService.getTargets(user)).thenReturn(Map.of("BOURSE", 50000.0));
+        when(patrimoineTargetService.getTargets(user))
+                .thenReturn(new PatrimoineTargetsDto(Map.of("BOURSE", 50000.0), Map.of(), Map.of()));
         when(debtService.getSummary(user)).thenReturn(new DebtSummaryDto(
                 1, BigDecimal.valueOf(80000), BigDecimal.valueOf(900),
                 BigDecimal.valueOf(50), BigDecimal.valueOf(950), List.of()));
@@ -224,7 +226,8 @@ class PatrimoineScoreServiceTest {
     private void stubDataBase() {
         when(instrumentService.loadAllocationsForScore(any()))
                 .thenReturn(new InstrumentService.AllocationsBundle(Map.of(), Map.of()));
-        when(patrimoineTargetService.getTargets(user)).thenReturn(Map.of());
+        when(patrimoineTargetService.getTargets(user))
+                .thenReturn(new PatrimoineTargetsDto(Map.of(), Map.of(), Map.of()));
         when(debtService.getSummary(user)).thenReturn(new DebtSummaryDto(
                 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
@@ -246,7 +249,7 @@ class PatrimoineScoreServiceTest {
         return new PositionDto(null,
                 com.myfinance.domain.AssetCategory.valueOf(category),
                 null, category, "EUR", envelope, null, null,
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null,
                 false, PositionStatus.ACTIVE, null, null, computed);
     }
 }

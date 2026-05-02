@@ -48,7 +48,12 @@ export const getReferentiel = () => api.get('/api/patrimoine/referentiel').then(
 // ── Stratégie & Objectifs ──────────────────────────────────────
 
 export const getPatrimoineTargets  = ()        => api.get('/api/patrimoine/targets').then(r => r.data)
-export const savePatrimoineTargets = (targets) => api.put('/api/patrimoine/targets', targets).then(r => r.data)
+export const savePatrimoineTargets = (payload) => api.put('/api/patrimoine/targets', payload).then(r => r.data)
+export const getBreakdown       = (dim, cat) => api.get(
+  `/api/patrimoine/breakdown/${dim}${cat ? `?category=${cat}` : ''}`
+).then(r => r.data)
+// Alias rétro-compatible
+export const getSectorBreakdown = ()         => getBreakdown('sector')
 
 // ── Scoring patrimonial ────────────────────────────────────────
 

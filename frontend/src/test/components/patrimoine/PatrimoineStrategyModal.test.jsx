@@ -22,6 +22,7 @@ vi.mock('../../../components/patrimoine/constants', () => ({
 }))
 
 const TARGETS = { BOURSE: 50000, CRYPTO: 10000 }
+const TARGETS_DTO = { targets: TARGETS, breakdowns: {} }
 
 describe('PatrimoineStrategyModal', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -58,12 +59,14 @@ describe('PatrimoineStrategyModal', () => {
   // ── Sauvegarde ────────────────────────────────────────────
 
   it('appelle savePatrimoineTargets avec les valeurs saisies', async () => {
-    savePatrimoineTargets.mockResolvedValue(TARGETS)
+    savePatrimoineTargets.mockResolvedValue(TARGETS_DTO)
     render(<PatrimoineStrategyModal onClose={vi.fn()} targets={TARGETS} onSave={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => {
       expect(savePatrimoineTargets).toHaveBeenCalledWith(
-        expect.objectContaining({ BOURSE: 50000, CRYPTO: 10000 })
+        expect.objectContaining({
+          targets: expect.objectContaining({ BOURSE: 50000, CRYPTO: 10000 })
+        })
       )
     })
   })
@@ -71,11 +74,11 @@ describe('PatrimoineStrategyModal', () => {
   it('appelle onSave et onClose après sauvegarde réussie', async () => {
     const onSave  = vi.fn()
     const onClose = vi.fn()
-    savePatrimoineTargets.mockResolvedValue(TARGETS)
+    savePatrimoineTargets.mockResolvedValue(TARGETS_DTO)
     render(<PatrimoineStrategyModal onClose={onClose} targets={TARGETS} onSave={onSave} />)
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
     await waitFor(() => {
-      expect(onSave).toHaveBeenCalledWith(TARGETS)
+      expect(onSave).toHaveBeenCalledWith(TARGETS_DTO)
       expect(onClose).toHaveBeenCalled()
     })
   })

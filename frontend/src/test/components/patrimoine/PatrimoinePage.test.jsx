@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PatrimoinePage from '../../../components/patrimoine/PatrimoinePage'
 import {
   getPositions, getSnapshots, getSnapshot, getReferentiel,
-  getPatrimoineTargets, createPosition, updatePosition,
+  getPatrimoineTargets, getBreakdown, createPosition, updatePosition,
 } from '../../../api/patrimoine'
 import { getDebts } from '../../../api/debts'
 import { getExpenseSummary } from '../../../api/expenses'
@@ -18,6 +18,7 @@ vi.mock('../../../api/patrimoine', () => ({
   getSnapshot:          vi.fn(),
   getReferentiel:       vi.fn(),
   getPatrimoineTargets: vi.fn(),
+  getBreakdown:         vi.fn(),
   createPosition:       vi.fn(),
   updatePosition:       vi.fn(),
   deletePosition:       vi.fn(),
@@ -77,7 +78,8 @@ function mockAllApis(positions = POSITIONS) {
   getPositions.mockResolvedValue(positions)
   getSnapshots.mockResolvedValue([])
   getReferentiel.mockResolvedValue({ tranches: [] })
-  getPatrimoineTargets.mockResolvedValue({})
+  getPatrimoineTargets.mockResolvedValue({ targets: {}, breakdowns: {} })
+  getBreakdown.mockResolvedValue(null)
   getDebts.mockResolvedValue([])
   getExpenseSummary.mockResolvedValue(null)
   getSalaryContracts.mockResolvedValue([])
@@ -96,7 +98,8 @@ describe('PatrimoinePage', () => {
     getPositions.mockReturnValue(new Promise(() => {}))
     getSnapshots.mockResolvedValue([])
     getReferentiel.mockResolvedValue({ tranches: [] })
-    getPatrimoineTargets.mockResolvedValue({})
+    getPatrimoineTargets.mockResolvedValue({ targets: {}, breakdowns: {} })
+  getBreakdown.mockResolvedValue(null)
     getDebts.mockResolvedValue([])
     render(<PatrimoinePage currentUser={USER} familyMode={false} />)
     expect(screen.getByText('Chargement…')).toBeInTheDocument()
@@ -106,7 +109,8 @@ describe('PatrimoinePage', () => {
     getPositions.mockRejectedValue(new Error('Network error'))
     getSnapshots.mockResolvedValue([])
     getReferentiel.mockResolvedValue({ tranches: [] })
-    getPatrimoineTargets.mockResolvedValue({})
+    getPatrimoineTargets.mockResolvedValue({ targets: {}, breakdowns: {} })
+  getBreakdown.mockResolvedValue(null)
     getDebts.mockResolvedValue([])
     render(<PatrimoinePage currentUser={USER} familyMode={false} />)
     await waitFor(() => {

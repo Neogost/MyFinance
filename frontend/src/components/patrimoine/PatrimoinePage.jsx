@@ -27,7 +27,7 @@ import ExportCsvModal from './ExportCsvModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 
-export default function PatrimoinePage({ currentUser, familyMode }) {
+export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) {
   const { trackPageView, trackEvent } = useAnalytics()
   useEffect(() => { trackPageView('patrimoine.main') }, [])
   const [positions, setPositions]             = useState([])
@@ -42,6 +42,8 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
   const [showStrategy, setShowStrategy]                     = useState(false)
   const [showExportCsv, setShowExportCsv]                   = useState(false)
   const [targets, setTargets]                               = useState({})
+  const [maxTargets, setMaxTargets]                         = useState({})
+  const [breakdowns, setBreakdowns]                         = useState({})
   const [referentiel,      setReferentiel]      = useState(null)
   const [snExpensesSummary, setSnExpensesSummary] = useState(null)
   const [snActiveContract,  setSnActiveContract]  = useState(null)
@@ -125,10 +127,17 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
 
   async function fetchTargets() {
     try {
-      setTargets(await getPatrimoineTargets())
+      const dto = await getPatrimoineTargets()
+      applyTargetsDto(dto)
     } catch {
       // objectifs non critiques
     }
+  }
+
+  function applyTargetsDto(dto) {
+    setTargets(dto?.targets ?? {})
+    setMaxTargets(dto?.maxTargets ?? {})
+    setBreakdowns(dto?.breakdowns ?? {})
   }
 
   async function handleSubmit(payload) {
@@ -542,6 +551,12 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
                 )}
                 <div className="mt-auto">
                   <CategoryStrategyBar currentValue={ownValue} target={targets[cat] ?? null} />
+                  {/* Alerte plafond dépassé — LIQUIDITE / LIVRET */}
+                  {maxTargets?.[cat] && ownValue > maxTargets[cat] && (
+                    <p className="mt-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                      ⚠ Plafond dépassé de {(ownValue - maxTargets[cat]).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €
+                    </p>
+                  )}
                 </div>
               </div>
             )
@@ -664,8 +679,10 @@ export default function PatrimoinePage({ currentUser, familyMode }) {
       {showStrategy && (
         <PatrimoineStrategyModal
           targets={targets}
+          maxTargets={maxTargets}
+          breakdowns={breakdowns}
           onClose={() => setShowStrategy(false)}
-          onSave={setTargets}
+          onSave={applyTargetsDto}
         />
       )}
 

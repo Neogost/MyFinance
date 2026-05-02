@@ -28,4 +28,7 @@ public class PatrimoineTarget {
 
     @Column(nullable = false)
     private Double targetAmountEur;
+
+    /** Plafond à ne pas dépasser — LIQUIDITE / LIVRET uniquement, nullable */
+    private Double targetMaxAmountEur;
 }

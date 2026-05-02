@@ -3,6 +3,11 @@ package com.myfinance.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
+import com.myfinance.domain.BreakdownDimension;
+import com.myfinance.dto.PatrimoineTargetsDto;
+import com.myfinance.dto.SaveTargetsRequest;
+import com.myfinance.dto.TargetBreakdownDto;
+import com.myfinance.dto.TargetBreakdownInput;
 import com.myfinance.service.PatrimoineTargetService;
 import com.myfinance.support.WithMockCustomUser;
 import org.junit.jupiter.api.Test;
@@ -14,6 +19,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,24 +44,34 @@ class PatrimoineTargetControllerTest {
 
     @Test
     @WithMockCustomUser
-    void getTargets_retourne200AvecLaMap() throws Exception {
-        when(patrimoineTargetService.getTargets(any()))
-                .thenReturn(Map.of("BOURSE", 50000.0, "LIVRET", 20000.0));
+    void getTargets_retourne200AvecTargetsEtBreakdowns() throws Exception {
+        PatrimoineTargetsDto dto = new PatrimoineTargetsDto(
+                Map.of("BOURSE", 50000.0, "LIVRET", 20000.0),
+                Map.of(),
+                Map.of("BOURSE", List.of(
+                        new TargetBreakdownDto(BreakdownDimension.SECTOR, "Technology", BigDecimal.valueOf(30))
+                )));
+        when(patrimoineTargetService.getTargets(any())).thenReturn(dto);
 
         mockMvc.perform(get("/api/patrimoine/targets"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.BOURSE").value(50000.0))
-                .andExpect(jsonPath("$.LIVRET").value(20000.0));
+                .andExpect(jsonPath("$.targets.BOURSE").value(50000.0))
+                .andExpect(jsonPath("$.targets.LIVRET").value(20000.0))
+                .andExpect(jsonPath("$.breakdowns.BOURSE[0].dimension").value("SECTOR"))
+                .andExpect(jsonPath("$.breakdowns.BOURSE[0].key").value("Technology"))
+                .andExpect(jsonPath("$.breakdowns.BOURSE[0].targetPercentage").value(30));
     }
 
     @Test
     @WithMockCustomUser
-    void getTargets_retourne200AvecMapVide_siAucunObjectif() throws Exception {
-        when(patrimoineTargetService.getTargets(any())).thenReturn(Map.of());
+    void getTargets_retourne200AvecObjetVide() throws Exception {
+        when(patrimoineTargetService.getTargets(any()))
+                .thenReturn(new PatrimoineTargetsDto(Map.of(), Map.of(), Map.of()));
 
         mockMvc.perform(get("/api/patrimoine/targets"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{}"));
+                .andExpect(jsonPath("$.targets").exists())
+                .andExpect(jsonPath("$.breakdowns").exists());
     }
 
     @Test
@@ -66,16 +84,25 @@ class PatrimoineTargetControllerTest {
 
     @Test
     @WithMockCustomUser
-    void saveTargets_retourne200AvecLaMapMiseAJour() throws Exception {
-        Map<String, Double> targets = Map.of("BOURSE", 50000.0, "CRYPTO", 5000.0);
-        when(patrimoineTargetService.saveTargets(any(), any())).thenReturn(targets);
+    void saveTargets_retourne200() throws Exception {
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("BOURSE", 50000.0),
+                Map.of(),
+                Map.of("BOURSE", List.of(
+                        new TargetBreakdownInput(BreakdownDimension.SECTOR, "Technology", BigDecimal.valueOf(30))
+                )));
+        when(patrimoineTargetService.saveTargets(any(), any()))
+                .thenReturn(new PatrimoineTargetsDto(
+                        Map.of("BOURSE", 50000.0),
+                        Map.of(),
+                        Map.of("BOURSE", List.of(
+                                new TargetBreakdownDto(BreakdownDimension.SECTOR, "Technology", BigDecimal.valueOf(30))))));
 
         mockMvc.perform(put("/api/patrimoine/targets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(targets)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.BOURSE").value(50000.0))
-                .andExpect(jsonPath("$.CRYPTO").value(5000.0));
+                .andExpect(jsonPath("$.targets.BOURSE").value(50000.0));
 
         verify(patrimoineTargetService).saveTargets(any(), any());
     }
@@ -88,39 +115,72 @@ class PatrimoineTargetControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ── Validation H5 — bornes sur la Map ─────────────────────
-
-    @Test
-    @WithMockCustomUser
-    void saveTargets_plusDe20Categories_retourne400() throws Exception {
-        java.util.Map<String, Double> trop = new java.util.HashMap<>();
-        for (int i = 0; i < 21; i++) trop.put("CAT_" + i, 1000.0);
-
-        mockMvc.perform(put("/api/patrimoine/targets")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(trop)))
-                .andExpect(status().isBadRequest());
-    }
-
     @Test
     @WithMockCustomUser
     void saveTargets_montantNegatif_retourne400() throws Exception {
-        Map<String, Double> targets = Map.of("BOURSE", -100.0);
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("BOURSE", -100.0), Map.of(), Map.of());
 
         mockMvc.perform(put("/api/patrimoine/targets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(targets)))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockCustomUser
     void saveTargets_montantTropEleve_retourne400() throws Exception {
-        Map<String, Double> targets = Map.of("BOURSE", 1_000_000_001.0);
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("BOURSE", 1_000_000_001.0), Map.of(), Map.of());
 
         mockMvc.perform(put("/api/patrimoine/targets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(targets)))
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_pourcentageHorsBornes_retourne400() throws Exception {
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("BOURSE", 50000.0),
+                Map.of(),
+                Map.of("BOURSE", List.of(
+                        new TargetBreakdownInput(BreakdownDimension.SECTOR, "Technology", BigDecimal.valueOf(150))
+                )));
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_cleVide_retourne400() throws Exception {
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("BOURSE", 50000.0),
+                Map.of(),
+                Map.of("BOURSE", List.of(
+                        new TargetBreakdownInput(BreakdownDimension.SECTOR, "", BigDecimal.valueOf(30))
+                )));
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void saveTargets_plusDe20Categories_retourne400() throws Exception {
+        Map<String, Double> trop = new HashMap<>();
+        for (int i = 0; i < 21; i++) trop.put("CAT_" + i, 1000.0);
+        SaveTargetsRequest request = new SaveTargetsRequest(trop, Map.of(), Map.of());
+
+        mockMvc.perform(put("/api/patrimoine/targets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 }
