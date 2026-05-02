@@ -365,8 +365,9 @@ frontend/src/
 ### Stratégie & Objectifs patrimoniaux
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
-| `GET` | `/api/patrimoine/targets` | Authentifié | Objectifs cibles par catégorie (`Map<String, Double>`) |
-| `PUT` | `/api/patrimoine/targets` | Authentifié | Remplace l'intégralité des objectifs (upsert) |
+| `GET` | `/api/patrimoine/targets` | Authentifié | Objectifs cibles + sous-objectifs (`PatrimoineTargetsDto` : `targets` map + `breakdowns` par catégorie) |
+| `PUT` | `/api/patrimoine/targets` | Authentifié | Remplace l'intégralité des objectifs et sous-objectifs (upsert) |
+| `GET` | `/api/patrimoine/breakdown/{dimension}` | Authentifié | Répartition réelle BOURSE par dimension (`sector`, `country`, `currency`, `asset-subtype`) avec ratio de couverture |
 
 ### Scoring patrimonial
 | Méthode | URL | Rôle requis | Description |
@@ -733,6 +734,14 @@ npm run dev
 - **Regroupement familial** (`FamilyGroup`) : spécification complète documentée — entités `FamilyGroup` + `FamilyGroupInvitation`, système d'invitation owner→membre (PENDING/ACCEPTED/REFUSED), toggle "Mode Foyer" de session dans la navigation, agrégation Patrimoine (sous-lignes dépliables par membre) et Tableau de bord, restriction co-emprunteur aux membres du groupe, gestion self-service via Mon Profil, modération ADMIN. Documentation : `docs/architecture/family-group.md`, `docs/api/family-group.md`
 
 - **Stratégie & Objectifs patrimoniaux** : objectifs cibles par catégorie persistés en base — entité `PatrimoineTarget` (`patrimoine_targets`, unicité `user_id + category`), `GET/PUT /api/patrimoine/targets` (upsert complet). Frontend : bouton "Stratégie & Objectifs" dans `PatrimoinePage`, modal `PatrimoineStrategyModal` (saisie par catégorie), `CategoryStrategyBar` sur chaque carte de résumé (indigo si en cours, emerald si atteint, rouge si dépassé). Tests : `PatrimoineTargetServiceTest` + `PatrimoineTargetControllerTest`. Documentation : `docs/architecture/patrimoine-strategy.md`
+
+- **Stratégie V2 — Diversification BOURSE multi-dimensions** : extension de `PatrimoineTarget` avec sous-objectifs par dimension. Nouvelle entité `PatrimoineTargetBreakdown` (`patrimoine_target_breakdowns`, unicité `target_id + dimension + key`, cascade `ON DELETE`) + enum `BreakdownDimension` (SECTOR / COUNTRY / CURRENCY / ASSET_SUBTYPE / CRYPTO_TYPE). DTO `PatrimoineTargetsDto` = `targets` map + `breakdowns` par catégorie. Validation service : somme ≤ 100 % par dimension, dimension autorisée par catégorie (les 4 sont autorisées sur BOURSE), clé en doublon refusée. Nouveau service `PatrimoineBreakdownService` avec dispatcher `getBreakdown(user, dimension)` :
+  - **SECTOR** : agrège `valueEur × InstrumentSectorAllocation.percentage` (résidu en "Non classé")
+  - **COUNTRY** : agrège `valueEur × InstrumentAllocation.percentage` (résidu en "Non classé")
+  - **CURRENCY** : agrège par `Instrument.currency` (couverture 100 %)
+  - **ASSET_SUBTYPE** : agrège par `Position.assetSubType` (positions sans sous-type → "Non classé")
+
+  Endpoint unifié `GET /api/patrimoine/breakdown/{dimension}` (`sector` / `country` / `currency` / `asset-subtype`) retournant `PortfolioBreakdownDto` (`totalEur`, `coverageRatio`, `unclassifiedEur`, `breakdown[]`). Frontend : 4 sections repliables dans `PatrimoineStrategyModal` (sous-composant `BreakdownDimensionEditor` réutilisable, suggestions depuis le portefeuille réel, total live, dépassement bloqué par dimension), composant `BreakdownPanel` générique paramétré par dimension, affiché 4× sur la carte BOURSE (barres réel vs cible, écart en points colorisé ±2/5/10 pts, bandeau d'alerte couverture < 80 % uniquement pour SECTOR/COUNTRY). Migration : `010_add_patrimoine_target_breakdowns.sql` (CHECK constraint inclut les 5 dimensions). Tests : 821 tests backend BUILD SUCCESS (+10 PatrimoineBreakdownServiceTest couvrant les 4 dimensions, +6 PatrimoineBreakdownControllerTest, +1 PatrimoineTargetServiceTest pour COUNTRY/CURRENCY/ASSET_SUBTYPE), 220 tests frontend patrimoine + dashboard. Documentation : `docs/architecture/patrimoine-strategy.md` (section V2)
 
 - **Dettes** :
   - Entité `Debt` (table `debts`) + `DebtBalanceEntry` (table `debt_balance_entries`) avec `DebtTypeEnum` (IMMOBILIER, ETUDIANT, VEHICULE, CONSOMMATION, AUTRE)

@@ -2,40 +2,80 @@
 
 ## v1.6.0 — *en cours*
 
-> Temps partiel, analytics d'usage et corrections.
+> Temps partiel, analytics d'usage, export CSV du patrimoine, gestion du compte, diversification sectorielle et corrections.
 
 ### ✨ Nouveautés
+
+#### Diversification de la BOURSE multi-dimensions (Patrimoine → Stratégie & Objectifs)
+
+La modal Stratégie permet désormais de définir, en complément du montant cible, **quatre répartitions cibles** sur la catégorie BOURSE :
+
+- **Diversification sectorielle** (Technology, Healthcare…) — basée sur les allocations sectorielles des instruments
+- **Diversification géographique** (FR, US…) — basée sur les allocations pays des instruments
+- **Répartition par devise** (EUR, USD…) — couverture 100 % automatique
+- **Répartition par type d'actif** (ETF, ACTION, OBLIGATION…) — couverture 100 % automatique
+
+Pour chaque dimension :
+
+- **Section repliable** dédiée sous le montant BOURSE — apparaît dès qu'un montant est saisi
+- **Saisie en pourcentages** (0 à 100 %) avec total live et indicateur de dépassement bloquant
+- **Suggestions automatiques** : les valeurs déjà présentes dans votre portefeuille sont proposées en un clic
+- **Panel sur la carte BOURSE** de la page Patrimoine : barres de progression réel vs cible, écart en points colorisé (vert ≤ 2 pts, indigo ≤ 5 pts, ambre ≤ 10 pts, rouge au-delà)
+- **Indicateur de couverture** (sectoriel et géographique uniquement) : bandeau d'avertissement si la couverture des allocations instrumentales est inférieure à 80 %
+
+#### Export CSV du patrimoine (Patrimoine → Export CSV)
+
+Exportez vos données de patrimoine en un clic depuis la page Patrimoine.
+
+- **Deux modes** : tout exporter (toutes positions + mouvements) ou sélectionner manuellement les positions à inclure
+- **Toggle positions clôturées** : incluez ou excluez les positions fermées dans l'export
+- **Deux fichiers générés** simultanément :
+  - `positions_YYYY-MM-DD.csv` — une ligne par position avec nom, catégorie, enveloppe, valeur actuelle, investi, plus-value, ISIN/ticker, propriété…
+  - `mouvements_YYYY-MM-DD.csv` — un ligne par mouvement (achat, vente, dépôt…) avec date, quantité, prix, frais, taux de change, notes
+- **Compatible Excel** directement : séparateur point-virgule, encodage UTF-8, décimales avec virgule
+
+#### Suppression de compte et de données (Mon profil → Zone de danger)
+
+La zone de danger du profil propose désormais deux options de suppression distinctes.
+
+- **Supprimer uniquement mes données** : efface l'ensemble des données (positions, mouvements, revenus, dépenses, dettes, simulations…) sans supprimer le compte — vous pouvez continuer à vous connecter
+- **Supprimer mon compte et mes données** : suppression définitive et complète du compte utilisateur
+- **Confirmation en 2 étapes** : résumé du nombre d'éléments concernés par catégorie, case à cocher "je comprends que c'est irréversible", puis saisie de l'identifiant pour confirmer
 
 #### Contrats à temps partiel (Revenus → Salariat)
 
 Il est maintenant possible de déclarer un contrat à **temps partiel** en précisant la quotité de travail.
 
 - **Saisie du salaire en ETP** : le salaire (ou l'indice majoré pour les contrats publics) est toujours saisi en équivalent temps plein — la quotité s'applique automatiquement
-- **Quotité au % près** : de 10 % à 100 % (ex : `70.0` = 7/10e, `80.0` = 4/5e, `50.0` = mi-temps)
+- **Quotité au % près** : de 10 % à 100 % (ex : 70 % = 7/10e, 80 % = 4/5e, 50 % = mi-temps)
 - **Label dynamique** dans le formulaire : « Temps plein », « 4/5e », « 7/10e », « Mi-temps » selon la valeur saisie
 - **Badge orange** dans l'en-tête du contrat, visible uniquement si la quotité est inférieure à 100 %
 - **Projections cohérentes** : brut mensuel, net imposable, net d'impôt, taux horaire/journalier — tous calculés sur le brut temps partiel réel
 - **Simulateur d'impôts** : prend en compte la quotité lors de la projection du contrat salarial
-- **Graphique d'évolution salariale** : affiche le brut temps partiel réel, pas le brut ETP
-- **Bandeau informatif** dans la grille de projections indiquant la quotité et le brut ETP correspondant
 
 #### Analytics d'usage (Administration → Analytics)
 
 Système de suivi du comportement utilisateur et de la santé technique, 100 % auto-hébergé.
 
 - **Page admin Analytics** (3 onglets) :
-  - **Engagement** : top features, top boutons, pages les plus vues, timeline d'un event au clic
-  - **Parcours** : reconstitution de la session d'un utilisateur par session ID
-  - **Santé** : KPIs d'erreurs, tableau groupé par type avec stack trace, taux d'erreur
-- **Session ID copiable** depuis les erreurs : chaque occurrence affiche son identifiant de session avec un bouton copier 📋 et un lien direct vers l'onglet Parcours
-- **Nettoyage manuel** : bouton "Nettoyer" avec sélection du seuil de rétention (events et erreurs séparément)
-- **Opt-out** : toggle "Suivi de mon usage" dans Mon profil — désactive le tracking comportemental tout en conservant la capture des erreurs techniques
-- **Instrumentation complète** : 26 pages (`PAGE_VIEW`), toutes les actions CRUD des modules Patrimoine, Revenus, Dépenses, Dettes, Possessions (`FEATURE_USE`), soumissions de formulaires profil (`FORM_SUBMIT`), toggles UI et ouvertures de formulaire (`BUTTON_CLICK`)
+  - **Engagement** : top features, top boutons, pages les plus vues, filtres de recherche, timeline d'un event au clic, indicateurs de tendance
+  - **Parcours** : reconstitution de la session d'un utilisateur par session ID — timeline unifiée mélangeant événements et erreurs dans l'ordre chronologique
+  - **Santé** : KPIs d'erreurs, graphique erreurs/jour, tableau groupé par type d'erreur avec stack trace et sessions concernées
+- **Session ID copiable** depuis les erreurs : chaque occurrence affiche son identifiant de session avec un bouton copier et un lien direct vers l'onglet Parcours
+- **Nettoyage manuel** : sélection du seuil de rétention (events et erreurs séparément) + option "Tout supprimer"
+- **Opt-out** : toggle "Suivi de mon usage" dans Mon profil avec détail des types d'actions suivies — désactive le tracking comportemental tout en conservant la capture des erreurs techniques
+- **Instrumentation complète** : 26 pages, toutes les actions CRUD de tous les modules, soumissions de formulaires, toggles et ouvertures de formulaire
+
+#### Patrimoine — Allocations géographiques et sectorielles
+
+- **Tooltip géographique** sur chaque position en vue groupée : répartition par pays/zone (Europe, Amérique du Nord, Asie…) chargée depuis le référentiel instruments
+- **Tooltip sectoriel** : répartition par secteur d'activité (Technologie, Santé, Finance…)
+- Chargement optimisé en lot (batch) pour éviter les requêtes individuelles par position
 
 ### 🐛 Corrections
 
 - **Pied de page** : le numéro de version et le lien "Notes de version" sont désormais toujours visibles dès le premier rendu, sans attendre la réponse de l'API `/api/version`
-- **Mise à jour automatique des cours** : correction de la récupération des prix Boursorama — les URLs `/cours/{symbol}/` redirigent désormais vers `/bourse/trackers/cours/{symbol}/` (HTTP 301) ; le client suivait incorrectement `followRedirects(false)` et parsait la page de redirection vide
+- **Mise à jour automatique des cours** : correction de la récupération des prix Boursorama — les URLs redirigent (HTTP 301) ; le scraper suit désormais correctement les redirections
 
 ---
 
