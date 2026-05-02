@@ -5,6 +5,7 @@ import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.SalaryEvolutionPointDto;
+import com.myfinance.repository.ContractBonusRepository;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,12 +18,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceTest {
 
     @Mock MonthlyPaySlipRepository monthlyPaySlipRepository;
+    @Mock ContractBonusRepository  contractBonusRepository;
     @InjectMocks DashboardService dashboardService;
 
     User user;
@@ -65,6 +68,9 @@ class DashboardServiceTest {
                 .id(3L).contract(contratB).period(LocalDate.of(2025, 3, 1))
                 .grossSalary(3916f).taxableNetSalary(3220f).netSalary(2980f).incomeTaxWithholding(240f)
                 .build();
+
+        // Par défaut aucune prime — les tests existants ne testent pas les primes
+        when(contractBonusRepository.findByContractUser(any())).thenReturn(List.of());
     }
 
     // ── getSalaryEvolution ─────────────────────────────────────

@@ -3,8 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { getSalaryContracts } from '../../api/income'
-import { getRevisions } from '../../api/income'
+import { getSalaryContracts, getRevisions, getBonuses, getBenefits, getOtherIncomes } from '../../api/income'
 
 const fmtEur = v =>
   v != null
@@ -12,7 +11,7 @@ const fmtEur = v =>
     : '—'
 
 // Le tooltip affiche les valeurs reconstituées (totaux cumulés), pas les deltas
-function CustomTooltip({ active, payload, label }) {
+function CustomTooltip({ active, payload, label, showBonuses, showBenefits, showOtherIncomes }) {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
   return (
@@ -33,11 +32,144 @@ function CustomTooltip({ active, payload, label }) {
           <span className="font-medium text-gray-700 amount">{fmtEur(d.netAfterTax)}</span>
         </div>
       )}
+      {((showBonuses && d.bonusAmount > 0) || (showBenefits && d.benefitAmount > 0) || (showOtherIncomes && d.otherIncomeAmount > 0)) ? (
+        <>
+          <div className="border-t border-gray-100 mt-1 pt-1 space-y-0.5">
+            {showBonuses && d.bonusAmount > 0 && (
+              <div className="flex justify-between gap-4">
+                <span style={{ color: '#ec4899' }}>Primes brutes</span>
+                <span className="font-medium text-gray-700 amount">{fmtEur(d.bonusAmount)}</span>
+              </div>
+            )}
+            {showBenefits && d.benefitAmount > 0 && (
+              <div className="flex justify-between gap-4">
+                <span style={{ color: '#8b5cf6' }}>Avantages en nature</span>
+                <span className="font-medium text-gray-700 amount">{fmtEur(d.benefitAmount)}</span>
+              </div>
+            )}
+            {showOtherIncomes && d.otherIncomeAmount > 0 && (
+              <>
+                {d.otherIncomeDetails?.map((item, i) => (
+                  <div key={i} className="flex justify-between gap-4">
+                    <span style={{ color: '#0ea5e9' }} className="truncate max-w-[140px]">{item.label}</span>
+                    <span className="font-medium text-gray-700 amount shrink-0">{fmtEur(item.amount)}</span>
+                  </div>
+                ))}
+                {d.otherIncomeDetails?.length > 1 && (
+                  <div className="flex justify-between gap-4 text-gray-400 text-[10px]">
+                    <span>Sous-total complémentaires</span>
+                    <span className="amount">{fmtEur(d.otherIncomeAmount)}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div className="flex justify-between gap-4 border-t border-gray-200 mt-1 pt-1 font-semibold">
+            <span className="text-gray-700">Total</span>
+            <span className="text-gray-900 amount">
+              {fmtEur(d.brut
+                + (showBonuses      ? (d.bonusAmount       ?? 0) : 0)
+                + (showBenefits     ? (d.benefitAmount     ?? 0) : 0)
+                + (showOtherIncomes ? (d.otherIncomeAmount ?? 0) : 0)
+              )}
+            </span>
+          </div>
+          {d.netAfterTax != null && (
+            <div className="flex justify-between gap-4">
+              <span className="text-gray-500">dont net d'impôt + extras</span>
+              <span className="text-gray-700 amount">
+                {fmtEur(d.netAfterTax
+                  + (showBonuses      ? (d.bonusAmount       ?? 0) : 0)
+                  + (showBenefits     ? (d.benefitAmount     ?? 0) : 0)
+                  + (showOtherIncomes ? (d.otherIncomeAmount ?? 0) : 0)
+                )}
+              </span>
+            </div>
+          )}
+        </>
+      ) : null}
     </div>
   )
 }
 
-function buildYearlyData(contracts, revisionsMap) {
+/** Calcule le montant brut total des primes applicables à une année donnée. */
+function bonusForYear(bonuses, contractStartDate, contractEndDate, year) {
+  let total = 0
+  for (const b of bonuses) {
+    if (b.type === 'EXCEPTIONNELLE') {
+      if (b.paymentDate && new Date(b.paymentDate).getFullYear() === year) {
+        total += b.grossAmount ?? 0
+      }
+    } else if (b.type === 'ANNUELLE') {
+      // Versée chaque année au mois paymentMonth tant que le contrat est actif
+      const cStart = contractStartDate ? new Date(contractStartDate).getFullYear() : 0
+      const cEnd   = contractEndDate   ? new Date(contractEndDate).getFullYear()   : 9999
+      if (cStart <= year && year <= cEnd) {
+        total += b.grossAmount ?? 0
+      }
+    } else if (b.type === 'MENSUELLE') {
+      // Active entre startDate et endDate (null = indéfinie) — somme des mois dans l'année
+      const bStart = b.startDate ? new Date(b.startDate) : null
+      const bEnd   = b.endDate   ? new Date(b.endDate)   : null
+      let months = 0
+      for (let m = 0; m < 12; m++) {
+        const monthDate = new Date(year, m, 1)
+        const monthEnd  = new Date(year, m + 1, 0)
+        const afterStart  = !bStart || bStart <= monthEnd
+        const beforeEnd   = !bEnd   || bEnd   >= monthDate
+        if (afterStart && beforeEnd) months++
+      }
+      total += (b.grossAmount ?? 0) * months
+    }
+  }
+  return Math.round(total)
+}
+
+/** Calcule le montant annuel des avantages en nature pour une année (monthlyAmount × mois actifs). */
+function benefitForYear(benefits, contractStartDate, contractEndDate, year) {
+  const monthlyTotal = (benefits ?? []).reduce((s, b) => s + (b.monthlyAmount ?? 0), 0)
+  if (monthlyTotal === 0) return 0
+
+  let months = 0
+  for (let m = 0; m < 12; m++) {
+    const monthDate = new Date(year, m, 1)
+    const monthEnd  = new Date(year, m + 1, 0)
+    const cStart = contractStartDate ? new Date(contractStartDate) : null
+    const cEnd   = contractEndDate   ? new Date(contractEndDate)   : null
+    const afterStart = !cStart || cStart <= monthEnd
+    const beforeEnd  = !cEnd   || cEnd   >= monthDate
+    if (afterStart && beforeEnd) months++
+  }
+  return Math.round(monthlyTotal * months)
+}
+
+/** Calcule le détail des revenus complémentaires pour une année donnée. */
+function otherIncomeForYear(incomes, year) {
+  const details = []
+  for (const inc of incomes) {
+    let amount = 0
+    if (inc.periodStart) {
+      const pStart = new Date(inc.periodStart)
+      const pEnd   = inc.periodEnd ? new Date(inc.periodEnd) : null
+      let months = 0
+      for (let m = 0; m < 12; m++) {
+        const monthDate = new Date(year, m, 1)
+        const monthEnd  = new Date(year, m + 1, 0)
+        if (pStart <= monthEnd && (!pEnd || pEnd >= monthDate)) months++
+      }
+      amount = Math.round((inc.amount ?? 0) * months)
+    } else if (inc.date && new Date(inc.date).getFullYear() === year) {
+      amount = Math.round(inc.amount ?? 0)
+    }
+    if (amount > 0) details.push({ label: inc.label, amount })
+  }
+  return {
+    total: details.reduce((s, d) => s + d.amount, 0),
+    details,
+  }
+}
+
+function buildYearlyData(contracts, revisionsMap, bonusesMap = {}, benefitsMap = {}, otherIncomes = []) {
   const currentYear = new Date().getFullYear()
 
   const years = new Set()
@@ -106,6 +238,12 @@ function buildYearlyData(contracts, revisionsMap) {
       ? brutRounded - netImposableRounded
       : brutRounded
 
+    const bonuses = bonusesMap[activeContract.id] ?? []
+    const bonusAmount        = bonusForYear(bonuses, activeContract.startDate, activeContract.endDate, year)
+    const benefits           = benefitsMap[activeContract.id] ?? []
+    const benefitAmount      = benefitForYear(benefits, activeContract.startDate, activeContract.endDate, year)
+    const otherIncome        = otherIncomeForYear(otherIncomes, year)
+
     return {
       year:        String(year),
       brut:        brutRounded,
@@ -114,25 +252,41 @@ function buildYearlyData(contracts, revisionsMap) {
       segBase,
       segImpot,
       segCharges,
+      bonusAmount,
+      benefitAmount,
+      otherIncomeAmount:   otherIncome.total,
+      otherIncomeDetails:  otherIncome.details,
       companyName: activeContract.companyName ?? null,
     }
   }).filter(Boolean)
 }
 
 export default function SalaryAnnualBarChart() {
-  const [data, setData]     = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState(null)
+  const [data, setData]               = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState(null)
+  const [showBonuses,      setShowBonuses]      = useState(false)
+  const [showBenefits,     setShowBenefits]     = useState(false)
+  const [showOtherIncomes, setShowOtherIncomes] = useState(false)
+
+  const hasBonuses       = data.some(d => (d.bonusAmount       ?? 0) > 0)
+  const hasBenefits      = data.some(d => (d.benefitAmount     ?? 0) > 0)
+  const hasOtherIncomes  = data.some(d => (d.otherIncomeAmount ?? 0) > 0)
 
   useEffect(() => {
     getSalaryContracts()
       .then(async contracts => {
         if (!contracts.length) { setData([]); return }
-        const revArrays = await Promise.all(contracts.map(c => getRevisions(c.id)))
-        const revisionsMap = Object.fromEntries(
-          contracts.map((c, i) => [c.id, revArrays[i]])
-        )
-        setData(buildYearlyData(contracts, revisionsMap))
+        const [revArrays, bonusArrays, benefitArrays, otherIncomes] = await Promise.all([
+          Promise.all(contracts.map(c => getRevisions(c.id))),
+          Promise.all(contracts.map(c => getBonuses(c.id).catch(() => []))),
+          Promise.all(contracts.map(c => getBenefits(c.id).catch(() => []))),
+          getOtherIncomes().catch(() => []),
+        ])
+        const revisionsMap = Object.fromEntries(contracts.map((c, i) => [c.id, revArrays[i]]))
+        const bonusesMap   = Object.fromEntries(contracts.map((c, i) => [c.id, bonusArrays[i]]))
+        const benefitsMap  = Object.fromEntries(contracts.map((c, i) => [c.id, benefitArrays[i]]))
+        setData(buildYearlyData(contracts, revisionsMap, bonusesMap, benefitsMap, otherIncomes))
       })
       .catch(() => setError('Impossible de charger les données salariales.'))
       .finally(() => setLoading(false))
@@ -150,6 +304,29 @@ export default function SalaryAnnualBarChart() {
   const hasNetAfterTax = data.some(d => d.netAfterTax != null)
 
   return (
+    <div>
+      {(hasBonuses || hasBenefits || hasOtherIncomes) && (
+        <div className="flex flex-wrap gap-4 mb-3">
+          {hasBonuses && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showBonuses} onChange={e => setShowBonuses(e.target.checked)} className="accent-pink-500 w-4 h-4" />
+              <span className="text-sm text-gray-600">Primes</span>
+            </label>
+          )}
+          {hasBenefits && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showBenefits} onChange={e => setShowBenefits(e.target.checked)} className="accent-violet-500 w-4 h-4" />
+              <span className="text-sm text-gray-600">Avantages en nature</span>
+            </label>
+          )}
+          {hasOtherIncomes && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showOtherIncomes} onChange={e => setShowOtherIncomes(e.target.checked)} className="accent-sky-500 w-4 h-4" />
+              <span className="text-sm text-gray-600">Revenus complémentaires</span>
+            </label>
+          )}
+        </div>
+      )}
     <ResponsiveContainer width="100%" height={340}>
       <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }} barCategoryGap="35%">
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
@@ -162,7 +339,7 @@ export default function SalaryAnnualBarChart() {
           )}
           width={45}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f9fafb' }} />
+        <Tooltip content={<CustomTooltip showBonuses={showBonuses} showBenefits={showBenefits} showOtherIncomes={showOtherIncomes} />} cursor={{ fill: '#f9fafb' }} />
         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />
 
         {/* Segment bas : net d'impôt (affiché uniquement si profil fiscal renseigné) */}
@@ -185,7 +362,20 @@ export default function SalaryAnnualBarChart() {
         {!hasNetAfterTax && (
           <Bar dataKey="netImposable" name="Net imposable" stackId="s" fill="#7c3aed" radius={[0, 0, 0, 0]} />
         )}
+        {/* Primes brutes — barre séparée visible si checkbox activée */}
+        {showBonuses && (
+          <Bar dataKey="bonusAmount" name="Primes brutes" stackId="b" fill="#ec4899" radius={showBenefits ? [0,0,3,3] : [3,3,3,3]} opacity={0.85} />
+        )}
+        {/* Avantages en nature — empilés sur les primes */}
+        {showBenefits && (
+          <Bar dataKey="benefitAmount" name="Avantages en nature" stackId="b" fill="#8b5cf6" radius={showOtherIncomes ? [0,0,0,0] : [3,3,0,0]} opacity={0.85} />
+        )}
+        {/* Revenus complémentaires — sommet de la pile */}
+        {showOtherIncomes && (
+          <Bar dataKey="otherIncomeAmount" name="Revenus complémentaires" stackId="b" fill="#0ea5e9" radius={[3,3,0,0]} opacity={0.85} />
+        )}
       </BarChart>
     </ResponsiveContainer>
+    </div>
   )
 }

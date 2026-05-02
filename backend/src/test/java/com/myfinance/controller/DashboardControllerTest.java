@@ -38,10 +38,10 @@ class DashboardControllerTest {
     void setUp() {
         point1 = new SalaryEvolutionPointDto(
                 LocalDate.of(2024, 1, 1), "Conserto",
-                3750f, 3082f, 2857f, 225f);
+                3750f, 3082f, 2857f, 225f, 0f);
         point2 = new SalaryEvolutionPointDto(
                 LocalDate.of(2025, 3, 1), "Milhertech",
-                3916f, 3220f, 2980f, 240f);
+                3916f, 3220f, 2980f, 240f, 0f);
     }
 
     // ── GET /api/dashboard/salary-evolution ───────────────────

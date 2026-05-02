@@ -10,7 +10,8 @@ public record SalaryEvolutionPointDto(
         Float grossSalary,
         Float taxableNetSalary,
         Float netSalary,
-        Float incomeTaxWithholding
+        Float incomeTaxWithholding,
+        Float bonusGrossAmount   // somme des primes brutes applicables à cette période (0 si aucune)
 ) {
     public static SalaryEvolutionPointDto from(MonthlyPaySlip slip) {
         return new SalaryEvolutionPointDto(
@@ -19,7 +20,8 @@ public record SalaryEvolutionPointDto(
                 slip.getGrossSalary(),
                 slip.getTaxableNetSalary(),
                 slip.getNetSalary(),
-                slip.getIncomeTaxWithholding()
+                slip.getIncomeTaxWithholding(),
+                0f
         );
     }
 }
