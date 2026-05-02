@@ -75,6 +75,23 @@ Créer un instrument manuellement.
 }
 ```
 
+**Corps — instrument CRYPTO**
+
+```json
+{
+  "category": "CRYPTO",
+  "ticker": "BTC",
+  "name": "Bitcoin",
+  "currency": "USD",
+  "cryptoType": "STORE_OF_VALUE",
+  "cryptoNetwork": "BITCOIN"
+}
+```
+
+> `cryptoType` (nullable) : `STABLECOIN` | `STORE_OF_VALUE` | `SMART_CONTRACT` | `LAYER_2` | `DEFI` | `OTHER`
+> `cryptoNetwork` (nullable) : `BITCOIN` | `ETHEREUM` | `SOLANA` | `POLYGON` | `AVALANCHE` | `BNB_CHAIN` | `ARBITRUM` | `OPTIMISM` | `BASE` | `OTHER`
+> Ces champs alimentent les dimensions `CRYPTO_TYPE` et `CRYPTO_NETWORK` des objectifs de diversification.
+
 **Règles :** `category` + `name` + `currency` obligatoires. `isin` obligatoire si BOURSE (unique). `ticker` obligatoire si CRYPTO (unique).
 
 **Réponse 201** — instrument créé avec `lastPrice = null`.
@@ -385,6 +402,7 @@ Créer une position.
   "label": "Appartement principal",
   "currency": "EUR",
   "ownershipType": "PLEINE_PROPRIETE",
+  "propertyUsage": "RESIDENCE_PRINCIPALE",
   "address": "1 Avenue de la Liberté 75001 Paris",
   "estimatedCurrentValue": 500000.00,
   "acquisitionDate": "2019-06-15",
@@ -392,6 +410,8 @@ Créer une position.
   "includeInIncomeProjection": false
 }
 ```
+
+> `propertyUsage` (nullable) : `RESIDENCE_PRINCIPALE` | `LOCATIF` | `SECONDAIRE_LOISIRS` | `AUTRE`. Utilisé pour la dimension de diversification `PROPERTY_USAGE` et le calcul du KPI rendement brut locatif.
 
 **Corps — LIVRET**
 

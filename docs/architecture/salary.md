@@ -69,7 +69,7 @@ Brut ETP × quotité  →  Brut effectif  →  Net imposable  →  Net d'impôt
 
 Le **super brut** est une estimation du coût total employeur, calculée par application d'un taux forfaitaire de cotisations patronales sur le **brut effectif** (après quotité).
 
-> Il s'agit d'une **approximation indicative** — les cotisations patronales réelles dépendent de la taille de l'entreprise, de la convention collective, du niveau de salaire (passage du PASS) et du taux de prévoyance patronale. Un calcul détaillé pourrait être ajouté ultérieurement.
+> Il s'agit d'une **approximation indicative** — les cotisations patronales réelles dépendent de la taille de l'entreprise, de la convention collective, du niveau de salaire (passage du PASS) et du taux de prévoyance patronale.
 
 | Champ | Formule |
 |-------|---------|

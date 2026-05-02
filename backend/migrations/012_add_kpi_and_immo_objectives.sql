@@ -19,6 +19,5 @@ CREATE TABLE patrimoine_kpi_targets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- PROPERTY_USAGE dans le check constraint des breakdowns (si la table a déjà été créée)
--- ⚠ PROD : si vous appliquez 010 + 011 + 012 dans l'ordre, le CHECK de 010 ne contient pas
---   PROPERTY_USAGE. Recréez la table avec le script ci-dessous ou ajoutez la migration manuellement.
+-- Note : PROPERTY_USAGE est déjà inclus dans le CHECK constraint de patrimoine_target_breakdowns
+-- (cf. migration 010). Aucune action supplémentaire requise sur cette table ici.

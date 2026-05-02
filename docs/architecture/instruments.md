@@ -53,11 +53,14 @@ ExchangeRate (référentiel global)
 | `marketSymbol` | `String` | Champ hérité (Twelve Data) — non utilisé par les services actuels (nullable) |
 | `coinGeckoId` | `String` | Identifiant CoinGecko — résolu automatiquement depuis le ticker (CRYPTO, nullable) |
 | `boursoramaSymbol` | `String` | Symbole Boursorama — saisi manuellement par l'admin (BOURSE, nullable) |
+| `cryptoType` | `CryptoType` | Classification crypto — `STABLECOIN` \| `STORE_OF_VALUE` \| `SMART_CONTRACT` \| `LAYER_2` \| `DEFI` \| `OTHER` (CRYPTO, nullable) |
+| `cryptoNetwork` | `CryptoNetwork` | Réseau / blockchain — `BITCOIN` \| `ETHEREUM` \| `SOLANA` \| `POLYGON` \| `AVALANCHE` \| `BNB_CHAIN` \| `ARBITRUM` \| `OPTIMISM` \| `BASE` \| `OTHER` (CRYPTO, nullable) |
 
 **Règles :**
 - `isin` est unique parmi tous les instruments BOURSE.
 - `ticker` est unique parmi tous les instruments CRYPTO.
 - `stablePrice = true` exclut l'instrument de toute mise à jour de cours et masque l'indicateur d'obsolescence.
+- `cryptoType` et `cryptoNetwork` sont saisis manuellement par l'admin via la page **Administration → Instruments financiers**. Ils alimentent les dimensions `CRYPTO_TYPE` et `CRYPTO_NETWORK` des objectifs de diversification (cf. `patrimoine-strategy.md` V3).
 
 ---
 

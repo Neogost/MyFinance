@@ -38,6 +38,7 @@ classDiagram
         +SafetyNetMode safetyNetMode
         +Double safetyNetMonths
         +Double safetyNetAmount
+        +Boolean analyticsOptOut
         +FamilyGroup familyGroup
     }
 
@@ -124,15 +125,31 @@ classDiagram
         +Long id
         +User user
         +String companyName
+        +ContractTypeEnum contractType
+        +PublicSubTypeEnum publicSubType
         +LocalDate startDate
         +LocalDate endDate
         +Float annualGrossSalary
+        +Integer indiceMajore
         +Integer paidMonthsPerYear
         +Float weeklyHours
+        +Float partTimePercentage
         +Float mealVoucherAmount
         +Float mealVoucherEmployeeRate
         +Boolean isCadre
         +Float employeePrevoyanceRate
+    }
+
+    class ContractTypeEnum {
+        <<enumeration>>
+        PRIVATE
+        PUBLIC
+    }
+
+    class PublicSubTypeEnum {
+        <<enumeration>>
+        TITULAIRE
+        CONTRACTUEL
     }
 
     class SalaryRevision {
@@ -141,6 +158,7 @@ classDiagram
         +SalaryContract contract
         +LocalDate effectiveDate
         +Float annualGrossSalary
+        +Integer indiceMajore
         +String label
     }
 
@@ -220,6 +238,7 @@ classDiagram
         <<entity>>
         +Long id
         +User user
+        +Position position
         +OtherIncomeTypeEnum type
         +String label
         +Float amount
@@ -272,6 +291,32 @@ classDiagram
         +String marketSymbol
         +String coinGeckoId
         +String boursoramaSymbol
+        +CryptoType cryptoType
+        +CryptoNetwork cryptoNetwork
+    }
+
+    class CryptoType {
+        <<enumeration — CRYPTO uniquement>>
+        STABLECOIN
+        STORE_OF_VALUE
+        SMART_CONTRACT
+        LAYER_2
+        DEFI
+        OTHER
+    }
+
+    class CryptoNetwork {
+        <<enumeration — CRYPTO uniquement>>
+        BITCOIN
+        ETHEREUM
+        SOLANA
+        POLYGON
+        AVALANCHE
+        BNB_CHAIN
+        ARBITRUM
+        OPTIMISM
+        BASE
+        OTHER
     }
 
     class InstrumentAllocation {
@@ -314,6 +359,7 @@ classDiagram
         +Instrument instrument
         +AssetSubType assetSubType
         +OwnershipType ownershipType
+        +PropertyUsage propertyUsage
         +String address
         +BigDecimal estimatedCurrentValue
         +LocalDate acquisitionDate
@@ -378,6 +424,14 @@ classDiagram
         PLEINE_PROPRIETE
         NUE_PROPRIETE
         USUFRUIT
+    }
+
+    class PropertyUsage {
+        <<enumeration — IMMO_PHYSIQUE uniquement>>
+        RESIDENCE_PRINCIPALE
+        LOCATIF
+        SECONDAIRE_LOISIRS
+        AUTRE
     }
 
     class OrderType {
@@ -537,6 +591,78 @@ classDiagram
         +User user
         +String category
         +Double targetAmountEur
+        +Double targetMaxAmountEur
+    }
+
+    class PatrimoineTargetBreakdown {
+        <<entity>>
+        +Long id
+        +PatrimoineTarget target
+        +BreakdownDimension dimension
+        +String breakdownKey
+        +BigDecimal targetPercentage
+    }
+
+    class BreakdownDimension {
+        <<enumeration>>
+        SECTOR
+        COUNTRY
+        CONTINENT
+        CURRENCY
+        ASSET_SUBTYPE
+        CRYPTO_TYPE
+        CRYPTO_NETWORK
+        PROPERTY_USAGE
+        INSTRUMENT
+    }
+
+    class PatrimoineKpiTarget {
+        <<entity>>
+        +Long id
+        +User user
+        +KpiType kpiType
+        +BigDecimal targetValue
+    }
+
+    class KpiType {
+        <<enumeration>>
+        IMMO_RENDEMENT_BRUT
+        IMMO_LTV
+        IMMO_PAPIER_RENDEMENT
+    }
+
+    %% ── Analytics d'usage ──────────────────────────────────────
+
+    class AnalyticsEvent {
+        <<entity>>
+        +Long id
+        +User user
+        +String sessionId
+        +EventType eventType
+        +String eventName
+        +String metadata
+        +Long timestampMs
+    }
+
+    class ErrorLog {
+        <<entity>>
+        +Long id
+        +User user
+        +String sessionId
+        +String errorType
+        +String errorMessage
+        +String fingerprint
+        +String stackTrace
+        +String url
+        +Long timestampMs
+    }
+
+    class EventType {
+        <<enumeration>>
+        PAGE_VIEW
+        FEATURE_USE
+        BUTTON_CLICK
+        FORM_SUBMIT
     }
 
     %% ══════════════════════════════════════════════════════════════
@@ -568,9 +694,16 @@ classDiagram
     %% Revenus complémentaires
     User "1" o-- "0..*" OtherIncome : otherIncomes
     OtherIncome --> OtherIncomeTypeEnum : type
+    OtherIncome "0..*" --> "0..1" Position : position (LOCATIF)
+
+    %% Salaire — type contrat
+    SalaryContract --> ContractTypeEnum : contractType
+    SalaryContract --> PublicSubTypeEnum : publicSubType
 
     %% Instruments
     Instrument --> AssetCategory : category
+    Instrument --> CryptoType : cryptoType
+    Instrument --> CryptoNetwork : cryptoNetwork
     Instrument "1" o-- "0..*" InstrumentAllocation : allocations
     Instrument "1" o-- "0..*" InstrumentSectorAllocation : sectorAllocations
 
@@ -580,6 +713,7 @@ classDiagram
     Position --> FiscalEnvelope : fiscalEnvelope
     Position --> AssetSubType : assetSubType
     Position --> OwnershipType : ownershipType
+    Position --> PropertyUsage : propertyUsage
     Position --> PositionStatus : status
     Position "0..*" --> "0..1" Instrument : instrument
     Position "1" o-- "0..*" PositionOrder : orders
@@ -606,3 +740,12 @@ classDiagram
 
     %% Objectifs
     User "1" o-- "0..*" PatrimoineTarget : targets
+    PatrimoineTarget "1" o-- "0..*" PatrimoineTargetBreakdown : breakdowns
+    PatrimoineTargetBreakdown --> BreakdownDimension : dimension
+    User "1" o-- "0..*" PatrimoineKpiTarget : kpiTargets
+    PatrimoineKpiTarget --> KpiType : kpiType
+
+    %% Analytics
+    User "0..1" o-- "0..*" AnalyticsEvent : events
+    User "0..1" o-- "0..*" ErrorLog : errors
+    AnalyticsEvent --> EventType : eventType

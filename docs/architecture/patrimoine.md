@@ -85,6 +85,40 @@ OwnershipType (enum)    — applicable à IMMO_PHYSIQUE uniquement
   USUFRUIT
 ```
 
+```
+PropertyUsage (enum)    — applicable à IMMO_PHYSIQUE uniquement, nullable
+  RESIDENCE_PRINCIPALE
+  LOCATIF
+  SECONDAIRE_LOISIRS
+  AUTRE
+```
+
+> `propertyUsage` alimente la dimension de diversification `PROPERTY_USAGE` dans les objectifs patrimoniaux et permet de distinguer un bien locatif d'une résidence principale dans les KPI immobiliers.
+
+---
+
+## Classification crypto (Instrument)
+
+Les instruments de catégorie `CRYPTO` peuvent être classifiés selon deux dimensions optionnelles, alimentant les objectifs de diversification crypto.
+
+```
+CryptoType (enum)       — CRYPTO uniquement, nullable
+  STABLECOIN             — token indexé sur un actif stable (USDT, USDC, DAI…)
+  STORE_OF_VALUE         — réserve de valeur (BTC)
+  SMART_CONTRACT         — plateforme de smart contracts (ETH, SOL, ADA…)
+  LAYER_2                — solution de scalabilité (MATIC, ARB, OP…)
+  DEFI                   — protocole de finance décentralisée (UNI, AAVE…)
+  OTHER
+```
+
+```
+CryptoNetwork (enum)    — CRYPTO uniquement, nullable
+  BITCOIN | ETHEREUM | SOLANA | POLYGON | AVALANCHE
+  BNB_CHAIN | ARBITRUM | OPTIMISM | BASE | OTHER
+```
+
+Saisie depuis l'écran admin (Administration → Instruments financiers).
+
 ---
 
 ## Types d'ordres
@@ -135,6 +169,8 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `stablePrice` | `boolean` | Si `true`, le prix est fixe (fonds euros, stablecoin) — pas d'indicateur d'obsolescence, saisie désactivée dans la modale de mise à jour |
 | `boursoramaSymbol` | `String` | Symbole Boursorama (ex : `"1rTESE"`) — BOURSE uniquement, saisi manuellement par l'admin |
 | `coinGeckoId` | `String` | Identifiant CoinGecko (ex : `"bitcoin"`) — CRYPTO uniquement, résolu automatiquement |
+| `cryptoType` | `CryptoType` | CRYPTO uniquement, nullable — classification (Stablecoin, Store of value, Smart contract…) |
+| `cryptoNetwork` | `CryptoNetwork` | CRYPTO uniquement, nullable — réseau / blockchain (Bitcoin, Ethereum, Solana…) |
 
 **Contraintes :**
 - `isin` est unique parmi les instruments de type `BOURSE`
@@ -157,6 +193,7 @@ OrderType (enum)    — applicable à toutes les catégories sauf LIQUIDITE
 | `assetSubType` | `AssetSubType` | BOURSE | Sous-type (ETF, Action, Fonds euros…) |
 | `instrument` | `Instrument` | BOURSE, CRYPTO | Titre sous-jacent (ISIN ou token) |
 | `ownershipType` | `OwnershipType` | IMMO_PHYSIQUE | Type de propriété |
+| `propertyUsage` | `PropertyUsage` | IMMO_PHYSIQUE | Utilisation du bien — nullable ; sert à la dimension `PROPERTY_USAGE` et au calcul du KPI rendement brut locatif |
 | `address` | `String` | IMMO_PHYSIQUE | Adresse du bien |
 | `estimatedCurrentValue` | `BigDecimal` | IMMO_PHYSIQUE | Valeur estimée actuelle — saisie manuellement |
 | `acquisitionDate` | `LocalDate` | IMMO_PHYSIQUE | Date d'acquisition du bien — nullable |

@@ -189,11 +189,3 @@ Page auto-contenue, pas de composant enfant externe. Deux sous-composants locaux
 | Aucun passif ni IMMO_PHYSIQUE | Message « Aucun passif renseigné » dans la colonne Passif |
 | Gain négatif (moins-value) | Exclu des revenus (seulement les gains > 0 sont affichés) |
 
----
-
-## Évolutions possibles (hors périmètre V1)
-
-- **Vue historique** : comparer avec la date d'un snapshot passé.
-- **Export PDF** : `window.print()` + CSS print media.
-- **Patrimoine net** : afficher `Actif − Passif` sous le bilan.
-- **Revenus IMMO_PHYSIQUE locatif** : si une position IMMO_PHYSIQUE est en location, permettre de la basculer côté Actif/Revenus.

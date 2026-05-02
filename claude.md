@@ -164,7 +164,7 @@ frontend/src/
 - API patrimoine — instruments, positions, ordres : `docs/api/patrimoine-positions.md`
 - API patrimoine — snapshots et données marché : `docs/api/patrimoine-snapshots.md`
 - API patrimoine — outils (score, objectifs, référentiel INSEE) : `docs/api/patrimoine-outils.md`
-- Performance patrimoniale (TWR / MWR — *spécifié, non implémenté*) : `docs/architecture/patrimoine-performance.md`
+- Performance patrimoniale (TWR / MWR — ADMIN only, en travaux) : `docs/architecture/patrimoine-performance.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
 - Bilan financier personnel (architecture) : `docs/architecture/tools/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/tools/compound-interest-simulator.md`
@@ -653,7 +653,6 @@ npm run dev
   - Frontend : `RecurringExpensePage` (4 KPIs, barres de répartition par catégorie, liste groupée), `RecurringExpenseForm` (aperçu projection temps réel, indicateur colocation), bouton **Dépenses** dans la navigation
   - Tests : 347 tests (RecurringExpenseServiceTest +16, RecurringExpenseControllerTest +13)
   - Documentation : `docs/architecture/recurring-expenses.md`, `docs/api/recurring-expenses.md`
-  - ⚠ Migration SQLite requise sur la base prod (ajout de `ALIMENTATION` à la CHECK constraint de `recurring_expenses.category`)
 - **Passifs (grandes possessions)** :
   - Entité `Possession` (table `possessions`) avec `PossessionCategoryEnum` (7 catégories : VEHICULE, INFORMATIQUE, ELECTROMENAGER, MOBILIER, COLLECTION, LOISIRS, AUTRE)
   - Modèle de décote exponentielle par catégorie (taux 0 %–30 %/an) avec valeur résiduelle minimale — calcul dans `PossessionDto.from()` via factory statique

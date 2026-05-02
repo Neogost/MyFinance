@@ -38,6 +38,7 @@ erDiagram
         varchar  safetyNetMode                  "MONTHS_EXPENSES | MONTHS_SALARY | FIXED_AMOUNT"
         double   safetyNetMonths
         double   safetyNetAmount
+        boolean  analyticsOptOut                "défaut false — désactive le tracking comportemental"
         bigint   family_group_id                FK
     }
 
@@ -85,11 +86,15 @@ erDiagram
         bigint  id                      PK
         bigint  user_id                 FK
         varchar companyName
+        varchar contractType            "PRIVATE | PUBLIC"
+        varchar publicSubType           "TITULAIRE | CONTRACTUEL (PUBLIC uniquement)"
         date    startDate
         date    endDate
-        float   annualGrossSalary
+        float   annualGrossSalary       "nullable pour PUBLIC (calculé depuis indiceMajore)"
+        integer indiceMajore            "PUBLIC uniquement"
         integer paidMonthsPerYear
         float   weeklyHours
+        float   partTimePercentage      "défaut 100 — quotité 10 à 100 %"
         float   mealVoucherAmount
         float   mealVoucherEmployeeRate
         boolean isCadre
@@ -101,6 +106,7 @@ erDiagram
         bigint  contract_id      FK
         date    effectiveDate
         float   annualGrossSalary
+        integer indiceMajore     "PUBLIC uniquement"
         varchar label
     }
 
@@ -143,6 +149,7 @@ erDiagram
     other_incomes {
         bigint  id               PK
         bigint  user_id          FK
+        bigint  position_id      FK "nullable — bien IMMO_PHYSIQUE associé pour LOCATIF"
         varchar type             "LOCATIF | DIVIDENDE | AIDE_SOCIALE | AUTRE"
         varchar label
         float   amount
@@ -166,6 +173,8 @@ erDiagram
         varchar   marketSymbol
         varchar   coinGeckoId
         varchar   boursoramaSymbol
+        varchar   cryptoType          "STABLECOIN | STORE_OF_VALUE | SMART_CONTRACT | LAYER_2 | DEFI | OTHER (CRYPTO uniquement)"
+        varchar   cryptoNetwork       "BITCOIN | ETHEREUM | SOLANA | POLYGON | AVALANCHE | BNB_CHAIN | ARBITRUM | OPTIMISM | BASE | OTHER (CRYPTO uniquement)"
     }
 
     instrument_allocations {
@@ -197,6 +206,7 @@ erDiagram
         varchar   fiscalEnvelope           "CTO | PEA | AV | FLAT_TAX | PEE_PERCO | PER | AUTRE | NONE"
         varchar   assetSubType             "ETF | ACTION | OBLIGATION | FOREX | WARRANT | FONDS_EUROS | TRACKERS | SCPI"
         varchar   ownershipType            "PLEINE_PROPRIETE | NUE_PROPRIETE | USUFRUIT"
+        varchar   propertyUsage            "RESIDENCE_PRINCIPALE | LOCATIF | SECONDAIRE_LOISIRS | AUTRE (IMMO_PHYSIQUE)"
         varchar   address
         decimal   estimatedCurrentValue
         date      acquisitionDate
@@ -309,10 +319,50 @@ erDiagram
     %% ── Objectifs & Scoring patrimoniaux ─────────────────────────
 
     patrimoine_targets {
-        bigint id              PK
-        bigint user_id         FK "unique(user_id, category)"
+        bigint  id                 PK
+        bigint  user_id            FK "unique(user_id, category)"
         varchar category
         double  targetAmountEur
+        double  targetMaxAmountEur "plafond LIQUIDITE / LIVRET — nullable"
+    }
+
+    patrimoine_target_breakdowns {
+        bigint  id                   PK
+        bigint  patrimoine_target_id FK "unique(target_id, dimension, breakdown_key)"
+        varchar dimension            "SECTOR | COUNTRY | CONTINENT | CURRENCY | ASSET_SUBTYPE | CRYPTO_TYPE | CRYPTO_NETWORK | PROPERTY_USAGE | INSTRUMENT"
+        varchar breakdown_key        "ex : Technology, FR, BTC, RESIDENCE_PRINCIPALE"
+        decimal target_percentage    "0–100"
+    }
+
+    patrimoine_kpi_targets {
+        bigint  id          PK
+        bigint  user_id     FK "unique(user_id, kpi_type)"
+        varchar kpi_type    "IMMO_RENDEMENT_BRUT | IMMO_LTV | IMMO_PAPIER_RENDEMENT"
+        decimal targetValue "objectif en %"
+    }
+
+    %% ── Analytics d'usage ────────────────────────────────────────
+
+    analytics_events {
+        bigint    id            PK
+        bigint    user_id       FK "nullable"
+        varchar   sessionId
+        varchar   eventType     "PAGE_VIEW | FEATURE_USE | BUTTON_CLICK | FORM_SUBMIT"
+        varchar   eventName     "format module.feature.action"
+        text      metadata      "JSON whitelist"
+        bigint    timestampMs
+    }
+
+    error_logs {
+        bigint    id           PK
+        bigint    user_id      FK "nullable"
+        varchar   sessionId
+        varchar   errorType
+        varchar   errorMessage
+        varchar   fingerprint  "SHA-256 — regroupement"
+        text      stackTrace
+        text      url
+        bigint    timestampMs
     }
 
     %% ── Taux de change (référentiel partagé) ─────────────────────
@@ -344,6 +394,7 @@ erDiagram
 
     %% Revenus complémentaires
     other_incomes                 }o--||  users                     : "user"
+    other_incomes                 }o--o|  positions                 : "position (LOCATIF nullable)"
 
     %% Instruments & allocations
     instrument_allocations        }o--||  instruments               : "instrument"
@@ -370,3 +421,9 @@ erDiagram
 
     %% Objectifs
     patrimoine_targets            }o--||  users                     : "user"
+    patrimoine_target_breakdowns  }o--||  patrimoine_targets        : "target (cascade DELETE)"
+    patrimoine_kpi_targets        }o--||  users                     : "user"
+
+    %% Analytics
+    analytics_events              }o--o|  users                     : "user (nullable)"
+    error_logs                    }o--o|  users                     : "user (nullable)"

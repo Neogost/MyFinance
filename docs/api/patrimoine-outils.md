@@ -60,7 +60,7 @@ Retourne le référentiel INSEE Enquête Patrimoine 2021-2022 : seuils de patrim
 
 ### GET `/api/patrimoine/targets`
 
-Retourne les objectifs cibles par catégorie d'actif (`Map<String, Double>`).
+Retourne les objectifs (montants cibles, plafonds et sous-objectifs de diversification) sous la forme d'un `PatrimoineTargetsDto` à 3 champs.
 
 **Accès** : authentifié
 
@@ -68,19 +68,42 @@ Retourne les objectifs cibles par catégorie d'actif (`Map<String, Double>`).
 
 ```json
 {
-  "BOURSE": 150000.0,
-  "LIVRET": 20000.0,
-  "IMMO_PHYSIQUE": 400000.0
+  "targets": {
+    "BOURSE": 150000.0,
+    "CRYPTO": 10000.0,
+    "IMMO_PHYSIQUE": 400000.0
+  },
+  "maxTargets": {
+    "LIQUIDITE": 5000.0,
+    "LIVRET": 20000.0
+  },
+  "breakdowns": {
+    "BOURSE": [
+      { "dimension": "SECTOR",   "key": "Technology",  "targetPercentage": 35 },
+      { "dimension": "COUNTRY",  "key": "FR",          "targetPercentage": 50 },
+      { "dimension": "CURRENCY", "key": "EUR",         "targetPercentage": 60 }
+    ],
+    "CRYPTO": [
+      { "dimension": "INSTRUMENT", "key": "BTC", "targetPercentage": 40 },
+      { "dimension": "INSTRUMENT", "key": "ETH", "targetPercentage": 30 }
+    ],
+    "IMMO_PHYSIQUE": [
+      { "dimension": "PROPERTY_USAGE", "key": "RESIDENCE_PRINCIPALE", "targetPercentage": 60 },
+      { "dimension": "PROPERTY_USAGE", "key": "LOCATIF",              "targetPercentage": 40 }
+    ]
+  }
 }
 ```
 
-> Seules les catégories avec un objectif défini apparaissent. `{}` = aucun objectif configuré.
+- `targets` — objectif de montant cible par catégorie (en €)
+- `maxTargets` — plafond à ne pas dépasser, applicable uniquement à `LIQUIDITE` et `LIVRET`
+- `breakdowns` — sous-objectifs de répartition par dimension pour chaque catégorie
 
 ---
 
 ### PUT `/api/patrimoine/targets`
 
-Enregistre les objectifs patrimoniaux (remplacement complet).
+Enregistre les objectifs patrimoniaux (remplacement complet — `SaveTargetsRequest`).
 
 **Accès** : authentifié
 
@@ -88,18 +111,151 @@ Enregistre les objectifs patrimoniaux (remplacement complet).
 
 ```json
 {
-  "BOURSE":       150000.0,
-  "CRYPTO":        10000.0,
-  "LIVRET":        20000.0,
-  "IMMO_PHYSIQUE": 400000.0,
-  "IMMO_PAPIER":   30000.0,
-  "LIQUIDITE":      5000.0
+  "targets": {
+    "BOURSE": 150000.0,
+    "CRYPTO": 10000.0,
+    "IMMO_PHYSIQUE": 400000.0
+  },
+  "maxTargets": {
+    "LIQUIDITE": 5000.0,
+    "LIVRET": 20000.0
+  },
+  "breakdowns": {
+    "BOURSE": [
+      { "dimension": "SECTOR",  "key": "Technology", "targetPercentage": 35 }
+    ],
+    "CRYPTO": [
+      { "dimension": "INSTRUMENT", "key": "BTC", "targetPercentage": 40 }
+    ]
+  }
 }
 ```
 
-> Clés valides : `BOURSE`, `CRYPTO`, `IMMO_PAPIER`, `IMMO_PHYSIQUE`, `LIVRET`, `LIQUIDITE`. Les clés non reconnues sont ignorées.
+**Règles de validation :**
 
-**Réponse 200** — Map mise à jour.
+- Catégories valides : `BOURSE`, `CRYPTO`, `IMMO_PAPIER`, `IMMO_PHYSIQUE`, `LIVRET`, `LIQUIDITE`
+- `maxTargets` accepte uniquement `LIQUIDITE` et `LIVRET` (plafond)
+- Dimensions autorisées par catégorie :
+  - **BOURSE** : `SECTOR`, `COUNTRY`, `CONTINENT`, `CURRENCY`, `ASSET_SUBTYPE`
+  - **CRYPTO** : `CRYPTO_TYPE`, `CRYPTO_NETWORK`, `INSTRUMENT`
+  - **IMMO_PHYSIQUE** : `PROPERTY_USAGE`
+- Pour chaque dimension d'une catégorie, la somme des `targetPercentage` ≤ 100 % (sinon `400 BAD_REQUEST`)
+- Les clés en doublon (case-insensitive) sont refusées (`400`)
+
+**Réponse 200** — `PatrimoineTargetsDto` mis à jour.
+
+---
+
+### GET `/api/patrimoine/breakdown/{dimension}`
+
+Retourne la répartition réelle du portefeuille pour la dimension demandée, à comparer aux sous-objectifs (`PortfolioBreakdownDto`).
+
+**Accès** : authentifié
+
+**Path variable** :
+`sector` | `country` | `continent` | `currency` | `asset-subtype` | `crypto-type` | `crypto-network` | `property-usage` | `instrument`
+
+**Query param** (optionnel) :
+`category=BOURSE | CRYPTO` — utile lorsque la même dimension est calculée pour plusieurs catégories (ex : `currency` côté BOURSE).
+
+**Réponse 200**
+
+```json
+{
+  "dimension": "INSTRUMENT",
+  "totalEur": 12000.00,
+  "coverageRatio": 100.0,
+  "unclassifiedEur": 0.00,
+  "breakdown": [
+    { "key": "BTC", "valueEur": 7200.00, "actualPercentage": 60.0 },
+    { "key": "ETH", "valueEur": 3600.00, "actualPercentage": 30.0 },
+    { "key": "SOL", "valueEur": 1200.00, "actualPercentage": 10.0 }
+  ]
+}
+```
+
+- `coverageRatio` — % de la valeur totale réellement classée (le reste est en "Non classé")
+- `unclassifiedEur` — montant non classé (pour `SECTOR`/`COUNTRY` quand les allocations instrumentales sont incomplètes)
+
+**Réponse 400** — dimension inconnue.
+
+---
+
+## KPI patrimoniaux (Immobilier)
+
+### GET `/api/patrimoine/kpi/targets`
+
+Retourne les objectifs KPI configurés par l'utilisateur.
+
+**Accès** : authentifié
+
+**Réponse 200**
+
+```json
+{
+  "IMMO_RENDEMENT_BRUT":   5.0,
+  "IMMO_LTV":              60.0,
+  "IMMO_PAPIER_RENDEMENT": 4.5
+}
+```
+
+Valeurs en pourcentages. `{}` = aucun KPI configuré.
+
+---
+
+### PUT `/api/patrimoine/kpi/targets`
+
+Enregistre les objectifs KPI (remplacement complet).
+
+**Accès** : authentifié
+
+**Corps de la requête**
+
+```json
+{
+  "IMMO_RENDEMENT_BRUT":   5.0,
+  "IMMO_LTV":              60.0,
+  "IMMO_PAPIER_RENDEMENT": 4.5
+}
+```
+
+Clés valides : `IMMO_RENDEMENT_BRUT`, `IMMO_LTV`, `IMMO_PAPIER_RENDEMENT`.
+
+---
+
+### GET `/api/patrimoine/kpi/values`
+
+Retourne la valeur **réelle** de chaque KPI calculée à la volée + l'objectif associé (s'il existe).
+
+**Accès** : authentifié
+
+**Réponse 200**
+
+```json
+[
+  {
+    "kpiType": "IMMO_RENDEMENT_BRUT",
+    "actualValue": 4.2,
+    "targetValue": 5.0,
+    "higherIsBetter": true,
+    "hasData": true
+  },
+  {
+    "kpiType": "IMMO_LTV",
+    "actualValue": 45.0,
+    "targetValue": 60.0,
+    "higherIsBetter": false,
+    "hasData": true
+  }
+]
+```
+
+**Calcul** :
+- `IMMO_RENDEMENT_BRUT` = somme des loyers annuels (`OtherIncome` LOCATIF rattachés à un bien IMMO_PHYSIQUE × 12) / valeur estimée totale des biens × 100
+- `IMMO_LTV` = somme des capitaux restants dus (`Debt` IMMOBILIER liés à un bien) / valeur estimée totale des biens × 100
+- `IMMO_PAPIER_RENDEMENT` = somme des dividendes annuels SCPI (`OtherIncome` DIVIDENDE × 12) / valeur des positions IMMO_PAPIER × 100
+
+`hasData=false` si les données nécessaires au calcul sont absentes (ex : pas de bien IMMO_PHYSIQUE).
 
 ---
 

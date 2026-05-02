@@ -32,7 +32,9 @@ GET /api/other-incomes
     "amount": 750.0,
     "date": "2025-03-01",
     "isTaxable": true,
-    "specificTaxRate": null
+    "specificTaxRate": null,
+    "positionId": 42,
+    "positionLabel": "Appartement Lyon"
   },
   {
     "id": 2,
@@ -41,7 +43,9 @@ GET /api/other-incomes
     "amount": 210.50,
     "date": "2025-01-15",
     "isTaxable": true,
-    "specificTaxRate": 30.0
+    "specificTaxRate": 30.0,
+    "positionId": null,
+    "positionLabel": null
   }
 ]
 ```
@@ -64,7 +68,8 @@ Content-Type: application/json
   "amount": 750.0,
   "date": "2025-03-01",
   "isTaxable": true,
-  "specificTaxRate": null
+  "specificTaxRate": null,
+  "positionId": 42
 }
 ```
 
@@ -78,6 +83,7 @@ Content-Type: application/json
 | `date` | `date` | oui | | Date de perception (ISO 8601) |
 | `isTaxable` | `boolean` | oui | | Ce revenu est-il imposable ? Pré-rempli selon le type (voir tableau ci-dessous) |
 | `specificTaxRate` | `number` | non | 0–100 | Taux d'imposition fixe en % (ex : `30.0` pour la flat tax). `null` = inclus dans le barème IRPP normal |
+| `positionId` | `number` | non | LOCATIF uniquement | Identifiant d'une position `IMMO_PHYSIQUE` à associer au revenu locatif. Permet le calcul du KPI rendement brut locatif. Refusé pour les autres types (`400`). Si le bien est supprimé, le lien est nettoyé automatiquement. |
 
 ### Types disponibles (`OtherIncomeTypeEnum`)
 
@@ -102,7 +108,9 @@ Content-Type: application/json
   "amount": 750.0,
   "date": "2025-03-01",
   "isTaxable": true,
-  "specificTaxRate": null
+  "specificTaxRate": null,
+  "positionId": 42,
+  "positionLabel": "Appartement Lyon"
 }
 ```
 
@@ -124,7 +132,8 @@ Content-Type: application/json
   "amount": 780.0,
   "date": "2025-04-01",
   "isTaxable": true,
-  "specificTaxRate": null
+  "specificTaxRate": null,
+  "positionId": 42
 }
 ```
 
@@ -175,3 +184,5 @@ DELETE /api/other-incomes/3
 | `date` | `date` | Date de perception |
 | `isTaxable` | `boolean` | Ce revenu est-il soumis à l'impôt |
 | `specificTaxRate` | `number` | Taux fixe en % si hors barème IRPP (nullable) |
+| `positionId` | `number` | LOCATIF uniquement — bien `IMMO_PHYSIQUE` associé (nullable) |
+| `positionLabel` | `string` | Libellé du bien associé pour affichage (calculé, nullable) |

@@ -1,8 +1,6 @@
--- Migration 010 — Sous-objectifs de diversification BOURSE (stratégie patrimoniale V2)
--- Dimensions supportées : SECTOR, COUNTRY, CONTINENT, CURRENCY, ASSET_SUBTYPE, CRYPTO_TYPE
---
--- ⚠ PROD : appliquer uniquement ce script (010). Ne pas appliquer 011 ni 012.
--- ⚠ DEV  : 010 + 011 + 012 ont déjà été appliqués séquentiellement — ne pas réappliquer.
+-- Migration 010 — Sous-objectifs de diversification patrimoniale
+-- Dimensions supportées : SECTOR, COUNTRY, CONTINENT, CURRENCY, ASSET_SUBTYPE,
+--                         CRYPTO_TYPE, CRYPTO_NETWORK, PROPERTY_USAGE, INSTRUMENT
 
 CREATE TABLE patrimoine_target_breakdowns (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
