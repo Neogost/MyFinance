@@ -147,7 +147,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 }
 
-function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false, showTaux = false }) {
+function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false, showTaux = false, hasTaux = false }) {
   const fiscal        = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c             = position.computed ?? {}
   const gain          = parseFloat(c.capitalGainEur ?? 0)
@@ -248,10 +248,10 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
         )}
       </td>
 
-      {/* Taux annuel (LIVRET uniquement) */}
-      {showTaux && (
+      {/* Taux annuel — td toujours présent si la colonne existe, contenu visible pour LIVRET uniquement */}
+      {hasTaux && (
         <td className="hidden md:table-cell py-2 px-2 text-right">
-          {position.annualRate != null && (
+          {showTaux && position.annualRate != null && (
             <span className="text-xs font-medium text-gray-500">{position.annualRate} %/an</span>
           )}
         </td>
@@ -398,6 +398,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                             onViewOrders={onViewOrders}
                             readOnly={readOnly}
                             showTaux={hasTaux && position.category === 'LIVRET'}
+                            hasTaux={hasTaux}
                           />
                         ))}
                       </Fragment>
