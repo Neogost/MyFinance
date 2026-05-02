@@ -12,6 +12,8 @@ import PatrimoineByMemberChart from './PatrimoineByMemberChart'
 import PatrimoineByCurrencyChart from './PatrimoineByCurrencyChart'
 import PatrimoineStrategyRadarChart from './PatrimoineStrategyRadarChart'
 import PatrimoineScoreWidget from './PatrimoineScoreWidget'
+import DiversificationSection from './DiversificationSection'
+import PatrimoineKpiWidget from './PatrimoineKpiWidget'
 import SafetyNetWidget from './SafetyNetWidget'
 import DetteWidget from './DetteWidget'
 import PatrimoineNetWidget from './PatrimoineNetWidget'
@@ -327,31 +329,49 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           </div>
         )}
 
-        {/* Score patrimonial + Radar objectifs + Endettement */}
-        {(wc.scorePatrimonial || wc.objectives || wc.dette) && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-            {wc.scorePatrimonial && (
-              <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-6">
-                <PatrimoineScoreWidget />
-              </div>
-            )}
-            {wc.objectives && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
-                <p className="text-xs text-gray-400 mb-4">
-                  Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
-                </p>
-                <PatrimoineStrategyRadarChart />
-              </div>
-            )}
-            {wc.dette && (
-              <div className={`col-span-1 ${wc.scorePatrimonial && wc.objectives ? 'md:col-span-2' : wc.scorePatrimonial || wc.objectives ? 'md:col-span-3' : 'md:col-span-4'}`}>
-                <DetteWidget onNavigate={onNavigate} />
-              </div>
-            )}
+        {/* Endettement (déplacé ici depuis la section stratégie) */}
+        {wc.dette && (
+          <div>
+            <DetteWidget onNavigate={onNavigate} />
           </div>
         )}
       </div>
+
+      {/* ── Objectifs & Stratégie ────────────────────────────────── */}
+      {(wc.scorePatrimonial || wc.objectives || wc.kpiImmo || wc.diversification) && (
+        <div>
+          <SectionTitle
+            title="Objectifs & Stratégie"
+            subtitle="Suivi de vos objectifs patrimoniaux, score de santé financière et analyse de diversification."
+          />
+
+          {/* Score + Radar : côte à côte */}
+          {(wc.scorePatrimonial || wc.objectives) && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 mb-6">
+              {wc.scorePatrimonial && (
+                <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-6">
+                  <PatrimoineScoreWidget />
+                </div>
+              )}
+              {wc.objectives && (
+                <div className={`col-span-1 ${wc.scorePatrimonial ? 'md:col-span-3' : 'md:col-span-4'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+                  <h3 className="text-base font-semibold text-gray-800 mb-1">Avancement vers les objectifs</h3>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Superposition du patrimoine actuel et des objectifs cibles par catégorie — en pourcentage de l'objectif.
+                  </p>
+                  <PatrimoineStrategyRadarChart />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* KPI Immobiliers */}
+          {wc.kpiImmo && <PatrimoineKpiWidget />}
+
+          {/* Diversification : s'affiche uniquement si des objectifs sont configurés */}
+          {wc.diversification && <DiversificationSection />}
+        </div>
+      )}
     </div>
   )
 }

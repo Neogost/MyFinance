@@ -42,7 +42,7 @@ describe('PatrimoineStrategyRadarChart', () => {
 
   it('affiche "Aucun objectif défini" quand les cibles sont vides', async () => {
     getPositions.mockResolvedValue([])
-    getPatrimoineTargets.mockResolvedValue({})
+    getPatrimoineTargets.mockResolvedValue({ targets: {}, breakdowns: {} })
     render(<PatrimoineStrategyRadarChart />)
     await waitFor(() => {
       expect(screen.getByText(/Aucun objectif défini/)).toBeInTheDocument()
@@ -51,7 +51,7 @@ describe('PatrimoineStrategyRadarChart', () => {
 
   it('n\'affiche pas l\'état vide quand des objectifs sont définis', async () => {
     getPositions.mockResolvedValue([BOURSE_POSITION])
-    getPatrimoineTargets.mockResolvedValue({ BOURSE: 15000 })
+    getPatrimoineTargets.mockResolvedValue({ targets: { BOURSE: 15000 }, breakdowns: {} })
     render(<PatrimoineStrategyRadarChart />)
     await waitFor(() => {
       expect(screen.queryByText(/Aucun objectif défini/)).not.toBeInTheDocument()

@@ -58,10 +58,11 @@ export default function PatrimoineStrategyRadarChart() {
   useEffect(() => {
     async function run() {
       try {
-        const [positions, targets] = await Promise.all([
+        const [positions, targetsDto] = await Promise.all([
           getPositions({ status: 'ACTIVE' }),
           getPatrimoineTargets(),
         ])
+        const targets = targetsDto?.targets ?? {}
 
         const valueByCategory = {}
         positions.forEach(p => {

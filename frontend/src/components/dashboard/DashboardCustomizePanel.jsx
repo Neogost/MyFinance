@@ -22,9 +22,16 @@ export const WIDGET_GROUPS = [
       { key: 'passifs',             label: 'Répartition des passifs' },
       { key: 'geoExposure',         label: 'Exposition géographique' },
       { key: 'sectorExposure',      label: 'Exposition sectorielle' },
-      { key: 'scorePatrimonial',    label: 'Score patrimonial' },
-      { key: 'objectives',          label: 'Avancement vers les objectifs' },
       { key: 'dette',               label: 'Dettes' },
+    ],
+  },
+  {
+    title: 'Objectifs & Stratégie',
+    widgets: [
+      { key: 'scorePatrimonial',  label: 'Score patrimonial' },
+      { key: 'objectives',        label: 'Avancement vers les objectifs' },
+      { key: 'kpiImmo',           label: 'KPI immobiliers (rendement, LTV)' },
+      { key: 'diversification',   label: 'Analyse de diversification' },
     ],
   },
 ]
