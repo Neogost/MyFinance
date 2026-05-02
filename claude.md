@@ -118,7 +118,7 @@ frontend/src/
 │   └── tools/
 │       ├── TaxSimulatorPage.jsx               Simulateur des impôts
 │       ├── FiscalEnvelopeComparatorPage.jsx    Comparateur d'enveloppes fiscales
-│       └── … (BilanFinancier, Lombard, Crise, Emprunt, Intérêts composés, Performance)
+│       └── … (BilanFinancier, Lombard, Crise, Emprunt, Intérêts composés)
 ├── data/
 │   └── fiscal-envelopes.js   Barèmes fiscaux PEA/CTO/AV/PER (PFU, abattements, plafonds)
 ├── utils/
@@ -465,13 +465,6 @@ frontend/src/
 | `PUT` | `/api/admin/snapshots/{id}` | ADMIN | Modifier un snapshot existant |
 | `DELETE` | `/api/admin/snapshots/{id}` | ADMIN | Supprimer un snapshot |
 | `GET` | `/api/admin/users/{userId}/positions` | ADMIN | Positions actives d'un utilisateur (pour le formulaire) |
-
-### Performance patrimoniale (TWR / MWR) — *en travaux, ADMIN only*
-| Méthode | URL | Rôle requis | Description |
-|---------|-----|-------------|-------------|
-| `GET` | `/api/patrimoine/performance` | ADMIN | Performance globale (TWR + MWR) sur la période — params optionnels : `from`, `to`, `benchmarkRate` |
-| `GET` | `/api/patrimoine/performance/positions` | ADMIN | Performance de toutes les positions éligibles, triées par TWR décroissant |
-| `GET` | `/api/patrimoine/performance/positions/{id}` | ADMIN | Performance d'une position individuelle (ownership vérifié) |
 
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
@@ -829,22 +822,6 @@ npm run dev
   - Seuils : 70 % lignes / 60 % branches → build échoue si non atteint (couverture actuelle 80 % / 62 %)
   - Rapport HTML : `target/site/jacoco/index.html` (généré automatiquement à `./mvnw test`)
   - Plugin `maven-surefire-report-plugin` pour le rapport HTML d'exécution : `target/reports/surefire.html` (généré via `./mvnw surefire-report:report-only`)
-
-- **Performance patrimoniale (TWR / MWR)** — *en travaux, ADMIN only* :
-  - **Statut** : fonctionnalité accessible uniquement aux administrateurs (menu Admin → "Performance (en travaux)") tant que les limites structurelles ne sont pas levées. Bandeau orange "🚧 Fonctionnalité en cours de développement" affiché en permanence.
-  - **Backend** : `@PreAuthorize("hasRole('ADMIN')")` sur `PerformanceController` (toutes les routes)
-  - **Frontend** : route `currentPage === 'performance'` gardée par `user.role === 'ADMIN'` dans `App.jsx`
-  - Calcul du rendement annualisé sur les catégories BOURSE, CRYPTO, IMMO_PAPIER, LIVRET (LIQUIDITE et IMMO_PHYSIQUE exclus)
-  - **TWR** (Time-Weighted Return) via Modified Dietz entre snapshots + chaînage — neutralise l'effet des versements
-  - **MWR** (Money-Weighted Return) via XIRR Newton-Raphson + bissection — rendement réellement vécu
-  - Classes utilitaires stateless : `XirrSolver` et `TwrChainer` (package `service/math`)
-  - Série temporelle (timeSeries) pour le graphique TWR cumulé vs benchmark configurable (% annuel constant)
-  - Détail par catégorie (TWR + MWR + investi + valeur + gain + dividendes)
-  - Détail par position triées par TWR décroissant
-  - Endpoints : `GET /api/patrimoine/performance`, `/positions`, `/positions/{id}`
-  - Frontend : `PerformancePage` dans Outils → Performance (TWR / MWR), Recharts LineChart
-  - Tests : `XirrSolverTest` (6 cas), `TwrChainerTest` (7 cas), `PerformanceServiceTest` (9 cas), `PerformanceControllerTest` (10 cas) — total : 738 tests
-  - Documentation : `docs/architecture/patrimoine-performance.md`
 
 - **Contrats fonction publique** :
   - **2 nouveaux enums** : `ContractTypeEnum` (PRIVATE / PUBLIC), `PublicSubTypeEnum` (TITULAIRE / CONTRACTUEL)

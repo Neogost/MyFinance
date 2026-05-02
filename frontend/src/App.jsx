@@ -17,7 +17,6 @@ import CrisisSimulatorPage from './components/tools/CrisisSimulatorPage'
 import LombardSimulatorPage from './components/tools/LombardSimulatorPage'
 import FiscalEnvelopeComparatorPage from './components/tools/FiscalEnvelopeComparatorPage'
 import RetirementSimulatorPage from './components/tools/RetirementSimulatorPage'
-import PerformancePage from './components/tools/PerformancePage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
 import AdminSnapshotPage from './components/patrimoine/AdminSnapshotPage'
@@ -321,7 +320,6 @@ export default function App() {
         {currentPage === 'lombard-simulator'  && <LombardSimulatorPage />}
         {currentPage === 'fiscal-envelopes'  && <FiscalEnvelopeComparatorPage user={user} />}
         {currentPage === 'retirement'         && <RetirementSimulatorPage user={user} />}
-        {currentPage === 'performance'       && user.role === 'ADMIN' && <PerformancePage />}
 
         {currentPage === 'users' && user.role === 'ADMIN' && <UserList />}
 

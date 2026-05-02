@@ -131,7 +131,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
   const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
   const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
-  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','performance'].includes(currentPage)
+  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
@@ -224,7 +224,6 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ['admin-instruments',    'Instruments financiers',     0],
                       ['admin-registrations',  "Demandes d'inscription",     pendingRegistrations],
                       ['admin-analytics',      'Analytics',                  0],
-                      ['performance',          'Performance (en travaux)',   0],
                     ].map(([page, label, badge]) => (
                       <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
                         className={`w-full text-left px-4 py-2 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
@@ -372,7 +371,6 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
                 <MobileMenuItem label="Analytics"               page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Performance (en travaux)"  page="performance"         currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
               </>
             )}
 

@@ -65,13 +65,13 @@ public class PatrimoineKpiService {
         // Loyers annuels : somme des revenus LOCATIF des 12 derniers mois
         LocalDate since = LocalDate.now().minusMonths(12);
         double loyersAnnuels = otherIncomeRepository
-                .findByUserAndDateBetween(user, since, LocalDate.now()).stream()
+                .findByUserAndPeriodStartIsNullAndDateBetween(user, since, LocalDate.now()).stream()
                 .filter(o -> o.getType() == OtherIncomeTypeEnum.LOCATIF)
                 .mapToDouble(o -> o.getAmount() != null ? o.getAmount() : 0)
                 .sum();
 
         // Annualiser si moins de 12 mois de données disponibles
-        long nbMois = otherIncomeRepository.findByUserAndDateBetween(user, since, LocalDate.now()).stream()
+        long nbMois = otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(user, since, LocalDate.now()).stream()
                 .filter(o -> o.getType() == OtherIncomeTypeEnum.LOCATIF)
                 .map(o -> o.getDate().getMonthValue() + "-" + o.getDate().getYear())
                 .distinct().count();

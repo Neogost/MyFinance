@@ -27,7 +27,7 @@ const EVENT_LABELS = {
   'tools.bilan.view': 'Bilan financier', 'tools.loan.view': 'Simulateur emprunt',
   'tools.lombard.view': 'Simulateur Lombard', 'tools.crisis.view': 'Simulateur crise',
   'tools.fiscal_envelope.view': 'Enveloppes fiscales', 'tools.retirement.view': 'Simulateur retraite',
-  'tools.compound_interest.view': 'Intérêts composés', 'tools.performance.view': 'Performance',
+  'tools.compound_interest.view': 'Intérêts composés',
   'tools.patrimoine_declaration.view': 'Déclaration patrimoine',
   'admin.instrument.view': 'Instruments', 'admin.snapshot.view': 'Relevés',
   'admin.login_history.view': 'Connexions', 'admin.user.view': 'Utilisateurs',
