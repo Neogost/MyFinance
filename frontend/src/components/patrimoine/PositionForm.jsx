@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { getInstruments, createInstrument } from '../../api/patrimoine'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, FISCAL_ENVELOPES_BY_CATEGORY, ASSET_SUB_TYPES, OWNERSHIP_TYPES, PROPERTY_USAGE_TYPES } from './constants'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const EMPTY_FORM = {
   partner: '', label: '', currency: 'EUR',
@@ -223,6 +224,7 @@ function InstrumentSearch({ category, value, onChange }) {
 
 export default function PositionForm({ position, onSubmit, onCancel }) {
   const isEdit = Boolean(position?.id)
+  const { trackEvent } = useAnalytics()
   const [step, setStep]         = useState(isEdit ? 2 : 1)
   const [category, setCategory] = useState(position?.category ?? null)
   const [form, setForm]         = useState(EMPTY_FORM)
@@ -298,6 +300,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         includeInIncomeProjection: form.includeInIncomeProjection,
       }
       await onSubmit(payload)
+      trackEvent('FORM_SUBMIT', `patrimoine.position.${isEdit ? 'edit' : 'create'}`)
     } catch {
       setError('Une erreur est survenue.')
     } finally {
@@ -347,7 +350,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
           {step === 1 && (
             <div>
               <p className="text-sm text-gray-500 mb-4">Choisissez le type de position à créer :</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {Object.entries(CATEGORY_META).map(([value, { label, icon }]) => (
                   <button key={value} onClick={() => selectCategory(value)}
                     className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition group">
@@ -514,7 +517,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                       value={form.estimatedCurrentValue} onChange={handleChange}
                       placeholder="ex : 200000" className={inputCls} />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className={labelCls}>Date d'acquisition</label>
                       <input name="acquisitionDate" type="date"

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { getPositions } from '../../api/patrimoine'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const TYPES = [
   { value: 'LOCATIF',      label: 'Revenu locatif' },
@@ -21,6 +22,7 @@ const EMPTY = {
 
 export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
   const isEdit = Boolean(income)
+  const { trackEvent } = useAnalytics()
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -71,6 +73,7 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
         specificTaxRate: form.specificTaxRate !== '' ? parseFloat(form.specificTaxRate) : null,
         positionId:      form.positionId !== '' ? parseInt(form.positionId) : null,
       })
+      trackEvent('FORM_SUBMIT', `income.otherIncome.${isEdit ? 'edit' : 'create'}`)
     } catch {
       setError('Une erreur est survenue.')
     } finally {

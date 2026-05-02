@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import { useAnalytics } from '../../hooks/useAnalytics'
 
 const CRYPTO_TYPES = [
   { value: '', label: '— Non renseigné —' },
@@ -41,6 +42,7 @@ const EMPTY = {
 
 export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
   const isEdit = Boolean(item)
+  const { trackEvent } = useAnalytics()
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -85,6 +87,7 @@ export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
         cryptoType:       form.cryptoType       || null,
         cryptoNetwork:    form.cryptoNetwork    || null,
       })
+      trackEvent('FORM_SUBMIT', `admin.instrument.${isEdit ? 'edit' : 'create'}`)
     } catch (err) {
       const msg = err?.response?.data?.message || err?.response?.data || 'Une erreur est survenue.'
       setError(typeof msg === 'string' ? msg : 'Une erreur est survenue.')
