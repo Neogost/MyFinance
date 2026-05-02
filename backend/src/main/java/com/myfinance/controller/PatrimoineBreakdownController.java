@@ -33,7 +33,7 @@ public class PatrimoineBreakdownController {
     @ApiResponse(responseCode = "400", description = "Dimension inconnue ou catégorie incompatible")
     @GetMapping("/{dimension}")
     public ResponseEntity<PortfolioBreakdownDto> getBreakdown(
-            @Parameter(description = "Dimension : sector | country | continent | currency | asset-subtype | crypto-type | crypto-network | property-usage")
+            @Parameter(description = "Dimension : sector | country | continent | currency | asset-subtype | crypto-type | crypto-network | property-usage | instrument")
             @PathVariable String dimension,
             @Parameter(description = "Catégorie : BOURSE (défaut) ou CRYPTO — utile pour la dimension currency")
             @RequestParam(required = false) AssetCategory category,
@@ -47,7 +47,7 @@ public class PatrimoineBreakdownController {
             return BreakdownDimension.valueOf(raw.toUpperCase().replace('-', '_'));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Dimension inconnue : " + raw + " (attendu : sector | country | continent | currency | asset-subtype | crypto-type | crypto-network | property-usage)");
+                    "Dimension inconnue : " + raw + " (attendu : sector | country | continent | currency | asset-subtype | crypto-type | crypto-network | property-usage | instrument)");
         }
     }
 }

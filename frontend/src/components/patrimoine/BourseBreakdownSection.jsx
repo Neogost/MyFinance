@@ -10,9 +10,9 @@ const BOURSE_DIMENSIONS = [
 ]
 
 const CRYPTO_DIMENSIONS = [
-  { dimension: 'CRYPTO_TYPE',    title: 'Type de crypto', actualKey: 'cryptoType',    showCoverage: false },
-  { dimension: 'CRYPTO_NETWORK', title: 'Réseau',          actualKey: 'cryptoNetwork', showCoverage: false },
-  { dimension: 'CURRENCY',       title: 'Devise',          actualKey: 'cryptoCurrency', showCoverage: false },
+  { dimension: 'CRYPTO_TYPE',    title: 'Type de crypto',  actualKey: 'cryptoType',       showCoverage: false },
+  { dimension: 'CRYPTO_NETWORK', title: 'Réseau',           actualKey: 'cryptoNetwork',    showCoverage: false },
+  { dimension: 'INSTRUMENT',     title: 'Par instrument',   actualKey: 'cryptoInstrument', showCoverage: false },
 ]
 
 function AssetBreakdownSection({ catBreakdowns, dimensions, actualBreakdowns, icon, label }) {

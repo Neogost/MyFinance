@@ -40,6 +40,7 @@ public class PatrimoineBreakdownService {
             case ASSET_SUBTYPE  -> aggregateFromAssetSubType(user);
             case CRYPTO_TYPE    -> aggregateFromCryptoType(user);
             case CRYPTO_NETWORK -> aggregateFromCryptoNetwork(user);
+            case INSTRUMENT     -> aggregateFromInstrument(user);
             case PROPERTY_USAGE -> aggregateFromPropertyUsage(user);
         };
     }
@@ -172,6 +173,17 @@ public class PatrimoineBreakdownService {
         return aggregateBySingleField(user, BreakdownDimension.CRYPTO_NETWORK, AssetCategory.CRYPTO,
                 p -> p.instrument() != null && p.instrument().cryptoNetwork() != null
                         ? p.instrument().cryptoNetwork().name() : null);
+    }
+
+    // ── CRYPTO × instrument (BTC / ETH / SOL / ...) ────────────
+
+    private PortfolioBreakdownDto aggregateFromInstrument(User user) {
+        return aggregateBySingleField(user, BreakdownDimension.INSTRUMENT, AssetCategory.CRYPTO,
+                p -> {
+                    if (p.instrument() == null) return null;
+                    String ticker = p.instrument().ticker();
+                    return (ticker != null && !ticker.isBlank()) ? ticker : p.instrument().name();
+                });
     }
 
     // ── Helpers ────────────────────────────────────────────────

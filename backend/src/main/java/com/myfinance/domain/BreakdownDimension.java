@@ -8,5 +8,6 @@ public enum BreakdownDimension {
     ASSET_SUBTYPE,
     CRYPTO_TYPE,
     CRYPTO_NETWORK,
-    PROPERTY_USAGE
+    PROPERTY_USAGE,
+    INSTRUMENT
 }

@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAnalytics } from '../../hooks/useAnalytics'
-import { savePatrimoineTargets } from '../../api/patrimoine'
+import { savePatrimoineTargets, getBreakdown } from '../../api/patrimoine'
 import { CATEGORY_META } from './constants'
 
 const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
@@ -75,11 +75,11 @@ const CATEGORY_DIMENSIONS = {
         'BNB_CHAIN', 'ARBITRUM', 'OPTIMISM', 'BASE', 'OTHER'],
     },
     {
-      dimension: 'CURRENCY',
-      title: 'Devise de cotation',
-      placeholder: 'Devise ISO (ex : USD)',
-      actualKey: 'cryptoCurrency',
-      staticSuggestions: ['USD', 'EUR', 'BTC', 'ETH', 'USDT', 'USDC'],
+      dimension: 'INSTRUMENT',
+      title: 'Par instrument (crypto)',
+      placeholder: 'Ticker (ex : BTC)',
+      actualKey: 'cryptoInstrument',
+      staticSuggestions: [],
     },
   ],
 }
@@ -251,18 +251,26 @@ export default function PatrimoineStrategyModal({
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [cryptoInstrumentBreakdown, setCryptoInstrumentBreakdown] = useState(null)
   const { trackEvent } = useAnalytics()
+
+  useEffect(() => {
+    getBreakdown('INSTRUMENT', 'CRYPTO')
+      .then(data => setCryptoInstrumentBreakdown(data))
+      .catch(() => {})
+  }, [])
 
   const suggestionsByDim = useMemo(() => {
     const merged = { ...(actualBreakdowns ?? {}) }
     if (!merged.sector && sectorBreakdown) merged.sector = sectorBreakdown
+    if (cryptoInstrumentBreakdown) merged.cryptoInstrument = cryptoInstrumentBreakdown
     const result = {}
     Object.values(CATEGORY_DIMENSIONS).flat().forEach(({ dimension, actualKey }) => {
       const breakdown = merged[actualKey]?.breakdown ?? []
       result[dimension] = breakdown.map(b => b.key).filter(k => k && k !== 'Non classé')
     })
     return result
-  }, [actualBreakdowns, sectorBreakdown])
+  }, [actualBreakdowns, sectorBreakdown, cryptoInstrumentBreakdown])
 
   const overallOver = Object.entries(CATEGORY_DIMENSIONS).some(([cat, dims]) =>
     dims.some(({ dimension }) => {

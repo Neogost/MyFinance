@@ -258,6 +258,43 @@ class PatrimoineBreakdownServiceTest {
     // ── CRYPTO_NETWORK lève 400 si catégorie incompatible ──────
     // (validé côté PatrimoineTargetService — pas côté breakdown service)
 
+    // ── INSTRUMENT ─────────────────────────────────────────────
+
+    @Test
+    void instrument_agregeParTicker() {
+        InstrumentDto btcInstr = cryptoInstrument("BTC", null, null);
+        InstrumentDto ethInstr = cryptoInstrument("ETH", null, null);
+
+        when(positionService.findAllByUser(eq(user), eq(AssetCategory.CRYPTO), eq(PositionStatus.ACTIVE)))
+                .thenReturn(List.of(
+                        cryptoPosition(btcInstr, new BigDecimal("6000")),
+                        cryptoPosition(ethInstr, new BigDecimal("4000"))
+                ));
+
+        PortfolioBreakdownDto result = service.getBreakdown(user, BreakdownDimension.INSTRUMENT, null);
+
+        assertThat(result.dimension()).isEqualTo(BreakdownDimension.INSTRUMENT);
+        assertThat(result.totalEur()).isEqualByComparingTo("10000");
+        assertThat(result.coverageRatio()).isEqualByComparingTo("100.0");
+        assertThat(result.breakdown()).hasSize(2);
+        assertThat(result.breakdown().get(0).key()).isEqualTo("BTC");
+        assertThat(result.breakdown().get(0).valueEur()).isEqualByComparingTo("6000");
+    }
+
+    @Test
+    void instrument_utiliseLabelSiTickerAbsent() {
+        InstrumentDto noTickerInstr = new InstrumentDto(1L, AssetCategory.CRYPTO, null,
+                null, "MyCoin", "USD", new BigDecimal("1"), null, false, null, null, null,
+                List.of(), List.of(), 0L, null, null);
+
+        when(positionService.findAllByUser(eq(user), eq(AssetCategory.CRYPTO), eq(PositionStatus.ACTIVE)))
+                .thenReturn(List.of(cryptoPosition(noTickerInstr, new BigDecimal("5000"))));
+
+        PortfolioBreakdownDto result = service.getBreakdown(user, BreakdownDimension.INSTRUMENT, null);
+
+        assertThat(result.breakdown().get(0).key()).isEqualTo("MyCoin");
+    }
+
     // ── Helpers ────────────────────────────────────────────────
 
     private InstrumentDto bourseInstrument(String currency, Long id,

@@ -11,9 +11,9 @@ const BOURSE_DIMS = [
 ]
 
 const CRYPTO_DIMS = [
-  { dimension: 'CRYPTO_TYPE',    title: 'Type de crypto', actualKey: 'cryptoType',     showCoverage: false },
-  { dimension: 'CRYPTO_NETWORK', title: 'Réseau',          actualKey: 'cryptoNetwork',  showCoverage: false },
-  { dimension: 'CURRENCY',       title: 'Devise',          actualKey: 'cryptoCurrency', showCoverage: false },
+  { dimension: 'CRYPTO_TYPE',    title: 'Type de crypto',  actualKey: 'cryptoType',       showCoverage: false },
+  { dimension: 'CRYPTO_NETWORK', title: 'Réseau',           actualKey: 'cryptoNetwork',    showCoverage: false },
+  { dimension: 'INSTRUMENT',     title: 'Par instrument',   actualKey: 'cryptoInstrument', showCoverage: false },
 ]
 
 const IMMO_PHYSIQUE_DIMS = [
@@ -74,7 +74,7 @@ export default function DiversificationSection() {
           calls.push(
             getBreakdown('crypto-type').catch(() => null),
             getBreakdown('crypto-network').catch(() => null),
-            getBreakdown('currency', 'CRYPTO').catch(() => null),
+            getBreakdown('instrument', 'CRYPTO').catch(() => null),
           )
         } else {
           calls.push(null, null, null)
@@ -86,12 +86,12 @@ export default function DiversificationSection() {
         }
 
         const [sector, country, continent, bourseCurrency, assetSubType,
-               cryptoType, cryptoNetwork, cryptoCurrency,
+               cryptoType, cryptoNetwork, cryptoInstrument,
                propertyUsage] = await Promise.all(calls)
 
         setActualBreakdowns({
           sector, country, continent, bourseCurrency, assetSubType,
-          cryptoType, cryptoNetwork, cryptoCurrency,
+          cryptoType, cryptoNetwork, cryptoInstrument,
           propertyUsage,
         })
       } catch {

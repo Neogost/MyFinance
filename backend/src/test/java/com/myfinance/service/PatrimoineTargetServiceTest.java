@@ -207,6 +207,44 @@ class PatrimoineTargetServiceTest {
     }
 
     @Test
+    void saveTargets_leve400_siCurrencyPourCrypto() {
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("CRYPTO", 5000.0),
+                Map.of(),
+                Map.of("CRYPTO", List.of(
+                        new TargetBreakdownInput(BreakdownDimension.CURRENCY, "USD", BigDecimal.valueOf(80))
+                )));
+
+        assertThatThrownBy(() -> patrimoineTargetService.saveTargets(user, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void saveTargets_accepteInstrument_pourCrypto() {
+        SaveTargetsRequest request = new SaveTargetsRequest(
+                Map.of("CRYPTO", 5000.0),
+                Map.of(),
+                Map.of("CRYPTO", List.of(
+                        new TargetBreakdownInput(BreakdownDimension.INSTRUMENT, "BTC", BigDecimal.valueOf(40)),
+                        new TargetBreakdownInput(BreakdownDimension.INSTRUMENT, "ETH", BigDecimal.valueOf(30))
+                )));
+
+        when(patrimoineTargetRepository.findByUser(user)).thenReturn(List.of());
+        when(patrimoineTargetRepository.save(any(PatrimoineTarget.class)))
+                .thenAnswer(inv -> {
+                    PatrimoineTarget t = inv.getArgument(0);
+                    t.setId(42L);
+                    return t;
+                });
+
+        patrimoineTargetService.saveTargets(user, request);
+
+        verify(patrimoineTargetBreakdownRepository).saveAll(anyList());
+    }
+
+    @Test
     void saveTargets_accepteCountryCurrencyAssetSubtype_pourBourse() {
         SaveTargetsRequest request = new SaveTargetsRequest(
                 Map.of("BOURSE", 50000.0),

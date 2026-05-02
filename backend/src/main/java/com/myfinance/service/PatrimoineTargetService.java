@@ -36,10 +36,11 @@ public class PatrimoineTargetService {
             BreakdownDimension.SECTOR,         Set.of(AssetCategory.BOURSE),
             BreakdownDimension.COUNTRY,        Set.of(AssetCategory.BOURSE),
             BreakdownDimension.CONTINENT,      Set.of(AssetCategory.BOURSE),
-            BreakdownDimension.CURRENCY,       Set.of(AssetCategory.BOURSE, AssetCategory.CRYPTO),
+            BreakdownDimension.CURRENCY,       Set.of(AssetCategory.BOURSE),
             BreakdownDimension.ASSET_SUBTYPE,  Set.of(AssetCategory.BOURSE),
             BreakdownDimension.CRYPTO_TYPE,    Set.of(AssetCategory.CRYPTO),
             BreakdownDimension.CRYPTO_NETWORK, Set.of(AssetCategory.CRYPTO),
+            BreakdownDimension.INSTRUMENT,     Set.of(AssetCategory.CRYPTO),
             BreakdownDimension.PROPERTY_USAGE, Set.of(AssetCategory.IMMO_PHYSIQUE)
     );
 
