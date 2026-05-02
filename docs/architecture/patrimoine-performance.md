@@ -1,9 +1,73 @@
 # Performance Patrimoniale (TWR / MWR) — Architecture V1 (refonte)
 
-Calcul du **rendement annualisé** du patrimoine financier global, en neutralisant l'effet des versements et retraits.
+## Pourquoi cette fonctionnalité
 
-> **Statut — Refonte en cours, ADMIN only.**
-> La fonctionnalité est en cours de réécriture sur des bases plus fiables. Elle reste **réservée au rôle ADMIN** tant que la précision n'est pas validée par recoupement avec des sources externes (Excel `=XIRR(...)`, comparaison broker). Un bandeau orange « 🚧 Fonctionnalité en cours de validation — calculs en cours de fiabilisation » est affiché en permanence sur la page.
+MyFinance trace aujourd'hui la **valeur** du patrimoine (combien j'ai, ventilé par catégorie, plus-value cumulée, plus-value YTD). Ces chiffres sont utiles mais ne disent rien sur la **qualité de l'allocation** : un patrimoine qui croît de 50 000 € en un an peut être le résultat de versements massifs sur un actif médiocre, ou d'une vraie performance des marchés sur un capital stable. La distinction est invisible avec les indicateurs actuels.
+
+Cette fonctionnalité ajoute une mesure du **rendement annualisé** du patrimoine financier, en neutralisant l'effet des versements et retraits. Elle répond à des questions que l'utilisateur ne peut pas se poser aujourd'hui :
+
+- *Est-ce que mes actifs performent réellement, ou est-ce que je fais juste épargne ?*
+- *Si je laisse mon argent où il est aujourd'hui, à quel rythme va-t-il croître ?*
+- *Mes choix de timing de versement (DCA vs lump sum) ont-ils été pertinents ?*
+- *Mon allocation actuelle bat-elle ce que ferait un placement passif équivalent ?* (V2, avec benchmark)
+
+Deux mesures complémentaires sont calculées et affichées côte à côte :
+
+- **TWR (Time-Weighted Return)** : performance pure des actifs, indépendante du timing et du volume des versements. C'est la métrique standard pour comparer un portefeuille à un benchmark (CW8, S&P 500, …) ou pour juger si un produit financier tient ses promesses.
+- **MWR (Money-Weighted Return)** : performance réellement vécue par l'utilisateur, qui intègre le fait que l'argent placé tôt a plus pesé que l'argent placé tard. C'est la métrique honnête de « combien ai-je gagné par an, en moyenne, avec mes choix d'investissement ».
+
+L'écart entre les deux est lui-même un signal : un MWR très inférieur au TWR signifie que les gros versements sont arrivés au mauvais moment ; un MWR supérieur au TWR signifie au contraire que le timing a été favorable.
+
+## Périmètre fonctionnel V1
+
+La V1 livre une **vue globale unique**, accessible aux administrateurs uniquement, le temps de valider la fiabilité des calculs sur des cas réels. Pas de filtre de période, pas de ventilation par catégorie ou par position, pas de comparaison à un benchmark, pas de graphique. Juste deux chiffres et leurs hypothèses, exposés en transparence.
+
+Le périmètre couvre les catégories productrices de rendement (BOURSE, CRYPTO, LIVRET, IMMO_PAPIER) et exclut les catégories non-rémunératrices ou subjectives (LIQUIDITE, IMMO_PHYSIQUE).
+
+L'industrialisation (ouverture aux utilisateurs, ventilation par catégorie, graphique, benchmark, etc.) est documentée en [section 12](#12-évolutions-futures-v2) et conditionnée à la validation des calculs. Tant que cette validation n'est pas faite (recoupement Excel `=XIRR(...)` + comparaison broker sur ≥ 3 portefeuilles types), un bandeau orange « 🚧 Fonctionnalité en cours de validation — calculs en cours de fiabilisation » reste affiché en permanence sur la page.
+
+---
+
+## Pré-requis V1 (à traiter avant le calcul TWR/MWR proprement dit)
+
+Trois chantiers techniques doivent être terminés **avant** d'attaquer le calcul de performance — ils sont des préalables, pas des dépendances optionnelles.
+
+### Pré-requis 1 — Tables d'historique de prix et de taux
+
+Création des tables `instrument_price_history` (cours quotidien par instrument) et `exchange_rate_history` (taux quotidien par devise). Schéma détaillé en [section 2.1](#21-nouvelles-tables). Alimentation forward greffée sur le scheduler quotidien existant `MarketDataScheduler` (`0 0 2 * * *`).
+
+### Pré-requis 2 — Fix de la conversion devise sur `PositionOrder`
+
+**Bug existant** : aujourd'hui, `PositionService.createOrder()` et `updateOrder()` font `order.setAmountEur(request.amount())` sans appliquer le taux de change. Pour les positions en devise étrangère (USD, GBP, CHF, etc.), `amountEur` contient en réalité le montant en **devise native**, pas en EUR.
+
+**Modèle conceptuel cible** :
+- `Position.currency` = devise de la position (source de vérité).
+- `PositionOrder.amount` = montant en devise native de la position (ce que l'utilisateur saisit).
+- `PositionOrder.amountEur` = **dénormalisation** calculée à la création/modification de l'ordre via `amount / exchange_rate_history(Position.currency, orderDate)`. Si le taux exact n'existe pas dans l'historique → fallback sur le dernier taux connu *strictement antérieur*.
+
+> **Pourquoi garder `amountEur` plutôt que recalculer à la lecture ?** Le champ est lu fréquemment (toutes les vues patrimoine, tous les snapshots). Le recalcul à la lecture impliquerait une jointure systématique avec `exchange_rate_history`. La dénormalisation est cohérente avec le reste du modèle (`PositionSnapshot.unitPriceEur` suit la même logique).
+
+#### Migration des ordres existants
+
+Endpoint admin one-shot dédié : `POST /api/admin/orders/migrate-amount-eur?dryRun={true|false}`.
+
+Comportement :
+1. Parcourt tous les `PositionOrder` dont `Position.currency != 'EUR'`.
+2. Pour chacun, recalcule `amountEur = amount / exchange_rate_history(currency, orderDate)`.
+3. Si le taux historique manque pour cette date : fallback sur le dernier taux antérieur ; si aucun, fallback sur le taux courant `ExchangeRate.rate` (avec entrée dans le rapport « ordre #X migré avec taux courant faute d'historique »).
+4. **Idempotent** : peut être rejoué sans risque (le résultat est déterministe à partir des données d'entrée).
+5. **Dry-run** par défaut : retourne un rapport `{ "ordersExamined": N, "ordersToUpdate": M, "fallbacksCurrentRate": K, "samples": [...] }` sans rien modifier.
+6. Le run réel (`dryRun=false`) applique la migration et retourne le même rapport avec `ordersUpdated`.
+
+> **Sans ce fix**, les flux EUR utilisés en entrée du calcul de performance seraient incorrects pour toute position non-EUR — résultats indéterminés.
+
+### Pré-requis 3 — `closedDate` sur `Position`
+
+Ajout d'un champ `closedDate` (`LocalDate`, nullable) sur l'entité `Position`. Renseigné automatiquement à `LocalDate.now()` lors de l'appel à `PositionService.close()`. Modifiable via le formulaire d'édition d'une position fermée (utile si l'utilisateur ferme rétroactivement une position vendue il y a 6 mois). Ce champ permet :
+- d'identifier précisément la fin de la période de contribution d'une position au TWR ;
+- d'exclure proprement les mois où la position n'a plus d'activité ni de valeur.
+
+Migration : `ALTER TABLE positions ADD COLUMN closed_date DATE`. Backfill optionnel : pour les positions déjà `CLOSED`, on peut prendre `MAX(orderDate)` parmi leurs ordres comme valeur initiale, ou laisser `NULL` (le calcul tombera alors en fallback sur la dernière date d'activité).
 
 ---
 
@@ -20,6 +84,9 @@ Calcul du **rendement annualisé** du patrimoine financier global, en neutralisa
 | **Périmètre UI V1** | Une seule page, vue **globale** (toutes catégories agrégées), période **depuis le premier ordre** | Pas de sélecteur, pas de YTD, pas de tableau par catégorie ni par position |
 | **Benchmark** | Aucun en V1 | Sera ajouté quand on aura une série de prix d'un indice de référence (CW8 / MSCI World) |
 | **Indicateurs affichés** | TWR + MWR côte à côte | Les deux racontent une histoire différente, on assume la pédagogie |
+| **Précision arithmétique** | BigDecimal aux frontières, double dans les solveurs | Évite l'import d'Apache Commons Math pour l'exponentiation fractionnaire ; perte de précision invisible (`< 1e-15`) à l'échelle d'un taux affiché à 4 décimales |
+| **Capitalisation LIVRET** | Quotidienne simple : `(1 + annualRate)^(1/365) - 1` | Approximation par rapport à la règle bancaire réelle (capitalisation par quinzaine) — écart de quelques euros sur l'année, acceptable en V1 |
+| **Convention temporelle Modified Dietz** | Poids `(D - j) / D` (flux en début de journée — standard CFA Institute) | Fixe pour pouvoir écrire des tests reproductibles |
 
 ---
 
@@ -34,24 +101,6 @@ Avec les choix ci-dessus, les limites structurelles diminuent fortement par rapp
 5. **Frais non tracés.** Performance affichée *brute* de frais (courtage, gestion, TER d'ETF).
 6. **Backfill BOURSE manuel.** Aucune source automatique fiable pour l'historique des cours BOURSE européens (Yahoo testé et écarté). L'admin doit importer un CSV par instrument pour disposer d'un calcul antérieur à la date de déploiement ; sinon le calcul démarre à la date du premier prix collecté forward, avec warning explicite.
 7. **XIRR sensible aux cashflows extrêmes.** Si le solveur diverge, fallback bissection puis warning « MWR non calculable ».
-
----
-
-## Vue d'ensemble
-
-Le tableau de bord répond à « **combien j'ai ?** ». Cette page répond à « **est-ce que j'investis bien ?** » via deux métriques :
-
-```
-TWR (Time-Weighted Return)  → performance pure de l'actif, neutralise les cashflows
-MWR (Money-Weighted Return) → performance réellement vécue, dépend du timing des versements
-```
-
-| Métrique | Question à laquelle elle répond |
-|----------|--------------------------------|
-| **TWR** | Quel rendement ont fait mes actifs, indépendamment de mes versements ? |
-| **MWR** | Combien j'ai vraiment gagné par an, compte tenu de quand j'ai mis l'argent ? |
-
-Les deux sont affichées côte à côte. Un tooltip explique la différence en une phrase.
 
 ---
 
@@ -126,7 +175,7 @@ C'est le **point dur** de la V1. Les sources gratuites fiables sont rares pour l
 |-----------|----------------------|
 | **CRYPTO** | Automatique — endpoint CoinGecko `market_chart?days=max` couvre tout l'historique d'une crypto. Déclenchement admin one-shot par instrument. |
 | **Devises** | Automatique — endpoint Frankfurter `/{from}..{to}?from=EUR&to=USD,GBP,...` couvre depuis 1999. Déclenchement admin one-shot par devise. |
-| **BOURSE** | **Import CSV manuel par l'admin**. Format minimal : `date;price` (UTF-8, séparateur `;`, devise implicite = devise de l'instrument). L'admin se procure les données depuis la source de son choix (export broker, copie manuelle Boursorama, JustETF, etc.) et les importe instrument par instrument. Source enregistrée : `MANUAL_CSV`. |
+| **BOURSE** | **Import CSV manuel par l'admin**. Format détaillé en [section 2.3](#23-format-csv-dimport-bourse). L'admin se procure les données depuis la source de son choix (export broker, copie manuelle Boursorama, JustETF, etc.) et les importe instrument par instrument. Source enregistrée : `MANUAL_CSV`. |
 | **LIVRET** | Aucun backfill nécessaire — le solde est recalculé à partir des cashflows et du taux paramétré sur la `Position`. |
 | **IMMO_PAPIER** | Aucun backfill nécessaire — on s'appuie sur les `PositionSnapshot` mensuels saisis manuellement (existant). |
 
@@ -142,7 +191,71 @@ Endpoints admin :
 
 > **Piste à explorer ultérieurement** (hors V1) : la page graphique de Boursorama fait des appels JSON internes (style `/bourse/action/graph/ws/GetTicks`) qui pourraient permettre un backfill BOURSE automatique. URL non documentée et probablement fragile — à investiguer dans un spike dédié si la saisie CSV se révèle trop pénible à l'usage.
 
-### 2.3 Données existantes réutilisées
+### 2.3 Format CSV d'import BOURSE
+
+Format strict, validé à l'upload. Erreur de parsing → ligne ignorée et listée dans le `BackfillReport`, le reste du fichier est traité.
+
+```
+# Instrument: Amundi MSCI World UCITS ETF (CW8)
+# Currency: EUR
+date;price
+2024-01-02;432,15
+2024-01-03;433,20
+2024-01-04;430,87
+```
+
+**Spécifications** :
+
+| Aspect | Règle |
+|--------|-------|
+| Encoding | UTF-8 (BOM toléré) |
+| Séparateur de champs | `;` (point-virgule) |
+| Séparateur décimal | `,` (virgule) |
+| Format de date | ISO 8601 — `YYYY-MM-DD` |
+| Header obligatoire | Ligne `date;price` (insensible à la casse) |
+| Lignes de commentaire | Préfixées par `#` — ignorées par le parser, **utiles pour l'admin** afin d'identifier le contenu (nom de l'instrument, devise, source) lors de la préparation du fichier |
+| Doublons sur `(instrument_id, price_date)` | **Écrasement** silencieux (le dernier prix du fichier l'emporte) |
+| Lignes invalides (date mal formée, prix non numérique) | **Skip** + entrée détaillée dans `errors[]` du rapport |
+| Taille max du fichier | 10 Mo |
+| Nombre max de lignes | 50 000 (largement supérieur à 130 ans de cours daily, garde-fou anti-DoS) |
+
+**À noter** : les lignes `# Instrument:` et `# Currency:` sont **purement informatives** — l'instrument cible est identifié par l'URL (`/api/admin/instruments/{id}/import-prices`), et la devise par `Instrument.currency`. Elles servent à éviter à l'admin d'envoyer le mauvais CSV au mauvais endpoint.
+
+### 2.4 Contrat `BackfillReport`
+
+Format unique retourné par tous les endpoints de backfill (CoinGecko, Frankfurter, CSV).
+
+```json
+{
+  "scope": "INSTRUMENT_PRICES",
+  "targetId": "42",
+  "targetLabel": "Amundi MSCI World (CW8)",
+  "fromDate": "2020-01-02",
+  "toDate": "2026-05-02",
+  "linesInserted": 1854,
+  "linesUpdated": 23,
+  "linesSkipped": 5,
+  "errors": [
+    "Ligne 1247 : date '2024-02-30' invalide",
+    "Ligne 1893 : prix 'N/A' non numérique"
+  ],
+  "durationMs": 412
+}
+```
+
+| Champ | Description |
+|-------|-------------|
+| `scope` | `INSTRUMENT_PRICES` ou `EXCHANGE_RATES` |
+| `targetId` | ID de l'instrument ou code ISO de la devise |
+| `targetLabel` | Libellé lisible (nom instrument ou devise) — utile pour l'UI |
+| `fromDate` / `toDate` | Plage temporelle effectivement traitée |
+| `linesInserted` | Nouvelles lignes créées dans la table d'historique |
+| `linesUpdated` | Lignes existantes écrasées (cas du re-import) |
+| `linesSkipped` | Lignes ignorées (erreur, ou source ne renvoie rien) |
+| `errors` | Liste des erreurs ligne par ligne (max 50 entrées, troncature au-delà) |
+| `durationMs` | Temps d'exécution côté serveur |
+
+### 2.5 Données existantes réutilisées
 
 | Source existante | Donnée fournie |
 |------------------|---------------|
@@ -152,7 +265,7 @@ Endpoints admin :
 
 Aucune nouvelle entité côté domaine fonctionnel — uniquement les deux tables d'historique de prix/taux.
 
-### 2.4 Classification des `OrderType`
+### 2.6 Classification des `OrderType`
 
 ```java
 public enum OrderType {
@@ -177,38 +290,60 @@ public enum OrderType {
 
 ```
 SI position.category == BOURSE | CRYPTO :
-    quantite_a_d  = Σ ordres BUY/SELL/AIRDROP avec orderDate <= d (signés)
+    quantite_a_d  = Σ ordres (BUY + AIRDROP + ABONDEMENT) - Σ SELL
+                    avec orderDate <= d (en quantité)
     prix_natif_d  = instrument_price_history(instrument_id, d)
-                    (fallback : dernière valeur connue avant d)
+                    fallback : dernière valeur connue STRICTEMENT antérieure à d
+                    si aucune valeur connue avant d → position EXCLUE + warning
+                    (interdiction d'extrapoler dans le passé)
     taux_change_d = exchange_rate_history(currency, d)
-                    (fallback : dernière valeur connue avant d ; 1.0 si EUR)
+                    fallback : dernière valeur connue STRICTEMENT antérieure à d
+                    si aucune valeur connue avant d → position EXCLUE + warning
+                    (1.0 si currency == EUR)
     valeur_eur    = quantite_a_d * prix_natif_d / taux_change_d
 
 SI position.category == LIVRET :
-    valeur_eur = Σ DEPOSIT - Σ WITHDRAWAL + intérêts capitalisés au taux paramétré
-                 entre chaque cashflow et la date d (capitalisation quotidienne)
+    Capitalisation quotidienne simple au taux paramétré annualRate :
+      taux_journalier = (1 + annualRate)^(1/365) - 1
+    valeur_eur(d) reconstruite jour par jour :
+      pour chaque jour entre la création de la position et d :
+        - appliquer les cashflows DEPOSIT/WITHDRAWAL/INTEREST/DIVIDEND du jour
+        - capitaliser le solde au taux journalier
+    Note : approximation par rapport à la règle bancaire réelle (capitalisation
+    par quinzaine), erreur de l'ordre de quelques euros sur l'année.
 
 SI position.category == IMMO_PAPIER :
     valeur_eur = interpolation_linéaire(PositionSnapshot avant d, après d)
                  fallback : dernier snapshot connu si pas d'encadrement
+                 si aucun snapshot avant d → position EXCLUE + warning
 ```
+
+> **Position fermée** : si `closedDate` est renseignée et `d > closedDate`, la position est valorisée à `0`. Si `d <= closedDate`, elle est valorisée normalement (ses ordres jusqu'à `closedDate` sont pris en compte).
 
 ### 3.2 TWR — Modified Dietz par sous-période mensuelle
 
 Le TWR global est obtenu en chaînant le rendement Modified Dietz calculé sur chaque mois calendaire de la période.
 
+**Conventions actées V1 :**
+
+- **Date de début effective** = `min(orderDate)` parmi les ordres des positions éligibles (BOURSE / CRYPTO / LIVRET / IMMO_PAPIER). Si pour cette date un instrument n'a aucun prix historique disponible, on décale au premier mois où **toutes** les positions ayant déjà émis un ordre sont valorisables — les positions partiellement valorisables émettent un warning.
+- **Premier mois du chaînage** = le mois calendaire qui **suit** le premier versement. Le mois du premier versement n'est pas inclus (`V_début` serait à 0, formule instable). L'utilisateur en est informé via un warning explicite.
+- **Cashflows du même jour** : nettés algébriquement par date avant calcul (ex : BUY +500 EUR et SELL -300 EUR le même jour → un seul flux net de +200 EUR).
+- **Convention temporelle Modified Dietz** (CFA Institute standard) : poids d'un flux le jour `j` d'un mois de `D` jours = `(D - j) / D`. Le flux opère donc « en début de journée ».
+
 **Pour un mois `m` donné :**
 
 ```
-V_début = valeur_globale(dernier_jour_mois_précédent)
-V_fin   = valeur_globale(dernier_jour_mois_m)
+V_début = valuePortfolioAt(user, dernier_jour_mois_précédent)
+V_fin   = valuePortfolioAt(user, dernier_jour_mois_m)
 F_i     = cashflows externes du mois (BUY/SELL/DEPOSIT/WITHDRAWAL/ABONDEMENT)
-          en EUR au taux du jour du cashflow
-          signe : +montant si entrée (versement), -montant si sortie (retrait)
+          NETTÉS par date, en EUR au taux du jour du cashflow
+          signe : +montant si entrée externe (versement)
+                  -montant si sortie externe (retrait)
 
 F_net   = Σ F_i
 
-Pondération temporelle de chaque flux :
+Poids temporel de chaque flux net :
   w_i = (D - jour_i) / D
   où D = nb de jours du mois, jour_i = numéro du jour du flux
 
@@ -223,26 +358,46 @@ TWR_total      = Π(1 + R_m) - 1   pour chaque mois m de la période
 TWR_annualisé  = (1 + TWR_total)^(365 / jours_total) - 1
 ```
 
-**Cas particuliers** :
-- `V_début + Σ w_i * F_i == 0` (mois où la position démarre à zéro et reçoit un seul flux en fin de mois) → mois neutre, `R_m = 0`, à logger.
-- Mois entièrement avant le premier ordre → exclu de la chaîne.
-- Mois en cours (pas encore terminé) → `V_fin = valeur_globale(aujourd'hui)`, `D = jour_courant`.
+**Traitement explicite des cas particuliers :**
+
+| Cas | Comportement |
+|-----|-------------|
+| Mois entièrement avant la date de début effective | Exclu de la chaîne |
+| Mois sans aucune position éligible et sans cashflow | Exclu de la chaîne (facteur 1) |
+| Mois en cours (pas encore terminé) | `V_fin = valuePortfolioAt(user, LocalDate.now())`, `D = jour_courant`, le mois est inclus mais marqué comme "partiel" |
+| `V_début + Σ w_i × F_i ≤ 0` (retrait total puis nouveau versement, ou rare combinaison de timing) | Sous-période clôturée au jour précédant le retrait total, nouvelle sous-période ouverte au prochain versement, le "trou" est exclu. Warning émis. |
+| Portefeuille à valeur nulle pendant ≥ 1 mois puis nouveau versement | Mois neutres exclus (facteur 1), reprise du chaînage avec le mois du nouveau versement comme premier mois (cf. règle « mois suivant le versement ») |
+| Position fermée en milieu de mois | Valorisée normalement jusqu'au `closedDate`, valorisée à 0 ensuite. Les ordres de fermeture (SELL final / WITHDRAWAL) entrent dans `F_i` du mois |
 
 ### 3.3 MWR — XIRR Newton-Raphson
 
 ```
 Pour toute la période :
-  cashflows = liste de (date, montant signé en EUR au taux du jour)
+  cashflows = liste de (date, montant signé en EUR au taux du jour de la date)
     BUY/DEPOSIT/ABONDEMENT  → -montant  (sortie de poche utilisateur)
     SELL/WITHDRAWAL         → +montant  (entrée de poche utilisateur)
-  + (aujourd'hui, +valeur_actuelle_globale_eur)  ← liquidation virtuelle
+    Cashflows même jour    → nettés algébriquement (cohérent avec TWR)
+  + (LocalDate.now(), +valuePortfolioAt(user, LocalDate.now()))
+    ← liquidation virtuelle à la valeur actuelle calculée par ValuationService
 
 XIRR = taux r tel que Σ cashflow_i / (1+r)^((date_i - date_0)/365) = 0
 ```
 
-Implémentation : Newton-Raphson, valeur initiale `r = 0.10`, tolérance `1e-7`, max 100 itérations. Fallback bissection sur `[-0.99, 10.0]` si divergence. Si la bissection ne trouve pas de changement de signe → MWR null + warning.
+Implémentation : Newton-Raphson, valeur initiale `r = 0.10`, tolérance `1e-7`, max 100 itérations. Fallback bissection sur `[-0.99, 10.0]` si divergence. Si la bissection ne trouve pas de changement de signe → `mwrAnnualized = null` + warning.
 
 > Les `INTEREST` / `DIVIDEND` / `AIRDROP` **ne sont pas** dans la liste des cashflows MWR (ce sont des gains internes, déjà capturés dans la valeur actuelle).
+
+### 3.4 Précision arithmétique
+
+**Convention V1** : `BigDecimal` aux frontières (entité JPA, DTO API, persistance), `double` à l'intérieur des solveurs `ModifiedDietzCalculator` et `XirrSolver`.
+
+Justification : `java.math.BigDecimal` ne propose pas d'exponentiation native à exposant fractionnaire (besoin pour `(1+r)^(jours/365)` dans Newton-Raphson et l'annualisation TWR). Travailler en `double` à l'intérieur du solveur évite une dépendance externe (Apache Commons Math) et reste largement précis : la perte de précision est de l'ordre de `1e-15`, totalement invisible une fois le résultat arrondi à 4 décimales pour l'affichage (`9,2 %` = `0.0920`).
+
+Conversion :
+- `BigDecimal → double` à l'entrée du solveur via `BigDecimal.doubleValue()`.
+- `double → BigDecimal` à la sortie via `BigDecimal.valueOf(d).setScale(6, HALF_UP)`.
+
+Tolérances Newton-Raphson : `epsilon = 1e-7`, `maxIterations = 100`, fallback bissection sur `[-0.99, 10.0]`.
 
 ---
 
@@ -258,6 +413,7 @@ Implémentation : Newton-Raphson, valeur initiale `r = 0.10`, tolérance `1e-7`,
 
 ```json
 {
+  "computedAt": "2026-05-02T14:32:18Z",
   "from": "2023-01-15",
   "to": "2026-05-02",
   "durationYears": 3.30,
@@ -275,6 +431,7 @@ Implémentation : Newton-Raphson, valeur initiale `r = 0.10`, tolérance `1e-7`,
 
 | Champ | Description |
 |-------|-------------|
+| `computedAt` | Horodatage UTC du calcul (`Instant`) — utile pour debug et pour un éventuel cache futur |
 | `from` | Date du premier ordre pris en compte (peut être > date premier ordre réel si backfill manquant) |
 | `to` | Date du calcul (aujourd'hui) |
 | `durationYears` | `(to - from) / 365.25` |
@@ -317,6 +474,20 @@ com.myfinance
 ```
 
 **Choix de conception** : `ModifiedDietzCalculator` et `XirrSolver` sont stateless, publics, et **ne dépendent que de structures Java pures** (listes, BigDecimal, LocalDate). Cela permet de les tester avec des cas reproductibles indépendamment de la base.
+
+**Stratégie de chargement batch** (anti N+1) :
+
+Un calcul de perf sur 5 ans = 60 mois × N positions × 2 valorisations potentielles. Sans précaution, on génère des centaines de queries `SELECT … FROM instrument_price_history WHERE instrument_id = ? AND price_date <= ?`. Pour éviter ça :
+
+1. Au début de `computeGlobal(user)`, le `PerformanceService` détermine la plage `[from, to]` et la liste des instruments / devises concernés.
+2. **Une seule query** pour les prix : `findByInstrumentInAndPriceDateBetween(instruments, from, to)` → matérialisée dans une `Map<(instrumentId, date), price>` locale au calcul.
+3. **Une seule query** pour les taux : `findByCurrencyInAndRateDateBetween(currencies, from, to)` → idem `Map<(currency, date), rate>`.
+4. `ValuationService.valuePositionAt()` lit ces maps en mémoire — aucun aller-retour DB pendant le chaînage TWR.
+5. Les maps sont **locales à l'appel** et libérées en sortie (pas de cache long-terme côté serveur — contrainte ressources NAS).
+
+Ordre de grandeur attendu : pour un user avec 15 instruments × 5 ans × 1825 jours × 8 octets ≈ **220 Ko en mémoire** par calcul. Acceptable.
+
+> Pas de cache applicatif (Redis, Caffeine) en V1. Le calcul est rare (< 1 fois/jour) et le coût mémoire au repos serait disproportionné.
 
 ---
 
@@ -398,38 +569,188 @@ sequenceDiagram
 1. **Ownership** : un utilisateur ne consulte que sa propre performance (V1 : ADMIN voit la sienne, pas celle des autres).
 2. **Catégories exclues** : `IMMO_PHYSIQUE` et `LIQUIDITE` filtrées en amont — n'entrent ni dans `currentValueEur`, ni dans les cashflows, ni dans les dividendes.
 3. **Cashflows internes vs externes** : `INTEREST/DIVIDEND/AIRDROP` ne sont pas des cashflows pour le TWR ni pour le MWR. Ils contribuent à `totalDividendsEur` et sont capturés implicitement dans la valeur actuelle.
-4. **Conversion devise** : tous les flux sont reconvertis au taux du jour du flux via `exchange_rate_history` (et non plus via `PositionOrder.exchangeRate`). Si le taux historique manque pour la date exacte → dernière valeur connue avant cette date.
-5. **Position fermée** : reste dans le calcul historique (ses ordres restent comptés sur leur période d'activité).
-6. **Cas limites** :
-   - Aucun ordre éligible → `twr/mwr = null`, `warnings = ["Aucune position éligible au calcul"]`
-   - Période < 30 jours → calcul effectué mais `warnings` mentionne la non-fiabilité de l'annualisation
-   - Mois sans aucune position active → exclu de la chaîne TWR
-   - XIRR non convergent → `mwrAnnualized = null` + warning, le TWR reste calculé
+4. **Conversion devise** : tous les flux sont (re)convertis au taux du jour du flux via `exchange_rate_history` (et non plus via `PositionOrder.amountEur` qui est aujourd'hui buggé — cf. pré-requis 2). Si le taux historique manque pour la date exacte → dernière valeur connue *strictement antérieure*. Aucune extrapolation dans le passé.
+5. **Position fermée** : valorisée normalement jusqu'à `closedDate` (cf. pré-requis 3), valorisée à 0 ensuite. Ses ordres restent comptés sur leur période d'activité.
+6. **Cashflows du même jour** : nettés algébriquement (par signe et valeur) avant d'entrer dans Modified Dietz et XIRR. Une seule entrée par date dans la liste finale des flux.
+7. **Date de début effective** : `min(orderDate)` parmi les ordres des positions éligibles. Si un instrument BOURSE n'a aucun prix historique disponible à cette date, on décale au premier mois où *toutes* les positions sont valorisables (warning émis).
+8. **Premier mois du chaînage TWR** : le mois calendaire qui *suit* le premier versement. Le mois du premier versement n'est jamais inclus (formule Modified Dietz instable avec V_début = 0).
+9. **Précision arithmétique** : BigDecimal aux frontières, double dans les solveurs internes (cf. section 3.4).
+10. **Cas limites** :
+    - Aucun ordre éligible → `twr/mwr = null`, `warnings = ["Aucune position éligible au calcul"]`
+    - Période < 30 jours → calcul effectué mais `warnings` mentionne la non-fiabilité de l'annualisation
+    - Mois sans aucune position active ni cashflow → exclu de la chaîne TWR (facteur 1)
+    - XIRR non convergent → `mwrAnnualized = null` + warning, le TWR reste calculé
+    - Retrait total puis reprise après ≥ 1 mois → mois "à vide" exclus, chaînage repris au mois suivant le nouveau versement
 
 ---
 
 ## 9. Tests
 
-L'objectif **principal** de cette V1 est la **validation des calculs**. Les tests unitaires sont donc centrés sur des cas reproductibles et vérifiables par recoupement externe.
+L'objectif **principal** de cette V1 est la **validation des calculs**. La stratégie : approche **TDD avec golden tests** — chaque scénario test est construit à partir d'un calcul à la main documenté dans le test lui-même, et l'implémentation doit reproduire le résultat exact (à `epsilon = 1e-6` près).
 
-| Classe de test | Contenu |
-|----------------|---------|
-| `XirrSolverTest` | Cas Excel `=XIRR(...)` de référence (3, 5, 10 cashflows) ; période 1 an exacte avec gain x % → MWR ≈ x % ; divergence forcée → fallback bissection ; absence de solution → null |
-| `ModifiedDietzCalculatorTest` | Cas du papier de référence (Dietz 1968) ; sous-période sans cashflow → R = (V_fin/V_début - 1) ; cashflow en début de mois → poids ≈ 1 ; cashflow en fin de mois → poids ≈ 0 ; V_début + flux pondéré = 0 → cas neutre |
-| `ValuationServiceTest` | LIVRET 3 % capitalisé annuellement sur 2 ans → solde attendu connu ; BOURSE quantité × prix historique × taux historique avec fallback ; IMMO_PAPIER interpolation linéaire entre snapshots |
-| `PerformanceServiceTest` | Scénario synthétique LIVRET pur (taux fixe) : TWR ≈ taux livret, MWR ≈ taux livret ; scénario versement unique + plus-value : TWR == MWR ; scénario versements échelonnés : TWR ≠ MWR (l'écart a le bon signe) ; exclusion IMMO_PHYSIQUE/LIQUIDITE ; warnings sur backfill manquant |
-| `PerformanceControllerTest` | Endpoint, 401 non auth, 403 non-admin, format `PerformanceDto` |
+### 9.1 Pourquoi des golden tests ?
 
-**Validation manuelle complémentaire** (à exécuter avant d'envisager une ouverture aux utilisateurs) :
-- Comparaison TWR / MWR avec la même série de cashflows entrée dans Excel ou Google Sheets.
+Pour ce type de calcul financier, le risque principal n'est pas le crash : c'est l'**erreur silencieuse** (résultat plausible mais faux d'un facteur 2, d'un signe, ou d'une convention de pondération). Un test du genre « TWR > 0 quand le portefeuille a gagné de la valeur » ne détecte rien. Un test du genre « pour ce scénario précis, TWR doit valoir exactement 0,1025 (calculé à la main ci-dessous), tolérance 1e-6 » détecte tout.
+
+Chaque test golden doit donc :
+1. Décrire le scénario en commentaire (dates, flux, valeurs).
+2. **Calculer le résultat attendu à la main** dans le commentaire (formule développée + valeur numérique).
+3. Asserter égalité stricte à epsilon près.
+
+### 9.2 Cas de test golden (V1 minimum)
+
+#### `XirrSolverTest` — résultats reproductibles dans Excel `=XIRR(values, dates)`
+
+| # | Scénario | Cashflows | Résultat attendu | Vérification |
+|---|----------|-----------|-----------------|--------------|
+| 1 | Versement unique + plus-value 10 % sur 1 an exact | `(2024-01-01, -1000)`, `(2025-01-01, +1100)` | `XIRR = 0.1` exactement | Calcul direct : `1100 / 1000 - 1 = 0.10` |
+| 2 | Versement unique + plus-value 21 % sur 2 ans exacts | `(2024-01-01, -1000)`, `(2026-01-01, +1210)` | `XIRR = 0.10` exactement | `(1210/1000)^(1/2) - 1 = 0.10` |
+| 3 | Deux versements + valeur finale | `(2024-01-01, -1000)`, `(2024-07-01, -1000)`, `(2025-01-01, +2100)` | `XIRR ≈ 0.0673` | Reproduit dans Excel `=XIRR()` |
+| 4 | Perte totale | `(2024-01-01, -1000)`, `(2025-01-01, +500)` | `XIRR = -0.50` | `500/1000 - 1 = -0.50` |
+| 5 | Plus-value de 0 % exactement | `(2024-01-01, -1000)`, `(2025-01-01, +1000)` | `XIRR = 0.0` | Cas dégénéré, doit converger sans planter |
+| 6 | Cashflows incohérents (que des entrées) | `(2024-01-01, +1000)`, `(2025-01-01, +500)` | `XIRR = null` + log | Pas de solution réelle, fallback bissection échoue |
+| 7 | Cashflow en jour bissextile | `(2024-02-29, -1000)`, `(2025-02-28, +1100)` | Comportement défini, comparé à Excel | Vérifie la gestion des durées exactes |
+
+#### `ModifiedDietzCalculatorTest` — sous-période unique
+
+| # | Scénario | Entrées | Résultat attendu | Calcul à la main |
+|---|----------|---------|-----------------|------------------|
+| 1 | Aucun cashflow, plus-value 10 % | `V_début=1000, V_fin=1100, F=[]` | `R = 0.10` | `(1100 - 1000 - 0) / (1000 + 0) = 0.10` |
+| 2 | Cashflow le 1er jour du mois (poids ≈ 1) | `V_début=1000, V_fin=2100, F=[(jour=1, +1000)]`, mois 30 jours | `R ≈ 0.0345` | `w₁ = (30-1)/30 = 0.9667` ; `(2100 - 1000 - 1000) / (1000 + 0.9667 × 1000) = 100 / 1966.67 = 0.0508` ⚠ recalculer manuellement à l'implémentation |
+| 3 | Cashflow le dernier jour du mois (poids ≈ 0) | `V_début=1000, V_fin=2100, F=[(jour=30, +1000)]`, mois 30 jours | `R ≈ 0.10` | `w₁ = 0` ; `(2100 - 1000 - 1000) / (1000 + 0) = 0.10` |
+| 4 | Cashflow milieu de mois | `V_début=1000, V_fin=2100, F=[(jour=15, +1000)]`, mois 30 jours | `R ≈ 0.0667` | `w₁ = 15/30 = 0.5` ; `100 / (1000 + 500) = 0.0667` |
+| 5 | Plusieurs cashflows | `V_début=1000, V_fin=3000, F=[(jour=10, +1000), (jour=20, +500)]`, mois 30 jours | À calculer à la main avant d'écrire le test | — |
+| 6 | Sortie nette (retrait) | `V_début=2000, V_fin=900, F=[(jour=15, -1000)]`, mois 30 jours | `R ≈ -0.0667` | `w₁ = 0.5` ; `(900 - 2000 + 1000) / (2000 - 500) = -100 / 1500` |
+| 7 | Dénominateur ≤ 0 (retrait > V_début) | `V_début=500, V_fin=0, F=[(jour=1, -1000)]` | Sous-période clôturée, warning émis | Cf. règle métier |
+
+#### `ModifiedDietzCalculatorTest` — chaînage et annualisation
+
+| # | Scénario | Résultat attendu | Calcul à la main |
+|---|----------|-----------------|------------------|
+| 8 | Chaînage 2 mois consécutifs à +5 % chacun | `TWR_total = 0.1025` | `(1.05)² - 1 = 0.1025` |
+| 9 | Annualisation sur 2 ans avec TWR_total = 21 % | `TWR_annualisé = 0.10` | `(1.21)^(365/730) - 1 ≈ 0.10` |
+| 10 | Annualisation sur 6 mois (182 jours) avec TWR_total = 5 % | `TWR_annualisé ≈ 0.1025` | `(1.05)^(365/182) - 1 ≈ 0.1025` |
+
+#### `ValuationServiceTest`
+
+| # | Scénario | Résultat attendu | Calcul à la main |
+|---|----------|-----------------|------------------|
+| 1 | LIVRET 3 %, principal 1000 €, après 365 jours | `valeur ≈ 1030.00 €` | `1000 × (1.03)^(365/365) = 1030` |
+| 2 | LIVRET 3 %, principal 1000 €, après 730 jours | `valeur ≈ 1060.90 €` | `1000 × (1.03)² = 1060.90` |
+| 3 | LIVRET 3 %, deux versements de 1000 € à 6 mois d'écart, valeur après 1 an | À calculer à la main avant le test | — |
+| 4 | BOURSE EUR : 100 actions à 50 € le 2024-06-01, valorisé au 2024-12-01 (prix 55 €) | `valeur = 5500 €` | `100 × 55 / 1.0` |
+| 5 | BOURSE USD : 100 actions à 50 USD le 2024-06-01, valorisé au 2024-12-01 (prix 55 USD, taux 1.10 USD/EUR ce jour-là) | `valeur = 5000 €` | `100 × 55 / 1.10` |
+| 6 | Position fermée le 2024-09-01, valorisée au 2024-10-01 | `valeur = 0 €` | Règle métier #5 |
+| 7 | BOURSE sans prix avant la date demandée | `null` + warning « extrapolation passée interdite » | Règle métier #4 |
+| 8 | IMMO_PAPIER interpolation entre snapshot 2024-01-01 (10000 €) et 2024-07-01 (11000 €), valorisé au 2024-04-01 | `valeur ≈ 10500 €` | Interpolation linéaire sur 90 jours entre 2 points |
+
+#### `PerformanceServiceTest` — scénarios end-to-end
+
+| # | Scénario | TWR attendu | MWR attendu | Justification |
+|---|----------|-------------|-------------|---------------|
+| 1 | LIVRET pur 3 %, versement unique 1000 € il y a 365 jours, aucun autre flux | `≈ 0.03` | `≈ 0.03` | Capitalisation seule → TWR = MWR = taux du livret |
+| 2 | BOURSE EUR, 1 BUY de 1000 € il y a 365 jours, valeur actuelle 1100 € | `0.10` | `0.10` | Versement unique → TWR = MWR exactement |
+| 3 | DCA mensuel : 12 versements de 100 €, valeur finale 1300 € après 1 an | TWR à calculer (≠ MWR) | MWR à calculer (Excel `=XIRR`) | Versements échelonnés → TWR ≠ MWR ; on vérifie l'écart attendu |
+| 4 | Versement initial 1000 € + retrait total à 6 mois après plus-value 10 % | `≈ 0.10` (annualisé) | `≈ 0.21` (perçu) | TWR neutralise le retrait, MWR le reflète |
+| 5 | Premier versement le 15/01 → mois de janvier exclu du chaînage TWR | TWR calculé à partir de février | warnings contiennent l'info | Règle métier #8 |
+| 6 | Deux ordres opposés le même jour (BUY +500, SELL -300) | Un seul flux net +200 dans la chaîne | Idem MWR | Règle métier #6 |
+| 7 | Retrait total mai + nouveau versement août → trou exclu | Mois sans activité ignorés (facteur 1) | Cashflows continus | Règle métier #10 |
+| 8 | Position IMMO_PHYSIQUE présente mais ignorée | Calculé sans elle | Idem | Règle métier #2 |
+| 9 | Ordres en USD : conversion via `exchange_rate_history` au taux du jour de l'ordre | Comparable au cas EUR équivalent | Idem | Pré-requis 2 + règle #4 |
+
+#### `PerformanceControllerTest`
+
+Tests d'API pure (pas de calcul) : 401 non auth, 403 non-admin, format `PerformanceDto`, sérialisation JSON correcte des `null` et des `warnings[]`.
+
+### 9.3 Validation manuelle complémentaire
+
+À exécuter avant d'envisager une ouverture aux utilisateurs (levée du flag ADMIN) :
+- Comparaison TWR / MWR avec la même série de cashflows entrée dans Excel ou Google Sheets (`=XIRR`).
 - Comparaison avec le rapport de performance d'un broker réel (Boursorama / Trade Republic / Bourse Direct) sur un compte titres simple.
-- Cas dégénérés : un seul ordre ; un retrait total ; une plus-value de 0 % exactement.
+- Au moins 3 portefeuilles types audités manuellement.
 
-Cibles de couverture : conformes au seuil JaCoCo du projet (70 % lignes / 60 % branches).
+### 9.4 Couverture
+
+Cibles : conformes au seuil JaCoCo du projet (70 % lignes / 60 % branches). Les classes math (`ModifiedDietzCalculator`, `XirrSolver`) doivent viser **100 %** lignes & branches — c'est faisable sans dépendances et c'est là que les golden tests assoient toute la confiance.
 
 ---
 
-## 10. Évolutions futures (V2+)
+## 10. Observabilité
+
+### 10.1 Logging
+
+Convention : logger SLF4J injecté via Lombok (`@Slf4j`), messages en français, format avec placeholders `{}`.
+
+| Niveau | Quand | Contenu |
+|--------|-------|---------|
+| `INFO` | Entrée et sortie de `PerformanceService.computeGlobal(user)` | `[user:{id}] Calcul performance démarré` puis `[user:{id}] Calcul performance terminé en {ms} ms — TWR={twr}, MWR={mwr}, période=[{from} → {to}], {nbWarnings} warning(s)` |
+| `INFO` | Entrée et sortie de chaque endpoint admin de backfill | Cible, durée, nb lignes traitées |
+| `WARN` | Pour chaque entrée ajoutée à `warnings[]` du DTO | Le message exact qui apparaîtra côté UI, préfixé par `[user:{id}]` |
+| `WARN` | Migration `amountEur` : ordre converti via taux courant faute d'historique | `[migration] Ordre #{orderId} (position #{posId}, devise {currency}, date {orderDate}) : amountEur recalculé via taux courant — historique manquant` |
+| `DEBUG` | Pour chaque mois `m` du chaînage TWR | `[user:{id}] Mois {YYYY-MM} : V_début={x}, V_fin={y}, F_net={z}, R_m={r}` — utile pour reproduire un bug rapporté |
+| `DEBUG` | Pour chaque itération Newton-Raphson de `XirrSolver` | `Iteration {n} : r={r}, f(r)={f}, f'(r)={fp}` — activable ponctuellement pour investiguer une non-convergence |
+| `ERROR` | Exception inattendue capturée dans le `PerformanceService` | Stack trace complète + contexte `[user:{id}, period={from}→{to}]` |
+
+Pas de PII (Personally Identifiable Information) dans les logs au-delà de l'`userId` numérique.
+
+### 10.2 Analytics
+
+Cohérent avec le système d'analytics existant (cf. `docs/architecture/analytics.md`). Convention de nommage `module.feature.action` (snake_case, 3 segments).
+
+| Type | Event name | Quand | Metadata |
+|------|-----------|-------|----------|
+| `PAGE_VIEW` | `tools.performance.view` | Ouverture de `PerformancePage` | — |
+| `FEATURE_USE` | `tools.performance.compute` | Réception réussie du `PerformanceDto` | `{ "durationMs": N, "twrAvailable": bool, "mwrAvailable": bool, "warningsCount": N }` |
+| `FEATURE_USE` | `admin.instrument.backfill_csv` | Import CSV réussi | `{ "instrumentId": N, "linesInserted": N, "linesSkipped": N }` |
+| `FEATURE_USE` | `admin.instrument.backfill_coingecko` | Backfill CRYPTO réussi | `{ "instrumentId": N, "linesInserted": N }` |
+| `FEATURE_USE` | `admin.exchange_rate.backfill` | Backfill devise réussi | `{ "currency": "USD", "linesInserted": N }` |
+| `FEATURE_USE` | `admin.orders.migrate_amount_eur` | Migration `amountEur` exécutée (réelle, pas dry-run) | `{ "ordersUpdated": N, "fallbacksCurrentRate": N }` |
+
+Pas de tracking sur les boutons internes (toggle, tooltip) en V1 — la page est trop simple pour générer un signal exploitable.
+
+---
+
+## 11. Checklist d'implémentation
+
+### PR1 — Pré-requis
+- [ ] Migration SQLite : tables `instrument_price_history` + `exchange_rate_history` + index UNIQUE
+- [ ] Migration SQLite : colonne `closed_date` sur `positions`
+- [ ] Entités JPA + repositories (avec méthodes batch `findByXxxInAndDateBetween`)
+- [ ] `InstrumentPriceHistoryService` + `ExchangeRateHistoryService` (forward + backfill API)
+- [ ] Branchement du forward dans `MarketDataService.runFullUpdate()`
+- [ ] Fix `PositionService.createOrder()` / `updateOrder()` (recalcul `amountEur` via historique)
+- [ ] Renseignement automatique de `closedDate` dans `PositionService.close()`
+- [ ] Endpoint admin `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false`
+- [ ] Tests unitaires (services, controllers, migration)
+- [ ] **Mise à jour des diagrammes** : `docs/architecture/diagram/er-diagram.mmd` et `class-diagram.mmd`
+- [ ] Mise à jour `CLAUDE.md` (endpoints + statut)
+- [ ] Doc `docs/architecture/instruments.md` enrichie (mention historique)
+
+### PR2 — Backfill
+- [ ] Endpoint `POST /api/admin/instruments/{id}/backfill-prices` (CRYPTO via CoinGecko)
+- [ ] Endpoint `POST /api/admin/instruments/{id}/import-prices` (BOURSE via CSV multipart)
+- [ ] Endpoint `POST /api/admin/exchange-rates/{currency}/backfill` (Frankfurter)
+- [ ] DTO `BackfillReport`
+- [ ] UI admin minimale dans `AdminInstrumentPage` (bouton "Backfill" par instrument, upload CSV)
+- [ ] Tests
+- [ ] Mise à jour `CLAUDE.md` (endpoints)
+
+### PR3 — Calcul performance
+- [ ] `ModifiedDietzCalculator` + golden tests (100 % couverture)
+- [ ] `XirrSolver` + golden tests (100 % couverture)
+- [ ] `ValuationService` + golden tests
+- [ ] `PerformanceService` + golden tests end-to-end
+- [ ] `PerformanceController` (`GET /api/patrimoine/performance`, ADMIN only)
+- [ ] DTO `PerformanceDto` avec `computedAt`
+- [ ] Page frontend minimale `PerformancePage.jsx` (bandeau orange + 2 KPIs + warnings)
+- [ ] Lien menu Admin
+- [ ] Logging selon section 10.1
+- [ ] Analytics selon section 10.2
+- [ ] Mise à jour `CLAUDE.md` (endpoints + section "Implémenté")
+
+---
+
+## 12. Évolutions futures (V2+)
 
 Volontairement *hors V1* — à n'aborder qu'après validation des calculs sur la vue globale.
 
