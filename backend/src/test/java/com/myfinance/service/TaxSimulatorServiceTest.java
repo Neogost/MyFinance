@@ -115,7 +115,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         // net imposable 40 000 non-cadre ≈ 32 803,60
@@ -154,7 +156,9 @@ class TaxSimulatorServiceTest {
 
         when(monthlyPaySlipRepository.findByContractUserAndPeriodBetween(eq(user), any(), any()))
                 .thenReturn(List.of(slip1, slip2));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_BULLETINS, null);
@@ -187,7 +191,7 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(locatif));
 
         // salaire = 0, abattement min = 504 → netTaxable = max(0, 0-504+5000) = 4496
@@ -208,7 +212,7 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(dividende));
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, List.of(2L));
@@ -227,7 +231,7 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(nonImposable));
 
         // Passer l'ID du revenu non imposable : il doit quand même être exclu
@@ -249,7 +253,7 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
                 .thenReturn(List.of(income1, income2));
 
         TaxSimulationDto result = taxSimulatorService.simulate(
@@ -268,7 +272,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
@@ -289,7 +295,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         // net imposable ≈ 32 803,60 − 8 000 = 24 803,60
@@ -313,7 +321,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         // net imposable ≈ 32 803,60 → abattement ≈ 3 280,36 → netTaxable ≈ 29 523,24
@@ -333,7 +343,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         // grossTaxable ≈ 32 803,60, totalTax ≈ 1 952,32 → taux ≈ 5,95 %
@@ -348,7 +360,9 @@ class TaxSimulatorServiceTest {
 
         when(salaryContractRepository.findContractsActiveAtDate(eq(user), any()))
                 .thenReturn(List.of(contract));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
@@ -456,7 +470,9 @@ class TaxSimulatorServiceTest {
                 .thenReturn(List.of(contract));
         when(contractOnCallRepository.findByContractOrderByIdAsc(contract))
                 .thenReturn(List.of(onCall));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);
@@ -482,7 +498,9 @@ class TaxSimulatorServiceTest {
         when(salaryRevisionRepository.findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
                 eq(contract), any()))
                 .thenReturn(Optional.of(revision));
-        when(otherIncomeRepository.findByUserAndDateBetween(eq(user), any(), any()))
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
                 .thenReturn(List.of());
 
         TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_PROJECTION, null);

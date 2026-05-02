@@ -45,7 +45,7 @@ class OtherIncomeControllerTest {
     void setUp() {
         incomeDto = new OtherIncomeDto(
                 1L, OtherIncomeTypeEnum.LOCATIF, "Loyer appartement Lyon",
-                750f, LocalDate.of(2025, 3, 1), true, null, null, null);
+                750f, LocalDate.of(2025, 3, 1), true, null, null, null, null, null, null);
     }
 
     // ── GET /api/other-incomes ─────────────────────────────────
@@ -76,7 +76,7 @@ class OtherIncomeControllerTest {
     void create_avecCorpsValide_retourne201() throws Exception {
         CreateOtherIncomeRequest request = new CreateOtherIncomeRequest(
                 OtherIncomeTypeEnum.LOCATIF, "Loyer appartement Lyon",
-                750f, LocalDate.of(2025, 3, 1), true, null, null);
+                750f, LocalDate.of(2025, 3, 1), true, null, null, null, null, null);
 
         when(otherIncomeService.create(any(), any())).thenReturn(incomeDto);
 
@@ -93,7 +93,7 @@ class OtherIncomeControllerTest {
     void create_avecCorpsInvalide_retourne400() throws Exception {
         // amount négatif → violation @Positive
         CreateOtherIncomeRequest request = new CreateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Test", -100f, LocalDate.of(2025, 3, 1), null, null, null);
+                OtherIncomeTypeEnum.LOCATIF, "Test", -100f, LocalDate.of(2025, 3, 1), null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/other-incomes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -105,7 +105,7 @@ class OtherIncomeControllerTest {
     @WithMockCustomUser
     void create_avecLabelVide_retourne400() throws Exception {
         CreateOtherIncomeRequest request = new CreateOtherIncomeRequest(
-                OtherIncomeTypeEnum.AUTRE, "", 100f, LocalDate.of(2025, 3, 1), null, null, null);
+                OtherIncomeTypeEnum.AUTRE, "", 100f, LocalDate.of(2025, 3, 1), null, null, null, null, null, null);
 
         mockMvc.perform(post("/api/other-incomes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,9 +119,9 @@ class OtherIncomeControllerTest {
     @WithMockCustomUser
     void update_avecCorpsValide_retourne200() throws Exception {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1), true, null, null);
+                OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1), true, null, null, null, null, null);
         OtherIncomeDto updated = new OtherIncomeDto(
-                1L, OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1), true, null, null, null);
+                1L, OtherIncomeTypeEnum.LOCATIF, "Loyer révisé", 780f, LocalDate.of(2025, 4, 1), true, null, null, null, null, null, null);
 
         when(otherIncomeService.update(eq(1L), any(), any())).thenReturn(updated);
 
@@ -137,7 +137,7 @@ class OtherIncomeControllerTest {
     @WithMockCustomUser
     void update_retourne403_siAccesNonAutorise() throws Exception {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.LOCATIF, "Loyer", 750f, LocalDate.of(2025, 3, 1), true, null, null);
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 750f, LocalDate.of(2025, 3, 1), true, null, null, null, null, null);
 
         when(otherIncomeService.update(eq(1L), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN));
@@ -152,7 +152,7 @@ class OtherIncomeControllerTest {
     @WithMockCustomUser
     void update_retourne404_siIntrouvable() throws Exception {
         UpdateOtherIncomeRequest request = new UpdateOtherIncomeRequest(
-                OtherIncomeTypeEnum.AUTRE, "Test", 100f, LocalDate.now(), null, null, null);
+                OtherIncomeTypeEnum.AUTRE, "Test", 100f, LocalDate.now(), null, null, null, null, null, null);
 
         when(otherIncomeService.update(eq(99L), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));

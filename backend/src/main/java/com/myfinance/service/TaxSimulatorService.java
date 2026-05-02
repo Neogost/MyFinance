@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -60,24 +62,37 @@ public class TaxSimulatorService {
         // ── Étape 2 : Revenus complémentaires ──────────────────
         LocalDate startOfYear = LocalDate.of(year, 1, 1);
         LocalDate endOfYear   = LocalDate.of(year, 12, 31);
-        List<OtherIncome> allIncomes = otherIncomeRepository.findByUserAndDateBetween(user, startOfYear, endOfYear);
+
+        // Revenus ponctuels dans l'année
+        List<OtherIncome> oneTimeIncomes = otherIncomeRepository
+                .findByUserAndPeriodStartIsNullAndDateBetween(user, startOfYear, endOfYear);
+
+        // Contrats de location chevauchant l'année
+        List<OtherIncome> contracts = otherIncomeRepository
+                .findContractsByUserOverlappingPeriod(user, startOfYear, endOfYear);
+
+        List<OtherIncome> allIncomes = new ArrayList<>(oneTimeIncomes);
+        allIncomes.addAll(contracts);
 
         List<OtherIncome> selected = filtrerRevenus(allIncomes, includedIds);
 
-        float otherIncomeInBareme = (float) selected.stream()
-                .filter(i -> i.getSpecificTaxRate() == null)
-                .mapToDouble(OtherIncome::getAmount)
-                .sum();
+        // Pour les contrats, le montant fiscal = loyer mensuel × nombre de mois dans l'année
+        float otherIncomeInBareme = 0f;
+        float otherIncomeSeparatelyTaxed = 0f;
+        float separateTaxAmount = 0f;
 
-        float otherIncomeSeparatelyTaxed = (float) selected.stream()
-                .filter(i -> i.getSpecificTaxRate() != null)
-                .mapToDouble(OtherIncome::getAmount)
-                .sum();
+        for (OtherIncome income : selected) {
+            float annualAmount = income.getPeriodStart() != null
+                    ? income.getAmount() * monthsInYear(income.getPeriodStart(), income.getPeriodEnd(), startOfYear, endOfYear)
+                    : income.getAmount();
 
-        float separateTaxAmount = (float) selected.stream()
-                .filter(i -> i.getSpecificTaxRate() != null)
-                .mapToDouble(i -> i.getAmount() * i.getSpecificTaxRate() / 100.0)
-                .sum();
+            if (income.getSpecificTaxRate() == null) {
+                otherIncomeInBareme += annualAmount;
+            } else {
+                otherIncomeSeparatelyTaxed += annualAmount;
+                separateTaxAmount += annualAmount * income.getSpecificTaxRate() / 100.0f;
+            }
+        }
 
         // ── Étape 3 : Abattement professionnel ─────────────────
         TaxParameters.FlatRateDeduction flatRate = taxParameters.getFlatRateDeduction();
@@ -187,6 +202,28 @@ public class TaxSimulatorService {
                 .sum();
 
         return salaryNetImposable + onCallNetImposable;
+    }
+
+    // ── Calcul du nombre de mois d'un contrat dans une année ──
+
+    /**
+     * Retourne le nombre de mois du contrat qui tombent dans [yearStart, yearEnd].
+     * Ex : contrat du 01/09/2024 au 31/08/2025, année 2024 → 4 mois (sep-déc).
+     */
+    private int monthsInYear(LocalDate periodStart, LocalDate periodEnd,
+                              LocalDate yearStart, LocalDate yearEnd) {
+        LocalDate effectiveStart = periodStart.isBefore(yearStart) ? yearStart : periodStart;
+        LocalDate effectiveEnd   = (periodEnd == null || periodEnd.isAfter(yearEnd)) ? yearEnd : periodEnd;
+
+        if (effectiveStart.isAfter(effectiveEnd)) return 0;
+
+        // Nombre de mois entre les deux premiers jours de mois (inclusif)
+        long months = ChronoUnit.MONTHS.between(
+                effectiveStart.withDayOfMonth(1),
+                effectiveEnd.withDayOfMonth(1)
+        ) + 1;
+
+        return (int) Math.max(0, months);
     }
 
     // ── Filtrage des revenus complémentaires ───────────────────

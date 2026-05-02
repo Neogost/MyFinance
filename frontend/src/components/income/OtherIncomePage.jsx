@@ -116,9 +116,21 @@ export default function OtherIncomePage() {
                 const { label, color } = TYPE_LABELS[income.type] ?? TYPE_LABELS.AUTRE
                 return (
                   <tr key={income.id} className="border-t border-gray-100 hover:bg-gray-50 transition">
-                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(income.date)}</td>
-                    <td className="px-4 py-3">
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {income.periodStart
+                        ? <span className="text-xs text-indigo-600 font-medium">
+                            {formatDate(income.periodStart)} →{' '}
+                            {income.periodEnd ? formatDate(income.periodEnd) : 'en cours'}
+                          </span>
+                        : formatDate(income.date)}
+                    </td>
+                    <td className="px-4 py-3 flex flex-wrap items-center gap-1">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${color}`}>{label}</span>
+                      {income.periodStart && (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                          Contrat · {income.dayOfMonth && `le ${income.dayOfMonth}`}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-800 max-w-[10ch] md:max-w-none truncate">{income.label}</td>
                     <td className="hidden md:table-cell px-4 py-3">
@@ -132,6 +144,7 @@ export default function OtherIncomePage() {
                     </td>
                     <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900 amount whitespace-nowrap">
                       {income.amount?.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                      {income.periodStart && <span className="text-xs font-normal text-gray-400">/mois</span>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">

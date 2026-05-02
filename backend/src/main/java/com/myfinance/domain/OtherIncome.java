@@ -50,4 +50,17 @@ public class OtherIncome {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id")
     private Position position;
+
+    // ── Contrat de location (LOCATIF uniquement) ───────────────
+    // Si periodStart est renseigné, le revenu est un contrat récurrent.
+    // amount = loyer mensuel ; date est automatiquement positionné sur periodStart.
+
+    /** Début du contrat de location — null si saisie ponctuelle */
+    private LocalDate periodStart;
+
+    /** Fin du contrat de location — null si contrat en cours */
+    private LocalDate periodEnd;
+
+    /** Jour du mois de perception du loyer (1–28) */
+    private Integer dayOfMonth;
 }

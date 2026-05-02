@@ -18,6 +18,10 @@ const EMPTY = {
   isTaxable: true,
   specificTaxRate: '',
   positionId: '',
+  // Contrat de location (LOCATIF uniquement)
+  periodStart: '',
+  periodEnd: '',
+  dayOfMonth: '',
 }
 
 export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
@@ -34,10 +38,13 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
           type:            income.type,
           label:           income.label,
           amount:          income.amount,
-          date:            income.date,
+          date:            income.date ?? '',
           isTaxable:       income.isTaxable ?? true,
           specificTaxRate: income.specificTaxRate ?? '',
           positionId:      income.positionId ?? '',
+          periodStart:     income.periodStart ?? '',
+          periodEnd:       income.periodEnd ?? '',
+          dayOfMonth:      income.dayOfMonth ?? '',
         }
       : EMPTY
     )
@@ -57,10 +64,15 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
       ...f,
       [name]: type === 'checkbox' ? checked : value,
       ...(name === 'isTaxable' && !checked ? { specificTaxRate: '' } : {}),
-      // Réinitialiser le bien associé si on change de type
-      ...(name === 'type' && value !== 'LOCATIF' ? { positionId: '' } : {}),
+      // Réinitialiser les champs LOCATIF si on change de type
+      ...(name === 'type' && value !== 'LOCATIF'
+        ? { positionId: '', periodStart: '', periodEnd: '', dayOfMonth: '' }
+        : {}),
     }))
   }
+
+  const isLocatif  = form.type === 'LOCATIF'
+  const isContrat  = isLocatif && form.periodStart !== ''
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -70,8 +82,12 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
       await onSubmit({
         ...form,
         amount:          parseFloat(form.amount),
+        date:            isContrat ? null : (form.date || null),
         specificTaxRate: form.specificTaxRate !== '' ? parseFloat(form.specificTaxRate) : null,
         positionId:      form.positionId !== '' ? parseInt(form.positionId) : null,
+        periodStart:     form.periodStart || null,
+        periodEnd:       form.periodEnd   || null,
+        dayOfMonth:      form.dayOfMonth !== '' ? parseInt(form.dayOfMonth) : null,
       })
       trackEvent('FORM_SUBMIT', `income.otherIncome.${isEdit ? 'edit' : 'create'}`)
     } catch {
@@ -96,8 +112,42 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
             </select>
           </div>
 
+          {/* Contrat de location — LOCATIF uniquement */}
+          {isLocatif && (
+            <div className="border border-indigo-100 rounded-lg p-4 flex flex-col gap-3 bg-indigo-50/40">
+              <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Contrat de location</p>
+              <p className="text-xs text-gray-500">Renseignez la période du bail pour éviter la saisie mensuelle. Le simulateur d'impôts calculera automatiquement le montant annuel.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Début du bail</label>
+                  <input name="periodStart" type="date" value={form.periodStart} onChange={handleChange} className={inputCls} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Fin du bail <span className="font-normal text-gray-400">(vide = en cours)</span></label>
+                  <input name="periodEnd" type="date" value={form.periodEnd} onChange={handleChange} className={inputCls} />
+                </div>
+              </div>
+              {isContrat && (
+                <div className="flex flex-col gap-1.5">
+                  <label className={labelCls}>Jour de perception du loyer <span className="text-red-500">*</span></label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      name="dayOfMonth" type="number" min="1" max="28"
+                      value={form.dayOfMonth} onChange={handleChange}
+                      placeholder="ex : 5"
+                      className={`${inputCls} w-24`}
+                      required={isContrat}
+                    />
+                    <span className="text-sm text-gray-500">du mois</span>
+                  </div>
+                  <p className="text-xs text-gray-400">Entre 1 et 28 pour garantir la validité tous les mois.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Bien immobilier associé — LOCATIF uniquement */}
-          {form.type === 'LOCATIF' && immoPositions.length > 0 && (
+          {isLocatif && immoPositions.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Bien immobilier associé</label>
               <select name="positionId" value={form.positionId} onChange={handleChange} className={inputCls}>
@@ -123,17 +173,22 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Montant (€) *</label>
+              <label className={labelCls}>
+                Montant (€) *
+                {isContrat && <span className="ml-1 font-normal text-gray-400">par mois</span>}
+              </label>
               <input
                 name="amount" type="number" min="0.01" step="0.01" value={form.amount}
                 onChange={handleChange} required placeholder="750.00"
                 className={inputCls}
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Date de perception *</label>
-              <input name="date" type="date" value={form.date} onChange={handleChange} required className={inputCls} />
-            </div>
+            {!isContrat && (
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Date de perception *</label>
+                <input name="date" type="date" value={form.date} onChange={handleChange} required className={inputCls} />
+              </div>
+            )}
           </div>
 
           {/* ── Fiscalité ── */}

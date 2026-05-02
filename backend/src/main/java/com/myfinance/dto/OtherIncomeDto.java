@@ -14,7 +14,10 @@ public record OtherIncomeDto(
         Boolean isTaxable,
         Float specificTaxRate,
         Long positionId,           // bien IMMO_PHYSIQUE associé (LOCATIF uniquement, nullable)
-        String positionLabel       // libellé du bien pour l'affichage
+        String positionLabel,      // libellé du bien pour l'affichage
+        LocalDate periodStart,     // début du contrat — null si saisie ponctuelle
+        LocalDate periodEnd,       // fin du contrat — null si en cours
+        Integer dayOfMonth         // jour du mois de perception (1–28)
 ) {
     public static OtherIncomeDto from(OtherIncome income) {
         Boolean taxable = income.getIsTaxable() != null ? income.getIsTaxable() : Boolean.TRUE;
@@ -40,7 +43,10 @@ public record OtherIncomeDto(
                 taxable,
                 income.getSpecificTaxRate(),
                 positionId,
-                positionLabel
+                positionLabel,
+                income.getPeriodStart(),
+                income.getPeriodEnd(),
+                income.getDayOfMonth()
         );
     }
 }
