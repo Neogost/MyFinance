@@ -88,8 +88,10 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   const isLiquidite    = position.category === 'LIQUIDITE'
   const isImmoPhysique = position.category === 'IMMO_PHYSIQUE'
 
+  const actionCls = "w-full flex flex-col md:flex-row items-end md:items-center justify-end gap-1"
+
   if (confirmClose) return (
-    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
+    <div className={actionCls}>
       <span className="text-xs text-orange-700">Fermer ?</span>
       <button onClick={() => { setConfirmClose(false); onClose(position) }}
         className="px-2 py-0.5 bg-orange-500 text-white rounded text-xs hover:bg-orange-600">Oui</button>
@@ -99,7 +101,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 
   if (confirmDelete) return (
-    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
+    <div className={actionCls}>
       <span className="text-xs text-red-700">Supprimer ?</span>
       <button onClick={() => { setConfirmDelete(false); onDelete(position) }}
         className="px-2 py-0.5 bg-red-600 text-white rounded text-xs hover:bg-red-700">Oui</button>
@@ -109,7 +111,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 
   return (
-    <div className="flex flex-col md:flex-row items-end md:items-center md:justify-end gap-1">
+    <div className={actionCls}>
       {isLiquidite ? (
         <button onClick={() => onUpdateBalance(position)}
           className="px-2 py-0.5 bg-indigo-50 border border-indigo-200 rounded text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100">
@@ -256,7 +258,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
       )}
 
       {/* Actions */}
-      <td className="py-2 pl-2 pr-3">
+      <td className="py-2 pl-2 pr-3 text-right">
         {!readOnly && <ActionButtons
           position={position}
           onEdit={onEdit}
