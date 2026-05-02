@@ -8,7 +8,7 @@ export default function LoanResultsPanel({ calc, loan, scenarios, tableState }) 
   const monthlyTotal      = monthlyPrincipal + monthlyInsurance
   const effectiveYears    = Math.ceil(calc.amortization.actualMonths / 12)
   const durationReduced   = calc.amortization.actualMonths < loan.loanDuration * 12
-  const hasCharges        = calc.monthlyPropertyTax > 0 || loan.condoFees > 0
+  const hasCharges        = calc.monthlyPropertyTax > 0 || loan.condoFees > 0 || (loan.monthlyRunningCosts ?? 0) > 0
   const debtColor         = calc.debtRatio > 35 ? 'text-red-600 bg-red-50 border-red-100'
     : calc.debtRatio > 33 ? 'text-amber-600 bg-amber-50 border-amber-100'
     : 'text-green-700 bg-green-50 border-green-100'
@@ -23,7 +23,7 @@ export default function LoanResultsPanel({ calc, loan, scenarios, tableState }) 
   } = calc
 
   // Destructurer loan
-  const { loanAmount, loanDuration, annualRate, ptzEnabled, ptzAmount, insuranceBase, condoFees, monthlyIncome, participants, percentBalanced, requiredContrib, hasRepayments } = loan
+  const { loanAmount, loanDuration, annualRate, ptzEnabled, ptzAmount, insuranceBase, condoFees, monthlyIncome, participants, percentBalanced, requiredContrib, hasRepayments, monthlyRunningCosts } = loan
 
   // Destructurer scenarios
   const { showComparison, showResale, showRentComparison, resaleYear, resalePrice, propertyAppreciation, resaleAgencyFeesPct, monthlyRent, rentIncreaseRate, investmentReturnRate, compDuration, compRate } = scenarios
@@ -102,6 +102,7 @@ export default function LoanResultsPanel({ calc, loan, scenarios, tableState }) 
                 <div className="flex justify-between"><span>Crédit + assurance</span><span>{fmt(totalMonthlyAfterDeferral)}</span></div>
                 {condoFees > 0 && <div className="flex justify-between"><span>Charges copropriété</span><span>{fmt(condoFees)}</span></div>}
                 {monthlyPropertyTax > 0 && <div className="flex justify-between"><span>Taxe foncière</span><span>{fmt(monthlyPropertyTax)}</span></div>}
+                {(monthlyRunningCosts ?? 0) > 0 && <div className="flex justify-between"><span>Charges courantes</span><span>{fmt(monthlyRunningCosts)}</span></div>}
                 {!hasCharges && <span className="italic">Ajouter charges et taxe foncière dans le panneau gauche</span>}
               </div>
             </div>

@@ -7,7 +7,7 @@ export function useLoanCalculations({
   guaranteeFees, guaranteeFeesMode, brokerageFees, brokerageFeesMode,
   loanAmount, personalContrib, loanDuration, annualRate, insuranceRate, insuranceBase,
   ptzEnabled, ptzAmount, ptzDuration, ptzDeferral,
-  earlyRepayments, propertyTax, condoFees,
+  earlyRepayments, propertyTax, condoFees, monthlyRunningCosts,
   monthlyIncome,
   showComparison, compDuration, compRate,
   showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
@@ -52,7 +52,7 @@ export function useLoanCalculations({
 
     // Coût mensuel total avec charges propriétaire
     const monthlyPropertyTax   = propertyTax / 12
-    const totalMonthlyCost     = totalMonthlyAfterDeferral + condoFees + monthlyPropertyTax
+    const totalMonthlyCost     = totalMonthlyAfterDeferral + condoFees + monthlyPropertyTax + (monthlyRunningCosts ?? 0)
 
     const pricePerSqm = surface > 0 ? Math.round(propertyPrice / surface) : null
 

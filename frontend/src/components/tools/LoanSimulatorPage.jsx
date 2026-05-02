@@ -61,8 +61,14 @@ export default function LoanSimulatorPage({ user }) {
   const [earlyRepayments, setEarlyRepayments] = useState([]) // [{ id, year, amount, mode }]
 
   // Charges propriétaire
-  const [propertyTax, setPropertyTax] = useState(0)   // taxe foncière annuelle
-  const [condoFees, setCondoFees]     = useState(0)   // charges copropriété mensuelles
+  const [propertyTax, setPropertyTax]         = useState(0)   // taxe foncière annuelle
+  const [condoFees, setCondoFees]             = useState(0)   // charges copropriété mensuelles
+
+  // Charges courantes (fluides + services)
+  const [monthlyElectricity, setMonthlyElectricity] = useState(0)
+  const [monthlyGas,         setMonthlyGas]         = useState(0)
+  const [monthlyWater,       setMonthlyWater]       = useState(0)
+  const [monthlyOtherUtils,  setMonthlyOtherUtils]  = useState(0) // ordures, internet, divers
 
   // Comparaison de scénarios
   const [showComparison, setShowComparison] = useState(false)
@@ -146,6 +152,7 @@ export default function LoanSimulatorPage({ user }) {
       loanAmount, personalContrib, loanDuration, annualRate, insuranceRate, insuranceBase,
       participants, ptzEnabled, ptzAmount, ptzDuration, ptzDeferral,
       earlyRepayments, propertyTax, condoFees,
+      monthlyElectricity, monthlyGas, monthlyWater, monthlyOtherUtils,
       showComparison, compDuration, compRate,
       showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
       showRentComparison, monthlyRent, rentIncreaseRate, investmentReturnRate, rentBuyHorizon,
@@ -194,6 +201,10 @@ export default function LoanSimulatorPage({ user }) {
     setEarlyRepayments(p.earlyRepayments ?? [])
     setPropertyTax(p.propertyTax ?? 0)
     setCondoFees(p.condoFees ?? 0)
+    setMonthlyElectricity(p.monthlyElectricity ?? 0)
+    setMonthlyGas(p.monthlyGas ?? 0)
+    setMonthlyWater(p.monthlyWater ?? 0)
+    setMonthlyOtherUtils(p.monthlyOtherUtils ?? 0)
     setShowComparison(p.showComparison ?? false)
     setCompDuration(p.compDuration ?? 25)
     setCompRate(p.compRate ?? 3.0)
@@ -226,9 +237,10 @@ export default function LoanSimulatorPage({ user }) {
     setSavedSimulations(prev => prev.filter(s => s.id !== id))
   }
 
-  const baseIncome      = incomeOverride !== '' ? (parseFloat(incomeOverride) || 0) : (apiIncome ?? 0)
-  const additionalTotal = additionalIncomes.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
-  const monthlyIncome   = baseIncome + additionalTotal
+  const baseIncome          = incomeOverride !== '' ? (parseFloat(incomeOverride) || 0) : (apiIncome ?? 0)
+  const additionalTotal     = additionalIncomes.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
+  const monthlyIncome       = baseIncome + additionalTotal
+  const monthlyRunningCosts = monthlyElectricity + monthlyGas + monthlyWater + monthlyOtherUtils
 
   // ── Calculs principaux ────────────────────────────────────────────────────
   const calc = useLoanCalculations({
@@ -237,7 +249,7 @@ export default function LoanSimulatorPage({ user }) {
     guaranteeFees, guaranteeFeesMode, brokerageFees, brokerageFeesMode,
     loanAmount, personalContrib, loanDuration, annualRate, insuranceRate, insuranceBase,
     ptzEnabled, ptzAmount, ptzDuration, ptzDeferral,
-    earlyRepayments, propertyTax, condoFees,
+    earlyRepayments, propertyTax, condoFees, monthlyRunningCosts,
     monthlyIncome,
     showComparison, compDuration, compRate,
     showResale, resaleYear, resalePrice, resaleAgencyFeesPct, propertyAppreciation,
@@ -313,7 +325,7 @@ export default function LoanSimulatorPage({ user }) {
 
   const { monthlyPrincipal, monthlyInsurance } = amortization
 
-  const hasCharges     = propertyTax > 0 || condoFees > 0
+  const hasCharges     = propertyTax > 0 || condoFees > 0 || monthlyRunningCosts > 0
   const hasRepayments  = earlyRepayments.length > 0
 
   return (
@@ -750,14 +762,31 @@ export default function LoanSimulatorPage({ user }) {
               hint={propertyTax > 0 ? `≈ ${fmt(propertyTax / 12)}/mois` : 'Estimée à 1–2 % du prix du bien selon la commune'} />
             <NumInput label="Charges de copropriété (€/mois)" value={condoFees} onChange={setCondoFees} min={0} step={50}
               hint={condoFees > 0 ? `≈ ${fmt(condoFees * 12)}/an` : 'Laisser à 0 pour une maison individuelle'} />
+
+            {/* Charges courantes */}
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide pt-1">Charges courantes</p>
+            <div className="grid grid-cols-2 gap-3">
+              <NumInput label="Électricité (€/mois)" value={monthlyElectricity} onChange={setMonthlyElectricity} min={0} step={10} />
+              <NumInput label="Gaz (€/mois)" value={monthlyGas} onChange={setMonthlyGas} min={0} step={10} />
+              <NumInput label="Eau (€/mois)" value={monthlyWater} onChange={setMonthlyWater} min={0} step={5} />
+              <NumInput label="Autres (ordures, internet…) (€/mois)" value={monthlyOtherUtils} onChange={setMonthlyOtherUtils} min={0} step={10} />
+            </div>
+
             {hasCharges && (
-              <div className="text-xs bg-gray-50 rounded-md p-2.5 border border-gray-100 space-y-1">
+              <div className="text-xs bg-gray-50 rounded-md p-2.5 border border-gray-100 space-y-1 mt-1">
                 <div className="flex justify-between text-gray-500"><span>Mensualité crédit</span><span>{fmt(totalMonthlyAfterDeferral)}</span></div>
                 {condoFees > 0 && <div className="flex justify-between text-gray-500"><span>+ Charges copropriété</span><span>{fmt(condoFees)}</span></div>}
                 {monthlyPropertyTax > 0 && <div className="flex justify-between text-gray-500"><span>+ Taxe foncière</span><span>{fmt(monthlyPropertyTax)}</span></div>}
+                {monthlyRunningCosts > 0 && <div className="flex justify-between text-gray-500"><span>+ Charges courantes</span><span>{fmt(monthlyRunningCosts)}</span></div>}
                 <div className="flex justify-between font-semibold text-gray-800 border-t border-gray-200 pt-1 mt-1">
                   <span>Coût mensuel total</span><span>{fmt(calc.totalMonthlyCost)}</span>
                 </div>
+                {monthlyIncome > 0 && (
+                  <div className="flex justify-between text-gray-400 text-[10px] pt-0.5">
+                    <span>Taux d'effort réel</span>
+                    <span>{(calc.totalMonthlyCost / monthlyIncome * 100).toFixed(1)} % du revenu net</span>
+                  </div>
+                )}
               </div>
             )}
           </Section>
@@ -861,6 +890,7 @@ export default function LoanSimulatorPage({ user }) {
           loan={{
             loanAmount, loanDuration, annualRate, ptzEnabled, ptzAmount, insuranceBase,
             condoFees, monthlyIncome, participants, percentBalanced, requiredContrib, hasRepayments,
+            monthlyRunningCosts,
           }}
           scenarios={{
             showComparison, showResale, showRentComparison,
