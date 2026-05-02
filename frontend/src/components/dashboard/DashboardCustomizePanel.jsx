@@ -28,10 +28,12 @@ export const WIDGET_GROUPS = [
   {
     title: 'Objectifs & Stratégie',
     widgets: [
-      { key: 'scorePatrimonial',  label: 'Score patrimonial' },
-      { key: 'objectives',        label: 'Avancement vers les objectifs' },
-      { key: 'kpiImmo',           label: 'KPI immobiliers (rendement, LTV)' },
-      { key: 'diversification',   label: 'Analyse de diversification' },
+      { key: 'scorePatrimonial',       label: 'Score patrimonial' },
+      { key: 'objectives',             label: 'Avancement vers les objectifs' },
+      { key: 'kpiImmo',                label: 'KPI immobiliers (rendement, LTV)' },
+      { key: 'diversificationBourse',  label: 'Diversification — Bourse' },
+      { key: 'diversificationCrypto',  label: 'Diversification — Crypto' },
+      { key: 'diversificationImmo',    label: 'Diversification — Immobilier' },
     ],
   },
 ]

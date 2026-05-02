@@ -338,7 +338,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
       </div>
 
       {/* ── Objectifs & Stratégie ────────────────────────────────── */}
-      {(wc.scorePatrimonial || wc.objectives || wc.kpiImmo || wc.diversification) && (
+      {(wc.scorePatrimonial || wc.objectives || wc.kpiImmo || wc.diversificationBourse || wc.diversificationCrypto || wc.diversificationImmo) && (
         <div>
           <SectionTitle
             title="Objectifs & Stratégie"
@@ -368,8 +368,14 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           {/* KPI Immobiliers */}
           {wc.kpiImmo && <PatrimoineKpiWidget />}
 
-          {/* Diversification : s'affiche uniquement si des objectifs sont configurés */}
-          {wc.diversification && <DiversificationSection />}
+          {/* Diversification par catégorie : s'affiche uniquement si des objectifs sont configurés */}
+          {(wc.diversificationBourse || wc.diversificationCrypto || wc.diversificationImmo) && (
+            <DiversificationSection
+              showBourse={!!wc.diversificationBourse}
+              showCrypto={!!wc.diversificationCrypto}
+              showImmo={!!wc.diversificationImmo}
+            />
+          )}
         </div>
       )}
     </div>

@@ -40,7 +40,7 @@ function DimGrid({ catBreakdowns, dims, actualBreakdowns }) {
   )
 }
 
-export default function DiversificationSection() {
+export default function DiversificationSection({ showBourse = true, showCrypto = true, showImmo = true }) {
   const [loading,          setLoading]          = useState(true)
   const [breakdowns,       setBreakdowns]        = useState(null)   // { BOURSE: [...], CRYPTO: [...] }
   const [actualBreakdowns, setActualBreakdowns] = useState({})
@@ -52,9 +52,9 @@ export default function DiversificationSection() {
         const b = dto?.breakdowns ?? {}
         setBreakdowns(b)
 
-        const hasBourse      = (b.BOURSE ?? []).length > 0
-        const hasCrypto      = (b.CRYPTO ?? []).length > 0
-        const hasImmo        = (b.IMMO_PHYSIQUE ?? []).length > 0
+        const hasBourse      = showBourse && (b.BOURSE ?? []).length > 0
+        const hasCrypto      = showCrypto && (b.CRYPTO ?? []).length > 0
+        const hasImmo        = showImmo  && (b.IMMO_PHYSIQUE ?? []).length > 0
         if (!hasBourse && !hasCrypto && !hasImmo) return
 
         // Lazy-fetch uniquement si des objectifs de diversification existent
@@ -105,9 +105,9 @@ export default function DiversificationSection() {
 
   if (loading) return null
 
-  const hasBourse = (breakdowns?.BOURSE ?? []).length > 0
-  const hasCrypto = (breakdowns?.CRYPTO ?? []).length > 0
-  const hasImmo   = (breakdowns?.IMMO_PHYSIQUE ?? []).length > 0
+  const hasBourse = showBourse && (breakdowns?.BOURSE ?? []).length > 0
+  const hasCrypto = showCrypto && (breakdowns?.CRYPTO ?? []).length > 0
+  const hasImmo   = showImmo  && (breakdowns?.IMMO_PHYSIQUE ?? []).length > 0
   if (!hasBourse && !hasCrypto && !hasImmo) return null
 
   return (
