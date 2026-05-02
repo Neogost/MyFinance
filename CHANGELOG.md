@@ -1,27 +1,74 @@
 # Notes de version
 
-## v1.6.0 — *en cours*
+## v1.6.0 — 2 mai 2026 — Stratégie patrimoniale V2, analytics et export CSV
 
-> Temps partiel, analytics d'usage, export CSV du patrimoine, gestion du compte, diversification sectorielle et corrections.
+> Objectifs de diversification multi-dimensions pour la Bourse, la Crypto et l'Immobilier, section Objectifs & Stratégie dans le tableau de bord, KPI IMMO, classification des instruments crypto, liaison revenus locatifs, analytics d'usage, export CSV et gestion du compte.
 
 ### ✨ Nouveautés
 
-#### Diversification de la BOURSE multi-dimensions (Patrimoine → Stratégie & Objectifs)
+#### Objectifs de diversification multi-dimensions (Patrimoine → Stratégie & Objectifs)
 
-La modal Stratégie permet désormais de définir, en complément du montant cible, **quatre répartitions cibles** sur la catégorie BOURSE :
+La modal Stratégie permet de définir des **répartitions cibles** par dimension pour chaque catégorie d'actifs :
 
-- **Diversification sectorielle** (Technology, Healthcare…) — basée sur les allocations sectorielles des instruments
-- **Diversification géographique** (FR, US…) — basée sur les allocations pays des instruments
-- **Répartition par devise** (EUR, USD…) — couverture 100 % automatique
-- **Répartition par type d'actif** (ETF, ACTION, OBLIGATION…) — couverture 100 % automatique
+**Bourse — 5 dimensions :**
+- **Sectoriel** (Technology, Healthcare…) — basé sur les allocations sectorielles des instruments
+- **Géographique** (FR, US…) — basé sur les allocations pays des instruments
+- **Continental** (Europe, Amérique du Nord, Asie…) — agrégation automatique depuis les pays
+- **Devise** (EUR, USD…)
+- **Type d'actif** (ETF, ACTION, OBLIGATION…)
 
-Pour chaque dimension :
+**Crypto — 3 dimensions :**
+- **Type de crypto** (Stablecoin, Store of Value, Smart Contract, Layer 2, DeFi…)
+- **Réseau / Blockchain** (Bitcoin, Ethereum, Solana, Polygon…)
+- **Par instrument** (BTC, ETH, SOL…) — suggestions tirées de votre portefeuille en temps réel
 
-- **Section repliable** dédiée sous le montant BOURSE — apparaît dès qu'un montant est saisi
-- **Saisie en pourcentages** (0 à 100 %) avec total live et indicateur de dépassement bloquant
-- **Suggestions automatiques** : les valeurs déjà présentes dans votre portefeuille sont proposées en un clic
-- **Panel sur la carte BOURSE** de la page Patrimoine : barres de progression réel vs cible, écart en points colorisé (vert ≤ 2 pts, indigo ≤ 5 pts, ambre ≤ 10 pts, rouge au-delà)
-- **Indicateur de couverture** (sectoriel et géographique uniquement) : bandeau d'avertissement si la couverture des allocations instrumentales est inférieure à 80 %
+**Immobilier physique :**
+- **Utilisation du bien** (Résidence principale, Locatif, Secondaire…)
+
+**Liquidités / Livrets — plafond :**
+- Montant maximum à ne pas dépasser par catégorie — alerte sur la carte si le plafond est atteint
+
+Pour chaque dimension : saisie en pourcentages avec total live, suggestions automatiques depuis le portefeuille, panel comparatif réel vs cible avec écart colorisé (vert ≤ 2 pts, indigo ≤ 5 pts, ambre ≤ 10 pts, rouge au-delà).
+
+#### Section Objectifs & Stratégie dans le tableau de bord
+
+Nouvelle section dans le tableau de bord regroupant les widgets stratégiques :
+
+- **Score patrimonial** et **Radar stratégie** — déplacés depuis la section Patrimoine
+- **KPI Immobilier** : jauges avec cibles configurables pour le rendement brut locatif, le ratio LTV et le rendement des SCPI
+- **Diversification** : donuts BOURSE, CRYPTO et IMMO_PHYSIQUE affichés uniquement si des objectifs sont configurés
+
+La section est personnalisable (4 toggles indépendants dans le panneau de personnalisation).
+
+#### KPI Immobilier (Patrimoine → Stratégie & Objectifs → IMMO)
+
+Définissez des objectifs chiffrés sur vos actifs immobiliers :
+
+- **Rendement brut locatif** : loyers annuels / valeur du bien — calculé automatiquement depuis les revenus LOCATIF associés
+- **Ratio LTV** : capital restant dû / valeur estimée — calculé depuis les dettes liées
+- **Rendement SCPI** — objectif de distribution attendu
+
+#### Liaison revenus locatifs → bien immobilier physique
+
+Les revenus de type LOCATIF peuvent désormais être rattachés à un bien IMMO_PHYSIQUE précis.
+
+- **Sélection du bien** dans le formulaire de saisie d'un revenu locatif
+- Le lien est utilisé pour calculer le **rendement brut locatif** du bien dans les KPI IMMO
+- La suppression d'un bien détache proprement les revenus associés (pas de perte de données)
+
+#### Utilisation du bien (Patrimoine → Positions IMMO)
+
+Les positions IMMO_PHYSIQUE disposent d'un nouveau champ **Utilisation du bien** :
+Résidence principale, Locatif, Résidence secondaire / Loisirs, Autre.
+
+#### Classification des instruments crypto (Administration → Instruments)
+
+Deux nouveaux champs optionnels sur les instruments CRYPTO :
+
+- **Type** : Stablecoin, Store of Value, Smart Contract, Layer 2, DeFi, Autre
+- **Réseau** : Bitcoin, Ethereum, Solana, Polygon, Avalanche, BNB Chain, Arbitrum, Optimism, Base, Autre
+
+Ces champs alimentent les dimensions de diversification CRYPTO.
 
 #### Export CSV du patrimoine (Patrimoine → Export CSV)
 
@@ -31,16 +78,16 @@ Exportez vos données de patrimoine en un clic depuis la page Patrimoine.
 - **Toggle positions clôturées** : incluez ou excluez les positions fermées dans l'export
 - **Deux fichiers générés** simultanément :
   - `positions_YYYY-MM-DD.csv` — une ligne par position avec nom, catégorie, enveloppe, valeur actuelle, investi, plus-value, ISIN/ticker, propriété…
-  - `mouvements_YYYY-MM-DD.csv` — un ligne par mouvement (achat, vente, dépôt…) avec date, quantité, prix, frais, taux de change, notes
+  - `mouvements_YYYY-MM-DD.csv` — une ligne par mouvement (achat, vente, dépôt…) avec date, quantité, prix, frais, taux de change, notes
 - **Compatible Excel** directement : séparateur point-virgule, encodage UTF-8, décimales avec virgule
 
 #### Suppression de compte et de données (Mon profil → Zone de danger)
 
-La zone de danger du profil propose désormais deux options de suppression distinctes.
+La zone de danger du profil propose deux options de suppression distinctes.
 
-- **Supprimer uniquement mes données** : efface l'ensemble des données (positions, mouvements, revenus, dépenses, dettes, simulations…) sans supprimer le compte — vous pouvez continuer à vous connecter
+- **Supprimer uniquement mes données** : efface l'ensemble des données (positions, mouvements, revenus, dépenses, dettes, simulations…) sans supprimer le compte
 - **Supprimer mon compte et mes données** : suppression définitive et complète du compte utilisateur
-- **Confirmation en 2 étapes** : résumé du nombre d'éléments concernés par catégorie, case à cocher "je comprends que c'est irréversible", puis saisie de l'identifiant pour confirmer
+- **Confirmation en 2 étapes** : résumé des éléments concernés par catégorie, case à cocher, puis saisie de l'identifiant
 
 #### Contrats à temps partiel (Revenus → Salariat)
 
@@ -48,10 +95,8 @@ Il est maintenant possible de déclarer un contrat à **temps partiel** en préc
 
 - **Saisie du salaire en ETP** : le salaire (ou l'indice majoré pour les contrats publics) est toujours saisi en équivalent temps plein — la quotité s'applique automatiquement
 - **Quotité au % près** : de 10 % à 100 % (ex : 70 % = 7/10e, 80 % = 4/5e, 50 % = mi-temps)
-- **Label dynamique** dans le formulaire : « Temps plein », « 4/5e », « 7/10e », « Mi-temps » selon la valeur saisie
 - **Badge orange** dans l'en-tête du contrat, visible uniquement si la quotité est inférieure à 100 %
 - **Projections cohérentes** : brut mensuel, net imposable, net d'impôt, taux horaire/journalier — tous calculés sur le brut temps partiel réel
-- **Simulateur d'impôts** : prend en compte la quotité lors de la projection du contrat salarial
 
 #### Analytics d'usage (Administration → Analytics)
 
@@ -59,23 +104,24 @@ Système de suivi du comportement utilisateur et de la santé technique, 100 % a
 
 - **Page admin Analytics** (3 onglets) :
   - **Engagement** : top features, top boutons, pages les plus vues, filtres de recherche, timeline d'un event au clic, indicateurs de tendance
-  - **Parcours** : reconstitution de la session d'un utilisateur par session ID — timeline unifiée mélangeant événements et erreurs dans l'ordre chronologique
+  - **Parcours** : reconstitution de la session d'un utilisateur — timeline unifiée mélangeant événements et erreurs dans l'ordre chronologique
   - **Santé** : KPIs d'erreurs, graphique erreurs/jour, tableau groupé par type d'erreur avec stack trace et sessions concernées
-- **Session ID copiable** depuis les erreurs : chaque occurrence affiche son identifiant de session avec un bouton copier et un lien direct vers l'onglet Parcours
+- **Session ID copiable** depuis les erreurs, avec lien direct vers l'onglet Parcours
 - **Nettoyage manuel** : sélection du seuil de rétention (events et erreurs séparément) + option "Tout supprimer"
-- **Opt-out** : toggle "Suivi de mon usage" dans Mon profil avec détail des types d'actions suivies — désactive le tracking comportemental tout en conservant la capture des erreurs techniques
-- **Instrumentation complète** : 26 pages, toutes les actions CRUD de tous les modules, soumissions de formulaires, toggles et ouvertures de formulaire
+- **Opt-out** dans Mon profil avec détail des types d'actions suivies
+- **Instrumentation complète** : 26 pages, toutes les actions CRUD, soumissions de formulaires, toggles
 
-#### Patrimoine — Allocations géographiques et sectorielles
+#### Patrimoine — Allocations géographiques et sectorielles en vue groupée
 
-- **Tooltip géographique** sur chaque position en vue groupée : répartition par pays/zone (Europe, Amérique du Nord, Asie…) chargée depuis le référentiel instruments
-- **Tooltip sectoriel** : répartition par secteur d'activité (Technologie, Santé, Finance…)
+- **Tooltip géographique** sur chaque position en vue groupée : répartition par pays chargée depuis le référentiel instruments
+- **Tooltip sectoriel** : répartition par secteur d'activité
 - Chargement optimisé en lot (batch) pour éviter les requêtes individuelles par position
 
 ### 🐛 Corrections
 
-- **Pied de page** : le numéro de version et le lien "Notes de version" sont désormais toujours visibles dès le premier rendu, sans attendre la réponse de l'API `/api/version`
-- **Mise à jour automatique des cours** : correction de la récupération des prix Boursorama — les URLs redirigent (HTTP 301) ; le scraper suit désormais correctement les redirections
+- **Pied de page** : le numéro de version est désormais toujours visible dès le premier rendu, sans attendre la réponse de l'API `/api/version`
+- **Mise à jour automatique des cours** : correction de la récupération des prix Boursorama après migration d'URL (suivi des redirections HTTP 301)
+- **Suppression d'un bien IMMO_PHYSIQUE** : ne provoque plus d'erreur si des revenus LOCATIF y sont rattachés — le lien est nettoyé proprement avant suppression
 
 ---
 
