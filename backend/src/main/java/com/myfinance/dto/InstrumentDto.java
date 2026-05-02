@@ -1,6 +1,8 @@
 package com.myfinance.dto;
 
 import com.myfinance.domain.AssetCategory;
+import com.myfinance.domain.CryptoNetwork;
+import com.myfinance.domain.CryptoType;
 import com.myfinance.domain.Instrument;
 
 import java.math.BigDecimal;
@@ -22,7 +24,9 @@ public record InstrumentDto(
         String boursoramaSymbol,
         List<InstrumentAllocationDto> countryAllocation,
         List<InstrumentSectorAllocationDto> sectorAllocation,
-        long orderCount
+        long orderCount,
+        CryptoType cryptoType,
+        CryptoNetwork cryptoNetwork
 ) {
     public static InstrumentDto from(Instrument instrument) {
         return from(instrument, List.of(), List.of(), 0L);
@@ -53,7 +57,9 @@ public record InstrumentDto(
                 instrument.getBoursoramaSymbol(),
                 countryAllocation,
                 sectorAllocation,
-                orderCount
+                orderCount,
+                instrument.getCryptoType(),
+                instrument.getCryptoNetwork()
         );
     }
 }

@@ -1,6 +1,30 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 
+const CRYPTO_TYPES = [
+  { value: '', label: '— Non renseigné —' },
+  { value: 'STABLECOIN',     label: 'Stablecoin (USDC, USDT…)' },
+  { value: 'STORE_OF_VALUE', label: 'Store of value (BTC, PAXG…)' },
+  { value: 'SMART_CONTRACT', label: 'Smart contract platform (ETH, SOL…)' },
+  { value: 'LAYER_2',        label: 'Layer 2 (MATIC, ARB, OP…)' },
+  { value: 'DEFI',           label: 'DeFi (AAVE, UNI, CRV…)' },
+  { value: 'OTHER',          label: 'Autre' },
+]
+
+const CRYPTO_NETWORKS = [
+  { value: '', label: '— Non renseigné —' },
+  { value: 'BITCOIN',   label: 'Bitcoin' },
+  { value: 'ETHEREUM',  label: 'Ethereum' },
+  { value: 'SOLANA',    label: 'Solana' },
+  { value: 'POLYGON',   label: 'Polygon' },
+  { value: 'AVALANCHE', label: 'Avalanche' },
+  { value: 'BNB_CHAIN', label: 'BNB Chain' },
+  { value: 'ARBITRUM',  label: 'Arbitrum' },
+  { value: 'OPTIMISM',  label: 'Optimism' },
+  { value: 'BASE',      label: 'Base' },
+  { value: 'OTHER',     label: 'Autre' },
+]
+
 const EMPTY = {
   category: 'BOURSE',
   isin: '',
@@ -11,6 +35,8 @@ const EMPTY = {
   marketSymbol: '',
   coinGeckoId: '',
   boursoramaSymbol: '',
+  cryptoType: '',
+  cryptoNetwork: '',
 }
 
 export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
@@ -30,6 +56,8 @@ export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
       marketSymbol:     item.marketSymbol     ?? '',
       coinGeckoId:      item.coinGeckoId      ?? '',
       boursoramaSymbol: item.boursoramaSymbol ?? '',
+      cryptoType:       item.cryptoType       ?? '',
+      cryptoNetwork:    item.cryptoNetwork    ?? '',
     } : EMPTY)
     setError(null)
   }, [item])
@@ -54,6 +82,8 @@ export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
         marketSymbol:     form.marketSymbol     || null,
         coinGeckoId:      form.coinGeckoId      || null,
         boursoramaSymbol: form.boursoramaSymbol || null,
+        cryptoType:       form.cryptoType       || null,
+        cryptoNetwork:    form.cryptoNetwork    || null,
       })
     } catch (err) {
       const msg = err?.response?.data?.message || err?.response?.data || 'Une erreur est survenue.'
@@ -134,12 +164,26 @@ export default function AdminInstrumentForm({ item, onSubmit, onCancel }) {
             </>
           )}
           {isCrypto && (
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>ID CoinGecko</label>
-              <input name="coinGeckoId" type="text" value={form.coinGeckoId} onChange={handleChange}
-                placeholder="ex : bitcoin" className={inputCls} />
-              <p className="text-xs text-gray-400">Résolu automatiquement depuis le ticker. Modifier avec précaution.</p>
-            </div>
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>ID CoinGecko</label>
+                <input name="coinGeckoId" type="text" value={form.coinGeckoId} onChange={handleChange}
+                  placeholder="ex : bitcoin" className={inputCls} />
+                <p className="text-xs text-gray-400">Résolu automatiquement depuis le ticker. Modifier avec précaution.</p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Type de crypto</label>
+                <select name="cryptoType" value={form.cryptoType} onChange={handleChange} className={inputCls}>
+                  {CRYPTO_TYPES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={labelCls}>Réseau / Blockchain</label>
+                <select name="cryptoNetwork" value={form.cryptoNetwork} onChange={handleChange} className={inputCls}>
+                  {CRYPTO_NETWORKS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            </>
           )}
 
           {/* Prix fixe */}

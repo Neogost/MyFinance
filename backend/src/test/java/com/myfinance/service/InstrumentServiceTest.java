@@ -126,7 +126,7 @@ class InstrumentServiceTest {
     void create_bourse_sauvegardeAvecIsin() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
                 AssetCategory.BOURSE, "LU1681048804", null,
-                "Amundi PEA MSCI Europe", "EUR", null, null);
+                "Amundi PEA MSCI Europe", "EUR", null, null, null, null);
 
         when(instrumentRepository.findByIsin("LU1681048804")).thenReturn(Optional.empty());
         when(instrumentRepository.save(any(Instrument.class))).thenAnswer(inv -> {
@@ -147,7 +147,7 @@ class InstrumentServiceTest {
     @Test
     void create_bourse_sansIsin_leve400() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
-                AssetCategory.BOURSE, null, null, "Sans ISIN", "EUR", null, null);
+                AssetCategory.BOURSE, null, null, "Sans ISIN", "EUR", null, null, null, null);
 
         assertThatThrownBy(() -> instrumentService.create(request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -158,7 +158,7 @@ class InstrumentServiceTest {
     @Test
     void create_bourse_isinDuplique_leve409() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "Doublon", "EUR", null, null);
+                AssetCategory.BOURSE, "FR0010315770", null, "Doublon", "EUR", null, null, null, null);
 
         when(instrumentRepository.findByIsin("FR0010315770")).thenReturn(Optional.of(etf));
 
@@ -171,7 +171,7 @@ class InstrumentServiceTest {
     @Test
     void create_crypto_sansTickerLeve400() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
-                AssetCategory.CRYPTO, null, null, "Sans Ticker", "USD", null, null);
+                AssetCategory.CRYPTO, null, null, "Sans Ticker", "USD", null, null, null, null);
 
         assertThatThrownBy(() -> instrumentService.create(request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -182,7 +182,7 @@ class InstrumentServiceTest {
     @Test
     void create_crypto_tickerDuplique_leve409() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
-                AssetCategory.CRYPTO, null, "BTC", "Bitcoin v2", "USD", null, null);
+                AssetCategory.CRYPTO, null, "BTC", "Bitcoin v2", "USD", null, null, null, null);
 
         when(instrumentRepository.findByTicker("BTC")).thenReturn(Optional.of(bitcoin));
 
@@ -195,7 +195,7 @@ class InstrumentServiceTest {
     @Test
     void create_avecStablePrice_persisteLeFlag() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
-                AssetCategory.CRYPTO, null, "USDC", "USD Coin", "USD", true, null);
+                AssetCategory.CRYPTO, null, "USDC", "USD Coin", "USD", true, null, null, null);
 
         when(instrumentRepository.findByTicker("USDC")).thenReturn(Optional.empty());
         when(instrumentRepository.save(any(Instrument.class))).thenAnswer(inv -> {
@@ -356,7 +356,7 @@ class InstrumentServiceTest {
     void update_modifieLInstrument() {
         CreateInstrumentRequest request = new CreateInstrumentRequest(
                 AssetCategory.BOURSE, "FR0010315770", null,
-                "Lyxor PEA Nasdaq-100 (MAJ)", "EUR", null, null);
+                "Lyxor PEA Nasdaq-100 (MAJ)", "EUR", null, null, null, null);
 
         when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
         when(instrumentRepository.findByIsin("FR0010315770")).thenReturn(Optional.of(etf));

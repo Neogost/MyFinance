@@ -47,12 +47,12 @@ class InstrumentControllerTest {
         etfDto = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null, List.of(), List.of(), 0L);
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), false, "QQQ.PA", null, null, List.of(), List.of(), 0L, null, null);
 
         bitcoinDto = new InstrumentDto(
                 2L, AssetCategory.CRYPTO, null, "BTC",
                 "Bitcoin", "USD",
-                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null, List.of(), List.of(), 0L);
+                new BigDecimal("60000"), LocalDateTime.of(2026, 4, 1, 9, 0), false, null, "bitcoin", null, List.of(), List.of(), 0L, null, null);
     }
 
     // ── GET /api/instruments ───────────────────────────────────
@@ -127,7 +127,7 @@ class InstrumentControllerTest {
         InstrumentDto updated = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null, List.of(), List.of(), 0L);
+                new BigDecimal("95.00"), LocalDateTime.now(), false, "QQQ.PA", null, null, List.of(), List.of(), 0L, null, null);
 
         when(instrumentService.updatePrices(any())).thenReturn(List.of(updated));
 
@@ -165,7 +165,7 @@ class InstrumentControllerTest {
         InstrumentDto stable = new InstrumentDto(
                 1L, AssetCategory.BOURSE, "FR0010315770", null,
                 "Lyxor PEA Nasdaq-100", "EUR",
-                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null, List.of(), List.of(), 0L);
+                new BigDecimal("88.44"), LocalDateTime.of(2026, 4, 1, 8, 0), true, "QQQ.PA", null, null, List.of(), List.of(), 0L, null, null);
 
         when(instrumentService.updateStablePrice(1L, true)).thenReturn(stable);
 
@@ -229,7 +229,7 @@ class InstrumentControllerTest {
     @WithMockUser(roles = "ADMIN")
     void update_asAdmin_retourne200() throws Exception {
         com.myfinance.dto.CreateInstrumentRequest request = new com.myfinance.dto.CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "Lyxor PEA Nasdaq-100 v2", "EUR", false, "QQQ.PA");
+                AssetCategory.BOURSE, "FR0010315770", null, "Lyxor PEA Nasdaq-100 v2", "EUR", false, "QQQ.PA", null, null);
         when(instrumentService.update(eq(1L), any())).thenReturn(etfDto);
 
         mockMvc.perform(put("/api/instruments/1")
@@ -245,8 +245,7 @@ class InstrumentControllerTest {
     void create_boursoramaSymbolAvecPathTraversal_retourne400() throws Exception {
         // Tentative d'injection : caractères / et .. (path traversal vers une autre URL)
         com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false,
-                "1rTESE/../../malicious.example.com");
+                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false, "1rTESE/../../malicious.example.com", null, null); 
 
         mockMvc.perform(post("/api/instruments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -259,8 +258,7 @@ class InstrumentControllerTest {
     void create_boursoramaSymbolAvecCharactereSpecial_retourne400() throws Exception {
         // % et ? sont aussi des caractères dangereux pour une URL
         com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false,
-                "1rTESE?evil=true");
+                AssetCategory.BOURSE, "FR0010315770", null, "Hack", "EUR", false, "1rTESE?evil=true", null, null); 
 
         mockMvc.perform(post("/api/instruments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -273,8 +271,7 @@ class InstrumentControllerTest {
     void create_boursoramaSymbolValide_retourne201() throws Exception {
         // Symbole conforme à la whitelist (lettres + chiffres + . - _) → OK
         com.myfinance.dto.CreateInstrumentRequest req = new com.myfinance.dto.CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "ETF Lyxor", "EUR", false,
-                "1rTESE");
+                AssetCategory.BOURSE, "FR0010315770", null, "ETF Lyxor", "EUR", false, "1rTESE", null, null); 
         when(instrumentService.create(any())).thenReturn(etfDto);
 
         mockMvc.perform(post("/api/instruments")
@@ -290,7 +287,7 @@ class InstrumentControllerTest {
         // Sans cette restriction, un utilisateur pourrait altérer name/currency/boursoramaSymbol
         // d'instruments référencés par les positions d'autres utilisateurs (data poisoning).
         com.myfinance.dto.CreateInstrumentRequest request = new com.myfinance.dto.CreateInstrumentRequest(
-                AssetCategory.BOURSE, "FR0010315770", null, "ARNAQUE", "EUR", false, null);
+                AssetCategory.BOURSE, "FR0010315770", null, "ARNAQUE", "EUR", false, null, null, null);
 
         mockMvc.perform(put("/api/instruments/1")
                         .contentType(MediaType.APPLICATION_JSON)

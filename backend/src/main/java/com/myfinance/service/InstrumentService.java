@@ -74,6 +74,8 @@ public class InstrumentService {
                 .currency(request.currency())
                 .stablePrice(Boolean.TRUE.equals(request.stablePrice()))
                 .boursoramaSymbol(request.boursoramaSymbol())
+                .cryptoType(request.cryptoType())
+                .cryptoNetwork(request.cryptoNetwork())
                 .build();
 
         InstrumentDto dto = InstrumentDto.from(instrumentRepository.save(instrument));
@@ -94,6 +96,8 @@ public class InstrumentService {
         instrument.setCurrency(request.currency());
         instrument.setStablePrice(Boolean.TRUE.equals(request.stablePrice()));
         instrument.setBoursoramaSymbol(request.boursoramaSymbol());
+        instrument.setCryptoType(request.cryptoType());
+        instrument.setCryptoNetwork(request.cryptoNetwork());
 
         InstrumentDto dto = InstrumentDto.from(instrumentRepository.save(instrument));
         log.info("[system] Instrument modifié #{} [nom: {}]", id, request.name());

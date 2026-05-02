@@ -1,6 +1,8 @@
 package com.myfinance.dto;
 
 import com.myfinance.domain.AssetCategory;
+import com.myfinance.domain.CryptoNetwork;
+import com.myfinance.domain.CryptoType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -23,5 +25,8 @@ public record CreateInstrumentRequest(
         @Size(max = 50)
         @Pattern(regexp = "^[A-Za-z0-9._-]+$",
                  message = "boursoramaSymbol ne peut contenir que des lettres, chiffres, points, tirets et underscores")
-        String boursoramaSymbol
+        String boursoramaSymbol,
+
+        CryptoType cryptoType,
+        CryptoNetwork cryptoNetwork
 ) {}

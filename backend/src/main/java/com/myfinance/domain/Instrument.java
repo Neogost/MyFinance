@@ -64,4 +64,12 @@ public class Instrument {
 
     /** Symbole Boursorama (ex : "1rTESE") — saisi manuellement par l'admin, BOURSE uniquement */
     private String boursoramaSymbol;
+
+    /** Classification fonctionnelle du token — CRYPTO uniquement */
+    @Enumerated(EnumType.STRING)
+    private CryptoType cryptoType;
+
+    /** Réseau / blockchain principal — CRYPTO uniquement */
+    @Enumerated(EnumType.STRING)
+    private CryptoNetwork cryptoNetwork;
 }
