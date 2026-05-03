@@ -189,18 +189,26 @@ Endpoints admin :
 
 > **Conséquence sur la précision V1** : pour les positions BOURSE pour lesquelles aucun CSV n'a été importé, le calcul de performance démarre à la date du **premier prix collecté forward** (donc à partir du déploiement). C'est la principale dette assumée — un warning explicite est exposé pour chaque instrument concerné dans la réponse de `/api/patrimoine/performance`.
 
-> **Piste à explorer ultérieurement** (hors V1) : la page graphique de Boursorama fait des appels JSON internes (style `/bourse/action/graph/ws/GetTicks`) qui pourraient permettre un backfill BOURSE automatique. URL non documentée et probablement fragile — à investiguer dans un spike dédié si la saisie CSV se révèle trop pénible à l'usage.
+> **Pistes Boursorama investiguées et écartées (mai 2026)** :
+> - **Page d'historique HTML statique** : pour les OPCVM (`/bourse/opcvm/cours/historique/MP-XXX`), le HTML contient un tableau de **1 mois (~21 lignes daily)** dans la réponse statique. Les paramètres `historic_search[duration]` et `historic_search[startDate]` passés dans l'URL sont ignorés par le serveur — toujours 1 mois retourné. Pour les ETF (`/bourse/trackers/cours/historique/SYM`), **aucun tableau** n'est rendu côté serveur (chargement JS post-rendu). Inutilisable pour reconstituer un historique de plusieurs années.
+> - **Endpoint AJAX `/_formulaire-periode/page-1?symbol=...&historic_search[duration]=3Y&...`** : référencé dans le HTML de la page parent (`data-refreshable-url`) mais retourne **HTTP 404 systématique** via curl, quels que soient les headers (`Referer`, `X-Requested-With`, `Turbo-Frame`, cookies, méthode GET ou POST). Probable token CSRF dynamique injecté côté JavaScript, ou anti-bot Cloudflare. Non exploitable sans un headless browser.
+> - **Aucun bouton d'export CSV** dans l'UI Boursorama.
+>
+> **Conclusion** : pas de backfill BOURSE automatique possible via Boursorama avec un simple HTTP client. Les seules pistes viables seraient un headless browser (Playwright) — coûteux et fragile — ou explorer une API tierce (JustETF, Morningstar) pour les ETF européens. À investiguer dans un spike dédié si la saisie CSV manuelle se révèle trop pénible à l'usage.
 
 ### 2.3 Format CSV d'import BOURSE
 
-Format strict, validé à l'upload. Erreur de parsing → ligne ignorée et listée dans le `BackfillReport`, le reste du fichier est traité.
+Format permissif sur la date pour faciliter le copier/coller depuis les sources françaises (Boursorama, brokers FR). Erreur de parsing → ligne ignorée et listée dans le `BackfillReport`, le reste du fichier est traité.
+
+**Exemple de fichier** (les deux formats de date sont acceptés dans le même fichier si besoin) :
 
 ```
 # Instrument: Amundi MSCI World UCITS ETF (CW8)
 # Currency: EUR
+# Source: Boursorama
 date;price
-2024-01-02;432,15
-2024-01-03;433,20
+29/04/2026;267,35
+28/04/2026;267,79
 2024-01-04;430,87
 ```
 
@@ -210,8 +218,8 @@ date;price
 |--------|-------|
 | Encoding | UTF-8 (BOM toléré) |
 | Séparateur de champs | `;` (point-virgule) |
-| Séparateur décimal | `,` (virgule) |
-| Format de date | ISO 8601 — `YYYY-MM-DD` |
+| Séparateur décimal | `,` (virgule) ou `.` (point) — détecté automatiquement |
+| Format de date | **Deux formats acceptés** : ISO 8601 `YYYY-MM-DD` ou français `DD/MM/YYYY`. Le parser détecte automatiquement le format ligne par ligne. |
 | Header obligatoire | Ligne `date;price` (insensible à la casse) |
 | Lignes de commentaire | Préfixées par `#` — ignorées par le parser, **utiles pour l'admin** afin d'identifier le contenu (nom de l'instrument, devise, source) lors de la préparation du fichier |
 | Doublons sur `(instrument_id, price_date)` | **Écrasement** silencieux (le dernier prix du fichier l'emporte) |
@@ -220,6 +228,12 @@ date;price
 | Nombre max de lignes | 50 000 (largement supérieur à 130 ans de cours daily, garde-fou anti-DoS) |
 
 **À noter** : les lignes `# Instrument:` et `# Currency:` sont **purement informatives** — l'instrument cible est identifié par l'URL (`/api/admin/instruments/{id}/import-prices`), et la devise par `Instrument.currency`. Elles servent à éviter à l'admin d'envoyer le mauvais CSV au mauvais endpoint.
+
+**Workflow type** depuis Boursorama :
+1. Ouvrir la page historique de l'instrument (ex : `/bourse/opcvm/cours/historique/MP-805108`)
+2. Copier le tableau (colonnes Date et Dernier suffisent — les autres sont ignorées)
+3. Coller dans un fichier `.csv` au format `date;price` (DD/MM/YYYY accepté)
+4. Uploader via `POST /api/admin/instruments/{id}/import-prices`
 
 ### 2.4 Contrat `BackfillReport`
 
