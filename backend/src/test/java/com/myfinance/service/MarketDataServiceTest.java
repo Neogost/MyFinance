@@ -31,6 +31,8 @@ class MarketDataServiceTest {
     @Mock InstrumentRepository instrumentRepository;
     @Mock ExchangeRateService exchangeRateService;
     @Mock PortfolioSnapshotService portfolioSnapshotService;
+    @Mock InstrumentPriceHistoryService priceHistoryService;
+    @Mock ExchangeRateHistoryService rateHistoryService;
 
     @InjectMocks MarketDataService marketDataService;
 

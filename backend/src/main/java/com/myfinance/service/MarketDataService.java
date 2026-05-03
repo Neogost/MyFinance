@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,12 +22,16 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MarketDataService {
 
+    static final ZoneId PARIS = ZoneId.of("Europe/Paris");
+
     private final BoursoramaClient boursoramaClient;
     private final CoinGeckoClient coinGeckoClient;
     private final EcbRateClient ecbRateClient;
     private final InstrumentRepository instrumentRepository;
     private final ExchangeRateService exchangeRateService;
     private final PortfolioSnapshotService portfolioSnapshotService;
+    private final InstrumentPriceHistoryService priceHistoryService;
+    private final ExchangeRateHistoryService rateHistoryService;
 
     public MarketDataReportDto runFullUpdate() {
         log.info("[MàJ] Démarrage de la mise à jour des données marché");
@@ -85,12 +90,14 @@ public class MarketDataService {
         List<Instrument> bourse = instrumentRepository
                 .findByCategoryAndStablePriceFalseAndBoursoramaSymbolIsNotNull(AssetCategory.BOURSE);
 
+        LocalDate today = LocalDate.now(PARIS);
         for (Instrument inst : bourse) {
             Optional<BigDecimal> price = boursoramaClient.getPrice(inst.getBoursoramaSymbol());
             if (price.isPresent()) {
                 inst.setLastPrice(price.get());
-                inst.setLastPriceUpdatedAt(LocalDateTime.now());
+                inst.setLastPriceUpdatedAt(LocalDateTime.now(PARIS));
                 instrumentRepository.save(inst);
+                priceHistoryService.savePrice(inst, today, price.get(), InstrumentPriceHistoryService.SOURCE_BOURSORAMA);
                 updated++;
             } else {
                 String msg = "Cours Boursorama indisponible pour " + inst.getBoursoramaSymbol() + " (" + inst.getName() + ")";
@@ -112,8 +119,9 @@ public class MarketDataService {
                 BigDecimal price = prices.get(inst.getCoinGeckoId());
                 if (price != null) {
                     inst.setLastPrice(price);
-                    inst.setLastPriceUpdatedAt(LocalDateTime.now());
+                    inst.setLastPriceUpdatedAt(LocalDateTime.now(PARIS));
                     instrumentRepository.save(inst);
+                    priceHistoryService.savePrice(inst, today, price, InstrumentPriceHistoryService.SOURCE_COINGECKO);
                     updated++;
                 } else {
                     String msg = "Cours CoinGecko indisponible pour " + inst.getCoinGeckoId() + " (" + inst.getName() + ")";
@@ -141,6 +149,7 @@ public class MarketDataService {
                 .map(e -> new UpdateExchangeRateRequest(e.getKey(), e.getValue()))
                 .toList();
         exchangeRateService.updateRates(requests);
+        rateHistoryService.saveRatesBatch(rates, LocalDate.now(PARIS), ExchangeRateHistoryService.SOURCE_ECB);
         return rates.size();
     }
 
@@ -148,7 +157,7 @@ public class MarketDataService {
 
     BulkSnapshotResultDto createMonthlySnapshots(List<String> errors) {
         try {
-            CreateSnapshotRequest req = new CreateSnapshotRequest(LocalDate.now());
+            CreateSnapshotRequest req = new CreateSnapshotRequest(LocalDate.now(PARIS));
             return portfolioSnapshotService.createForAllUsers(req);
         } catch (Exception e) {
             String msg = "Échec de la création des snapshots mensuels : " + e.getMessage();
