@@ -17,4 +17,8 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     /** Charge tous les ordres d'une liste de positions en une seule requête, triés par date croissante. */
     @Query("SELECT po FROM PositionOrder po WHERE po.position IN :positions ORDER BY po.orderDate ASC")
     List<PositionOrder> findByPositionInOrderByOrderDateAsc(@Param("positions") List<Position> positions);
+
+    /** Tous les ordres dont la position est libellée dans une devise non-EUR (pour la migration amountEur). */
+    @Query("SELECT po FROM PositionOrder po WHERE po.position.currency IS NOT NULL AND po.position.currency != 'EUR' ORDER BY po.orderDate ASC")
+    List<PositionOrder> findAllNonEurOrders();
 }

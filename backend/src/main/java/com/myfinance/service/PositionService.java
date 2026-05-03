@@ -17,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,6 +38,7 @@ public class PositionService {
     private final InstrumentAllocationRepository instrumentAllocationRepository;
     private final InstrumentSectorAllocationRepository instrumentSectorAllocationRepository;
     private final com.myfinance.repository.OtherIncomeRepository otherIncomeRepository;
+    private final ExchangeRateHistoryService exchangeRateHistoryService;
 
     // ── Lecture : positions ────────────────────────────────────
 
@@ -253,7 +257,7 @@ public class PositionService {
                 .quantity(request.quantity())
                 .unitPrice(request.unitPrice())
                 .amount(request.amount())
-                .amountEur(request.amount())
+                .amountEur(computeAmountEur(request.amount(), position.getCurrency(), request.orderDate()))
                 .orderDate(request.orderDate())
                 .notes(request.notes())
                 .build();
@@ -280,7 +284,7 @@ public class PositionService {
         order.setQuantity(request.quantity());
         order.setUnitPrice(request.unitPrice());
         order.setAmount(request.amount());
-        order.setAmountEur(request.amount());
+        order.setAmountEur(computeAmountEur(request.amount(), position.getCurrency(), request.orderDate()));
         order.setOrderDate(request.orderDate());
         order.setNotes(request.notes());
 
@@ -297,6 +301,26 @@ public class PositionService {
     }
 
     // ── Helpers privés ─────────────────────────────────────────
+
+    /**
+     * Calcule amountEur à partir du montant en devise native, de la devise et de la date de l'ordre.
+     * Utilise exchange_rate_history (taux du jour de l'ordre) avec fallback sur le taux courant
+     * si l'historique ne remonte pas encore assez loin.
+     * Convention : amountEur = amount / rate (identique à ExchangeRate.rate).
+     */
+    BigDecimal computeAmountEur(BigDecimal amount, String currency, LocalDate orderDate) {
+        if (currency == null || "EUR".equalsIgnoreCase(currency)) return amount;
+        Optional<BigDecimal> historicRate = exchangeRateHistoryService.getRateAt(currency, orderDate);
+        if (historicRate.isPresent()) {
+            return amount.divide(historicRate.get(), 4, RoundingMode.HALF_UP);
+        }
+        // Fallback : taux courant (exchange_rate_history pas encore alimenté pour cette date)
+        BigDecimal currentRate = exchangeRateRepository.findByCurrency(currency)
+                .map(er -> er.getRate())
+                .orElse(BigDecimal.ONE);
+        log.warn("[Ordre] Taux historique {} absent au {}, fallback taux courant ({})", currency, orderDate, currentRate);
+        return amount.divide(currentRate, 4, RoundingMode.HALF_UP);
+    }
 
     private Position getPositionWithOwnershipCheck(Long id, User currentUser) {
         Position position = positionRepository.findById(id)

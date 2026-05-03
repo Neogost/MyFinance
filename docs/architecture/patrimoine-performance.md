@@ -799,16 +799,19 @@ Pas de tracking sur les boutons internes (toggle, tooltip) en V1 — la page est
 ## 11. Checklist d'implémentation
 
 ### PR1 — Pré-requis
-- [ ] Migration SQLite numérotée : `0XX_add_price_history_tables.sql` (tables `instrument_price_history` + `exchange_rate_history` + index UNIQUE)
+- [x] Migration SQLite `015_add_price_history_tables.sql` (tables `instrument_price_history` + `exchange_rate_history` + index UNIQUE) — commit aa13b36
 - [ ] Migration SQLite numérotée : `0XX_add_closed_date_to_positions.sql` (colonne `closed_date`)
-- [ ] Entités JPA + repositories (avec méthodes batch `findByXxxInAndDateBetween`)
-- [ ] `InstrumentPriceHistoryService` + `ExchangeRateHistoryService` (forward + backfill API)
-- [ ] Branchement du forward dans `MarketDataService.runFullUpdate()`
-- [ ] Fix `PositionService.createOrder()` / `updateOrder()` (recalcul `amountEur` via historique avec `divide(rate, 4, HALF_UP)`)
+- [x] Entités JPA + repositories (avec méthodes batch `findByXxxInAndDateBetween`) — commit aa13b36
+- [x] `InstrumentPriceHistoryService` + `ExchangeRateHistoryService` (forward + backfill API) — commit aa13b36
+- [x] Branchement du forward dans `MarketDataService.runFullUpdate()` — commit aa13b36
+- [x] Fix `PositionService.createOrder()` / `updateOrder()` (recalcul `amountEur` via historique avec `divide(rate, 4, HALF_UP)`) — commit aa13b36+1
 - [ ] Renseignement automatique de `closedDate` dans `PositionService.close()` (`LocalDate.now(Europe/Paris)`)
 - [ ] Modification du formulaire d'édition position pour permettre la saisie/modification de `closedDate` sur les positions fermées
-- [ ] Endpoint admin `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false`
-- [ ] Tests unitaires (services, controllers, migration, fix `amountEur`)
+- [x] Endpoint admin `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false` — commit aa13b36+1
+- [x] Tests unitaires (migration `amountEur`) — commit aa13b36+1
+- [ ] **⚠ Exécuter la migration en dev** : `POST /api/admin/orders/migrate-amount-eur?dryRun=true` → vérifier rapport → `dryRun=false`
+- [ ] **⚠ Exécuter la migration en prod** : idem
+- [ ] **⚠ Supprimer le code de migration** (après exécution confirmée sur les deux environnements) : `AdminMigrationController`, `MigrateAmountEurService`, `MigrateAmountEurReport`, `MigrateAmountEurServiceTest`
 - [ ] **Mise à jour des diagrammes** : `docs/architecture/diagram/er-diagram.mmd` et `class-diagram.mmd`
 - [ ] Mise à jour `CLAUDE.md` (endpoints + statut + lien doc)
 - [ ] Mise à jour `readme.md` (compteur de tests)

@@ -36,6 +36,7 @@ class PositionServiceTest {
     @Mock InstrumentRepository instrumentRepository;
     @Mock ExchangeRateRepository exchangeRateRepository;
     @Mock OtherIncomeRepository otherIncomeRepository;
+    @Mock ExchangeRateHistoryService exchangeRateHistoryService;
     @InjectMocks PositionService positionService;
 
     User owner;
