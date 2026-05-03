@@ -17,6 +17,9 @@ vi.mock('../../../api/patrimoine', () => ({
   getPatrimoineScore:            vi.fn(),
   updateInstrumentAllocations:   vi.fn(),
   updateInstrumentSectorAllocations: vi.fn(),
+  getPriceHistorySummary:        vi.fn().mockResolvedValue({}),
+  backfillCryptoPrices:          vi.fn(),
+  importBoursePrices:            vi.fn(),
 }))
 
 // Sous-modales mockées — on ne teste pas leur contenu ici

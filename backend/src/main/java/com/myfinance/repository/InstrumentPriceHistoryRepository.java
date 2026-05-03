@@ -32,4 +32,9 @@ public interface InstrumentPriceHistoryRepository extends JpaRepository<Instrume
 
     @Query("SELECT COUNT(h) FROM InstrumentPriceHistory h WHERE h.instrument = :instrument")
     long countByInstrument(@Param("instrument") Instrument instrument);
+
+    /** Résumé d'historique par instrument : (instrumentId, count, minDate, maxDate) en une seule query. */
+    @Query("SELECT h.instrument.id, COUNT(h), MIN(h.priceDate), MAX(h.priceDate) " +
+           "FROM InstrumentPriceHistory h GROUP BY h.instrument.id")
+    List<Object[]> findSummaryGroupedByInstrument();
 }

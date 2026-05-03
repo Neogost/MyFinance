@@ -466,6 +466,19 @@ frontend/src/
 | `DELETE` | `/api/admin/snapshots/{id}` | ADMIN | Supprimer un snapshot |
 | `GET` | `/api/admin/users/{userId}/positions` | ADMIN | Positions actives d'un utilisateur (pour le formulaire) |
 
+### Migration one-shot — conversion devise (⚠ à supprimer après exécution prod)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `POST` | `/api/admin/orders/migrate-amount-eur?dryRun=true\|false` | ADMIN | Recalcule `amountEur` sur tous les ordres en devise non-EUR. Dry-run par défaut. Retourne `MigrateAmountEurReport`. |
+
+### Backfill historique pour la performance patrimoniale
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `POST` | `/api/admin/instruments/{id}/backfill-prices` | ADMIN | Backfill CRYPTO automatique via CoinGecko (`market_chart?days=max`). Retourne `BackfillReport`. |
+| `POST` | `/api/admin/instruments/{id}/import-prices` (multipart CSV) | ADMIN | Import CSV BOURSE — format `date;price`, dates ISO ou FR, décimales `,` ou `.`. Retourne `BackfillReport`. |
+| `POST` | `/api/admin/exchange-rates/{currency}/backfill?from=&to=` | ADMIN | Backfill devise via Frankfurter (BCE). `from`/`to` optionnels. Retourne `BackfillReport`. |
+| `GET` | `/api/admin/instruments/price-history-summary` | ADMIN | Résumé d'historique par instrument (dayCount + plage) pour l'UI admin. Map<instrumentId, {dayCount, fromDate, toDate}>. |
+
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
 - Les controllers ne font que déléguer et retourner le `ResponseEntity` approprié
@@ -769,6 +782,26 @@ npm run dev
   - Frontend : bouton "⟳ Mettre à jour les cours" dans `AdminInstrumentPage` avec rapport inline
   - Tests : `MarketDataServiceTest` (571 tests au total)
   - Documentation : `docs/architecture/instruments.md`
+
+- **PR2 performance — backfill historique (CoinGecko, Frankfurter, CSV)** :
+  - **CoinGecko CRYPTO** : `CoinGeckoClient.getMarketChart(coinId)` via `market_chart?days=max` → historique complet d'une crypto en un appel
+  - **Frankfurter devises** : `EcbRateClient.getRatesHistory(currency, from, to)` → taux daily depuis 1999 (ECB)
+  - **CSV BOURSE** : `BoursePriceCsvParser` permissif — dates ISO `YYYY-MM-DD` ou FR `DD/MM/YYYY`, décimales `,` ou `.`, BOM toléré, lignes `#` ignorées, doublons écrasés silencieusement, lignes invalides → skip + rapport (max 50 erreurs gardées). Garde-fous : 10 Mo, 50 000 lignes max.
+  - **`InstrumentBackfillService`** : `backfillCrypto(instrumentId)` + `importCsv(instrumentId, file)`. Refuse si catégorie incompatible.
+  - **`ExchangeRateBackfillService`** : `backfill(currency, from?, to?)`. Date de début par défaut = premier ordre dans cette devise (ou -5 ans si aucun). Refuse EUR.
+  - **`AdminBackfillController`** : 3 endpoints POST + 1 endpoint GET `/api/admin/instruments/price-history-summary` pour l'UI (Map<instrumentId, {dayCount, fromDate, toDate}> en une query)
+  - **DTO unifié `BackfillReport`** : `{scope, targetId, targetLabel, fromDate, toDate, linesInserted, linesUpdated, linesSkipped, errors[], durationMs}`
+  - **UI admin** : colonne « Historique » dans `AdminInstrumentPage` (jours + plage), bouton « ↻ Backfill » par instrument CRYPTO, bouton « 📤 Import CSV » par instrument BOURSE (input file caché), rapport inline. `ExchangeRateUpdateModal` enrichie avec une colonne « ↻ Histo » par devise.
+  - Tests : 859 (BoursePriceCsvParserTest +17, InstrumentBackfillServiceTest +9, ExchangeRateBackfillServiceTest +5, AdminBackfillControllerTest +9)
+  - Documentation API : `docs/api/patrimoine-performance-backfill.md`
+
+- **Pré-requis performance patrimoniale (TWR/MWR) — pré-requis 1, 2, 3** :
+  - **Historique quotidien des prix** : table `instrument_price_history` (cours clôture par instrument, source BOURSORAMA/COINGECKO/MANUAL_CSV) — alimentée automatiquement par `MarketDataService.runFullUpdate()`
+  - **Historique quotidien des taux de change** : table `exchange_rate_history` (convention identique à `exchange_rates`) — alimentée automatiquement par le scheduler ECB/Frankfurter. Script de backfill : `backend/migrations/016_backfill_usd_eur_exchange_rate_history.py`
+  - **Fix `amountEur` sur `PositionOrder`** : `PositionService.createOrder()` / `updateOrder()` calculent désormais `amountEur = amount / exchange_rate_history(currency, orderDate)` avec fallback taux courant + log WARN. Migration one-shot des ordres existants : `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false` (exécutée en dev — 39 ordres USD corrigés) ⚠ À supprimer après exécution prod.
+  - **`closedDate` sur `Position`** : renseigné automatiquement à `LocalDate.now(Europe/Paris)` lors de `PositionService.close()`. Modifiable via le formulaire d'édition d'une position CLOSED. Migration `017` + backfill `MAX(orderDate)` sur les positions CLOSED existantes.
+  - Tests : 819 (InstrumentPriceHistoryServiceTest +11, ExchangeRateHistoryServiceTest +10, MigrateAmountEurServiceTest +6, MarketDataServiceTest +2 mocks)
+  - Documentation complète : `docs/architecture/patrimoine-performance.md`
 
 - **Page admin "Gestion des instruments"** (`AdminInstrumentPage`) :
   - Tableau BOURSE / CRYPTO avec prix actuel, date de mise à jour (orange si > 30 j), symbole Boursorama / CoinGecko ID, prix fixe

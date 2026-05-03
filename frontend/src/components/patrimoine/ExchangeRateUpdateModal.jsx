@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getExchangeRates, updateExchangeRates } from '../../api/patrimoine'
+import { getExchangeRates, updateExchangeRates, backfillExchangeRate } from '../../api/patrimoine'
 
 function fmtDate(isoString) {
   if (!isoString) return '—'
@@ -22,6 +22,21 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
   const [error, setError]         = useState(null)
+  const [backfillingCurrency, setBackfillingCurrency] = useState(null)
+  const [backfillReport, setBackfillReport] = useState(null)
+
+  async function handleBackfill(currency) {
+    setBackfillingCurrency(currency)
+    setBackfillReport(null)
+    try {
+      const report = await backfillExchangeRate(currency)
+      setBackfillReport(report)
+    } catch (e) {
+      setError('Échec du backfill : ' + (e?.response?.data?.message || e?.message || ''))
+    } finally {
+      setBackfillingCurrency(null)
+    }
+  }
 
   useEffect(() => {
     getExchangeRates()
@@ -101,6 +116,7 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
                       <th className="text-right pb-3 font-medium">Taux actuel (1 EUR = …)</th>
                       <th className="text-right pb-3 font-medium">Mis à jour</th>
                       <th className="text-right pb-3 font-medium w-36">Nouveau taux</th>
+                      <th className="text-right pb-3 font-medium w-24">Historique</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -131,7 +147,7 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
                           </td>
 
                           {/* Saisie nouveau taux */}
-                          <td className="py-3 text-right">
+                          <td className="py-3 pr-2 text-right">
                             <input
                               type="number"
                               min="0"
@@ -141,6 +157,18 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
                               onChange={e => setInputs(prev => ({ ...prev, [r.currency]: e.target.value }))}
                               className="w-32 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-right outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
                             />
+                          </td>
+
+                          {/* Backfill historique */}
+                          <td className="py-3 text-right">
+                            <button
+                              onClick={() => handleBackfill(r.currency)}
+                              disabled={backfillingCurrency != null}
+                              title="Backfill historique via Frankfurter (BCE)"
+                              className="px-2 py-1 border border-orange-200 rounded-md text-xs text-orange-600 hover:border-orange-500 hover:bg-orange-50 disabled:opacity-60 transition"
+                            >
+                              {backfillingCurrency === r.currency ? '⟳' : '↻ Histo'}
+                            </button>
                           </td>
                         </tr>
                       )
@@ -153,6 +181,21 @@ export default function ExchangeRateUpdateModal({ onClose, onSaved }) {
                 <p className="text-sm text-gray-400 text-center py-6 mb-4">
                   Aucun taux configuré. Ajoutez votre première devise ci-dessous.
                 </p>
+              )}
+
+              {/* Rapport de backfill */}
+              {backfillReport && (
+                <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs">
+                  <p className="font-semibold text-orange-700">
+                    {backfillReport.targetLabel} : {backfillReport.linesInserted} insérés, {backfillReport.linesUpdated} mis à jour
+                    {backfillReport.fromDate && ` (${backfillReport.fromDate} → ${backfillReport.toDate})`}
+                  </p>
+                  {backfillReport.errors?.length > 0 && (
+                    <p className="text-amber-700 mt-1">
+                      ⚠ {backfillReport.errors[0]}
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Ajout d'une nouvelle devise */}

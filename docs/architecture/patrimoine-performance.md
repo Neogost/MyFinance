@@ -832,20 +832,21 @@ Pas de tracking sur les boutons internes (toggle, tooltip) en V1 — la page est
 - [x] Doc `docs/architecture/instruments.md` enrichie (sections 2.5 InstrumentPriceHistory + 2.6 ExchangeRateHistory)
 
 ### PR2 — Backfill
-- [ ] Endpoint `POST /api/admin/instruments/{id}/backfill-prices` (CRYPTO via CoinGecko)
-- [ ] Endpoint `POST /api/admin/instruments/{id}/import-prices` (BOURSE via CSV multipart)
-- [ ] Endpoint `POST /api/admin/exchange-rates/{currency}/backfill` (Frankfurter)
-- [ ] DTO `BackfillReport`
-- [ ] **Parser CSV** : tests unitaires couvrant cas valides + invalides (encoding UTF-8/BOM, séparateur, format date ISO, séparateur décimal `,`, lignes commentaire `#`, doublons → écrasement, lignes invalides → skip + report, taille max 10 Mo, lignes max 50 000)
-- [ ] UI admin dans `AdminInstrumentPage` :
-  - [ ] Bouton « Backfill » par instrument (CRYPTO) / « Importer CSV » (BOURSE)
-  - [ ] **Colonne « Historique disponible »** : nb de jours, plage `du Y au Z` (utile pour piloter et savoir où agir)
-  - [ ] Affichage du `BackfillReport` après chaque opération
-- [ ] UI admin pour le backfill devises (probablement dans la modal `ExchangeRateUpdateModal` existante)
-- [ ] Tests unitaires (controllers, parser, UI)
-- [ ] Mise à jour `CLAUDE.md` (endpoints)
-- [ ] Mise à jour `readme.md` (compteur de tests)
-- [ ] **Doc API dédiée** : `docs/api/patrimoine-performance-backfill.md` (les 3 endpoints + format CSV + format `BackfillReport`)
+- [x] Endpoint `POST /api/admin/instruments/{id}/backfill-prices` (CRYPTO via CoinGecko)
+- [x] Endpoint `POST /api/admin/instruments/{id}/import-prices` (BOURSE via CSV multipart)
+- [x] Endpoint `POST /api/admin/exchange-rates/{currency}/backfill` (Frankfurter)
+- [x] Endpoint `GET /api/admin/instruments/price-history-summary` (résumé pour l'UI)
+- [x] DTO `BackfillReport` + `PriceHistorySummaryDto`
+- [x] **Parser CSV** : tests unitaires (17 cas — encoding UTF-8/BOM, séparateur `;`, dates ISO+FR, décimaux `,` et `.`, lignes commentaire `#`, doublons → écrasement, lignes invalides → skip + rapport, prix négatif refusé, séparateur de milliers FR/US, taille max 10 Mo, lignes max 50 000)
+- [x] UI admin dans `AdminInstrumentPage` :
+  - [x] Bouton « ↻ Backfill » par instrument CRYPTO + bouton « 📤 Import CSV » par instrument BOURSE (input file caché, file picker)
+  - [x] **Colonne « Historique »** : nb de jours + plage `du Y au Z`
+  - [x] Affichage du `BackfillReport` inline après chaque opération
+- [x] UI admin backfill devises : colonne « ↻ Histo » dans `ExchangeRateUpdateModal`
+- [x] Tests unitaires : `BoursePriceCsvParserTest` (17), `InstrumentBackfillServiceTest` (9), `ExchangeRateBackfillServiceTest` (5), `AdminBackfillControllerTest` (9) — total backend 859
+- [x] Mise à jour `CLAUDE.md` (endpoints + section "Implémenté")
+- [x] Mise à jour `readme.md` (compteur de tests : 859)
+- [x] **Doc API dédiée** : `docs/api/patrimoine-performance-backfill.md` (4 endpoints + format CSV + format `BackfillReport`)
 
 ### PR3 — Calcul performance
 - [ ] `ModifiedDietzCalculator` + golden tests (100 % couverture lignes & branches)

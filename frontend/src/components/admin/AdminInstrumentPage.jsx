@@ -1,5 +1,9 @@
-import { useState, useEffect } from 'react'
-import { getInstruments, createInstrument, updateInstrument, deleteInstrument, runMarketDataUpdate, runAllocationUpdate } from '../../api/patrimoine'
+import { useState, useEffect, useRef } from 'react'
+import {
+  getInstruments, createInstrument, updateInstrument, deleteInstrument,
+  runMarketDataUpdate, runAllocationUpdate,
+  getPriceHistorySummary, backfillCryptoPrices, importBoursePrices,
+} from '../../api/patrimoine'
 import AdminInstrumentForm from './AdminInstrumentForm'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
@@ -43,17 +47,70 @@ export default function AdminInstrumentPage() {
   const [deleteTarget,           setDeleteTarget]           = useState(null)
   const [deleting,               setDeleting]               = useState(false)
   const [deleteError,            setDeleteError]            = useState(null)
+  const [historySummary,         setHistorySummary]         = useState({})
+  const [backfillingId,          setBackfillingId]          = useState(null)
+  const [backfillReport,         setBackfillReport]         = useState(null)
+  const [backfillError,          setBackfillError]          = useState(null)
+  const fileInputRef = useRef(null)
+  const csvTargetIdRef = useRef(null)
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     try {
       setLoading(true)
-      setInstruments(await getInstruments())
+      const [list, summary] = await Promise.all([
+        getInstruments(),
+        getPriceHistorySummary().catch(() => ({})),
+      ])
+      setInstruments(list)
+      setHistorySummary(summary)
     } catch {
       setError('Impossible de charger les instruments.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleBackfillCrypto(inst) {
+    setBackfillingId(inst.id)
+    setBackfillReport(null)
+    setBackfillError(null)
+    try {
+      trackEvent('FEATURE_USE', 'admin.instrument.backfill_coingecko', { instrumentId: inst.id })
+      const report = await backfillCryptoPrices(inst.id)
+      setBackfillReport(report)
+      setHistorySummary(await getPriceHistorySummary())
+    } catch (e) {
+      setBackfillError(e?.response?.data?.message || 'Échec du backfill CoinGecko.')
+    } finally {
+      setBackfillingId(null)
+    }
+  }
+
+  function handleImportCsvClick(inst) {
+    csvTargetIdRef.current = inst.id
+    fileInputRef.current?.click()
+  }
+
+  async function handleCsvFileSelected(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !csvTargetIdRef.current) return
+    const id = csvTargetIdRef.current
+    setBackfillingId(id)
+    setBackfillReport(null)
+    setBackfillError(null)
+    try {
+      trackEvent('FEATURE_USE', 'admin.instrument.backfill_csv', { instrumentId: id })
+      const report = await importBoursePrices(id, file)
+      setBackfillReport(report)
+      setHistorySummary(await getPriceHistorySummary())
+    } catch (err) {
+      setBackfillError(err?.response?.data?.message || 'Échec de l\'import CSV.')
+    } finally {
+      setBackfillingId(null)
+      csvTargetIdRef.current = null
     }
   }
 
@@ -206,6 +263,34 @@ export default function AdminInstrumentPage() {
         </div>
       )}
 
+      {/* ── Rapport de backfill ── */}
+      {backfillError && (
+        <p className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{backfillError}</p>
+      )}
+      {backfillReport && (
+        <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-xs">
+          <p className="font-semibold text-orange-700 mb-2">
+            Backfill {backfillReport.targetLabel} : {backfillReport.linesInserted} insérés, {backfillReport.linesUpdated} mis à jour
+            {backfillReport.linesSkipped > 0 && `, ${backfillReport.linesSkipped} ignorés`}
+            {backfillReport.fromDate && ` (${backfillReport.fromDate} → ${backfillReport.toDate})`}
+          </p>
+          {backfillReport.errors?.length > 0 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-amber-600 font-medium">
+                {backfillReport.errors.length} avertissement{backfillReport.errors.length > 1 ? 's' : ''}
+              </summary>
+              <ul className="mt-1 space-y-0.5 text-amber-700">
+                {backfillReport.errors.slice(0, 20).map((e, i) => <li key={i}>• {e}</li>)}
+                {backfillReport.errors.length > 20 && <li className="italic">… et {backfillReport.errors.length - 20} autres</li>}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+
+      {/* Input file caché pour les imports CSV BOURSE */}
+      <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFileSelected} />
+
       {/* ── Tables ── */}
       {[{ label: 'BOURSE', items: bourse }, { label: 'CRYPTO', items: crypto }].map(({ label, items }) => (
         <div key={label} className="mb-6">
@@ -228,6 +313,7 @@ export default function AdminInstrumentPage() {
                     </th>
                     <th className="px-2 md:px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix</th>
                     <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mis à jour</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Historique</th>
                     <th className="px-2 md:px-4 py-3" />
                   </tr>
                 </thead>
@@ -302,14 +388,48 @@ export default function AdminInstrumentPage() {
                               : <span className="text-gray-300">Jamais</span>
                           }
                         </td>
+                        <td className="hidden md:table-cell px-4 py-3 text-xs">
+                          {(() => {
+                            const summary = historySummary[inst.id]
+                            if (!summary) return <span className="text-gray-300">Aucun</span>
+                            return (
+                              <div>
+                                <span className="text-gray-700 font-medium">{summary.dayCount} j</span>
+                                <span className="text-gray-400 ml-1">
+                                  ({summary.fromDate} → {summary.toDate})
+                                </span>
+                              </div>
+                            )
+                          })()}
+                        </td>
                         <td className="px-2 md:px-4 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
                               onClick={() => setFormTarget(inst)}
                               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
                             >
                               Modifier
                             </button>
+                            {label === 'CRYPTO' && inst.coinGeckoId && (
+                              <button
+                                onClick={() => handleBackfillCrypto(inst)}
+                                disabled={backfillingId === inst.id}
+                                title="Backfill historique via CoinGecko"
+                                className="hidden md:inline-flex px-3 py-1 border border-orange-200 rounded-md text-xs text-orange-600 hover:border-orange-500 hover:bg-orange-50 disabled:opacity-60 transition"
+                              >
+                                {backfillingId === inst.id ? '⟳ Backfill…' : '↻ Backfill'}
+                              </button>
+                            )}
+                            {label === 'BOURSE' && (
+                              <button
+                                onClick={() => handleImportCsvClick(inst)}
+                                disabled={backfillingId === inst.id}
+                                title="Importer un CSV d'historique"
+                                className="hidden md:inline-flex px-3 py-1 border border-indigo-200 rounded-md text-xs text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50 disabled:opacity-60 transition"
+                              >
+                                {backfillingId === inst.id ? '⟳ Import…' : '📤 Import CSV'}
+                              </button>
+                            )}
                             <button
                               onClick={() => { setDeleteTarget(inst); setDeleteError(null) }}
                               className="hidden md:inline-flex px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"

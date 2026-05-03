@@ -33,6 +33,18 @@ export const deleteOrder  = (positionId, id)       => api.delete(`/api/positions
 export const getExchangeRates    = ()        => api.get('/api/exchange-rates').then(r => r.data)
 export const updateExchangeRates = (updates) => api.put('/api/exchange-rates', updates).then(r => r.data)
 
+// ── Backfill historique (admin) ────────────────────────────────
+
+export const backfillCryptoPrices    = (id)            => api.post(`/api/admin/instruments/${id}/backfill-prices`).then(r => r.data)
+export const importBoursePrices      = (id, file)      => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return api.post(`/api/admin/instruments/${id}/import-prices`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
+}
+export const backfillExchangeRate    = (currency, params = {}) =>
+  api.post(`/api/admin/exchange-rates/${currency}/backfill`, null, { params }).then(r => r.data)
+export const getPriceHistorySummary  = ()              => api.get('/api/admin/instruments/price-history-summary').then(r => r.data)
+
 // ── Snapshots ──────────────────────────────────────────────────
 
 export const getSnapshots       = ()          => api.get('/api/portfolio/snapshots').then(r => r.data)

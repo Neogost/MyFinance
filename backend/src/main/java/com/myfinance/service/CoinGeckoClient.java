@@ -6,10 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 @Slf4j
 @Service
@@ -22,6 +26,9 @@ public class CoinGeckoClient {
             "https://api.coingecko.com/api/v3/search?query={ticker}";
     private static final String PRICE_URL  =
             "https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd";
+    private static final String MARKET_CHART_URL =
+            "https://api.coingecko.com/api/v3/coins/{id}/market_chart?vs_currency=usd&days={days}&interval=daily";
+    private static final ZoneId PARIS = ZoneId.of("Europe/Paris");
 
     // ── Résolution ticker → ID CoinGecko ──────────────────────
 
@@ -43,6 +50,46 @@ public class CoinGeckoClient {
         } catch (Exception e) {
             log.error("[CoinGecko] Échec de la recherche pour ticker {} : {}", ticker, e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    // ── Historique des cours (backfill par instrument) ─────────
+
+    /**
+     * Récupère l'historique daily des cours d'une crypto via market_chart?days=max.
+     * Retourne une Map LocalDate (Europe/Paris) → cours USD.
+     * En cas d'erreur réseau ou de parsing, retourne une map vide.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<LocalDate, BigDecimal> getMarketChart(String coinGeckoId) {
+        try {
+            log.debug("[CoinGecko] Récupération historique market_chart pour {}", coinGeckoId);
+            Map<String, Object> response = restTemplate.getForObject(MARKET_CHART_URL, Map.class, coinGeckoId, "max");
+            if (response == null) return Map.of();
+
+            List<List<Number>> prices = (List<List<Number>>) response.get("prices");
+            if (prices == null || prices.isEmpty()) {
+                log.warn("[CoinGecko] Historique vide pour {}", coinGeckoId);
+                return Map.of();
+            }
+
+            // Format CoinGecko : [[timestamp_ms, price], ...]
+            // On agrège par date (Europe/Paris) — en cas de plusieurs entrées le même jour, on garde la plus récente
+            Map<LocalDate, BigDecimal> result = new TreeMap<>();
+            for (List<Number> entry : prices) {
+                long tsMs = entry.get(0).longValue();
+                BigDecimal price = new BigDecimal(entry.get(1).toString());
+                LocalDate date = Instant.ofEpochMilli(tsMs).atZone(PARIS).toLocalDate();
+                result.put(date, price);
+            }
+            log.info("[CoinGecko] {} jours d'historique récupérés pour {} (du {} au {})",
+                    result.size(), coinGeckoId,
+                    result.keySet().iterator().next(),
+                    new java.util.ArrayList<>(result.keySet()).get(result.size() - 1));
+            return result;
+        } catch (Exception e) {
+            log.error("[CoinGecko] Échec market_chart pour {} : {}", coinGeckoId, e.getMessage());
+            return Map.of();
         }
     }
 

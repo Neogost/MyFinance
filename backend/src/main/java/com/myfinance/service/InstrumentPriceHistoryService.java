@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.InstrumentPriceHistory;
+import com.myfinance.dto.PriceHistorySummaryDto;
 import com.myfinance.repository.InstrumentPriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +72,19 @@ public class InstrumentPriceHistoryService {
 
     public Optional<LocalDate> getMaxDate(Instrument instrument) {
         return priceHistoryRepository.findMaxDateByInstrument(instrument);
+    }
+
+    /** Résumé d'historique pour tous les instruments (pour UI admin) — une seule query. */
+    public Map<Long, PriceHistorySummaryDto> getSummaryForAllInstruments() {
+        Map<Long, PriceHistorySummaryDto> result = new HashMap<>();
+        for (Object[] row : priceHistoryRepository.findSummaryGroupedByInstrument()) {
+            Long instrumentId = (Long) row[0];
+            long count = ((Number) row[1]).longValue();
+            LocalDate from = (LocalDate) row[2];
+            LocalDate to   = (LocalDate) row[3];
+            result.put(instrumentId, new PriceHistorySummaryDto(count, from, to));
+        }
+        return result;
     }
 
     // ── Écriture (upsert idempotent) ───────────────────────────────────────────
