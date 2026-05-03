@@ -216,6 +216,7 @@ erDiagram
         decimal   currentBalance
         boolean   includeInIncomeProjection
         varchar   status                   "ACTIVE | CLOSED"
+        date      closedDate               "nullable — renseigné automatiquement à la fermeture"
         timestamp createdAt
     }
 
@@ -374,6 +375,24 @@ erDiagram
         timestamp lastUpdatedAt
     }
 
+    %% ── Historique quotidien des cours (performance TWR/MWR) ─────
+
+    instrument_price_history {
+        bigint  id            PK
+        bigint  instrument_id FK
+        date    price_date    UK "UNIQUE (instrument_id, price_date)"
+        decimal price              "Cours de clôture en devise native"
+        varchar source             "BOURSORAMA | COINGECKO | MANUAL_CSV | MANUAL"
+    }
+
+    exchange_rate_history {
+        bigint  id        PK
+        varchar currency  UK "UNIQUE (currency, rate_date)"
+        date    rate_date
+        decimal rate           "amountEur = amountNatif / rate"
+        varchar source         "ECB | FRANKFURTER | MANUAL"
+    }
+
     %% ══════════════════════════════════════════════════════════════
     %% Relations
     %% ══════════════════════════════════════════════════════════════
@@ -399,6 +418,7 @@ erDiagram
     %% Instruments & allocations
     instrument_allocations        }o--||  instruments               : "instrument"
     instrument_sector_allocations }o--||  instruments               : "instrument"
+    instrument_price_history      }o--||  instruments               : "instrument"
 
     %% Positions & ordres
     positions                     }o--||  users                     : "user"

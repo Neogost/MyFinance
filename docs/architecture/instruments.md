@@ -96,7 +96,7 @@ Allocation sectorielle d'un instrument (ex : 30 % Technologie, 20 % Finance).
 
 ### 2.4 Entité `ExchangeRate` — table `exchange_rates`
 
-Taux de change d'une devise étrangère par rapport à l'EUR.
+Taux de change **courant** d'une devise étrangère par rapport à l'EUR. Mis à jour quotidiennement par le scheduler via ECB/Frankfurter.
 
 | Champ | Type | Description |
 |-------|------|-------------|
@@ -108,6 +108,40 @@ Taux de change d'une devise étrangère par rapport à l'EUR.
 **Convention :** `rate = 1.08` pour USD signifie `1 EUR = 1.08 USD`. La conversion est `amountEur = amountNatif / rate`.
 
 La devise EUR n'est pas stockée — une position en EUR ne requiert aucune conversion.
+
+---
+
+### 2.5 Entité `InstrumentPriceHistory` — table `instrument_price_history`
+
+Historique quotidien des cours par instrument. Pré-requis pour le calcul de performance patrimoniale (TWR/MWR). Voir `docs/architecture/patrimoine-performance.md`.
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `instrument` | `Instrument` | FK — instrument concerné (cascade DELETE) |
+| `priceDate` | `LocalDate` | Date du cours |
+| `price` | `BigDecimal` | Cours de clôture en devise native de l'instrument |
+| `source` | `String` | `BOURSORAMA` / `COINGECKO` / `MANUAL_CSV` / `MANUAL` |
+
+Contrainte unique : `(instrument_id, price_date)`.
+
+**Alimentation** : le scheduler quotidien (`MarketDataService.runFullUpdate()`, cron `0 0 2 * * *` Europe/Paris) insère une ligne par instrument actif après chaque mise à jour de cours. Idempotent (upsert). Pour les données antérieures au déploiement, voir le script de backfill `backend/migrations/016_backfill_usd_eur_exchange_rate_history.py` et la procédure d'import CSV dans `docs/architecture/patrimoine-performance.md` section 2.3.
+
+---
+
+### 2.6 Entité `ExchangeRateHistory` — table `exchange_rate_history`
+
+Historique quotidien des taux de change. Complément de `ExchangeRate` pour les calculs historiques. Même convention de taux.
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | `Long` | Identifiant |
+| `currency` | `String` | Code ISO 4217 |
+| `rateDate` | `LocalDate` | Date du taux |
+| `rate` | `BigDecimal` | Nombre d'unités de la devise pour 1 EUR |
+| `source` | `String` | `ECB` / `FRANKFURTER` / `MANUAL` |
+
+Contrainte unique : `(currency, rate_date)`. EUR n'est jamais stocké (taux = 1.0 implicite).
 
 ---
 

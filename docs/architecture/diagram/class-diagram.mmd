@@ -345,6 +345,24 @@ classDiagram
         +LocalDateTime lastUpdatedAt
     }
 
+    class InstrumentPriceHistory {
+        <<entity — historique quotidien pour TWR/MWR>>
+        +Long id
+        +Instrument instrument
+        +LocalDate priceDate
+        +BigDecimal price
+        +String source
+    }
+
+    class ExchangeRateHistory {
+        <<entity — historique quotidien pour TWR/MWR>>
+        +Long id
+        +String currency
+        +LocalDate rateDate
+        +BigDecimal rate
+        +String source
+    }
+
     %% ── Patrimoine — Positions ─────────────────────────────────
 
     class Position {
@@ -369,6 +387,7 @@ classDiagram
         +BigDecimal currentBalance
         +Boolean includeInIncomeProjection
         +PositionStatus status
+        +LocalDate closedDate
         +LocalDateTime createdAt
     }
 

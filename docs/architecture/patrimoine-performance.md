@@ -800,22 +800,22 @@ Pas de tracking sur les boutons internes (toggle, tooltip) en V1 — la page est
 
 ### PR1 — Pré-requis
 - [x] Migration SQLite `015_add_price_history_tables.sql` (tables `instrument_price_history` + `exchange_rate_history` + index UNIQUE) — commit aa13b36
-- [ ] Migration SQLite numérotée : `0XX_add_closed_date_to_positions.sql` (colonne `closed_date`)
+- [x] Migration SQLite `017_add_closed_date_to_positions.sql` (colonne `closed_date` + backfill MAX(orderDate) sur CLOSED) — commit 246a218
 - [x] Entités JPA + repositories (avec méthodes batch `findByXxxInAndDateBetween`) — commit aa13b36
 - [x] `InstrumentPriceHistoryService` + `ExchangeRateHistoryService` (forward + backfill API) — commit aa13b36
 - [x] Branchement du forward dans `MarketDataService.runFullUpdate()` — commit aa13b36
-- [x] Fix `PositionService.createOrder()` / `updateOrder()` (recalcul `amountEur` via historique avec `divide(rate, 4, HALF_UP)`) — commit aa13b36+1
-- [ ] Renseignement automatique de `closedDate` dans `PositionService.close()` (`LocalDate.now(Europe/Paris)`)
-- [ ] Modification du formulaire d'édition position pour permettre la saisie/modification de `closedDate` sur les positions fermées
-- [x] Endpoint admin `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false` — commit aa13b36+1
-- [x] Tests unitaires (migration `amountEur`) — commit aa13b36+1
-- [ ] **⚠ Exécuter la migration en dev** : `POST /api/admin/orders/migrate-amount-eur?dryRun=true` → vérifier rapport → `dryRun=false`
-- [ ] **⚠ Exécuter la migration en prod** : idem
-- [ ] **⚠ Supprimer le code de migration** (après exécution confirmée sur les deux environnements) : `AdminMigrationController`, `MigrateAmountEurService`, `MigrateAmountEurReport`, `MigrateAmountEurServiceTest`
-- [ ] **Mise à jour des diagrammes** : `docs/architecture/diagram/er-diagram.mmd` et `class-diagram.mmd`
-- [ ] Mise à jour `CLAUDE.md` (endpoints + statut + lien doc)
-- [ ] Mise à jour `readme.md` (compteur de tests)
-- [ ] Doc `docs/architecture/instruments.md` enrichie (mention historique de prix daily)
+- [x] Fix `PositionService.createOrder()` / `updateOrder()` (recalcul `amountEur` via historique avec `divide(rate, 4, HALF_UP)`) — commit c7b1a0e
+- [x] Renseignement automatique de `closedDate` dans `PositionService.close()` (`LocalDate.now(Europe/Paris)`) — commit 246a218
+- [x] Modification du formulaire d'édition position pour permettre la saisie/modification de `closedDate` sur les positions fermées — commit 246a218
+- [x] Endpoint admin `POST /api/admin/orders/migrate-amount-eur?dryRun=true|false` — commit c7b1a0e
+- [x] Tests unitaires (pré-requis 1, 2, 3) — commits aa13b36, c7b1a0e, 246a218
+- [x] **⚠ Exécuter la migration en dev** — effectué : 39 ordres USD corrigés, 0 fallback — commit c7b1a0e
+- [ ] **⚠ Exécuter la migration en prod** : `python3 backend/migrations/016_backfill_usd_eur_exchange_rate_history.py /path/prod.db` puis `POST /api/admin/orders/migrate-amount-eur?dryRun=false`
+- [ ] **⚠ Supprimer le code de migration** (après exécution prod) : `AdminMigrationController`, `MigrateAmountEurService`, `MigrateAmountEurReport`, `MigrateAmountEurServiceTest`
+- [x] **Mise à jour des diagrammes** : `docs/architecture/diagram/er-diagram.mmd` et `class-diagram.mmd`
+- [x] Mise à jour `CLAUDE.md` (endpoints + statut + lien doc)
+- [x] Mise à jour `readme.md` (compteur de tests : 819)
+- [x] Doc `docs/architecture/instruments.md` enrichie (sections 2.5 InstrumentPriceHistory + 2.6 ExchangeRateHistory)
 
 ### PR2 — Backfill
 - [ ] Endpoint `POST /api/admin/instruments/{id}/backfill-prices` (CRYPTO via CoinGecko)
