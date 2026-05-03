@@ -250,6 +250,6 @@ class PatrimoineScoreServiceTest {
                 com.myfinance.domain.AssetCategory.valueOf(category),
                 null, category, "EUR", envelope, null, null,
                 null, null, null, null, null, null, null, null, null,
-                false, PositionStatus.ACTIVE, null, null, computed);
+                false, PositionStatus.ACTIVE, null, null, null, computed);
     }
 }

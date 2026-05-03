@@ -29,5 +29,7 @@ public record UpdatePositionRequest(
         // LIVRET
         @DecimalMin(value = "0.0", inclusive = true) BigDecimal annualRate,
         // Options
-        Boolean includeInIncomeProjection
+        Boolean includeInIncomeProjection,
+        // Correction rétroactive de la date de fermeture (positions CLOSED uniquement)
+        LocalDate closedDate
 ) {}

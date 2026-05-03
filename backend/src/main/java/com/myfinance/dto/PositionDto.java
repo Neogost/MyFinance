@@ -35,6 +35,7 @@ public record PositionDto(
         // Options
         Boolean includeInIncomeProjection,
         PositionStatus status,
+        LocalDate closedDate,
         LocalDateTime createdAt,
         // Ordres (null si non demandés)
         List<PositionOrderDto> orders,
@@ -93,6 +94,7 @@ public record PositionDto(
                 position.getCurrentBalance(),
                 position.getIncludeInIncomeProjection(),
                 position.getStatus(),
+                position.getClosedDate(),
                 position.getCreatedAt(),
                 orderDtos,
                 computed

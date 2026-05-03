@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -159,6 +160,10 @@ public class PositionService {
         position.setCommissionRate(request.commissionRate());
         position.setAnnualRate(request.annualRate());
         position.setIncludeInIncomeProjection(Boolean.TRUE.equals(request.includeInIncomeProjection()));
+        // closedDate modifiable uniquement sur une position déjà fermée (correction rétroactive)
+        if (position.getStatus() == PositionStatus.CLOSED && request.closedDate() != null) {
+            position.setClosedDate(request.closedDate());
+        }
 
         Position saved = positionRepository.save(position);
         log.info("[user:{}] Position modifiée #{}", currentUser.getId(), id);
@@ -202,6 +207,7 @@ public class PositionService {
     public PositionDto close(Long id, User currentUser) {
         Position position = getPositionWithOwnershipCheck(id, currentUser);
         position.setStatus(PositionStatus.CLOSED);
+        position.setClosedDate(LocalDate.now(ZoneId.of("Europe/Paris")));
         Position saved = positionRepository.save(position);
         log.info("[user:{}] Position fermée #{}", currentUser.getId(), id);
         List<PositionOrder> orders = positionOrderRepository.findByPositionOrderByOrderDateDesc(saved);

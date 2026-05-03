@@ -253,6 +253,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         annualRate:                position.annualRate ?? '',
         currentBalance:            position.currentBalance ?? '',
         includeInIncomeProjection: position.includeInIncomeProjection ?? false,
+        closedDate:                position.closedDate ?? '',
       })
     }
   }, [position])
@@ -298,6 +299,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
         annualRate:                form.annualRate !== '' ? parseFloat(form.annualRate) : null,
         currentBalance:            form.currentBalance !== '' ? parseFloat(form.currentBalance) : null,
         includeInIncomeProjection: form.includeInIncomeProjection,
+        closedDate:                form.closedDate || null,
       }
       await onSubmit(payload)
       trackEvent('FORM_SUBMIT', `patrimoine.position.${isEdit ? 'edit' : 'create'}`)
@@ -541,6 +543,19 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                   <input name="currentBalance" type="number" min="0" step="0.01"
                     value={form.currentBalance} onChange={handleChange}
                     placeholder="ex : 525.79" className={inputCls} />
+                </div>
+              )}
+
+              {/* Date de fermeture — correction rétroactive sur positions CLOSED */}
+              {isEdit && position?.status === 'CLOSED' && (
+                <div>
+                  <label className={labelCls}>
+                    Date de fermeture
+                    <span className="ml-1 text-xs text-gray-400 font-normal">(correction rétroactive)</span>
+                  </label>
+                  <input name="closedDate" type="date"
+                    value={form.closedDate} onChange={handleChange}
+                    className={inputCls} />
                 </div>
               )}
 

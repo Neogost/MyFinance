@@ -159,7 +159,7 @@ class PatrimoineBreakdownServiceTest {
         PositionDto p = new PositionDto(
                 1L, AssetCategory.BOURSE, null, "Position", "EUR", null,
                 null, null, null, null, null, null, null, null,
-                null, null, null, false, PositionStatus.ACTIVE, null, null,
+                null, null, null, false, PositionStatus.ACTIVE, null, null, null,
                 new PositionComputedDto(BigDecimal.ZERO, new BigDecimal("1000"), BigDecimal.ZERO, null, null));
 
         when(positionService.findAllByUser(eq(user), eq(AssetCategory.BOURSE), eq(PositionStatus.ACTIVE)))
@@ -312,7 +312,7 @@ class PatrimoineBreakdownServiceTest {
         return new PositionDto(
                 1L, AssetCategory.BOURSE, null, "Position", currency, null,
                 instrument, subType, null, null, null, null, null, null,
-                null, null, null, false, PositionStatus.ACTIVE, null, null, computed);
+                null, null, null, false, PositionStatus.ACTIVE, null, null, null, computed);
     }
 
     private InstrumentDto cryptoInstrument(String ticker, CryptoType cryptoType, CryptoNetwork cryptoNetwork) {
@@ -327,6 +327,6 @@ class PatrimoineBreakdownServiceTest {
         return new PositionDto(
                 1L, AssetCategory.CRYPTO, null, "Position", "USD", null,
                 instrument, null, null, null, null, null, null, null,
-                null, null, null, false, PositionStatus.ACTIVE, null, null, computed);
+                null, null, null, false, PositionStatus.ACTIVE, null, null, null, computed);
     }
 }

@@ -92,6 +92,9 @@ public class Position {
     @Column(nullable = false)
     private PositionStatus status;
 
+    /** Date de fermeture de la position (nullable). Renseigné automatiquement par PositionService.close(). */
+    private LocalDate closedDate;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
