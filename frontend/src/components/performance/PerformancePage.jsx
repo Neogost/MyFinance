@@ -377,6 +377,257 @@ function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, custom
   )
 }
 
+// ── Section pédagogique ──────────────────────────────────────────────────
+
+// Données de l'exemple pédagogique (constantes, hors rendu)
+const PEDAGOGY_YEARS = [
+  { label: 'An 1', return: +0.20, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', barColor: 'bg-emerald-400' },
+  { label: 'An 2', return: -0.10, color: 'text-red-600',     bg: 'bg-red-50 border-red-200',         barColor: 'bg-red-400' },
+  { label: 'An 3', return: +0.15, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', barColor: 'bg-emerald-400' },
+]
+// TWR = (1.20 × 0.90 × 1.15) − 1 = 24.2 %  →  annualisé ≈ 7.5 %/an
+// Alice : 10 000 début + 10 000 fin An 1 → 22 770 en fin An 3   (MWR ≈ 4.5 %/an)
+// Bob   : 10 000 début + 10 000 fin An 2 → 23 920 en fin An 3   (MWR ≈ 8.7 %/an)
+
+function YearBadge({ year }) {
+  const sign = year.return >= 0 ? '+' : ''
+  return (
+    <div className={`border rounded-lg px-3 py-2 text-center text-xs ${year.bg}`}>
+      <div className="font-semibold text-gray-600 mb-0.5">{year.label}</div>
+      <div className={`text-lg font-bold ${year.color}`}>{sign}{(year.return * 100).toFixed(0)} %</div>
+    </div>
+  )
+}
+
+function InvestorTimeline({ name, emoji, events, invested, final, mwr, highlight }) {
+  return (
+    <div className={`rounded-xl border p-4 ${highlight ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200 bg-gray-50'}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">{emoji}</span>
+        <span className="font-semibold text-gray-800 text-sm">{name}</span>
+      </div>
+      <div className="space-y-1.5 text-xs mb-3">
+        {events.map((e, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <span className={`shrink-0 font-mono font-semibold w-12 ${e.amount > 0 ? 'text-indigo-600' : e.amount < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+              {e.moment}
+            </span>
+            <span className="text-gray-600">{e.label}</span>
+            {e.amount !== 0 && (
+              <span className={`ml-auto font-semibold shrink-0 ${e.amount > 0 ? 'text-indigo-600' : 'text-red-500'}`}>
+                {e.amount > 0 ? '+' : ''}{e.amount.toLocaleString('fr-FR')} €
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-gray-200 pt-2 text-xs space-y-1">
+        <div className="flex justify-between text-gray-500">
+          <span>Total versé :</span>
+          <span className="font-semibold text-gray-700">{invested.toLocaleString('fr-FR')} €</span>
+        </div>
+        <div className="flex justify-between text-gray-500">
+          <span>Valeur finale :</span>
+          <span className="font-semibold text-emerald-700">{final.toLocaleString('fr-FR')} €</span>
+        </div>
+        <div className="flex justify-between font-semibold">
+          <span className="text-gray-600">MWR (son rendement vécu) :</span>
+          <span className={highlight ? 'text-indigo-700' : 'text-teal-700'}>{mwr}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PedagogySection() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left"
+      >
+        <span className="text-lg">📚</span>
+        <span className="font-semibold text-gray-700 text-sm flex-1">
+          TWR et MWR expliqués simplement — avec un exemple sur 3 ans
+        </span>
+        <span className="text-xs text-gray-400">{open ? '▲ réduire' : '▼ développer'}</span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-6 pt-2 space-y-6 bg-white text-sm">
+
+          {/* L'exemple de marché commun */}
+          <div>
+            <p className="text-gray-600 mb-3">
+              Imaginons un fonds (CW8, S&P 500, peu importe) qui fait exactement ça sur 3 ans :
+            </p>
+            <div className="grid grid-cols-3 gap-3 mb-3">
+              {PEDAGOGY_YEARS.map(y => <YearBadge key={y.label} year={y} />)}
+            </div>
+            <div className="bg-gray-100 rounded-lg px-4 py-2.5 text-xs text-gray-600 flex flex-wrap gap-x-6 gap-y-1">
+              <span>
+                <strong>TWR total</strong> = 1,20 × 0,90 × 1,15 − 1 = <span className="text-emerald-700 font-bold">+24,2 %</span> sur 3 ans
+              </span>
+              <span>
+                <strong>TWR annualisé</strong> = <span className="text-indigo-700 font-bold">+7,5 %/an</span>
+              </span>
+              <span className="text-gray-400 italic">Ce chiffre est le même pour tout le monde, quoi qu'il arrive.</span>
+            </div>
+          </div>
+
+          {/* Deux investisseurs */}
+          <div>
+            <p className="font-semibold text-gray-700 mb-1">Deux investisseurs, même fonds, résultats différents.</p>
+            <p className="text-gray-500 text-xs mb-3">
+              Alice et Bob investissent tous les deux <strong>20 000 € au total</strong> dans ce même fonds.
+              Mais pas au même moment.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InvestorTimeline
+                name="Alice — investit avant la baisse"
+                emoji="😬"
+                events={[
+                  { moment: 'Début',    label: 'Verse au départ',           amount: 10000 },
+                  { moment: 'Fin An 1', label: '→ 12 000 € (+20 %)',        amount: 0 },
+                  { moment: 'Fin An 1', label: 'Verse encore (timing raté !)', amount: 10000 },
+                  { moment: 'Fin An 2', label: '→ 19 800 € (−10 %)',        amount: 0 },
+                  { moment: 'Fin An 3', label: '→ 22 770 € (+15 %)',        amount: 0 },
+                ]}
+                invested={20000}
+                final={22770}
+                mwr="+4,5 %/an"
+                highlight={false}
+              />
+              <InvestorTimeline
+                name="Bob — investit après la baisse"
+                emoji="😎"
+                events={[
+                  { moment: 'Début',    label: 'Verse au départ',           amount: 10000 },
+                  { moment: 'Fin An 1', label: '→ 12 000 € (+20 %)',        amount: 0 },
+                  { moment: 'Fin An 2', label: '→ 10 800 € (−10 %)',        amount: 0 },
+                  { moment: 'Fin An 2', label: 'Verse encore (bon timing !)',amount: 10000 },
+                  { moment: 'Fin An 3', label: '→ 23 920 € (+15 %)',        amount: 0 },
+                ]}
+                invested={20000}
+                final={23920}
+                mwr="+8,7 %/an"
+                highlight={true}
+              />
+            </div>
+          </div>
+
+          {/* Conclusion */}
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
+            <p className="font-semibold text-indigo-800">Ce qu'il faut retenir</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <p className="font-semibold text-indigo-700 mb-1">TWR = la performance du fonds</p>
+                <p className="text-gray-600 leading-relaxed">
+                  Alice et Bob ont le <strong>même TWR : +7,5 %/an</strong>. C'est la performance
+                  du fonds lui-même, indépendamment de qui a investi quand. C'est ce qu'on compare à un indice (CW8, S&P 500…).
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-teal-700 mb-1">MWR = ta performance vécue</p>
+                <p className="text-gray-600 leading-relaxed">
+                  Alice a vécu <strong>+4,5 %/an</strong>, Bob <strong>+8,7 %/an</strong>.
+                  La différence vient uniquement du <em>timing de leurs versements</em>.
+                  Si tu investis beaucoup avant une baisse, ton MWR sera inférieur au TWR — et inversement.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 border-t border-indigo-200 pt-2">
+              💡 <strong>MWR &lt; TWR</strong> → tu as eu tendance à verser avant les baisses.
+              <span className="mx-2">·</span>
+              <strong>MWR &gt; TWR</strong> → ton timing de versement a été favorable.
+              <span className="mx-2">·</span>
+              <strong>MWR ≈ TWR</strong> → tu investis régulièrement (DCA) ou n'a fait qu'un seul versement.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Décomposition du rendement ───────────────────────────────────────────
+
+function ReturnDecomposition({ absoluteGainEur, totalDividendsEur, totalInvestedEur }) {
+  if (absoluteGainEur == null || totalDividendsEur == null || totalInvestedEur == null) return null
+  if (totalInvestedEur === 0) return null
+
+  const capitalGain  = absoluteGainEur - totalDividendsEur
+  const incomeGain   = totalDividendsEur
+  const totalGain    = absoluteGainEur
+
+  // Pourcentages par rapport au capital investi
+  const capitalPct   = (capitalGain  / totalInvestedEur * 100)
+  const incomePct    = (incomeGain   / totalInvestedEur * 100)
+
+  // Largeurs de la barre empilée (proportions du gain total — uniquement si gain > 0)
+  const showBar      = totalGain > 0 && incomeGain >= 0
+  const capitalBarW  = showBar ? Math.max(0, capitalGain) / totalGain * 100 : 0
+  const incomeBarW   = showBar ? Math.max(0, incomeGain)  / totalGain * 100 : 0
+
+  const fmtSigned = (v) => {
+    if (v == null) return '—'
+    const s = fmtEur(Math.abs(v))
+    return v >= 0 ? `+${s}` : `−${s}`
+  }
+  const fmtPctSigned = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} %`
+
+  return (
+    <div className="pt-1 border-t border-gray-100">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+          Décomposition du gain
+          <InfoTooltip
+            text="Le gain total se décompose en deux sources : la plus-value de marché (appréciation du cours des actifs) et les revenus perçus (dividendes, intérêts, airdrops). Les revenus sont déjà inclus dans la valeur actuelle (réinvestissement virtuel)."
+            width="w-96"
+          />
+        </span>
+        <span className={`text-xs font-semibold ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+          Total {fmtSigned(totalGain)}
+        </span>
+      </div>
+
+      {/* Barre empilée */}
+      {showBar && (
+        <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 mb-3">
+          <div className="bg-indigo-500 transition-all" style={{ width: `${capitalBarW}%` }} />
+          <div className="bg-teal-500 transition-all"   style={{ width: `${incomeBarW}%`  }} />
+        </div>
+      )}
+
+      {/* Deux lignes de décomposition */}
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="flex items-start gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0 mt-0.5" />
+          <div>
+            <div className="text-gray-500 mb-0.5">Plus-value de marché</div>
+            <div className={`font-semibold ${capitalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+              {fmtSigned(capitalGain)}
+            </div>
+            <div className="text-gray-400">{fmtPctSigned(capitalPct)} du versé</div>
+          </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-teal-500 shrink-0 mt-0.5" />
+          <div>
+            <div className="text-gray-500 mb-0.5">Revenus perçus</div>
+            <div className="font-semibold text-teal-700">
+              {fmtSigned(incomeGain)}
+            </div>
+            <div className="text-gray-400">{fmtPctSigned(incomePct)} du versé</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Section par catégorie ─────────────────────────────────────────────────
 
 const CARD_COLORS = {
@@ -864,6 +1115,12 @@ export default function PerformancePage() {
                 <p className="font-medium mt-0.5 text-teal-700">{fmtEur(data.totalDividendsEur)}</p>
               </div>
             </div>
+
+            <ReturnDecomposition
+              absoluteGainEur={data.absoluteGainEur}
+              totalDividendsEur={data.totalDividendsEur}
+              totalInvestedEur={data.totalInvestedEur}
+            />
           </div>
 
           {/* Avertissements */}
@@ -913,6 +1170,9 @@ export default function PerformancePage() {
           <p className="text-xs text-gray-400 text-center">
             Calculé le {new Date(data.computedAt).toLocaleString('fr-FR')}
           </p>
+
+          {/* Section pédagogique */}
+          <PedagogySection />
         </>
       )}
     </div>

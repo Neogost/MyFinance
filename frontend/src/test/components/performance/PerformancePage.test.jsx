@@ -200,6 +200,37 @@ describe('PerformancePage', () => {
     expect(screen.getByText('au')).toBeInTheDocument()
   })
 
+  // ── Décomposition du rendement ───────────────────────────────────────────
+
+  it('affiche la décomposition du gain (marché + revenus)', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Décomposition du gain')).toBeInTheDocument()
+      expect(screen.getByText('Plus-value de marché')).toBeInTheDocument()
+      expect(screen.getByText('Revenus perçus')).toBeInTheDocument()
+    })
+  })
+
+  // ── Section pédagogique ──────────────────────────────────────────────────
+
+  it('affiche la section pédagogique dépliable et son contenu', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/TWR et MWR expliqués simplement/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText(/TWR et MWR expliqués simplement/i))
+
+    expect(screen.getByText(/Ce qu'il faut retenir/i)).toBeInTheDocument()
+    // "Alice" et "Bob" apparaissent dans plusieurs éléments (carte + texte) — vérifier au moins 1
+    expect(screen.getAllByText(/Alice/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText(/Bob/i).length).toBeGreaterThanOrEqual(1)
+  })
+
   // ── Graphique TWR cumulé ──────────────────────────────────────────────────
 
   it('affiche le graphique TWR cumulé quand il y a des mois inclus', async () => {
