@@ -9,12 +9,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/patrimoine/performance")
@@ -24,16 +25,23 @@ public class PerformanceController {
 
     private final PerformanceService performanceService;
 
-    @Operation(summary = "Performance globale du patrimoine (TWR + MWR)",
-            description = "Calcul depuis le premier ordre jusqu'à aujourd'hui. ADMIN uniquement.")
+    @Operation(summary = "Performance du patrimoine (TWR + MWR)",
+            description = """
+                    Calcule la performance sur la période spécifiée.
+                    Sans paramètres : depuis le premier ordre jusqu'à aujourd'hui (Global).
+                    Avec `from` : période restreinte — snapshot d'ouverture synthétique à la date demandée.
+                    ADMIN uniquement.
+                    """)
     @ApiResponse(responseCode = "200", description = "Performance calculée",
             content = @Content(schema = @Schema(implementation = PerformanceDto.class)))
     @ApiResponse(responseCode = "401", description = "Non authentifié")
     @ApiResponse(responseCode = "403", description = "Rôle ADMIN requis")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PerformanceDto> getGlobalPerformance(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(performanceService.computeGlobal(currentUser));
+    public ResponseEntity<PerformanceDto> getPerformance(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(performanceService.computeGlobal(currentUser, from, to));
     }
 }

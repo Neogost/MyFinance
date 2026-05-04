@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.*;
+import com.myfinance.dto.CategoryPerformanceDto;
 import com.myfinance.dto.MonthlyBreakdownDto;
 import com.myfinance.dto.PerformanceDto;
 import com.myfinance.repository.PositionOrderRepository;
@@ -22,10 +23,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Calcul de la performance patrimoniale globale (TWR + MWR).
+ * Calcul de la performance patrimoniale globale et par catégorie (TWR + MWR).
  *
- * Stratégie anti N+1 : tous les historiques (prix, taux, snapshots, ordres)
- * sont chargés en batch au début du calcul et transmis par référence à ValuationService.
+ * Stratégie anti N+1 : les historiques (prix, taux, snapshots, ordres) sont chargés
+ * en batch une seule fois, puis réutilisés pour le calcul global ET par catégorie.
+ *
+ * Deux modes :
+ *  - Global (requestedFrom=null) : depuis le premier ordre, règle "skip mois 1" (V_début=0).
+ *  - Période restreinte (requestedFrom postérieur au premier ordre) : snapshot d'ouverture
+ *    synthétique à openingDate (= dernier jour du mois précédant la période).
  */
 @Slf4j
 @Service
@@ -34,11 +40,9 @@ public class PerformanceService {
 
     private static final ZoneId PARIS = ZoneId.of("Europe/Paris");
 
-    /** Catégories incluses dans le calcul de performance. */
-    private static final Set<AssetCategory> ELIGIBLE_CATEGORIES = Set.of(
-            AssetCategory.BOURSE, AssetCategory.CRYPTO,
-            AssetCategory.LIVRET
-            // IMMO_PAPIER provisoirement exclu — calcul en cours de stabilisation (bug effectiveFrom)
+    private static final List<AssetCategory> ELIGIBLE_CATEGORIES = List.of(
+            AssetCategory.BOURSE, AssetCategory.CRYPTO, AssetCategory.LIVRET
+            // IMMO_PAPIER provisoirement exclu
     );
 
     private final PositionRepository              positionRepository;
@@ -47,13 +51,30 @@ public class PerformanceService {
     private final ExchangeRateHistoryService      rateHistoryService;
     private final ValuationService                valuationService;
 
+    // ── Résultat intermédiaire d'un calcul de tranche (global ou catégorie) ───
+
+    private record SliceResult(
+            LocalDate firstChainingMonth,
+            Double twrAnnualized,
+            Double mwrAnnualized,
+            BigDecimal currentValue,
+            BigDecimal totalInvested,
+            BigDecimal totalDividends,
+            List<MonthlyBreakdownDto> breakdown
+    ) {}
+
     // ── Point d'entrée ────────────────────────────────────────────────────────
 
-    public PerformanceDto computeGlobal(User user) {
+    /**
+     * @param requestedFrom date de début (null = Global depuis le premier ordre)
+     * @param requestedTo   date de fin   (null = aujourd'hui)
+     */
+    public PerformanceDto computeGlobal(User user, LocalDate requestedFrom, LocalDate requestedTo) {
         long t0 = System.currentTimeMillis();
         log.info("[user:{}] Calcul performance démarré", user.getId());
 
-        LocalDate today = LocalDate.now(PARIS);
+        LocalDate today       = LocalDate.now(PARIS);
+        LocalDate effectiveTo = (requestedTo != null && requestedTo.isBefore(today)) ? requestedTo : today;
         List<String> warnings = new ArrayList<>();
 
         // 1 — Positions éligibles (toutes statuts — CLOSED inclus pour historique)
@@ -64,13 +85,12 @@ public class PerformanceService {
 
         if (positions.isEmpty()) {
             warnings.add("Aucune position éligible au calcul (BOURSE, CRYPTO, LIVRET, IMMO_PAPIER requise)");
-            return emptyResult(today, warnings);
+            return emptyResult(effectiveTo, warnings);
         }
 
-        // 2 — Ordres en batch (évite N+1 sur position.getOrders())
+        // 2 — Ordres en batch
         List<PositionOrder> allOrders = orderRepository.findByPositionInOrderByOrderDateAsc(positions);
 
-        // Injection des ordres dans les positions (évite les lazy loads ultérieurs)
         Map<Long, List<PositionOrder>> ordersByPosition = allOrders.stream()
                 .collect(Collectors.groupingBy(o -> o.getPosition().getId()));
         for (Position pos : positions) {
@@ -78,154 +98,259 @@ public class PerformanceService {
             pos.getOrders().addAll(ordersByPosition.getOrDefault(pos.getId(), List.of()));
         }
 
-        // 3 — Date de début et instruments / devises
-        Optional<LocalDate> firstOrderDateOpt = allOrders.stream()
-                .map(PositionOrder::getOrderDate)
-                .min(Comparator.naturalOrder());
-
-        if (firstOrderDateOpt.isEmpty()) {
+        if (allOrders.isEmpty()) {
             warnings.add("Aucun ordre trouvé pour les positions éligibles");
-            return emptyResult(today, warnings);
+            return emptyResult(effectiveTo, warnings);
         }
-        LocalDate firstOrderDate = firstOrderDateOpt.get();
 
-        // Batch range : inclut le mois précédant le premier versement pour V_début
-        LocalDate batchFrom = firstOrderDate.withDayOfMonth(1).minusMonths(2);
-        LocalDate batchTo   = today;
+        // 3 — Chargement batch prix / taux (depuis le début de l'historique, une seule fois)
+        LocalDate firstOrderDateGlobal = allOrders.stream()
+                .map(PositionOrder::getOrderDate).min(Comparator.naturalOrder()).orElse(effectiveTo);
+        LocalDate batchFrom = firstOrderDateGlobal.withDayOfMonth(1).minusMonths(2);
 
-        // Instruments BOURSE/CRYPTO
         List<Instrument> instruments = positions.stream()
-                .filter(p -> p.getInstrument() != null)
-                .map(Position::getInstrument)
-                .distinct()
-                .toList();
-
-        // Devises
+                .filter(p -> p.getInstrument() != null).map(Position::getInstrument)
+                .distinct().toList();
         List<String> currencies = positions.stream()
                 .map(Position::getCurrency)
                 .filter(c -> c != null && !"EUR".equalsIgnoreCase(c))
-                .distinct()
-                .toList();
+                .distinct().toList();
 
-        // 4 — Chargement batch prix et taux → NavigableMap pour floor lookup
-        Map<Long, NavigableMap<LocalDate, BigDecimal>> priceMap = buildPriceMap(instruments, batchFrom, batchTo);
-        Map<String, NavigableMap<LocalDate, BigDecimal>> rateMap = buildRateMap(currencies, batchFrom, batchTo);
-
-        // Snapshots IMMO_PAPIER
-        List<Position> immoPapier = positions.stream()
-                .filter(p -> p.getCategory() == AssetCategory.IMMO_PAPIER)
-                .toList();
+        Map<Long, NavigableMap<LocalDate, BigDecimal>> priceMap    = buildPriceMap(instruments, batchFrom, effectiveTo);
+        Map<String, NavigableMap<LocalDate, BigDecimal>> rateMap   = buildRateMap(currencies, batchFrom, effectiveTo);
         Map<Long, NavigableMap<LocalDate, BigDecimal>> snapshotMap =
-                valuationService.loadSnapshotBatch(immoPapier);
+                valuationService.loadSnapshotBatch(
+                        positions.stream().filter(p -> p.getCategory() == AssetCategory.IMMO_PAPIER).toList());
 
-        // 5 — Chaînage TWR mois par mois
-        // Règle métier #8 : le mois du premier versement est exclu (V_début = 0)
-        LocalDate firstChainingMonth = firstOrderDate.withDayOfMonth(1).plusMonths(1);
-        if (firstChainingMonth.isAfter(today)) {
-            warnings.add("Période trop courte : le premier versement date de ce mois — chaînage TWR impossible");
-            return emptyResult(today, warnings);
+        // 4 — Calcul global (toutes positions)
+        SliceResult global = computeSlice(positions, allOrders, requestedFrom, effectiveTo,
+                priceMap, rateMap, snapshotMap, warnings);
+
+        if (global.firstChainingMonth() == null) {
+            // La tranche globale a retourné un résultat vide (période trop courte, etc.)
+            return emptyResult(effectiveTo, warnings);
         }
 
-        warnings.add(String.format(
-                "Mois de %s exclu du chaînage TWR : c'est le mois du premier versement (V_début = 0, formule instable).",
-                firstOrderDate.withDayOfMonth(1).toString().substring(0, 7)));
+        // 5 — Calcul par catégorie (réutilise les mêmes batch maps)
+        List<CategoryPerformanceDto> byCategory = new ArrayList<>();
+        for (AssetCategory catEnum : ELIGIBLE_CATEGORIES) {
+            Set<Long> catIds = positions.stream()
+                    .filter(p -> p.getCategory() == catEnum)
+                    .map(Position::getId)
+                    .collect(Collectors.toSet());
+            if (catIds.isEmpty()) continue;
 
-        List<MonthlyBreakdownDto> breakdown = new ArrayList<>();
-        List<Double> monthlyReturns = new ArrayList<>();
+            List<Position> catPositions = positions.stream()
+                    .filter(p -> catIds.contains(p.getId())).toList();
+            List<PositionOrder> catOrders = allOrders.stream()
+                    .filter(o -> catIds.contains(o.getPosition().getId())).toList();
 
-        // Totaux + flux XIRR calculés sur TOUS les ordres (y compris le mois exclu du TWR)
-        // Le MWR doit inclure le premier versement même si ce mois est exclu du chaînage TWR.
-        BigDecimal totalInvested  = BigDecimal.ZERO;
+            List<String> catWarnings = new ArrayList<>(); // warnings locaux, non remontés globalement
+            SliceResult catResult = computeSlice(catPositions, catOrders, requestedFrom, effectiveTo,
+                    priceMap, rateMap, snapshotMap, catWarnings);
+
+            if (catResult.firstChainingMonth() == null) continue; // pas de données exploitables
+
+            BigDecimal absGain = catResult.currentValue().subtract(catResult.totalInvested())
+                    .setScale(2, RoundingMode.HALF_UP);
+            byCategory.add(new CategoryPerformanceDto(
+                    catEnum.name(),
+                    catResult.twrAnnualized(),
+                    catResult.mwrAnnualized(),
+                    catResult.currentValue().setScale(2, RoundingMode.HALF_UP),
+                    catResult.totalInvested().setScale(2, RoundingMode.HALF_UP),
+                    absGain,
+                    catResult.totalDividends().setScale(2, RoundingMode.HALF_UP)
+            ));
+        }
+
+        // 6 — Cap warnings à 20
+        final int MAX_WARNINGS = 20;
+        List<String> finalWarnings = warnings;
+        if (warnings.size() > MAX_WARNINGS) {
+            finalWarnings = new ArrayList<>(warnings.subList(0, MAX_WARNINGS));
+            finalWarnings.add(String.format(
+                    "… et %d autres avertissements non affichés (données manquantes — backfill recommandé).",
+                    warnings.size() - MAX_WARNINGS));
+        }
+
+        BigDecimal absoluteGain = global.currentValue().subtract(global.totalInvested());
+        double durationYears = ChronoUnit.DAYS.between(global.firstChainingMonth(), effectiveTo) / 365.25;
+
+        long durationMs = System.currentTimeMillis() - t0;
+        log.info("[user:{}] Calcul performance terminé en {} ms — TWR={}, MWR={}, période=[{} → {}], {} warning(s), {} catégorie(s)",
+                user.getId(), durationMs, global.twrAnnualized(), global.mwrAnnualized(),
+                global.firstChainingMonth(), effectiveTo, finalWarnings.size(), byCategory.size());
+
+        return new PerformanceDto(
+                Instant.now(),
+                global.firstChainingMonth(), effectiveTo,
+                Math.max(0, durationYears),
+                global.twrAnnualized(),
+                global.mwrAnnualized(),
+                global.totalInvested().setScale(2, RoundingMode.HALF_UP),
+                global.currentValue().setScale(2, RoundingMode.HALF_UP),
+                absoluteGain.setScale(2, RoundingMode.HALF_UP),
+                global.totalDividends().setScale(2, RoundingMode.HALF_UP),
+                finalWarnings,
+                global.breakdown(),
+                byCategory
+        );
+    }
+
+    // ── Calcul d'une tranche (global ou catégorie) ────────────────────────────
+
+    /**
+     * Calcule TWR + MWR pour un sous-ensemble de positions, en réutilisant les batch maps déjà chargés.
+     * Retourne un SliceResult avec firstChainingMonth=null si la période est inexploitable.
+     */
+    private SliceResult computeSlice(
+            List<Position> positions,
+            List<PositionOrder> orders,   // triés par date, filtrés sur ces positions
+            LocalDate requestedFrom,
+            LocalDate effectiveTo,
+            Map<Long, NavigableMap<LocalDate, BigDecimal>> priceMap,
+            Map<String, NavigableMap<LocalDate, BigDecimal>> rateMap,
+            Map<Long, NavigableMap<LocalDate, BigDecimal>> snapshotMap,
+            List<String> warnings) {
+
+        if (positions.isEmpty() || orders.isEmpty()) return emptySlice();
+
+        // Date du premier ordre pour cette tranche
+        LocalDate firstOrderDate = orders.stream()
+                .map(PositionOrder::getOrderDate).min(Comparator.naturalOrder()).orElse(effectiveTo);
+
+        // Mode et bornes
+        boolean isGlobal = requestedFrom == null || !requestedFrom.isAfter(firstOrderDate);
+        LocalDate firstChainingMonth;
+        LocalDate openingDate;
+
+        if (isGlobal) {
+            firstChainingMonth = firstOrderDate.withDayOfMonth(1).plusMonths(1);
+            openingDate = firstChainingMonth.minusDays(1);
+            if (firstChainingMonth.isAfter(effectiveTo)) return emptySlice();
+            warnings.add(String.format(
+                    "Mois de %s exclu du chaînage TWR : c'est le mois du premier versement (V_début = 0, formule instable).",
+                    firstOrderDate.withDayOfMonth(1).toString().substring(0, 7)));
+        } else {
+            firstChainingMonth = requestedFrom.withDayOfMonth(1);
+            openingDate = firstChainingMonth.minusDays(1);
+            if (firstChainingMonth.isAfter(effectiveTo)) return emptySlice();
+        }
+
+        // Snapshot d'ouverture (mode restreint)
+        BigDecimal openingValue = BigDecimal.ZERO;
+        if (!isGlobal) {
+            BigDecimal ov = valuationService.valuePortfolioAt(
+                    positions, openingDate, priceMap, rateMap, snapshotMap, warnings);
+            openingValue = ov != null ? ov : BigDecimal.ZERO;
+        }
+
+        // Totaux + flux XIRR
+        BigDecimal totalInvested  = isGlobal ? BigDecimal.ZERO : openingValue;
         BigDecimal totalDividends = BigDecimal.ZERO;
         Map<LocalDate, Double> xirrByDate = new TreeMap<>();
-        for (PositionOrder order : allOrders) {
-            double amtEur = order.getAmountEur() != null
-                    ? order.getAmountEur().doubleValue()
-                    : order.getAmount().doubleValue();
-            switch (order.getOrderType()) {
-                case BUY, DEPOSIT, ABONDEMENT  -> {
-                    totalInvested = totalInvested.add(BigDecimal.valueOf(amtEur));
-                    xirrByDate.merge(order.getOrderDate(), -amtEur, Double::sum); // sortie de poche = négatif
+
+        if (isGlobal) {
+            for (PositionOrder order : orders) {
+                if (order.getOrderDate().isAfter(effectiveTo)) continue;
+                double amt = amtEur(order);
+                switch (order.getOrderType()) {
+                    case BUY, DEPOSIT, ABONDEMENT -> {
+                        totalInvested = totalInvested.add(BigDecimal.valueOf(amt));
+                        xirrByDate.merge(order.getOrderDate(), -amt, Double::sum);
+                    }
+                    case SELL, WITHDRAWAL -> {
+                        totalInvested = totalInvested.subtract(BigDecimal.valueOf(amt));
+                        xirrByDate.merge(order.getOrderDate(), amt, Double::sum);
+                    }
+                    case INTEREST, DIVIDEND, AIRDROP ->
+                        totalDividends = totalDividends.add(BigDecimal.valueOf(amt));
+                    default -> { /* pas de flux */ }
                 }
-                case SELL, WITHDRAWAL -> {
-                    totalInvested = totalInvested.subtract(BigDecimal.valueOf(amtEur));
-                    xirrByDate.merge(order.getOrderDate(),  amtEur, Double::sum); // entrée de poche = positif
+            }
+        } else {
+            if (openingValue.compareTo(BigDecimal.ZERO) != 0) {
+                xirrByDate.put(openingDate, -openingValue.doubleValue());
+            }
+            for (PositionOrder order : orders) {
+                LocalDate d = order.getOrderDate();
+                if (d.isBefore(firstChainingMonth) || d.isAfter(effectiveTo)) continue;
+                double amt = amtEur(order);
+                switch (order.getOrderType()) {
+                    case BUY, DEPOSIT, ABONDEMENT -> {
+                        totalInvested = totalInvested.add(BigDecimal.valueOf(amt));
+                        xirrByDate.merge(d, -amt, Double::sum);
+                    }
+                    case SELL, WITHDRAWAL -> {
+                        totalInvested = totalInvested.subtract(BigDecimal.valueOf(amt));
+                        xirrByDate.merge(d, amt, Double::sum);
+                    }
+                    case INTEREST, DIVIDEND, AIRDROP ->
+                        totalDividends = totalDividends.add(BigDecimal.valueOf(amt));
+                    default -> { /* pas de flux */ }
                 }
-                case INTEREST, DIVIDEND, AIRDROP -> totalDividends = totalDividends.add(BigDecimal.valueOf(amtEur));
-                default -> { /* pas de flux */ }
             }
         }
+
         List<CashflowPoint> xirrFlows = new ArrayList<>();
         for (Map.Entry<LocalDate, Double> e : xirrByDate.entrySet()) {
             xirrFlows.add(new CashflowPoint(e.getKey(), e.getValue()));
         }
 
+        // Chaînage TWR mois par mois
+        List<MonthlyBreakdownDto> breakdown = new ArrayList<>();
+        List<Double> monthlyReturns = new ArrayList<>();
         LocalDate monthStart = firstChainingMonth;
-        while (!monthStart.isAfter(today.withDayOfMonth(1))) {
-            boolean partial = monthStart.equals(today.withDayOfMonth(1));
-            LocalDate monthEnd = partial ? today : monthStart.with(TemporalAdjusters.lastDayOfMonth());
-            LocalDate prevMonthEnd = monthStart.minusDays(1);
-            int daysInMonth = partial ? today.getDayOfMonth() : monthStart.lengthOfMonth();
 
-            // V_début et V_fin
-            BigDecimal vDebutBD = valuationService.valuePortfolioAt(
-                    positions, prevMonthEnd, priceMap, rateMap, snapshotMap, warnings);
+        while (!monthStart.isAfter(effectiveTo.withDayOfMonth(1))) {
+            boolean partial   = monthStart.equals(effectiveTo.withDayOfMonth(1));
+            LocalDate monthEnd    = partial ? effectiveTo : monthStart.with(TemporalAdjusters.lastDayOfMonth());
+            LocalDate prevMonthEnd = monthStart.minusDays(1);
+            int daysInMonth   = partial ? effectiveTo.getDayOfMonth() : monthStart.lengthOfMonth();
+
+            BigDecimal vDebutBD = (!isGlobal && monthStart.equals(firstChainingMonth))
+                    ? openingValue
+                    : valuationService.valuePortfolioAt(positions, prevMonthEnd, priceMap, rateMap, snapshotMap, warnings);
             BigDecimal vFinBD = valuationService.valuePortfolioAt(
                     positions, monthEnd, priceMap, rateMap, snapshotMap, warnings);
 
             double vDebut = vDebutBD != null ? vDebutBD.doubleValue() : 0;
             double vFin   = vFinBD   != null ? vFinBD.doubleValue()   : 0;
 
-            // Flux externes du mois nettés par date (BUY/DEPOSIT/SELL/WITHDRAWAL/ABONDEMENT)
             Map<LocalDate, Double> externalByDate = new TreeMap<>();
-
-            for (PositionOrder order : allOrders) {
+            for (PositionOrder order : orders) {
                 LocalDate d = order.getOrderDate();
                 if (d.isBefore(monthStart) || d.isAfter(monthEnd)) continue;
-
-                double amtEur = order.getAmountEur() != null
-                        ? order.getAmountEur().doubleValue()
-                        : order.getAmount().doubleValue();
-
+                double amt = amtEur(order);
                 switch (order.getOrderType()) {
-                    case BUY, DEPOSIT, ABONDEMENT -> externalByDate.merge(d,  amtEur, Double::sum);
-                    case SELL, WITHDRAWAL         -> externalByDate.merge(d, -amtEur, Double::sum);
-                    default -> { /* INTEREST/DIVIDEND/AIRDROP : gains internes, déjà comptés */ }
+                    case BUY, DEPOSIT, ABONDEMENT -> externalByDate.merge(d,  amt, Double::sum);
+                    case SELL, WITHDRAWAL         -> externalByDate.merge(d, -amt, Double::sum);
+                    default -> { /* gains internes */ }
                 }
             }
 
-            // Liste des cashflows Modified Dietz (flux du mois uniquement)
             List<Cashflow> monthCashflows = new ArrayList<>();
             double fNet = 0;
             for (Map.Entry<LocalDate, Double> e : externalByDate.entrySet()) {
-                int day = e.getKey().getDayOfMonth();
-                monthCashflows.add(new Cashflow(day, e.getValue()));
+                monthCashflows.add(new Cashflow(e.getKey().getDayOfMonth(), e.getValue()));
                 fNet += e.getValue();
             }
 
-            // Calcul R_m
             Double rm = ModifiedDietzCalculator.subPeriodReturn(vDebut, vFin, monthCashflows, daysInMonth);
             String monthLabel = monthStart.toString().substring(0, 7);
 
             if (rm == null) {
-                log.warn("[user:{}] Mois {} : dénominateur ≤ 0 — sous-période exclue", user.getId(), monthLabel);
                 warnings.add("Mois " + monthLabel + " exclu : retrait total détecté (dénominateur ≤ 0)");
-                breakdown.add(MonthlyBreakdownDto.excluded(monthLabel,
-                        "Retrait total détecté (dénominateur ≤ 0)"));
+                breakdown.add(MonthlyBreakdownDto.excluded(monthLabel, "Retrait total détecté (dénominateur ≤ 0)"));
             } else if (vDebut == 0 && vFin == 0 && fNet == 0) {
-                // Mois sans activité ni valeur
-                breakdown.add(MonthlyBreakdownDto.excluded(monthLabel,
-                        "Aucune position active ni cashflow"));
+                breakdown.add(MonthlyBreakdownDto.excluded(monthLabel, "Aucune position active ni cashflow"));
             } else {
-                log.debug("[user:{}] Mois {} : V_début={}, V_fin={}, F_net={}, R_m={}",
-                        user.getId(), monthLabel, vDebut, vFin, fNet, rm);
                 monthlyReturns.add(rm);
-
                 double weightedFlows = 0;
                 for (Cashflow c : monthCashflows) {
                     weightedFlows += (double)(daysInMonth - c.dayOfMonth()) / daysInMonth * c.amountEur();
                 }
-
                 breakdown.add(MonthlyBreakdownDto.included(monthLabel,
                         BigDecimal.valueOf(vDebut).setScale(2, RoundingMode.HALF_UP),
                         BigDecimal.valueOf(vFin).setScale(2, RoundingMode.HALF_UP),
@@ -241,65 +366,44 @@ public class PerformanceService {
             warnings.add("Aucun mois inclus dans le chaînage TWR — TWR non calculable");
         }
 
-        // 6 — TWR annualisé
+        // TWR annualisé
         Double twrAnnualized = null;
         if (!monthlyReturns.isEmpty()) {
             double twrTotal = ModifiedDietzCalculator.chainReturns(monthlyReturns);
-            long totalDays  = ChronoUnit.DAYS.between(firstChainingMonth.minusDays(1), today);
+            long totalDays  = ChronoUnit.DAYS.between(openingDate, effectiveTo);
             twrAnnualized   = ModifiedDietzCalculator.annualize(twrTotal, totalDays);
         }
 
-        // 7 — MWR (XIRR) : ajouter la liquidation virtuelle
+        // MWR (XIRR) + liquidation virtuelle
         BigDecimal currentValue = valuationService.valuePortfolioAt(
-                positions, today, priceMap, rateMap, snapshotMap, warnings);
+                positions, effectiveTo, priceMap, rateMap, snapshotMap, warnings);
         if (currentValue == null) currentValue = BigDecimal.ZERO;
-        xirrFlows.add(new CashflowPoint(today, currentValue.doubleValue()));
+        xirrFlows.add(new CashflowPoint(effectiveTo, currentValue.doubleValue()));
 
         Double mwrAnnualized = null;
         if (xirrFlows.size() >= 2) {
             mwrAnnualized = XirrSolver.solve(xirrFlows);
             if (mwrAnnualized == null) {
-                String msg = "MWR (XIRR) non convergent — les cashflows ne permettent pas de trouver un taux";
-                warnings.add(msg);
-                log.warn("[user:{}] {}", user.getId(), msg);
+                warnings.add("MWR (XIRR) non convergent — les cashflows ne permettent pas de trouver un taux");
             }
         }
 
-        // 8 — Métriques résumé
-        BigDecimal absoluteGain = currentValue.subtract(totalInvested);
-        LocalDate from = firstChainingMonth;
-        double durationYears = ChronoUnit.DAYS.between(from, today) / 365.25;
-
-        // 9 — Cap warnings : 20 maximum pour éviter une UI illisible
-        final int MAX_WARNINGS = 20;
-        List<String> finalWarnings = warnings;
-        if (warnings.size() > MAX_WARNINGS) {
-            finalWarnings = new ArrayList<>(warnings.subList(0, MAX_WARNINGS));
-            finalWarnings.add(String.format(
-                    "… et %d autres avertissements non affichés (données manquantes — backfill recommandé).",
-                    warnings.size() - MAX_WARNINGS));
-        }
-
-        long durationMs = System.currentTimeMillis() - t0;
-        log.info("[user:{}] Calcul performance terminé en {} ms — TWR={}, MWR={}, période=[{} → {}], {} warning(s)",
-                user.getId(), durationMs, twrAnnualized, mwrAnnualized, from, today, finalWarnings.size());
-
-        return new PerformanceDto(
-                Instant.now(),
-                from, today,
-                Math.max(0, durationYears),
-                twrAnnualized,
-                mwrAnnualized,
-                totalInvested.setScale(2, RoundingMode.HALF_UP),
-                currentValue.setScale(2, RoundingMode.HALF_UP),
-                absoluteGain.setScale(2, RoundingMode.HALF_UP),
-                totalDividends.setScale(2, RoundingMode.HALF_UP),
-                finalWarnings,
-                breakdown
-        );
+        return new SliceResult(firstChainingMonth, twrAnnualized, mwrAnnualized,
+                currentValue, totalInvested, totalDividends, breakdown);
     }
 
-    // ── Helpers batch ─────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private SliceResult emptySlice() {
+        return new SliceResult(null, null, null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of());
+    }
+
+    private static double amtEur(PositionOrder order) {
+        return order.getAmountEur() != null
+                ? order.getAmountEur().doubleValue()
+                : order.getAmount().doubleValue();
+    }
 
     private Map<Long, NavigableMap<LocalDate, BigDecimal>> buildPriceMap(
             List<Instrument> instruments, LocalDate from, LocalDate to) {
@@ -307,7 +411,6 @@ public class PerformanceService {
         Map<Long, NavigableMap<LocalDate, BigDecimal>> result = new HashMap<>();
         Map<String, BigDecimal> flat = priceHistoryService.loadPriceBatch(instruments, from, to);
         for (Map.Entry<String, BigDecimal> e : flat.entrySet()) {
-            // clé format : "instrumentId|YYYY-MM-DD"
             String[] parts = e.getKey().split("\\|");
             Long instrumentId = Long.parseLong(parts[0]);
             LocalDate date = LocalDate.parse(parts[1]);
@@ -322,7 +425,6 @@ public class PerformanceService {
         Map<String, NavigableMap<LocalDate, BigDecimal>> result = new HashMap<>();
         Map<String, BigDecimal> flat = rateHistoryService.loadRateBatch(currencies, from, to);
         for (Map.Entry<String, BigDecimal> e : flat.entrySet()) {
-            // clé format : "CURRENCY|YYYY-MM-DD"
             String[] parts = e.getKey().split("\\|");
             String currency = parts[0];
             LocalDate date  = LocalDate.parse(parts[1]);
@@ -331,12 +433,12 @@ public class PerformanceService {
         return result;
     }
 
-    private PerformanceDto emptyResult(LocalDate today, List<String> warnings) {
+    private PerformanceDto emptyResult(LocalDate to, List<String> warnings) {
         return new PerformanceDto(
-                Instant.now(), today, today, 0,
+                Instant.now(), to, to, 0,
                 null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                warnings, List.of()
+                warnings, List.of(), List.of()
         );
     }
 }

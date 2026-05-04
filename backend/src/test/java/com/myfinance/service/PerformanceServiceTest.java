@@ -45,7 +45,7 @@ class PerformanceServiceTest {
     void aucunePositionEligible_twrEtMwrNull() {
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
         assertThat(dto.twrAnnualized()).isNull();
         assertThat(dto.mwrAnnualized()).isNull();
@@ -58,7 +58,7 @@ class PerformanceServiceTest {
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(p));
         when(orderRepository.findByPositionInOrderByOrderDateAsc(any())).thenReturn(List.of());
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
         assertThat(dto.twrAnnualized()).isNull();
         assertThat(dto.mwrAnnualized()).isNull();
@@ -80,7 +80,7 @@ class PerformanceServiceTest {
 
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(immo));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
         assertThat(dto.twrAnnualized()).isNull();
         assertThat(dto.warnings()).anyMatch(w -> w.contains("Aucune position éligible"));
@@ -93,29 +93,25 @@ class PerformanceServiceTest {
         Position p = livretPosition();
         LocalDate orderDate = LocalDate.of(2024, 1, 15);
 
-        // BUY +500 et SELL -300 → flux net +200 pour TWR
-        PositionOrder buy  = order(p, orderDate, OrderType.DEPOSIT, new BigDecimal("500"));
+        PositionOrder buy  = order(p, orderDate, OrderType.DEPOSIT,    new BigDecimal("500"));
         PositionOrder sell = order(p, orderDate, OrderType.WITHDRAWAL, new BigDecimal("300"));
 
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(p));
         when(orderRepository.findByPositionInOrderByOrderDateAsc(any()))
                 .thenReturn(List.of(buy, sell));
         when(valuationService.loadSnapshotBatch(any())).thenReturn(Map.of());
-
-        // On mocke la valuation pour que le calcul aille jusqu'au bout
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(200));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
-        // Le totalInvesti = +500 - 300 = +200 (le net)
         assertThat(dto.totalInvestedEur().doubleValue()).isCloseTo(200, within(0.01));
     }
 
-    // ── Cas : règle métier #8 — mois du premier versement exclu ──────────────
+    // ── Cas : règle métier #8 — mois du premier versement exclu (mode Global) ─
 
     @Test
-    void premierMoisExclu_warningEmis() {
+    void modeGlobal_premierMoisExclu_warningEmis() {
         Position p = livretPosition();
         LocalDate firstOrder = LocalDate.of(2024, 1, 15);
         PositionOrder dep = order(p, firstOrder, OrderType.DEPOSIT, new BigDecimal("1000"));
@@ -126,18 +122,66 @@ class PerformanceServiceTest {
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1010));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
-        // Le warning mentionne janvier 2024 exclu
         assertThat(dto.warnings()).anyMatch(w -> w.contains("2024-01") && w.contains("exclu"));
-        // La date de début du chaînage = 1er février 2024
         assertThat(dto.from()).isAfterOrEqualTo(LocalDate.of(2024, 2, 1));
     }
 
-    // ── Cas : TWR = MWR pour versement unique ─────────────────────────────────
+    // ── Cas : mode période restreinte — pas de skip, snapshot d'ouverture ─────
 
     @Test
-    void versementUnique_twrEgalMwr() {
+    void modePeriodeRestreinte_pasDeSkip_snapshotOuverture() {
+        Position p = livretPosition();
+        // Premier ordre en 2022
+        LocalDate firstOrder = LocalDate.of(2022, 6, 1);
+        PositionOrder dep2022 = order(p, firstOrder, OrderType.DEPOSIT, new BigDecimal("5000"));
+        // Versement dans la période demandée
+        LocalDate orderInPeriod = LocalDate.of(2025, 2, 15);
+        PositionOrder dep2025 = order(p, orderInPeriod, OrderType.DEPOSIT, new BigDecimal("1000"));
+
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(p));
+        when(orderRepository.findByPositionInOrderByOrderDateAsc(any()))
+                .thenReturn(List.of(dep2022, dep2025));
+        when(valuationService.loadSnapshotBatch(any())).thenReturn(Map.of());
+        when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
+                .thenReturn(BigDecimal.valueOf(6000));
+
+        // from = 2025-01-01 (YTD) — firstOrderDate = 2022, donc mode restreint
+        PerformanceDto dto = service.computeGlobal(user, LocalDate.of(2025, 1, 1), null);
+
+        // Pas de warning "mois exclu du chaînage" en mode restreint
+        assertThat(dto.warnings()).noneMatch(w -> w.contains("exclu du chaînage TWR"));
+        // Le from doit être janvier 2025
+        assertThat(dto.from()).isEqualTo(LocalDate.of(2025, 1, 1));
+        // totalInvested = openingValue (6000) + versement période (1000) = 7000
+        assertThat(dto.totalInvestedEur().doubleValue()).isCloseTo(7000, within(0.01));
+    }
+
+    // ── Cas : mode période avec from = firstOrderDate (bascule Global) ────────
+
+    @Test
+    void fromEgalFirstOrderDate_basculeModeGlobal() {
+        Position p = livretPosition();
+        LocalDate firstOrder = LocalDate.of(2024, 3, 10);
+        PositionOrder dep = order(p, firstOrder, OrderType.DEPOSIT, new BigDecimal("1000"));
+
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(p));
+        when(orderRepository.findByPositionInOrderByOrderDateAsc(any())).thenReturn(List.of(dep));
+        when(valuationService.loadSnapshotBatch(any())).thenReturn(Map.of());
+        when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
+                .thenReturn(BigDecimal.valueOf(1010));
+
+        // from = firstOrderDate → bascule en mode Global → warning "mois exclu"
+        PerformanceDto dto = service.computeGlobal(user, firstOrder, null);
+
+        assertThat(dto.warnings()).anyMatch(w -> w.contains("exclu du chaînage TWR"));
+    }
+
+    // ── Cas : TWR disponible, MWR calculé ────────────────────────────────────
+
+    @Test
+    void versementUnique_mwrCalcule() {
         Position p = livretPosition();
         LocalDate orderDate = LocalDate.of(2024, 1, 1);
         PositionOrder dep = order(p, orderDate, OrderType.DEPOSIT, new BigDecimal("1000"));
@@ -145,22 +189,16 @@ class PerformanceServiceTest {
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(p));
         when(orderRepository.findByPositionInOrderByOrderDateAsc(any())).thenReturn(List.of(dep));
         when(valuationService.loadSnapshotBatch(any())).thenReturn(Map.of());
-
-        // Après un versement de 1000€, la valeur actuelle est 1030€.
-        // Le mock retourne 1030 pour TOUS les appels → V_début = V_fin chaque mois → TWR = 0.
-        // XIRR voit lui le vrai gain (1000 → 1030) → MWR > 0. Les deux doivent converger.
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1030));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
-        // Les deux calculs doivent être disponibles (le solveur converge)
         assertThat(dto.mwrAnnualized()).isNotNull();
-        // MWR reflète le gain réel (1000 → 1030)
         assertThat(dto.mwrAnnualized()).isGreaterThan(0);
     }
 
-    // ── Cas : liquidation XIRR avec cashflow final positif ───────────────────
+    // ── Cas : currentValueEur contient la liquidation virtuelle ──────────────
 
     @Test
     void portfolioCourant_inclutLiquidationVirtuelle_dansMwr() {
@@ -174,13 +212,12 @@ class PerformanceServiceTest {
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1100));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
-        assertThat(dto.currentValueEur()).isNotNull();
         assertThat(dto.currentValueEur().doubleValue()).isCloseTo(1100, within(0.01));
     }
 
-    // ── Cas : dividendes comptés dans totalDividendsEur ──────────────────────
+    // ── Cas : dividendes comptés séparément ──────────────────────────────────
 
     @Test
     void dividendes_comptesInTotalDividends() {
@@ -188,7 +225,6 @@ class PerformanceServiceTest {
         LocalDate firstOrder = LocalDate.now().withDayOfMonth(1).minusMonths(3);
 
         PositionOrder dep = order(p, firstOrder, OrderType.DEPOSIT, new BigDecimal("1000"));
-        // Dividende reçu le mois suivant
         PositionOrder div = order(p, firstOrder.plusMonths(1).withDayOfMonth(15),
                 OrderType.DIVIDEND, new BigDecimal("25"));
 
@@ -198,10 +234,9 @@ class PerformanceServiceTest {
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1025));
 
-        PerformanceDto dto = service.computeGlobal(user);
+        PerformanceDto dto = service.computeGlobal(user, null, null);
 
         assertThat(dto.totalDividendsEur().doubleValue()).isCloseTo(25.0, within(0.01));
-        // Les dividendes NE sont PAS dans totalInvested
         assertThat(dto.totalInvestedEur().doubleValue()).isCloseTo(1000.0, within(0.01));
     }
 
