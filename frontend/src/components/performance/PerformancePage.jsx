@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getGlobalPerformance } from '../../api/performance'
 import { useAnalytics } from '../../hooks/useAnalytics'
+import { CATEGORY_META } from '../patrimoine/constants'
 
 // ── Helpers de date ───────────────────────────────────────────────────────────
 
@@ -132,23 +133,16 @@ function KpiCard({ label, value, tooltip, color = 'indigo', subtitle }) {
 
 // ── Section par catégorie ─────────────────────────────────────────────────
 
-const CATEGORY_META = {
-  BOURSE:     { label: 'Bourse',     color: 'indigo', icon: '📈' },
-  CRYPTO:     { label: 'Crypto',     color: 'violet', icon: '₿' },
-  LIVRET:     { label: 'Livrets',    color: 'teal',   icon: '🏦' },
-  IMMO_PAPIER:{ label: 'Immo papier',color: 'amber',  icon: '🏢' },
-}
-
-const CAT_COLORS = {
-  indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-  violet: 'bg-violet-50 border-violet-200 text-violet-700',
-  teal:   'bg-teal-50 border-teal-200 text-teal-700',
-  amber:  'bg-amber-50 border-amber-200 text-amber-700',
+const CARD_COLORS = {
+  BOURSE:     'bg-indigo-50 border-indigo-200 text-indigo-700',
+  CRYPTO:     'bg-violet-50 border-violet-200 text-violet-700',
+  LIVRET:     'bg-teal-50 border-teal-200 text-teal-700',
+  IMMO_PAPIER:'bg-amber-50 border-amber-200 text-amber-700',
 }
 
 function CategoryCard({ cat }) {
-  const meta   = CATEGORY_META[cat.category] ?? { label: cat.category, color: 'gray', icon: '📊' }
-  const colors = CAT_COLORS[meta.color] ?? 'bg-gray-50 border-gray-200 text-gray-700'
+  const meta     = CATEGORY_META[cat.category] ?? { label: cat.category, icon: '📊' }
+  const colors   = CARD_COLORS[cat.category] ?? 'bg-gray-50 border-gray-200 text-gray-700'
   const gainColor = cat.absoluteGainEur >= 0 ? 'text-emerald-700' : 'text-red-600'
 
   return (
@@ -176,6 +170,171 @@ function CategoryCard({ cat }) {
           <div className={`font-medium ${gainColor}`}>{fmtEur(cat.absoluteGainEur)}</div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Section par position — style PatrimoineGroupedView ───────────────────
+
+const CATEGORY_ORDER = ['LIQUIDITE', 'LIVRET', 'BOURSE', 'CRYPTO', 'IMMO_PAPIER', 'IMMO_PHYSIQUE']
+
+function PerfPositionRow({ pos }) {
+  const gainColor = (pos.absoluteGainEur ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-600'
+  return (
+    <tr className="border-b border-gray-100 hover:bg-gray-50 transition">
+      <td className="py-2 pl-6 pr-2">
+        <span className="text-sm font-medium text-gray-900">{pos.label}</span>
+        {pos.currency && pos.currency !== 'EUR' && (
+          <span className="ml-1.5 text-xs text-gray-400">{pos.currency}</span>
+        )}
+      </td>
+      <td className="py-2 px-2 text-right font-semibold text-sm tabular-nums text-indigo-700">
+        {fmtPct(pos.twrAnnualized)}
+      </td>
+      <td className="py-2 px-2 text-right text-sm tabular-nums text-teal-700">
+        {fmtPct(pos.mwrAnnualized)}
+      </td>
+      <td className="py-2 px-2 text-right text-sm font-bold text-gray-900 tabular-nums">
+        {fmtEur(pos.currentValueEur)}
+      </td>
+      <td className={`py-2 px-2 pr-4 text-right text-sm font-semibold tabular-nums ${gainColor}`}>
+        {fmtEur(pos.absoluteGainEur)}
+      </td>
+    </tr>
+  )
+}
+
+function ByPositionSection({ byPosition }) {
+  const grandTotal = byPosition.reduce((s, p) => s + (p.currentValueEur ?? 0), 0)
+
+  // Grouper par partenaire puis par catégorie
+  const grouped = {}
+  byPosition.forEach(pos => {
+    const partner = pos.partner || 'Sans partenaire'
+    if (!grouped[partner]) grouped[partner] = {}
+    if (!grouped[partner][pos.category]) grouped[partner][pos.category] = []
+    grouped[partner][pos.category].push(pos)
+  })
+
+  // Tri partenaires par valeur décroissante (Sans partenaire en dernier)
+  const partners = Object.entries(grouped).sort(([ka, a], [kb, b]) => {
+    if (ka === 'Sans partenaire') return 1
+    if (kb === 'Sans partenaire') return -1
+    const va = Object.values(a).flat().reduce((s, p) => s + (p.currentValueEur ?? 0), 0)
+    const vb = Object.values(b).flat().reduce((s, p) => s + (p.currentValueEur ?? 0), 0)
+    return vb - va
+  })
+
+  const [collapsed, setCollapsed] = useState(new Set())
+  const toggle = (p) => setCollapsed(prev => {
+    const next = new Set(prev); next.has(p) ? next.delete(p) : next.add(p); return next
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-sm font-semibold text-gray-700 -mb-2">
+        Par position
+        <InfoTooltip
+          text="Performance TWR et MWR calculée indépendamment pour chaque position, regroupée par partenaire. Utile pour identifier vos meilleures et moins bonnes allocations."
+          width="w-96"
+        />
+      </h2>
+
+      {partners.map(([partner, byCategory]) => {
+        const allPs       = Object.values(byCategory).flat()
+        const total       = allPs.reduce((s, p) => s + (p.currentValueEur   ?? 0), 0)
+        const totalGain   = allPs.reduce((s, p) => s + (p.absoluteGainEur   ?? 0), 0)
+        const pct         = grandTotal > 0 ? (total / grandTotal) * 100 : 0
+        const isCollapsed = collapsed.has(partner)
+        const cats        = CATEGORY_ORDER.filter(cat => byCategory[cat])
+
+        return (
+          <div key={partner} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+
+            {/* En-tête partenaire — identique à PatrimoineGroupedView */}
+            <button
+              onClick={() => toggle(partner)}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition text-left"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor"
+                className={`text-gray-400 shrink-0 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+                viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+              </svg>
+              <span className="font-semibold text-gray-900 text-sm flex-1">{partner}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs text-gray-400 w-9 text-right whitespace-nowrap">{pct.toFixed(1)} %</span>
+              </div>
+              <span className="text-sm font-bold text-gray-700 w-28 text-right tabular-nums">{fmtEur(total)}</span>
+            </button>
+
+            {/* Tableau dépliable */}
+            {!isCollapsed && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left text-xs text-gray-400 font-normal py-1.5 pl-6 pr-2">Position</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">TWR</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">MWR</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Valeur actuelle</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 pr-4">Plus-value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cats.map(cat => {
+                      const meta   = CATEGORY_META[cat] ?? { label: cat, icon: '📊' }
+                      const ps     = byCategory[cat]
+                      const catVal = ps.reduce((s, p) => s + (p.currentValueEur ?? 0), 0)
+                      const catPct = grandTotal > 0 ? (catVal / grandTotal) * 100 : 0
+                      return (
+                        <>
+                          {/* Sous-en-tête catégorie */}
+                          <tr key={`${cat}-header`} className="bg-gray-50/70 border-y border-gray-100">
+                            <td colSpan={5} className="py-1.5 pl-6 pr-4">
+                              <div className="flex items-center justify-between">
+                                <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                  <span>{meta.icon}</span>
+                                  <span>{meta.label}</span>
+                                  <span className="font-normal text-gray-400 normal-case tracking-normal">
+                                    — {ps.length} position{ps.length > 1 ? 's' : ''}
+                                  </span>
+                                </span>
+                                <span className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-400">{catPct.toFixed(1)} % du total</span>
+                                  <span className="text-xs font-semibold text-gray-600 tabular-nums">{fmtEur(catVal)}</span>
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          {ps.map(pos => <PerfPositionRow key={pos.positionId} pos={pos} />)}
+                        </>
+                      )
+                    })}
+
+                    {/* Sous-total partenaire */}
+                    <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                      <td colSpan={2} className="py-2 pl-6 pr-2">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total {partner}</span>
+                      </td>
+                      <td className="py-2 px-2" />
+                      <td className="py-2 px-2 text-right">
+                        <span className="text-sm font-bold text-gray-900 tabular-nums">{fmtEur(total)}</span>
+                      </td>
+                      <td className={`py-2 px-2 pr-4 text-right text-sm font-bold tabular-nums ${totalGain >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                        {fmtEur(totalGain)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -379,6 +538,11 @@ export default function PerformancePage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Performance par position */}
+          {data.byPosition?.length > 0 && (
+            <ByPositionSection byPosition={data.byPosition} />
           )}
 
           {/* Écart TWR vs MWR */}

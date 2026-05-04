@@ -4,6 +4,7 @@ import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.dto.CategoryPerformanceDto;
 import com.myfinance.dto.PerformanceDto;
+import com.myfinance.dto.PositionPerformanceDto;
 import com.myfinance.service.PerformanceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,12 @@ class PerformanceControllerTest {
                 new BigDecimal("40000.00"), new BigDecimal("32000.00"),
                 new BigDecimal("8000.00"), new BigDecimal("500.00")
         );
+        PositionPerformanceDto position = new PositionPerformanceDto(
+                1L, "CW8 - Amundi MSCI World", "BOURSE", "Boursorama", "EUR",
+                0.085, 0.072,
+                new BigDecimal("40000.00"), new BigDecimal("32000.00"),
+                new BigDecimal("8000.00"), new BigDecimal("500.00")
+        );
         return new PerformanceDto(
                 Instant.now(),
                 LocalDate.of(2024, 2, 1),
@@ -51,7 +58,8 @@ class PerformanceControllerTest {
                 new BigDecimal("1240.00"),
                 List.of("Avertissement test"),
                 List.of(),
-                List.of(bourseCategory)
+                List.of(bourseCategory),
+                List.of(position)
         );
     }
 
@@ -108,7 +116,7 @@ class PerformanceControllerTest {
                 Instant.now(), LocalDate.now(), LocalDate.now(), 0,
                 null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                List.of("Aucune position éligible"), List.of(), List.of()
+                List.of("Aucune position éligible"), List.of(), List.of(), List.of()
         );
         when(performanceService.computeGlobal(any(), any(), any())).thenReturn(dtoSansResultat);
 
@@ -131,6 +139,21 @@ class PerformanceControllerTest {
                 .andExpect(jsonPath("$.byCategory").isArray())
                 .andExpect(jsonPath("$.byCategory[0].category").value("BOURSE"))
                 .andExpect(jsonPath("$.byCategory[0].twrAnnualized").value(0.085));
+    }
+
+    // ── byPosition sérialisé ──────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getPerformance_byPosition_serialise() throws Exception {
+        when(performanceService.computeGlobal(any(), any(), any())).thenReturn(sampleDto());
+
+        mockMvc.perform(get("/api/patrimoine/performance"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.byPosition").isArray())
+                .andExpect(jsonPath("$.byPosition[0].label").value("CW8 - Amundi MSCI World"))
+                .andExpect(jsonPath("$.byPosition[0].partner").value("Boursorama"))
+                .andExpect(jsonPath("$.byPosition[0].twrAnnualized").value(0.085));
     }
 
     // ── Sécurité ──────────────────────────────────────────────────────────────

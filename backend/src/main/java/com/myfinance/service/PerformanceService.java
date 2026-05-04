@@ -4,6 +4,7 @@ import com.myfinance.domain.*;
 import com.myfinance.dto.CategoryPerformanceDto;
 import com.myfinance.dto.MonthlyBreakdownDto;
 import com.myfinance.dto.PerformanceDto;
+import com.myfinance.dto.PositionPerformanceDto;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import com.myfinance.service.math.ModifiedDietzCalculator;
@@ -164,7 +165,41 @@ public class PerformanceService {
             ));
         }
 
-        // 6 — Cap warnings à 20
+        // 6 — Calcul par position, trié par partenaire puis par label
+        List<PositionPerformanceDto> byPosition = new ArrayList<>();
+        for (Position pos : positions) {
+            List<PositionOrder> posOrders = pos.getOrders(); // déjà injectés en mémoire
+            if (posOrders.isEmpty()) continue;
+
+            List<String> posWarnings = new ArrayList<>();    // warnings locaux, non remontés
+            SliceResult posResult = computeSlice(List.of(pos), posOrders, requestedFrom, effectiveTo,
+                    priceMap, rateMap, snapshotMap, posWarnings);
+
+            if (posResult.firstChainingMonth() == null) continue;
+
+            BigDecimal posGain = posResult.currentValue().subtract(posResult.totalInvested())
+                    .setScale(2, RoundingMode.HALF_UP);
+            byPosition.add(new PositionPerformanceDto(
+                    pos.getId(),
+                    pos.getLabel(),
+                    pos.getCategory().name(),
+                    pos.getPartner(),
+                    pos.getCurrency(),
+                    posResult.twrAnnualized(),
+                    posResult.mwrAnnualized(),
+                    posResult.currentValue().setScale(2, RoundingMode.HALF_UP),
+                    posResult.totalInvested().setScale(2, RoundingMode.HALF_UP),
+                    posGain,
+                    posResult.totalDividends().setScale(2, RoundingMode.HALF_UP)
+            ));
+        }
+        // Tri : partenaire alphabétique (null en dernier), puis label
+        byPosition.sort(Comparator
+                .comparing((PositionPerformanceDto p) -> p.partner() != null ? p.partner() : "￿",
+                        String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(PositionPerformanceDto::label, String.CASE_INSENSITIVE_ORDER));
+
+        // 7 — Cap warnings à 20
         final int MAX_WARNINGS = 20;
         List<String> finalWarnings = warnings;
         if (warnings.size() > MAX_WARNINGS) {
@@ -178,9 +213,9 @@ public class PerformanceService {
         double durationYears = ChronoUnit.DAYS.between(global.firstChainingMonth(), effectiveTo) / 365.25;
 
         long durationMs = System.currentTimeMillis() - t0;
-        log.info("[user:{}] Calcul performance terminé en {} ms — TWR={}, MWR={}, période=[{} → {}], {} warning(s), {} catégorie(s)",
+        log.info("[user:{}] Calcul performance terminé en {} ms — TWR={}, MWR={}, période=[{} → {}], {} warning(s), {} catégorie(s), {} position(s)",
                 user.getId(), durationMs, global.twrAnnualized(), global.mwrAnnualized(),
-                global.firstChainingMonth(), effectiveTo, finalWarnings.size(), byCategory.size());
+                global.firstChainingMonth(), effectiveTo, finalWarnings.size(), byCategory.size(), byPosition.size());
 
         return new PerformanceDto(
                 Instant.now(),
@@ -194,7 +229,8 @@ public class PerformanceService {
                 global.totalDividends().setScale(2, RoundingMode.HALF_UP),
                 finalWarnings,
                 global.breakdown(),
-                byCategory
+                byCategory,
+                byPosition
         );
     }
 
@@ -438,7 +474,7 @@ public class PerformanceService {
                 Instant.now(), to, to, 0,
                 null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
-                warnings, List.of(), List.of()
+                warnings, List.of(), List.of(), List.of()
         );
     }
 }

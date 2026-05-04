@@ -21,6 +21,7 @@ public record PerformanceDto(
         BigDecimal absoluteGainEur,            // currentValueEur - totalInvestedEur
         BigDecimal totalDividendsEur,          // Σ INTEREST + DIVIDEND + AIRDROP sur la période
         List<String> warnings,                 // messages diagnostics
-        List<MonthlyBreakdownDto> monthlyBreakdown,  // détail mois par mois pour validation
-        List<CategoryPerformanceDto> byCategory      // performance par catégorie d'actifs
+        List<MonthlyBreakdownDto> monthlyBreakdown,       // détail mois par mois pour validation
+        List<CategoryPerformanceDto> byCategory,          // performance par catégorie d'actifs
+        List<PositionPerformanceDto> byPosition           // performance par position, triée par partenaire
 ) {}

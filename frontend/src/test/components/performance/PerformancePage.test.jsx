@@ -33,6 +33,22 @@ const DTO_COMPLET = {
     'Mois de 2015-01 exclu du chaînage TWR.',
     'Historique prix manquant pour BNP Technologies Europe.',
   ],
+  byPosition: [
+    {
+      positionId: 1, label: 'CW8 - Amundi MSCI World', category: 'BOURSE',
+      partner: 'Boursorama', currency: 'EUR',
+      twrAnnualized: 0.085, mwrAnnualized: 0.072,
+      currentValueEur: 40000, totalInvestedEur: 32000,
+      absoluteGainEur: 8000, totalDividendsEur: 500,
+    },
+    {
+      positionId: 2, label: 'Livret A', category: 'LIVRET',
+      partner: 'Caisse Épargne', currency: 'EUR',
+      twrAnnualized: 0.030, mwrAnnualized: 0.030,
+      currentValueEur: 18900, totalInvestedEur: 13200,
+      absoluteGainEur: 5700, totalDividendsEur: 740,
+    },
+  ],
   byCategory: [
     {
       category: 'BOURSE',
@@ -184,6 +200,29 @@ describe('PerformancePage', () => {
     expect(screen.getByText('au')).toBeInTheDocument()
   })
 
+  // ── Performance par position ──────────────────────────────────────────────
+
+  it('affiche la section par position groupée par partenaire', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Par position')).toBeInTheDocument()
+      expect(screen.getByText('Boursorama')).toBeInTheDocument()
+      expect(screen.getByText('Caisse Épargne')).toBeInTheDocument()
+      expect(screen.getByText('CW8 - Amundi MSCI World')).toBeInTheDocument()
+    })
+  })
+
+  it("n'affiche pas la section position si byPosition est vide", async () => {
+    getGlobalPerformance.mockResolvedValue({ ...DTO_COMPLET, byPosition: [] })
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.queryByText('Par position')).not.toBeInTheDocument()
+    })
+  })
+
   // ── Performance par catégorie ─────────────────────────────────────────────
 
   it('affiche les cartes par catégorie', async () => {
@@ -192,8 +231,9 @@ describe('PerformancePage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Par catégorie')).toBeInTheDocument()
-      expect(screen.getByText('Bourse')).toBeInTheDocument()
-      expect(screen.getByText('Livrets')).toBeInTheDocument()
+      // "Bourse" et "Livrets" apparaissent dans les cartes catégorie ET les badges de position
+      expect(screen.getAllByText('Bourse').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('Livret').length).toBeGreaterThanOrEqual(1)
     })
   })
 
