@@ -5,6 +5,8 @@ import com.myfinance.config.SecurityConfig;
 import com.myfinance.dto.CategoryPerformanceDto;
 import com.myfinance.dto.PerformanceDto;
 import com.myfinance.dto.PositionPerformanceDto;
+import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.service.BenchmarkService;
 import com.myfinance.service.PerformanceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PerformanceControllerTest {
 
     @Autowired MockMvc mockMvc;
-    @MockitoBean PerformanceService performanceService;
+    @MockitoBean PerformanceService    performanceService;
+    @MockitoBean BenchmarkService      benchmarkService;
+    @MockitoBean InstrumentRepository  instrumentRepository;
 
     private PerformanceDto sampleDto() {
         CategoryPerformanceDto bourseCategory = new CategoryPerformanceDto(

@@ -1,7 +1,10 @@
 package com.myfinance.controller;
 
 import com.myfinance.domain.User;
+import com.myfinance.dto.BenchmarkDto;
 import com.myfinance.dto.PerformanceDto;
+import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.service.BenchmarkService;
 import com.myfinance.service.PerformanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,7 +26,9 @@ import java.time.LocalDate;
 @Tag(name = "Performance patrimoniale", description = "TWR + MWR — ADMIN uniquement, en cours de validation")
 public class PerformanceController {
 
-    private final PerformanceService performanceService;
+    private final PerformanceService  performanceService;
+    private final BenchmarkService    benchmarkService;
+    private final InstrumentRepository instrumentRepository;
 
     @Operation(summary = "Performance du patrimoine (TWR + MWR)",
             description = """
@@ -43,5 +48,25 @@ public class PerformanceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(performanceService.computeGlobal(currentUser, from, to));
+    }
+
+    @Operation(summary = "TWR d'un instrument benchmark sur la même période",
+            description = """
+                    Calcule le TWR pur (price return, sans cashflows) d'un instrument
+                    utilisé comme référence de comparaison (ex : CW8, S&P 500).
+                    Retourne la courbe base 100 pour superposition sur le graphique.
+                    ADMIN uniquement.
+                    """)
+    @ApiResponse(responseCode = "200", description = "TWR benchmark calculé")
+    @ApiResponse(responseCode = "404", description = "Instrument non trouvé")
+    @GetMapping("/benchmark")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BenchmarkDto> getBenchmark(
+            @RequestParam Long instrumentId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return instrumentRepository.findById(instrumentId)
+                .map(instrument -> ResponseEntity.ok(benchmarkService.compute(instrument, from, to)))
+                .orElse(ResponseEntity.notFound().build());
     }
 }
