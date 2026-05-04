@@ -1,5 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
-import { getGlobalPerformance } from '../../api/performance'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import {
+  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+} from 'recharts'
+import { getGlobalPerformance, getBenchmarkPerformance } from '../../api/performance'
+import { getInstruments } from '../../api/patrimoine'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import { CATEGORY_META } from '../patrimoine/constants'
 
@@ -127,6 +132,247 @@ function KpiCard({ label, value, tooltip, color = 'indigo', subtitle }) {
       </div>
       <div className="text-3xl font-bold">{value}</div>
       {subtitle && <div className="text-xs mt-1 opacity-70">{subtitle}</div>}
+    </div>
+  )
+}
+
+// ── Graphique TWR cumulé base 100 ────────────────────────────────────────
+
+function buildTwr100Series(monthlyBreakdown, fromDate) {
+  if (!monthlyBreakdown?.length) return []
+  const openingMonth = fromDate
+    ? (() => {
+        const [y, m] = fromDate.split('-').map(Number)
+        const prev = new Date(y, m - 2, 1)
+        return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
+      })()
+    : null
+  const series = openingMonth ? [{ month: openingMonth, portfolio: 100 }] : []
+  let current = 100
+  for (const row of monthlyBreakdown) {
+    if (row.included && row.monthlyReturn != null) current *= (1 + row.monthlyReturn)
+    series.push({ month: row.month, portfolio: parseFloat(current.toFixed(3)) })
+  }
+  return series
+}
+
+function mergeBenchmark(portfolioSeries, benchmarkSeries) {
+  if (!benchmarkSeries?.length) return portfolioSeries
+  const bMap = Object.fromEntries(benchmarkSeries.map(p => [p.month, p.value]))
+  return portfolioSeries.map(p => ({ ...p, benchmark: bMap[p.month] ?? null }))
+}
+
+function TwrTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const month = payload[0]?.payload?.month
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs min-w-[160px]">
+      <p className="font-semibold text-gray-700 mb-1.5">{month}</p>
+      {payload.map(p => {
+        if (p.value == null) return null
+        const gain = p.value - 100
+        const color = gain >= 0 ? 'text-emerald-700' : 'text-red-600'
+        const isPortfolio = p.dataKey === 'portfolio'
+        return (
+          <div key={p.dataKey} className="flex items-center gap-1.5 mb-0.5">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.stroke ?? p.fill }} />
+            <span className="text-gray-500">{isPortfolio ? 'Portefeuille' : 'Benchmark'} :</span>
+            <span className={`font-semibold ${color}`}>
+              {gain >= 0 ? '+' : ''}{gain.toFixed(2)} %
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Sélecteur de benchmark ────────────────────────────────────────────────
+
+function BenchmarkSelector({ selectedId, selectedLabel, onSelect, onClear }) {
+  const [query, setQuery]       = useState('')
+  const [results, setResults]   = useState([])
+  const [open, setOpen]         = useState(false)
+  const [loading, setLoading]   = useState(false)
+
+  useEffect(() => {
+    if (query.length < 2) { setResults([]); return }
+    setLoading(true)
+    getInstruments({ query })
+      .then(data => setResults(data?.slice(0, 10) ?? []))
+      .catch(() => setResults([]))
+      .finally(() => setLoading(false))
+  }, [query])
+
+  const pick = (inst) => {
+    onSelect(inst.id, inst.name + (inst.ticker ? ` (${inst.ticker})` : ''))
+    setQuery('')
+    setResults([])
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative">
+      {selectedId ? (
+        <div className="flex items-center gap-2 text-xs bg-gray-100 rounded-lg px-3 py-1.5">
+          <span className="font-medium text-gray-700 truncate max-w-[180px]">{selectedLabel}</span>
+          <button onClick={onClear} className="text-gray-400 hover:text-red-500 shrink-0">✕</button>
+        </div>
+      ) : (
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Comparer à un indice…"
+            value={query}
+            onChange={e => { setQuery(e.target.value); setOpen(true) }}
+            onFocus={() => setOpen(true)}
+            className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+          />
+          {loading && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">…</span>
+          )}
+          {open && results.length > 0 && (
+            <div className="absolute top-full mt-1 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+              {results.map(inst => (
+                <button
+                  key={inst.id}
+                  onClick={() => pick(inst)}
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 flex items-center gap-2"
+                >
+                  <span className="font-medium text-gray-800 truncate">{inst.name}</span>
+                  {inst.ticker && <span className="text-gray-400 shrink-0">{inst.ticker}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Graphique complet ─────────────────────────────────────────────────────
+
+function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, customTo }) {
+  const [benchmarkId,    setBenchmarkId]    = useState(null)
+  const [benchmarkLabel, setBenchmarkLabel] = useState(null)
+  const [benchmarkSeries, setBenchmarkSeries] = useState(null)
+  const [benchmarkTwr,   setBenchmarkTwr]   = useState(null)
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false)
+
+  const portfolioSeries = useMemo(
+    () => buildTwr100Series(monthlyBreakdown, from),
+    [monthlyBreakdown, from]
+  )
+  const chartData = useMemo(
+    () => mergeBenchmark(portfolioSeries, benchmarkSeries),
+    [portfolioSeries, benchmarkSeries]
+  )
+
+  // Recharger le benchmark quand la période change
+  useEffect(() => {
+    if (!benchmarkId) return
+    setBenchmarkLoading(true)
+    const { from: f, to: t } = period === 'CUSTOM'
+      ? { from: customFrom || null, to: customTo || null }
+      : { from, to: null }
+    getBenchmarkPerformance(benchmarkId, f, t)
+      .then(dto => { setBenchmarkSeries(dto.series); setBenchmarkTwr(dto.twrAnnualized) })
+      .catch(() => { setBenchmarkSeries(null); setBenchmarkTwr(null) })
+      .finally(() => setBenchmarkLoading(false))
+  }, [benchmarkId, from, period, customFrom, customTo])
+
+  const handleSelectBenchmark = (id, label) => {
+    setBenchmarkId(id)
+    setBenchmarkLabel(label)
+    setBenchmarkSeries(null)
+    setBenchmarkTwr(null)
+  }
+  const handleClearBenchmark = () => {
+    setBenchmarkId(null)
+    setBenchmarkLabel(null)
+    setBenchmarkSeries(null)
+    setBenchmarkTwr(null)
+  }
+
+  const hasData = portfolioSeries.some(p => p.portfolio !== 100)
+  if (!hasData) return null
+
+  const n = portfolioSeries.length
+  const tickInterval = n > 36 ? 11 : n > 18 ? 5 : 2
+  const ticks = portfolioSeries
+    .map((p, i) => ({ ...p, i }))
+    .filter(({ month, i }) => {
+      if (i === 0 || i === n - 1) return true
+      if (tickInterval >= 11) return month.endsWith('-01')
+      return i % tickInterval === 0
+    })
+    .map(p => p.month)
+
+  const allVals = chartData.flatMap(p => [p.portfolio, p.benchmark].filter(Boolean))
+  const minVal = Math.min(...allVals)
+  const maxVal = Math.max(...allVals)
+  const yDomain = [Math.floor(minVal * 0.98), Math.ceil(maxVal * 1.02)]
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Performance cumulée (base 100)
+            <InfoTooltip
+              text="Courbe de la valeur d'1 € investi au début de la période, chaque mois multiplié par le rendement Modified Dietz (TWR). Un indice de 127 signifie que 100 € investis valent 127 €. L'indice benchmark utilise le prix de l'instrument sans cashflows — comparaison standard CFA."
+              width="w-96"
+            />
+          </h2>
+          {/* KPI benchmark inline si disponible */}
+          {benchmarkTwr != null && (
+            <span className="text-xs bg-gray-100 rounded-lg px-2 py-1 text-gray-600">
+              {benchmarkLabel} : <span className="font-semibold text-gray-800">{fmtPct(benchmarkTwr)}</span>
+            </span>
+          )}
+          {benchmarkLoading && (
+            <span className="text-xs text-gray-400">Chargement benchmark…</span>
+          )}
+        </div>
+        <BenchmarkSelector
+          selectedId={benchmarkId}
+          selectedLabel={benchmarkLabel}
+          onSelect={handleSelectBenchmark}
+          onClear={handleClearBenchmark}
+        />
+      </div>
+
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="twr-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#4f46e5" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis dataKey="month" ticks={ticks}
+            tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+          <YAxis domain={yDomain}
+            tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false}
+            width={36} tickFormatter={v => v.toFixed(0)} />
+          <ReferenceLine y={100} stroke="#d1d5db" strokeDasharray="4 4" />
+          <Tooltip content={<TwrTooltip />} />
+          {/* Courbe portefeuille */}
+          <Area type="monotone" dataKey="portfolio" name="Portefeuille"
+            stroke="#4f46e5" strokeWidth={2} fill="url(#twr-gradient)"
+            dot={false} activeDot={{ r: 4, fill: '#4f46e5' }} connectNulls />
+          {/* Courbe benchmark (si sélectionné) */}
+          {benchmarkSeries && (
+            <Line type="monotone" dataKey="benchmark" name={benchmarkLabel}
+              stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3"
+              dot={false} activeDot={{ r: 4, fill: '#f59e0b' }} connectNulls />
+          )}
+        </AreaChart>
+      </ResponsiveContainer>
+
+      <p className="text-xs text-gray-400 mt-1">Base 100 au {portfolioSeries[0]?.month}</p>
     </div>
   )
 }
@@ -538,6 +784,17 @@ export default function PerformancePage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Graphique TWR cumulé */}
+          {data.monthlyBreakdown?.length > 0 && (
+            <TwrCumulativeChart
+              monthlyBreakdown={data.monthlyBreakdown}
+              from={data.from}
+              period={period}
+              customFrom={customFrom}
+              customTo={customTo}
+            />
           )}
 
           {/* Performance par position */}

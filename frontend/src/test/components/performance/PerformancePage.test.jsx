@@ -200,6 +200,26 @@ describe('PerformancePage', () => {
     expect(screen.getByText('au')).toBeInTheDocument()
   })
 
+  // ── Graphique TWR cumulé ──────────────────────────────────────────────────
+
+  it('affiche le graphique TWR cumulé quand il y a des mois inclus', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Performance cumulée (base 100)')).toBeInTheDocument()
+    })
+  })
+
+  it("n'affiche pas le graphique si monthlyBreakdown est vide", async () => {
+    getGlobalPerformance.mockResolvedValue({ ...DTO_COMPLET, monthlyBreakdown: [] })
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.queryByText('Performance cumulée (base 100)')).not.toBeInTheDocument()
+    })
+  })
+
   // ── Performance par position ──────────────────────────────────────────────
 
   it('affiche la section par position groupée par partenaire', async () => {
