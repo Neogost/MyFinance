@@ -849,26 +849,26 @@ Pas de tracking sur les boutons internes (toggle, tooltip) en V1 — la page est
 - [x] **Doc API dédiée** : `docs/api/patrimoine-performance-backfill.md` (4 endpoints + format CSV + format `BackfillReport`)
 
 ### PR3 — Calcul performance
-- [ ] `ModifiedDietzCalculator` + golden tests (100 % couverture lignes & branches)
-- [ ] `XirrSolver` + golden tests (100 % couverture lignes & branches)
-- [ ] `ValuationService` + golden tests (par catégorie : BOURSE EUR/USD, CRYPTO, LIVRET capitalisation quotidienne, IMMO_PAPIER interpolation, position fermée)
-- [ ] `PerformanceService` + golden tests end-to-end (les 9 scénarios de la section 9.2)
-- [ ] `PerformanceController` (`GET /api/patrimoine/performance`, ADMIN only)
-- [ ] DTO `PerformanceDto` avec `computedAt` + `monthlyBreakdown`
-- [ ] DTO `MonthlyBreakdownDto`
-- [ ] Page frontend `PerformancePage.jsx` :
-  - [ ] Bandeau orange « 🚧 En cours de validation »
-  - [ ] 2 KPIs principaux (TWR + MWR) avec tooltips pédagogiques
-  - [ ] Section synthèse (Période / Versé / Valeur / PV / Dividendes) avec tooltips
-  - [ ] Section warnings dépliable
-  - [ ] **Section dépliable « Détail du calcul »** affichant le `monthlyBreakdown` (cf. section 6.2)
-- [ ] Lien menu Admin → « Performance (en travaux) »
-- [ ] Logging selon section 10.1 (INFO entrée/sortie, WARN par warning, DEBUG mensuel)
-- [ ] Analytics selon section 10.2 (`tools.performance.view`, `tools.performance.compute`)
-- [ ] Tests frontend unitaires (rendering, tooltips, section dépliable)
-- [ ] Mise à jour `CLAUDE.md` (endpoint + section « Implémenté »)
-- [ ] Mise à jour `readme.md` (compteur de tests + ajout section feature)
-- [ ] **Doc API dédiée** : `docs/api/patrimoine-performance.md` (endpoint, format réponse complet incluant `monthlyBreakdown`, codes d'erreur)
+- [x] `ModifiedDietzCalculator` + golden tests (12 tests : sous-période, chaînage, annualisation)
+- [x] `XirrSolver` + golden tests (9 tests : Newton-Raphson, bissection, cas limites)
+- [x] `ValuationService` + golden tests (9 tests : BOURSE EUR/USD, LIVRET capitalisation, IMMO_PAPIER interpolation, position fermée, LIQUIDITE exclue)
+- [x] `PerformanceService` + golden tests (8 tests : aucune position, mois exclu, flux nettés, dividendes, totalInvested pré-calculé)
+- [x] `PerformanceController` (`GET /api/patrimoine/performance`, ADMIN only — 4 tests : 200 ADMIN, null TWR/MWR sérialisé, 401, 403)
+- [x] DTO `PerformanceDto` avec `computedAt` + `monthlyBreakdown`
+- [x] DTO `MonthlyBreakdownDto` (factory `included()` / `excluded()`)
+- [x] Page frontend `PerformancePage.jsx` :
+  - [x] Bandeau orange « 🚧 En cours de validation »
+  - [x] 2 KPIs principaux (TWR + MWR) avec tooltips pédagogiques
+  - [x] Section synthèse (Période / Versé / Valeur / PV / Dividendes) avec tooltips
+  - [x] Section warnings dépliable
+  - [x] **Section dépliable « Détail du calcul »** affichant le `monthlyBreakdown`
+- [x] Lien menu Admin → « Performance (en travaux) »
+- [x] Logging selon section 10.1 (INFO entrée/sortie, WARN par warning, DEBUG mensuel)
+- [x] Analytics selon section 10.2 (`tools.performance.view`, `tools.performance.compute`)
+- [x] Tests frontend unitaires (10 tests : rendering, bandeau validation, KPIs, warnings, tableau mensuel dépliable, erreur API)
+- [x] Mise à jour `CLAUDE.md` (endpoint + section « Implémenté »)
+- [x] Mise à jour `readme.md` (compteur de tests : 933 frontend, 905 backend)
+- [x] **Doc API dédiée** : `docs/api/patrimoine-performance.md` (endpoint, format réponse complet, algorithmes, cas particuliers)
 
 ---
 

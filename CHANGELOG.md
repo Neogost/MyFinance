@@ -1,5 +1,58 @@
 # Notes de version
 
+## v1.7.0 — *en cours*
+
+> Contrat de location sur les revenus locatifs, charges courantes dans le simulateur d'emprunt, enrichissement du graphique salarial annuel, simulateurs publics sans connexion et correctifs d'alignement.
+
+### ✨ Nouveautés
+
+#### Contrat de location (Revenus → Complémentaires)
+
+Les revenus de type **Locatif** peuvent désormais être saisis comme un contrat de bail plutôt qu'une entrée mensuelle manuelle.
+
+- **Période du bail** : date de début, date de fin (vide = contrat en cours)
+- **Jour de perception** : jour du mois de versement du loyer (1–28)
+- En mode contrat, le champ "date de perception unique" est remplacé et le montant est labellisé "par mois"
+- Le simulateur d'impôts calcule automatiquement le montant annuel proratisé (loyer × mois dans l'année fiscale, gestion des entrées/sorties en cours d'année)
+- La liste affiche un badge "Contrat · le X" et la période du bail ; le montant est affiché avec "/mois"
+- Migration : `014_add_rental_contract_fields.sql`
+
+#### Charges courantes dans le simulateur d'emprunt (Outils → Simulateur)
+
+Nouvelle section "Charges courantes" dans le panneau "Charges propriétaire" :
+
+- **4 champs** : électricité, gaz, eau, autres (ordures, internet, divers) en €/mois
+- Intégrés dans le **coût mensuel total** (panneau gauche + panneau résultats)
+- **Taux d'effort réel** affiché (`coût total / revenu net`) quand le revenu est renseigné
+- Valeurs persistées dans les simulations sauvegardées
+
+#### Graphique salarial annuel enrichi (Tableau de bord)
+
+Trois cases à cocher optionnelles sur le graphique "Évolution salariale annuelle" (visibles uniquement si des données existent) :
+
+- **Primes** (rose) : EXCEPTIONNELLE par date, ANNUELLE par mois de versement, MENSUELLE × mois actifs
+- **Avantages en nature** (violet) : montant mensuel × mois actifs du contrat
+- **Revenus complémentaires** (bleu) : revenus ponctuels par année, contrats locatifs × mois chevauchants
+
+Les barres s'empilent sur le graphique. Le tooltip affiche chaque revenu complémentaire **individuellement** (label + montant), un sous-total si plusieurs sources, puis le **Total** et le **dont net d'impôt + extras** cumulés.
+
+#### Simulateurs accessibles sans connexion
+
+4 simulateurs utilisables librement sans créer de compte, accessibles depuis le bouton "Simulateurs" de la page d'accueil :
+
+- **Simulateur d'emprunt** : toutes les fonctionnalités de calcul disponibles — la sauvegarde, le pré-remplissage du revenu depuis le profil et la gestion des co-emprunteurs sont masqués en mode anonyme
+- **Intérêts composés** : entièrement autonome, aucune donnée de profil requise
+- **Simulateur de retraite** : paramètres officiels chargés sans connexion ; le pré-remplissage depuis le contrat salarial actif est activé si connecté
+- **Comparateur d'enveloppes fiscales** : la TMI est pré-remplie depuis le simulateur d'impôts si connecté, sinon saisie manuelle
+
+Le tracking analytics fonctionne en mode anonyme (events tracés avec `user=null`).
+
+### 🐛 Corrections
+
+- **Vue Patrimoine — alignement des boutons** : dans un groupe mixte (ex : LIVRET + BOURSE), la colonne "Taux" était présente dans le header mais absente des lignes BOURSE, décalant les boutons vers la gauche. Les boutons sont maintenant correctement alignés à droite quelle que soit la catégorie.
+
+---
+
 ## v1.6.0 — 2 mai 2026 — Stratégie patrimoniale V2, analytics et export CSV
 
 > Objectifs de diversification multi-dimensions pour la Bourse, la Crypto et l'Immobilier, section Objectifs & Stratégie dans le tableau de bord, KPI IMMO, classification des instruments crypto, liaison revenus locatifs, analytics d'usage, export CSV et gestion du compte.

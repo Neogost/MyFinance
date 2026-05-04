@@ -479,6 +479,11 @@ frontend/src/
 | `POST` | `/api/admin/exchange-rates/{currency}/backfill?from=&to=` | ADMIN | Backfill devise via Frankfurter (BCE). `from`/`to` optionnels. Retourne `BackfillReport`. |
 | `GET` | `/api/admin/instruments/price-history-summary` | ADMIN | Résumé d'historique par instrument (dayCount + plage) pour l'UI admin. Map<instrumentId, {dayCount, fromDate, toDate}>. |
 
+### Performance patrimoniale (TWR + MWR)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/patrimoine/performance` | ADMIN | Performance globale TWR + MWR depuis le premier ordre. Retourne `PerformanceDto` avec `monthlyBreakdown`. |
+
 ## Gestion des erreurs
 - Les services lèvent des `ResponseStatusException` (404, 409, 401) — jamais depuis les controllers
 - Les controllers ne font que déléguer et retourner le `ResponseEntity` approprié
@@ -792,8 +797,18 @@ npm run dev
   - **`AdminBackfillController`** : 3 endpoints POST + 1 endpoint GET `/api/admin/instruments/price-history-summary` pour l'UI (Map<instrumentId, {dayCount, fromDate, toDate}> en une query)
   - **DTO unifié `BackfillReport`** : `{scope, targetId, targetLabel, fromDate, toDate, linesInserted, linesUpdated, linesSkipped, errors[], durationMs}`
   - **UI admin** : colonne « Historique » dans `AdminInstrumentPage` (jours + plage), bouton « ↻ Backfill » par instrument CRYPTO, bouton « 📤 Import CSV » par instrument BOURSE (input file caché), rapport inline. `ExchangeRateUpdateModal` enrichie avec une colonne « ↻ Histo » par devise.
-  - Tests : 859 (BoursePriceCsvParserTest +17, InstrumentBackfillServiceTest +9, ExchangeRateBackfillServiceTest +5, AdminBackfillControllerTest +9)
+  - Tests : 859 → 901 (+42 : ModifiedDietzCalculatorTest, XirrSolverTest, ValuationServiceTest, PerformanceServiceTest, PerformanceControllerTest)
   - Documentation API : `docs/api/patrimoine-performance-backfill.md`
+
+- **PR3 performance — calcul TWR + MWR** (ADMIN only, en cours de validation) :
+  - **`ModifiedDietzCalculator`** (stateless, `service/math`) : `subPeriodReturn()` + `chainReturns()` + `annualize()`. Convention CFA Institute : poids `(D-j)/D`.
+  - **`XirrSolver`** (stateless, `service/math`) : Newton-Raphson (r₀=0.10, tol=1e-7, 100 iter) + fallback bissection `[-0.99, 10.0]`. Retourne null si non convergent.
+  - **`ValuationService`** : valorise BOURSE/CRYPTO (quantité × cours / taux), LIVRET (capitalisation quotidienne `(1+r)^(1/365) - 1`), IMMO_PAPIER (interpolation linéaire entre snapshots). Prend les batch maps en paramètre (anti-N+1). Position fermée → 0 après `closedDate`.
+  - **`PerformanceService`** : charge ordres/prix/taux en batch, chaîne TWR mois par mois (mois du premier versement exclu), calcule XIRR sur tous les cashflows + liquidation virtuelle. `totalInvested` et `totalDividends` calculés sur TOUS les ordres.
+  - **`PerformanceController`** : `GET /api/patrimoine/performance` — ADMIN uniquement via `@PreAuthorize`.
+  - **DTOs** : `PerformanceDto` (computedAt, from, to, TWR, MWR, totaux, warnings, monthlyBreakdown) + `MonthlyBreakdownDto` (breakdown mois par mois avec factory `included()`/`excluded()`).
+  - **Frontend** : `PerformancePage.jsx` — bandeau orange validation, 2 KPIs (TWR + MWR) avec tooltips, synthèse (versé/valeur/PV/dividendes), warnings dépliables, tableau mensuel dépliable (debug validation). Menu Admin → « Performance (en travaux) ».
+  - Tests : 901 (ModifiedDietzCalculatorTest 12, XirrSolverTest 9, ValuationServiceTest 9, PerformanceServiceTest 8, PerformanceControllerTest 4)
 
 - **Pré-requis performance patrimoniale (TWR/MWR) — pré-requis 1, 2, 3** :
   - **Historique quotidien des prix** : table `instrument_price_history` (cours clôture par instrument, source BOURSORAMA/COINGECKO/MANUAL_CSV) — alimentée automatiquement par `MarketDataService.runFullUpdate()`
