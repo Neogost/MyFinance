@@ -26,8 +26,9 @@ public class CoinGeckoClient {
             "https://api.coingecko.com/api/v3/search?query={ticker}";
     private static final String PRICE_URL  =
             "https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd";
+    // &interval=daily non supporté sur le plan gratuit avec days=max — CoinGecko détermine automatiquement la granularité
     private static final String MARKET_CHART_URL =
-            "https://api.coingecko.com/api/v3/coins/{id}/market_chart?vs_currency=usd&days={days}&interval=daily";
+            "https://api.coingecko.com/api/v3/coins/{id}/market_chart?vs_currency=usd&days={days}";
     private static final ZoneId PARIS = ZoneId.of("Europe/Paris");
 
     // ── Résolution ticker → ID CoinGecko ──────────────────────

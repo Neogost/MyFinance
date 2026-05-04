@@ -1,12 +1,15 @@
 package com.myfinance.repository;
 
+import com.myfinance.domain.Instrument;
 import com.myfinance.domain.Position;
 import com.myfinance.domain.PositionOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface PositionOrderRepository extends JpaRepository<PositionOrder, Long> {
 
@@ -21,4 +24,12 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     /** Tous les ordres dont la position est libellée dans une devise non-EUR (pour la migration amountEur). */
     @Query("SELECT po FROM PositionOrder po WHERE po.position.currency IS NOT NULL AND po.position.currency != 'EUR' ORDER BY po.orderDate ASC")
     List<PositionOrder> findAllNonEurOrders();
+
+    /** Date du premier ordre sur toutes les positions utilisant un instrument donné (pour borner le backfill). */
+    @Query("SELECT MIN(po.orderDate) FROM PositionOrder po WHERE po.position.instrument = :instrument")
+    Optional<LocalDate> findMinOrderDateByInstrument(@Param("instrument") Instrument instrument);
+
+    /** Premier ordre par instrument (toutes positions) — pour l'UI admin (résumé global). */
+    @Query("SELECT po.position.instrument.id, MIN(po.orderDate) FROM PositionOrder po WHERE po.position.instrument IS NOT NULL GROUP BY po.position.instrument.id")
+    List<Object[]> findMinOrderDatesGroupedByInstrument();
 }

@@ -4,6 +4,7 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.dto.BackfillReport;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.PositionOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 
 /**
  * Backfill de l'historique des prix d'un instrument.
@@ -30,6 +33,7 @@ public class InstrumentBackfillService {
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceHistoryService priceHistoryService;
     private final CoinGeckoClient coinGeckoClient;
+    private final PositionOrderRepository positionOrderRepository;
 
     // ── Backfill CRYPTO via CoinGecko ─────────────────────────────────────────
 
@@ -48,10 +52,19 @@ public class InstrumentBackfillService {
                     "Instrument CRYPTO sans coinGeckoId : impossible de fetch CoinGecko. Compléter le champ ou attendre la résolution automatique.");
         }
 
-        log.info("[Backfill] CRYPTO instrument #{} ({}) via CoinGecko", instrumentId, inst.getName());
-        Map<LocalDate, BigDecimal> history = coinGeckoClient.getMarketChart(inst.getCoinGeckoId());
+        // Date du premier ordre sur cet instrument — borne inférieure du backfill
+        Optional<LocalDate> firstOrderDate = positionOrderRepository.findMinOrderDateByInstrument(inst);
+        if (firstOrderDate.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Aucun ordre trouvé pour l'instrument " + inst.getName() +
+                    " — backfill inutile sans historique d'investissement.");
+        }
+        LocalDate fromDate = firstOrderDate.get();
+        log.info("[Backfill] CRYPTO instrument #{} ({}) via CoinGecko — depuis {}", instrumentId, inst.getName(), fromDate);
 
-        if (history.isEmpty()) {
+        Map<LocalDate, BigDecimal> raw = coinGeckoClient.getMarketChart(inst.getCoinGeckoId());
+
+        if (raw.isEmpty()) {
             return new BackfillReport(
                     BackfillReport.Scope.INSTRUMENT_PRICES,
                     instrumentId.toString(), inst.getName(),
@@ -62,12 +75,34 @@ public class InstrumentBackfillService {
             );
         }
 
+        // Filtrage : on ne conserve que les prix à partir du premier ordre
+        Map<LocalDate, BigDecimal> history = new TreeMap<>();
+        raw.forEach((date, price) -> {
+            if (!date.isBefore(fromDate)) history.put(date, price);
+        });
+
+        if (history.isEmpty()) {
+            return new BackfillReport(
+                    BackfillReport.Scope.INSTRUMENT_PRICES,
+                    instrumentId.toString(), inst.getName(),
+                    null, null,
+                    0, 0, 0,
+                    List.of(String.format(
+                            "CoinGecko a retourné %d prix mais aucun depuis votre premier ordre du %s.",
+                            raw.size(), fromDate)),
+                    System.currentTimeMillis() - t0
+            );
+        }
+
+        log.info("[Backfill] {} prix CoinGecko → {} conservés après filtrage (depuis {})",
+                raw.size(), history.size(), fromDate);
+
         return persistPrices(inst, history,
                 InstrumentPriceHistoryService.SOURCE_COINGECKO,
                 System.currentTimeMillis() - t0);
     }
 
-    // ── Backfill BOURSE via import CSV ────────────────────────────────────────
+    // ── Import CSV (BOURSE et CRYPTO) ─────────────────────────────────────────
 
     public BackfillReport importCsv(Long instrumentId, MultipartFile file) {
         long t0 = System.currentTimeMillis();
@@ -75,9 +110,9 @@ public class InstrumentBackfillService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Instrument introuvable : " + instrumentId));
 
-        if (inst.getCategory() != AssetCategory.BOURSE) {
+        if (inst.getCategory() != AssetCategory.BOURSE && inst.getCategory() != AssetCategory.CRYPTO) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "L'endpoint import-prices est réservé aux instruments BOURSE. Pour CRYPTO, utiliser backfill-prices (CoinGecko).");
+                    "L'import CSV est réservé aux instruments BOURSE et CRYPTO.");
         }
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fichier CSV vide ou absent");
@@ -87,7 +122,8 @@ public class InstrumentBackfillService {
                     "Fichier trop volumineux : " + file.getSize() + " octets (max " + BoursePriceCsvParser.MAX_FILE_SIZE_BYTES + ")");
         }
 
-        log.info("[Backfill] BOURSE instrument #{} ({}) via CSV ({} octets)", instrumentId, inst.getName(), file.getSize());
+        log.info("[Backfill] {} instrument #{} ({}) via CSV ({} octets)",
+                inst.getCategory(), instrumentId, inst.getName(), file.getSize());
 
         BoursePriceCsvParser.ParseResult parsed;
         try {

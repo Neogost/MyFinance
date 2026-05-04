@@ -391,13 +391,24 @@ export default function AdminInstrumentPage() {
                         <td className="hidden md:table-cell px-4 py-3 text-xs">
                           {(() => {
                             const summary = historySummary[inst.id]
-                            if (!summary) return <span className="text-gray-300">Aucun</span>
+                            if (!summary) return <span className="text-gray-300">—</span>
                             return (
-                              <div>
-                                <span className="text-gray-700 font-medium">{summary.dayCount} j</span>
-                                <span className="text-gray-400 ml-1">
-                                  ({summary.fromDate} → {summary.toDate})
-                                </span>
+                              <div className="space-y-0.5">
+                                {summary.dayCount > 0 ? (
+                                  <div>
+                                    <span className="text-gray-700 font-medium">{summary.dayCount} j</span>
+                                    <span className="text-gray-400 ml-1">
+                                      ({summary.fromDate} → {summary.toDate})
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300">Aucun historique</span>
+                                )}
+                                {summary.firstOrderDate && (
+                                  <div className={`text-xs font-medium ${summary.dayCount > 0 && summary.fromDate <= summary.firstOrderDate ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                    Import depuis le {summary.firstOrderDate}
+                                  </div>
+                                )}
                               </div>
                             )
                           })()}
@@ -410,21 +421,11 @@ export default function AdminInstrumentPage() {
                             >
                               Modifier
                             </button>
-                            {label === 'CRYPTO' && inst.coinGeckoId && (
-                              <button
-                                onClick={() => handleBackfillCrypto(inst)}
-                                disabled={backfillingId === inst.id}
-                                title="Backfill historique via CoinGecko"
-                                className="hidden md:inline-flex px-3 py-1 border border-orange-200 rounded-md text-xs text-orange-600 hover:border-orange-500 hover:bg-orange-50 disabled:opacity-60 transition"
-                              >
-                                {backfillingId === inst.id ? '⟳ Backfill…' : '↻ Backfill'}
-                              </button>
-                            )}
-                            {label === 'BOURSE' && (
+                            {(label === 'BOURSE' || label === 'CRYPTO') && (
                               <button
                                 onClick={() => handleImportCsvClick(inst)}
                                 disabled={backfillingId === inst.id}
-                                title="Importer un CSV d'historique"
+                                title="Importer un CSV d'historique (date;prix)"
                                 className="hidden md:inline-flex px-3 py-1 border border-indigo-200 rounded-md text-xs text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50 disabled:opacity-60 transition"
                               >
                                 {backfillingId === inst.id ? '⟳ Import…' : '📤 Import CSV'}

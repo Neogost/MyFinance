@@ -4,6 +4,7 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.dto.BackfillReport;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.PositionOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,6 +31,7 @@ class InstrumentBackfillServiceTest {
     @Mock InstrumentRepository instrumentRepository;
     @Mock InstrumentPriceHistoryService priceHistoryService;
     @Mock CoinGeckoClient coinGeckoClient;
+    @Mock PositionOrderRepository positionOrderRepository;
     @InjectMocks InstrumentBackfillService service;
 
     private Instrument crypto(Long id, String coinGeckoId) {
@@ -61,6 +63,8 @@ class InstrumentBackfillServiceTest {
                 LocalDate.of(2024, 1, 2), new BigDecimal("43000")
         ));
         when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(positionOrderRepository.findMinOrderDateByInstrument(inst))
+                .thenReturn(Optional.of(LocalDate.of(2024, 1, 1)));
         when(coinGeckoClient.getMarketChart("bitcoin")).thenReturn(history);
         when(priceHistoryService.countDays(inst)).thenReturn(0L, 2L);
 
@@ -104,9 +108,22 @@ class InstrumentBackfillServiceTest {
     }
 
     @Test
+    void backfillCrypto_sansOrdre_leve400() {
+        Instrument inst = crypto(1L, "bitcoin");
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(positionOrderRepository.findMinOrderDateByInstrument(inst)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.backfillCrypto(1L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Aucun ordre");
+    }
+
+    @Test
     void backfillCrypto_coinGeckoVide_rapportAvecErreur() {
         Instrument inst = crypto(1L, "bitcoin");
         when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(positionOrderRepository.findMinOrderDateByInstrument(inst))
+                .thenReturn(Optional.of(LocalDate.of(2024, 1, 1)));
         when(coinGeckoClient.getMarketChart("bitcoin")).thenReturn(Map.of());
 
         BackfillReport report = service.backfillCrypto(1L);
@@ -139,8 +156,29 @@ class InstrumentBackfillServiceTest {
     }
 
     @Test
-    void importCsv_instrumentNonBourse_leve400() {
+    void importCsv_instrumentCrypto_fonctionne() {
+        // Le CSV import est maintenant ouvert à BOURSE et CRYPTO
         Instrument inst = crypto(1L, "bitcoin");
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(priceHistoryService.countDays(inst)).thenReturn(0L, 1L);
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv",
+                "date;price\n2024-01-02;42000\n".getBytes());
+
+        BackfillReport report = service.importCsv(1L, file);
+
+        assertThat(report.linesInserted()).isEqualTo(1);
+        assertThat(report.errors()).isEmpty();
+        verify(priceHistoryService, times(1)).savePrice(any(), any(), any(), eq("MANUAL_CSV"));
+    }
+
+    @Test
+    void importCsv_instrumentLivret_leve400() {
+        // Seuls BOURSE et CRYPTO sont autorisés
+        Instrument inst = new Instrument();
+        inst.setId(1L);
+        inst.setName("Livret A");
+        inst.setCategory(AssetCategory.LIVRET);
         when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
 
         MockMultipartFile file = new MockMultipartFile("file", "test.csv", "text/csv", "date;price\n2024-01-02;100\n".getBytes());

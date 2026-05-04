@@ -35,6 +35,7 @@ class AdminBackfillControllerTest {
     @MockitoBean InstrumentBackfillService instrumentBackfillService;
     @MockitoBean ExchangeRateBackfillService exchangeRateBackfillService;
     @MockitoBean com.myfinance.service.InstrumentPriceHistoryService priceHistoryService;
+    @MockitoBean com.myfinance.repository.PositionOrderRepository positionOrderRepository;
 
     private BackfillReport sampleReport(BackfillReport.Scope scope) {
         return new BackfillReport(scope, "1", "Sample",
@@ -133,7 +134,10 @@ class AdminBackfillControllerTest {
         when(priceHistoryService.getSummaryForAllInstruments())
                 .thenReturn(java.util.Map.of(
                         1L, new com.myfinance.dto.PriceHistorySummaryDto(
-                                432, LocalDate.of(2024, 1, 2), LocalDate.of(2026, 4, 30))));
+                                432, LocalDate.of(2024, 1, 2), LocalDate.of(2026, 4, 30), null)));
+        java.util.List<Object[]> firstOrders = new java.util.ArrayList<>();
+        firstOrders.add(new Object[]{1L, LocalDate.of(2021, 4, 9)});
+        when(positionOrderRepository.findMinOrderDatesGroupedByInstrument()).thenReturn(firstOrders);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .get("/api/admin/instruments/price-history-summary"))

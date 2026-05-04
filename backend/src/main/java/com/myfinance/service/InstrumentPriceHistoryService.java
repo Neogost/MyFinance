@@ -82,7 +82,7 @@ public class InstrumentPriceHistoryService {
             long count = ((Number) row[1]).longValue();
             LocalDate from = (LocalDate) row[2];
             LocalDate to   = (LocalDate) row[3];
-            result.put(instrumentId, new PriceHistorySummaryDto(count, from, to));
+            result.put(instrumentId, new PriceHistorySummaryDto(count, from, to, null));
         }
         return result;
     }
