@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ErrorBoundary from './components/ErrorBoundary'
 import AnalyticsPage from './components/admin/AnalyticsPage'
+import PerformancePage from './components/performance/PerformancePage'
 import ErrorPage from './components/ErrorPage'
 import LoginForm from './components/LoginForm'
 import Navigation from './components/Navigation'
@@ -137,7 +138,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics']
+    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics', 'performance']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
     window.location.hash = page
     setCurrentPage(page)
@@ -336,6 +337,7 @@ export default function App() {
         )}
 
         {currentPage === 'admin-analytics' && user.role === 'ADMIN' && <AnalyticsPage />}
+        {currentPage === 'performance'     && user.role === 'ADMIN' && <PerformancePage />}
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
 
