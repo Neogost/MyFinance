@@ -12,6 +12,7 @@ export const WIDGET_GROUPS = [
     title: 'Patrimoine',
     widgets: [
       { key: 'patrimoineNet',       label: 'Patrimoine net' },
+      { key: 'performanceYtd',      label: 'Performance YTD (TWR)' },
       { key: 'patrimoineEvolution', label: 'Évolution du patrimoine' },
       { key: 'fireProjection',      label: 'Projection FIRE' },
       { key: 'patrimoineBrut',      label: 'Patrimoine brut' },

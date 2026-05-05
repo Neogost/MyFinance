@@ -41,8 +41,8 @@ describe('ContactPage', () => {
 
   it('affiche les liens LinkedIn et GitHub', () => {
     render(<ContactPage onLogin={vi.fn()} onHome={vi.fn()} />)
-    expect(screen.getByText('LinkedIn')).toBeInTheDocument()
-    expect(screen.getByText('GitHub')).toBeInTheDocument()
+    expect(screen.getByText(/LinkedIn/)).toBeInTheDocument()
+    expect(screen.getByText(/GitHub/)).toBeInTheDocument()
   })
 })
 
@@ -94,7 +94,8 @@ describe('LandingPage', () => {
     expect(screen.getByText('Dépenses')).toBeInTheDocument()
     expect(screen.getByText('Dettes')).toBeInTheDocument()
     expect(screen.getByText('Impôts')).toBeInTheDocument()
-    expect(screen.getByText('Simulateurs')).toBeInTheDocument()
+    // "Simulateurs" apparaît aussi dans le bouton du header → on accepte plusieurs
+    expect(screen.getAllByText('Simulateurs').length).toBeGreaterThanOrEqual(1)
   })
 
   it('affiche le bandeau vie privée', () => {

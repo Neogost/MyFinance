@@ -118,11 +118,11 @@ function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor
     amber:  'bg-amber-50 border-amber-200 text-amber-700',
   }
   return (
-    <div className={`border rounded-xl p-5 ${colors[color]}`}>
+    <div className={`border rounded-xl p-4 ${colors[color]}`}>
       <div className="text-xs font-medium mb-1 uppercase tracking-wide flex items-center">
         {label}<InfoTooltip text={tooltip} />
       </div>
-      <div className={`text-3xl font-bold ${valueColor ?? ''}`}>{value}</div>
+      <div className={`text-2xl font-bold whitespace-nowrap ${valueColor ?? ''}`}>{value}</div>
       {subtitle && <div className="text-xs mt-1 opacity-70">{subtitle}</div>}
     </div>
   )
@@ -131,6 +131,29 @@ function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor
 function fmtVolatility(val) {
   if (val == null) return '—'
   return (val * 100).toFixed(1) + ' %/an'
+}
+
+function fmtDrawdown(val) {
+  if (val == null) return '—'
+  // val est ≤ 0 (perte) — on garde le signe pour insister
+  return (val * 100).toFixed(1) + ' %'
+}
+
+function drawdownColor(val) {
+  if (val == null || val === 0) return ''
+  if (val > -0.05) return 'text-emerald-700'   // < 5 %
+  if (val > -0.15) return 'text-amber-600'     // 5–15 %
+  if (val > -0.30) return 'text-orange-600'    // 15–30 %
+  return 'text-red-600'                         // > 30 %
+}
+
+function drawdownSubtitle(val) {
+  if (val == null) return 'Non calculable'
+  if (val === 0)   return 'Aucune perte traversée'
+  if (val > -0.05) return 'Très contenue'
+  if (val > -0.15) return 'Modérée'
+  if (val > -0.30) return 'Importante'
+  return 'Sévère'
 }
 
 function fmtSharpe(val) {
@@ -1093,8 +1116,8 @@ export default function PerformancePage() {
       {/* Résultats */}
       {data && (
         <>
-          {/* KPIs TWR + MWR + Volatilité + Sharpe */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* KPIs : TWR / MWR / Volatilité / Sharpe / Drawdown */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <KpiCard
               label="TWR annualisé"
               value={fmtPct(data.twrAnnualized)}
@@ -1123,6 +1146,14 @@ export default function PerformancePage() {
               subtitle={sharpeSubtitle(data.sharpeRatio)}
               valueColor={sharpeColor(data.sharpeRatio)}
               tooltip="(TWR annualisé − 3 % taux sans risque) ÷ volatilité. Mesure le rendement obtenu par unité de risque prise. Sharpe > 1 = excellent, 0,5–1 = correct, < 0,5 = médiocre. Le S&P 500 tourne autour de 0,5–0,7 sur le long terme. Un Sharpe négatif signifie que vous êtes moins bien rémunéré que le Livret A pour le risque pris."
+            />
+            <KpiCard
+              label="Drawdown max"
+              value={fmtDrawdown(data.maxDrawdown)}
+              color="gray"
+              subtitle={drawdownSubtitle(data.maxDrawdown)}
+              valueColor={drawdownColor(data.maxDrawdown)}
+              tooltip="La plus grosse perte traversée depuis un sommet (peak-to-trough) sur la période. Complète le ratio de Sharpe en montrant la sévérité réelle des baisses subies. Un portefeuille avec un Sharpe acceptable mais un drawdown de −45 % a dû être douloureux à traverser. Repères : un ETF monde a connu environ −34 % en 2008, −20 % en mars 2020, −22 % en 2022."
             />
           </div>
 

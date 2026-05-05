@@ -125,7 +125,12 @@ describe('OnCallPanel', () => {
 // ── PaySlipPanel ───────────────────────────────────────────────────────────────
 
 describe('PaySlipPanel', () => {
-  beforeEach(() => { vi.clearAllMocks(); window.confirm = vi.fn(() => true) })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.confirm = vi.fn(() => true)
+    // Par défaut : pas de révisions (le composant les charge en parallèle des bulletins)
+    getRevisions.mockResolvedValue([])
+  })
 
   it('affiche "Chargement des bulletins…" pendant le fetch', () => {
     getPaySlips.mockReturnValue(new Promise(() => {}))

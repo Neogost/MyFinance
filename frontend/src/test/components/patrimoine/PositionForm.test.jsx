@@ -39,6 +39,13 @@ vi.mock('../../../components/patrimoine/constants', () => ({
     { value: 'NUE_PROPRIETE',   label: 'Nue-propriété' },
   ],
   PROJECTION_RATES: { BOURSE: 0.07, CRYPTO: 0.15 },
+  PROPERTY_USAGE_TYPES: [
+    { value: '',                     label: '— Non renseigné —' },
+    { value: 'RESIDENCE_PRINCIPALE', label: 'Résidence principale' },
+    { value: 'LOCATIF',              label: 'Locatif' },
+    { value: 'SECONDAIRE_LOISIRS',   label: 'Résidence secondaire / Loisirs' },
+    { value: 'AUTRE',                label: 'Autre' },
+  ],
 }))
 
 const INSTRUMENT_ETF = {

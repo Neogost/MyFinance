@@ -8,6 +8,7 @@ vi.mock('../../../api/patrimoine', () => ({
   getPositions:          vi.fn(),
   getPatrimoineScore:    vi.fn(),
   getInstruments:        vi.fn(),
+  getBreakdown:          vi.fn(() => Promise.resolve({ breakdown: [], totalEur: 0, coverageRatio: 1, unclassifiedEur: 0 })),
 }))
 
 vi.mock('../../../components/patrimoine/constants', () => ({

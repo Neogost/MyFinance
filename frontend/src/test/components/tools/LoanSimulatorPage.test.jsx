@@ -22,6 +22,8 @@ vi.mock('../../../api/familyGroup', () => ({
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
+const USER = { id: 1, login: 'test', firstName: 'Test', lastName: 'User', role: 'USER' }
+
 const PARAMS = {
   propertyPrice: 250000, loanAmount: 200000, loanDuration: 20,
   annualRate: 3.5, insuranceRate: 0.2, insuranceBase: 'initial',
@@ -62,13 +64,13 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
 
   it('charge les simulations sauvegardées au montage', async () => {
     getLoanSimulations.mockResolvedValue(SIMULATIONS)
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(getLoanSimulations).toHaveBeenCalledTimes(1))
   })
 
   it('affiche le compteur de simulations dans le bouton', async () => {
     getLoanSimulations.mockResolvedValue(SIMULATIONS)
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => {
       expect(screen.getByText('2')).toBeInTheDocument()
     })
@@ -78,7 +80,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
 
   it('affiche les simulations dans le panneau "Mes simulations"', async () => {
     getLoanSimulations.mockResolvedValue(SIMULATIONS)
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument())
 
     fireEvent.click(screen.getByText('Mes simulations'))
@@ -89,7 +91,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
 
   it('affiche le message vide si aucune simulation sauvegardée', async () => {
     getLoanSimulations.mockResolvedValue([])
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
 
     fireEvent.click(screen.getByText('Mes simulations'))
 
@@ -101,7 +103,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
   // ── Sauvegarde ────────────────────────────────────────────────
 
   it('ouvre la modal de sauvegarde au clic sur "Sauvegarder"', async () => {
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(getLoanSimulations).toHaveBeenCalled())
 
     fireEvent.click(screen.getByText('Sauvegarder'))
@@ -115,7 +117,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
     createLoanSimulation.mockResolvedValue(created)
     getLoanSimulations.mockResolvedValue([])
 
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(getLoanSimulations).toHaveBeenCalled())
 
     fireEvent.click(screen.getByText('Sauvegarder'))
@@ -137,7 +139,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
     createLoanSimulation.mockResolvedValue(created)
     getLoanSimulations.mockResolvedValue([])
 
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(getLoanSimulations).toHaveBeenCalled())
 
     fireEvent.click(screen.getByText('Sauvegarder'))
@@ -151,7 +153,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
   })
 
   it('désactive le bouton si le nom est vide', async () => {
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(getLoanSimulations).toHaveBeenCalled())
 
     // Le clic pré-remplit le nom avec la date — on le vide pour tester la désactivation
@@ -168,7 +170,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
     getLoanSimulations.mockResolvedValue(SIMULATIONS)
     deleteLoanSimulation.mockResolvedValue()
 
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(screen.queryByText('Appartement Paris')).toBeNull())
 
     fireEvent.click(screen.getByText('Mes simulations'))
@@ -188,7 +190,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
 
   it('restaure les paramètres au clic sur "Charger"', async () => {
     getLoanSimulations.mockResolvedValue(SIMULATIONS)
-    render(<LoanSimulatorPage />)
+    render(<LoanSimulatorPage user={USER} />)
     await waitFor(() => expect(screen.getByText('2')).toBeInTheDocument())
 
     fireEvent.click(screen.getByText('Mes simulations'))

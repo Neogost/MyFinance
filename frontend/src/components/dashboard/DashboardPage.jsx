@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import FireProjectionWidget from './FireProjectionWidget'
+import PerformanceYtdWidget from './PerformanceYtdWidget'
 import SalaryEvolutionChart from './SalaryEvolutionChart'
 import CapitalGainsByCategoryChart from './CapitalGainsByCategoryChart'
 import PatrimoineByCategoryChart from './PatrimoineByCategoryChart'
@@ -178,10 +179,10 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
         />
 
         {/* Évolution historique + Projection FIRE */}
-        {(wc.patrimoineEvolution || wc.fireProjection) && (
+        {(wc.patrimoineEvolution || wc.fireProjection || wc.performanceYtd) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             {wc.patrimoineEvolution && (
-              <div className={`col-span-1 ${wc.fireProjection ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+              <div className={`col-span-1 ${(wc.fireProjection || wc.performanceYtd) ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
                 <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution du patrimoine</h3>
                 <p className="text-xs text-gray-400 mb-4">
                   Valeur brute par catégorie au fil des relevés saisis.
@@ -189,9 +190,18 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
                 <PatrimoineEvolutionChart />
               </div>
             )}
-            {wc.fireProjection && (
-              <div className="bg-violet-50 rounded-xl shadow-sm border border-violet-200 p-6">
-                <FireProjectionWidget />
+            {(wc.fireProjection || wc.performanceYtd) && (
+              <div className={`flex flex-col gap-4 md:gap-6 ${wc.patrimoineEvolution ? '' : 'md:col-span-3 md:grid md:grid-cols-3'}`}>
+                {wc.fireProjection && (
+                  <div className={`bg-violet-50 rounded-xl shadow-sm border border-violet-200 p-6 ${!wc.patrimoineEvolution ? 'md:col-span-1' : ''}`}>
+                    <FireProjectionWidget />
+                  </div>
+                )}
+                {wc.performanceYtd && (
+                  <div className={`bg-teal-50 rounded-xl shadow-sm border border-teal-200 p-6 ${!wc.patrimoineEvolution ? 'md:col-span-1' : ''}`}>
+                    <PerformanceYtdWidget onNavigate={onNavigate} />
+                  </div>
+                )}
               </div>
             )}
           </div>

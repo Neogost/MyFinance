@@ -63,6 +63,7 @@ public class PerformanceService {
             Double mwrAnnualized,
             Double volatilityAnnualized,
             Double sharpeRatio,
+            Double maxDrawdown,
             BigDecimal currentValue,
             BigDecimal totalInvested,
             BigDecimal totalDividends,
@@ -165,6 +166,7 @@ public class PerformanceService {
                     catResult.mwrAnnualized(),
                     catResult.volatilityAnnualized(),
                     catResult.sharpeRatio(),
+                    catResult.maxDrawdown(),
                     catResult.currentValue().setScale(2, RoundingMode.HALF_UP),
                     catResult.totalInvested().setScale(2, RoundingMode.HALF_UP),
                     absGain,
@@ -232,6 +234,7 @@ public class PerformanceService {
                 global.mwrAnnualized(),
                 global.volatilityAnnualized(),
                 global.sharpeRatio(),
+                global.maxDrawdown(),
                 global.totalInvested().setScale(2, RoundingMode.HALF_UP),
                 global.currentValue().setScale(2, RoundingMode.HALF_UP),
                 absoluteGain.setScale(2, RoundingMode.HALF_UP),
@@ -433,12 +436,13 @@ public class PerformanceService {
             }
         }
 
-        // Volatilité annualisée + ratio de Sharpe
-        Double volatility = computeVolatility(monthlyReturns);
-        Double sharpe     = computeSharpe(twrAnnualized, volatility);
+        // Volatilité annualisée + ratio de Sharpe + drawdown maximal
+        Double volatility  = computeVolatility(monthlyReturns);
+        Double sharpe      = computeSharpe(twrAnnualized, volatility);
+        Double maxDrawdown = computeMaxDrawdown(monthlyReturns);
 
         return new SliceResult(firstChainingMonth, twrAnnualized, mwrAnnualized,
-                volatility, sharpe, currentValue, totalInvested, totalDividends, breakdown);
+                volatility, sharpe, maxDrawdown, currentValue, totalInvested, totalDividends, breakdown);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -465,8 +469,27 @@ public class PerformanceService {
         return (twrAnnualized - RISK_FREE_RATE) / volatility;
     }
 
+    /**
+     * Drawdown maximal : la plus grosse perte traversée depuis un sommet (peak-to-trough)
+     * sur la série base 100 reconstruite depuis monthlyReturns.
+     * Retourne une valeur ≤ 0 (ex : -0.32 = perte max de 32 %), ou null si série vide.
+     */
+    private static Double computeMaxDrawdown(List<Double> monthlyReturns) {
+        if (monthlyReturns.isEmpty()) return null;
+        double value = 100.0;
+        double peak  = 100.0;
+        double maxDD = 0.0;
+        for (double r : monthlyReturns) {
+            value *= (1 + r);
+            if (value > peak) peak = value;
+            double dd = (value - peak) / peak; // ≤ 0
+            if (dd < maxDD) maxDD = dd;
+        }
+        return maxDD;
+    }
+
     private SliceResult emptySlice() {
-        return new SliceResult(null, null, null, null, null,
+        return new SliceResult(null, null, null, null, null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of());
     }
 
@@ -507,7 +530,7 @@ public class PerformanceService {
     private PerformanceDto emptyResult(LocalDate to, List<String> warnings) {
         return new PerformanceDto(
                 Instant.now(), to, to, 0,
-                null, null, null, null,
+                null, null, null, null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
                 warnings, List.of(), List.of(), List.of()
         );
