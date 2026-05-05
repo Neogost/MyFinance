@@ -1,8 +1,8 @@
 # Notes de version
 
-## v1.7.0 — *en cours*
+## v1.7.0 — 5 mai 2026
 
-> Performance patrimoniale (TWR, MWR, volatilité, ratio de Sharpe) avec sélecteur de période, comparaison à un benchmark, contrat de location, charges courantes dans le simulateur d'emprunt, enrichissement du graphique salarial annuel et simulateurs publics sans connexion.
+> Performance patrimoniale complète (TWR, MWR, volatilité, Sharpe, drawdown, underwater chart, comparaison N−1), historique des cours avec édition manuelle (admin), tableau de bord restructuré, contrat de location, charges courantes dans le simulateur d'emprunt et simulateurs publics sans connexion.
 
 ### ✨ Nouveautés
 
@@ -28,6 +28,10 @@ Nouveau module complet de mesure de la performance du patrimoine financier — a
 **Comparaison à un benchmark** — sélecteur intégré au graphique avec deux modes :
 - **Indice** : recherche d'un instrument du référentiel (CW8, S&P 500…) → TWR pur de l'instrument superposé en courbe pointillée orange
 - **Taux fixe** : saisie d'un taux annuel (ex : 7 %/an correspondant à la moyenne historique du MSCI World) → courbe de croissance théorique superposée
+
+**Profil de drawdown (underwater chart)** — graphique en aire rouge sous le graphique TWR. À chaque mois, la profondeur = (valeur − pic historique) / pic. Quand la courbe est à 0 %, le portefeuille est à son plus-haut. La largeur et la profondeur de la zone rouge révèlent la sévérité et la durée des pertes traversées — un complément visuel au KPI *Drawdown max*. Affiché uniquement si le drawdown dépasse −1 % au moins une fois.
+
+**Toggle "vs période précédente"** — bouton discret affiché au-dessus des KPIs (toutes les périodes sauf Global). Quand il est actif, chaque carte KPI affiche en bas une ligne de comparaison : valeur de la période N−1 au même format, et delta coloré (+2,4 pt en vert, −1,0 pt en rouge). La période de référence est la même fenêtre décalée d'un an. Pour TWR/MWR/Drawdown, une hausse est favorable (vert) ; pour la Volatilité, une baisse est favorable (vert). Le second appel API se fait à la demande (lazy) et s'adapte automatiquement quand la période change.
 
 **Décomposition du gain** dans la section Synthèse — barre empilée séparant la **plus-value de marché** (appréciation des cours) des **revenus perçus** (dividendes, intérêts, airdrops réinvestis), avec montants signés et pourcentages du versé.
 
@@ -284,7 +288,33 @@ Un nouveau type de prime **Mensuelle** est disponible en complément des primes 
 - **Projection automatique** : les primes mensuelles actives sont intégrées dans les projections de revenus (équivalent annuel ×12) ; les primes expirées sont exclues
 - **Totaux séparés** dans le panneau primes : total annuel (primes Annuelles) et total mensuel (primes Mensuelles)
 
+#### Consultation et édition manuelle de l'historique des cours (Admin → Instruments)
+
+Bouton **📊 Consulter** sur chaque ligne de la colonne "Historique" dans la page admin des instruments. Ouvre une modal dédiée pour visualiser, compléter et corriger l'historique de prix d'un instrument.
+
+**Modal "Historique des cours" :**
+- **Sélecteur de plage** libre (défaut : 12 derniers mois) avec bouton Charger
+- **Graphique Recharts** (LineChart) montrant l'évolution du cours sur la période
+- **Détection automatique des trous** : bannière amber listant les intervalles > 7 jours consécutifs sans cours
+- **Tableau des entrées** en ordre décroissant : date | prix | badge source (BOURSORAMA / COINGECKO / MANUAL_CSV / MANUAL) | éditer | supprimer
+- **Édition inline** : cliquer sur ✏ rend le prix éditable directement dans la ligne (Entrée = valide, Échap = annule) — source passe à `MANUAL`
+- **Formulaire d'ajout** : saisie date + prix → upsert, la source est automatiquement `MANUAL`
+- À la fermeture, rafraîchit le résumé "Historique" si des modifications ont eu lieu
+
+**Backend :** 3 nouveaux endpoints ADMIN sur `AdminBackfillController` :
+- `GET /api/admin/instruments/{id}/price-history?from=&to=`
+- `PUT /api/admin/instruments/{id}/price-history/{date}` — upsert (source = MANUAL)
+- `DELETE /api/admin/instruments/{id}/price-history/{date}`
+
+**Tests :** +9 backend (4 service + 5 controller) · 929 tests total
+
 ### 🔧 Améliorations
+
+#### Performance patrimoniale — suppression du warning "premier mois exclu"
+Le message *"Mois de YYYY-MM exclu du chaînage TWR : c'est le mois du premier versement"* n'apparaît plus dans la section Avertissements. C'est un comportement intentionnel de la formule (V_début = 0 est instable), pas une anomalie. La date de début effective reste visible dans la section Synthèse.
+
+#### Tableau de bord — graphique Évolution du patrimoine extensible
+Le graphique occupe désormais toute la hauteur disponible de sa carte (flex-grow + `height="100%"` sur le `ResponsiveContainer`), s'adaptant naturellement à la hauteur des widgets FIRE et Performance YTD empilés à droite. Fin de l'espace blanc inutilisé sous le graphique.
 
 #### Responsive mobile — mise en conformité complète
 - **Modals** : pattern *bottom drawer* sur toutes les modals (glisse depuis le bas sur mobile, centrée sur desktop) avec `z-60` au-dessus de la navigation

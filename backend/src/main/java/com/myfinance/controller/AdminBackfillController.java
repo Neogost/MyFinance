@@ -1,7 +1,9 @@
 package com.myfinance.controller;
 
 import com.myfinance.dto.BackfillReport;
+import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.dto.PriceHistorySummaryDto;
+import com.myfinance.dto.UpsertPriceRequest;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.service.ExchangeRateBackfillService;
 import com.myfinance.service.InstrumentBackfillService;
@@ -10,12 +12,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -86,5 +93,34 @@ public class AdminBackfillController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(exchangeRateBackfillService.backfill(currency, from, to));
+    }
+
+    // ── Consultation / édition manuelle de l'historique de cours ─────────────
+
+    /** Liste les entrées d'historique d'un instrument sur une plage de dates. */
+    @GetMapping("/api/admin/instruments/{id}/price-history")
+    public ResponseEntity<List<PriceHistoryEntryDto>> getPriceHistory(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(priceHistoryService.getHistory(id, from, to));
+    }
+
+    /** Ajoute ou met à jour manuellement le cours d'un instrument à une date donnée (source = MANUAL). */
+    @PutMapping("/api/admin/instruments/{id}/price-history/{date}")
+    public ResponseEntity<PriceHistoryEntryDto> upsertPrice(
+            @PathVariable Long id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestBody UpsertPriceRequest body) {
+        return ResponseEntity.ok(priceHistoryService.upsertManual(id, date, body.price()));
+    }
+
+    /** Supprime le cours d'un instrument à une date donnée. */
+    @DeleteMapping("/api/admin/instruments/{id}/price-history/{date}")
+    public ResponseEntity<Void> deletePrice(
+            @PathVariable Long id,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        priceHistoryService.deleteEntry(id, date);
+        return ResponseEntity.noContent().build();
     }
 }

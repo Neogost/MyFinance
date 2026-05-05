@@ -142,8 +142,8 @@ export default function PatrimoineEvolutionChart() {
   const xDomain    = [Math.min(...timestamps), Math.max(...timestamps)]
 
   return (
-    <div>
-      <div className="flex justify-end mb-3">
+    <div className="h-full flex flex-col">
+      <div className="flex justify-end mb-3 shrink-0">
         <div className="flex border border-gray-200 rounded-lg overflow-hidden text-xs">
           <button
             onClick={() => setMode('absolute')}
@@ -158,7 +158,8 @@ export default function PatrimoineEvolutionChart() {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
+      <div className="flex-1 min-h-0">
+      <ResponsiveContainer width="100%" height="100%" minHeight={240}>
         <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
           <defs>
             {categories.map(cat => (
@@ -215,6 +216,7 @@ export default function PatrimoineEvolutionChart() {
           ))}
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 }

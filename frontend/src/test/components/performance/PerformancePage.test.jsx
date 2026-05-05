@@ -30,8 +30,8 @@ const DTO_COMPLET = {
   absoluteGainEur:  13700,
   totalDividendsEur: 1240,
   warnings: [
-    'Mois de 2015-01 exclu du chaînage TWR.',
     'Historique prix manquant pour BNP Technologies Europe.',
+    'MWR (XIRR) non convergent — les cashflows ne permettent pas de trouver un taux.',
   ],
   byPosition: [
     {
@@ -295,6 +295,70 @@ describe('PerformancePage', () => {
     })
   })
 
+  // ── Toggle "vs période précédente" ───────────────────────────────────────
+
+  it("n'affiche pas le toggle de comparaison en mode Global", async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => screen.getByText('+9.20 %/an'))
+
+    expect(screen.queryByText(/vs période précédente/i)).not.toBeInTheDocument()
+  })
+
+  it('affiche le toggle de comparaison après un changement de période (YTD)', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => screen.getByText('+9.20 %/an'))
+
+    fireEvent.click(screen.getByText('YTD'))
+
+    // Attendre le rechargement des données
+    await waitFor(() => screen.getByText('+9.20 %/an'))
+
+    expect(screen.getByText(/vs période précédente/i)).toBeInTheDocument()
+  })
+
+  it('déclenche un second appel API en cliquant sur le toggle', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => screen.getByText('+9.20 %/an'))
+
+    // Basculer sur YTD pour afficher le toggle
+    fireEvent.click(screen.getByText('YTD'))
+    await waitFor(() => screen.getByText('+9.20 %/an'))
+
+    const callsBeforeToggle = getGlobalPerformance.mock.calls.length
+
+    // Activer la comparaison
+    fireEvent.click(screen.getByText(/vs période précédente/i))
+
+    await waitFor(() => {
+      expect(getGlobalPerformance.mock.calls.length).toBeGreaterThan(callsBeforeToggle)
+    })
+  })
+
+  // ── Underwater chart ──────────────────────────────────────────────────────
+
+  it('affiche le profil de drawdown quand il y a une baisse significative', async () => {
+    const dtoAvecDrawdown = {
+      ...DTO_COMPLET,
+      monthlyBreakdown: [
+        { month: '2021-02', included: true, valueStart: 1000, valueEnd: 1050, cashflowsNetEur: 0, weightedCashflowsEur: 0, monthlyReturn: 0.05, partial: false, reason: null },
+        { month: '2021-03', included: true, valueStart: 1050, valueEnd: 850, cashflowsNetEur: 0, weightedCashflowsEur: 0, monthlyReturn: -0.19, partial: false, reason: null },
+        { month: '2021-04', included: true, valueStart: 850, valueEnd: 900, cashflowsNetEur: 0, weightedCashflowsEur: 0, monthlyReturn: 0.059, partial: false, reason: null },
+      ],
+    }
+    getGlobalPerformance.mockResolvedValue(dtoAvecDrawdown)
+    render(<PerformancePage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Profil de drawdown')).toBeInTheDocument()
+    })
+  })
+
   // ── Performance par catégorie ─────────────────────────────────────────────
 
   it('affiche les cartes par catégorie', async () => {
@@ -345,8 +409,8 @@ describe('PerformancePage', () => {
 
     fireEvent.click(screen.getByText(/2 avertissements/i))
 
-    expect(screen.getByText(/Mois de 2015-01 exclu/)).toBeInTheDocument()
     expect(screen.getByText(/Historique prix manquant/)).toBeInTheDocument()
+    expect(screen.getByText(/XIRR.*non convergent/)).toBeInTheDocument()
   })
 
   it("n'affiche pas la section warnings si la liste est vide", async () => {

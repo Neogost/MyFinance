@@ -87,3 +87,9 @@ export const createAdminSnapshot     = (data)         => api.post('/api/admin/sn
 export const updateAdminSnapshot     = (id, data)     => api.put(`/api/admin/snapshots/${id}`, data).then(r => r.data)
 export const deleteAdminSnapshot     = (id)           => api.delete(`/api/admin/snapshots/${id}`)
 export const getAdminUserPositions   = (userId)       => api.get(`/api/admin/users/${userId}/positions`).then(r => r.data)
+
+// ── Admin — Historique des cours ──────────────────────────────
+
+export const getPriceHistory    = (id, from, to)     => api.get(`/api/admin/instruments/${id}/price-history`, { params: { from, to } }).then(r => r.data)
+export const upsertPriceHistory = (id, date, price)  => api.put(`/api/admin/instruments/${id}/price-history/${date}`, { price }).then(r => r.data)
+export const deletePriceHistory = (id, date)         => api.delete(`/api/admin/instruments/${id}/price-history/${date}`)

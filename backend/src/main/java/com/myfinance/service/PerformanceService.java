@@ -277,9 +277,6 @@ public class PerformanceService {
             firstChainingMonth = firstOrderDate.withDayOfMonth(1).plusMonths(1);
             openingDate = firstChainingMonth.minusDays(1);
             if (firstChainingMonth.isAfter(effectiveTo)) return emptySlice();
-            warnings.add(String.format(
-                    "Mois de %s exclu du chaînage TWR : c'est le mois du premier versement (V_début = 0, formule instable).",
-                    firstOrderDate.withDayOfMonth(1).toString().substring(0, 7)));
         } else {
             firstChainingMonth = requestedFrom.withDayOfMonth(1);
             openingDate = firstChainingMonth.minusDays(1);

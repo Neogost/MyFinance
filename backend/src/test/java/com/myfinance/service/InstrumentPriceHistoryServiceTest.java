@@ -2,7 +2,9 @@ package com.myfinance.service;
 
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.InstrumentPriceHistory;
+import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.repository.InstrumentPriceHistoryRepository;
+import com.myfinance.repository.InstrumentRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.*;
 class InstrumentPriceHistoryServiceTest {
 
     @Mock InstrumentPriceHistoryRepository repo;
+    @Mock InstrumentRepository             instrumentRepository;
     @InjectMocks InstrumentPriceHistoryService service;
 
     private Instrument instrument(Long id) {
@@ -151,5 +154,75 @@ class InstrumentPriceHistoryServiceTest {
     void batchKey_formatStable() {
         String key = InstrumentPriceHistoryService.batchKey(42L, LocalDate.of(2024, 6, 15));
         assertThat(key).isEqualTo("42|2024-06-15");
+    }
+
+    // ── getHistory ────────────────────────────────────────────────────────────
+
+    @Test
+    void getHistory_instrumentExistant_retourneEntriesMappees() {
+        Instrument inst = instrument(1L);
+        LocalDate from = LocalDate.of(2024, 1, 1);
+        LocalDate to   = LocalDate.of(2024, 12, 31);
+        InstrumentPriceHistory entry = InstrumentPriceHistory.builder()
+                .instrument(inst).priceDate(from).price(new BigDecimal("432.15")).source("BOURSORAMA").build();
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(repo.findByInstrumentAndPriceDateBetweenOrderByPriceDateAsc(inst, from, to))
+                .thenReturn(List.of(entry));
+
+        List<PriceHistoryEntryDto> result = service.getHistory(1L, from, to);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).priceDate()).isEqualTo(from);
+        assertThat(result.get(0).price()).isEqualByComparingTo("432.15");
+        assertThat(result.get(0).source()).isEqualTo("BOURSORAMA");
+    }
+
+    // ── upsertManual ──────────────────────────────────────────────────────────
+
+    @Test
+    void upsertManual_nouvelleEntree_persisteEtRetourneDto() {
+        Instrument inst = instrument(1L);
+        LocalDate date  = LocalDate.of(2024, 6, 15);
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(repo.findByInstrumentAndPriceDate(inst, date)).thenReturn(Optional.empty());
+
+        PriceHistoryEntryDto result = service.upsertManual(1L, date, new BigDecimal("450.00"));
+
+        assertThat(result.priceDate()).isEqualTo(date);
+        assertThat(result.price()).isEqualByComparingTo("450.00");
+        assertThat(result.source()).isEqualTo("MANUAL");
+        verify(repo).save(any());
+    }
+
+    // ── deleteEntry ───────────────────────────────────────────────────────────
+
+    @Test
+    void deleteEntry_entreeExistante_supprimee() {
+        Instrument inst = instrument(1L);
+        LocalDate date  = LocalDate.of(2024, 6, 15);
+        InstrumentPriceHistory entry = InstrumentPriceHistory.builder()
+                .instrument(inst).priceDate(date).price(new BigDecimal("100.00")).source("MANUAL").build();
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(repo.findByInstrumentAndPriceDate(inst, date)).thenReturn(Optional.of(entry));
+
+        service.deleteEntry(1L, date);
+
+        verify(repo).delete(entry);
+    }
+
+    @Test
+    void deleteEntry_entreeAbsente_aucuneException() {
+        Instrument inst = instrument(1L);
+        LocalDate date  = LocalDate.of(2024, 6, 15);
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(inst));
+        when(repo.findByInstrumentAndPriceDate(inst, date)).thenReturn(Optional.empty());
+
+        service.deleteEntry(1L, date);
+
+        verify(repo, never()).delete(any());
     }
 }

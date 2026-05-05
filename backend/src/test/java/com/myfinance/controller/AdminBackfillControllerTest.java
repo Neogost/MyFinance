@@ -3,6 +3,7 @@ package com.myfinance.controller;
 import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.dto.BackfillReport;
+import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.service.ExchangeRateBackfillService;
 import com.myfinance.service.InstrumentBackfillService;
 import org.junit.jupiter.api.Test;
@@ -15,14 +16,19 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -124,6 +130,62 @@ class AdminBackfillControllerTest {
     void backfillExchangeRate_nonAuth_retourne401() throws Exception {
         mockMvc.perform(post("/api/admin/exchange-rates/USD/backfill"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ── price-history (GET / PUT / DELETE) ───────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getPriceHistory_admin_retourne200AvecEntrees() throws Exception {
+        when(priceHistoryService.getHistory(eq(1L), any(), any()))
+                .thenReturn(List.of(new PriceHistoryEntryDto(
+                        LocalDate.of(2024, 1, 2), new BigDecimal("432.15"), "BOURSORAMA")));
+
+        mockMvc.perform(get("/api/admin/instruments/1/price-history")
+                        .param("from", "2024-01-01").param("to", "2024-12-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].priceDate").value("2024-01-02"))
+                .andExpect(jsonPath("$[0].price").value(432.15))
+                .andExpect(jsonPath("$[0].source").value("BOURSORAMA"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void upsertPriceHistory_admin_retourne200AvecDto() throws Exception {
+        when(priceHistoryService.upsertManual(eq(1L), any(), any()))
+                .thenReturn(new PriceHistoryEntryDto(
+                        LocalDate.of(2024, 6, 15), new BigDecimal("450.00"), "MANUAL"));
+
+        mockMvc.perform(put("/api/admin/instruments/1/price-history/2024-06-15")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"price\": 450.00}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("MANUAL"))
+                .andExpect(jsonPath("$.price").value(450.0));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deletePriceHistory_admin_retourne204() throws Exception {
+        doNothing().when(priceHistoryService).deleteEntry(eq(1L), any());
+
+        mockMvc.perform(delete("/api/admin/instruments/1/price-history/2024-06-15"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getPriceHistory_nonAuth_retourne401() throws Exception {
+        mockMvc.perform(get("/api/admin/instruments/1/price-history")
+                        .param("from", "2024-01-01").param("to", "2024-12-31"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void getPriceHistory_nonAdmin_retourne403() throws Exception {
+        mockMvc.perform(get("/api/admin/instruments/1/price-history")
+                        .param("from", "2024-01-01").param("to", "2024-12-31"))
+                .andExpect(status().isForbidden());
     }
 
     // ── price-history-summary ─────────────────────────────────────────────────

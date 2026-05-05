@@ -148,12 +148,12 @@ Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation
 # Backend
 cd backend
 ./mvnw test
-# 920 tests unitaires (services + controllers) · couverture JaCoCo : target/site/jacoco/index.html
+# 929 tests unitaires (services + controllers) · couverture JaCoCo : target/site/jacoco/index.html
 
 # Frontend
 cd frontend
 npm test
-# 947 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes, simulateur retraite, performance patrimoniale)
+# 951 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes, simulateur retraite, performance patrimoniale)
 ```
 
 ## Documentation

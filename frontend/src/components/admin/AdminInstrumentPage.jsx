@@ -7,6 +7,7 @@ import {
 import AdminInstrumentForm from './AdminInstrumentForm'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
+import PriceHistoryModal from './PriceHistoryModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
@@ -51,6 +52,7 @@ export default function AdminInstrumentPage() {
   const [backfillingId,          setBackfillingId]          = useState(null)
   const [backfillReport,         setBackfillReport]         = useState(null)
   const [backfillError,          setBackfillError]          = useState(null)
+  const [priceHistoryTarget,     setPriceHistoryTarget]     = useState(null)
   const fileInputRef = useRef(null)
   const csvTargetIdRef = useRef(null)
 
@@ -391,10 +393,9 @@ export default function AdminInstrumentPage() {
                         <td className="hidden md:table-cell px-4 py-3 text-xs">
                           {(() => {
                             const summary = historySummary[inst.id]
-                            if (!summary) return <span className="text-gray-300">—</span>
                             return (
                               <div className="space-y-0.5">
-                                {summary.dayCount > 0 ? (
+                                {summary?.dayCount > 0 ? (
                                   <div>
                                     <span className="text-gray-700 font-medium">{summary.dayCount} j</span>
                                     <span className="text-gray-400 ml-1">
@@ -404,11 +405,17 @@ export default function AdminInstrumentPage() {
                                 ) : (
                                   <span className="text-gray-300">Aucun historique</span>
                                 )}
-                                {summary.firstOrderDate && (
+                                {summary?.firstOrderDate && (
                                   <div className={`text-xs font-medium ${summary.dayCount > 0 && summary.fromDate <= summary.firstOrderDate ? 'text-emerald-600' : 'text-amber-600'}`}>
                                     Import depuis le {summary.firstOrderDate}
                                   </div>
                                 )}
+                                <button
+                                  onClick={() => setPriceHistoryTarget(inst)}
+                                  className="mt-0.5 flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium transition"
+                                >
+                                  <span>📊</span><span>Consulter</span>
+                                </button>
                               </div>
                             )
                           })()}
@@ -510,6 +517,16 @@ export default function AdminInstrumentPage() {
           item={formTarget}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
+        />
+      )}
+
+      {priceHistoryTarget && (
+        <PriceHistoryModal
+          instrument={priceHistoryTarget}
+          onClose={async (dirty) => {
+            setPriceHistoryTarget(null)
+            if (dirty) setHistorySummary(await getPriceHistorySummary().catch(() => historySummary))
+          }}
         />
       )}
 

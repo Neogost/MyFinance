@@ -2,11 +2,15 @@ package com.myfinance.service;
 
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.InstrumentPriceHistory;
+import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.dto.PriceHistorySummaryDto;
 import com.myfinance.repository.InstrumentPriceHistoryRepository;
+import com.myfinance.repository.InstrumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +31,7 @@ public class InstrumentPriceHistoryService {
     public static final String SOURCE_MANUAL      = "MANUAL";
 
     private final InstrumentPriceHistoryRepository priceHistoryRepository;
+    private final InstrumentRepository             instrumentRepository;
 
     // ── Lecture ────────────────────────────────────────────────────────────────
 
@@ -118,5 +123,34 @@ public class InstrumentPriceHistoryService {
         }
         log.info("[PrixHistorique] {} entrée(s) persistée(s)", count);
         return count;
+    }
+
+    // ── Consultation / édition manuelle (admin) ────────────────────────────────
+
+    /** Liste les entrées d'un instrument sur une plage de dates, triées par date croissante. */
+    public List<PriceHistoryEntryDto> getHistory(Long instrumentId, LocalDate from, LocalDate to) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instrument introuvable"));
+        return priceHistoryRepository
+                .findByInstrumentAndPriceDateBetweenOrderByPriceDateAsc(instrument, from, to)
+                .stream()
+                .map(h -> new PriceHistoryEntryDto(h.getPriceDate(), h.getPrice(), h.getSource()))
+                .toList();
+    }
+
+    /** Upsert d'un cours manuel (source = MANUAL). Retourne l'entrée persistée. */
+    public PriceHistoryEntryDto upsertManual(Long instrumentId, LocalDate date, BigDecimal price) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instrument introuvable"));
+        savePrice(instrument, date, price, SOURCE_MANUAL);
+        return new PriceHistoryEntryDto(date, price, SOURCE_MANUAL);
+    }
+
+    /** Supprime l'entrée d'historique pour un instrument à une date donnée (sans erreur si absente). */
+    public void deleteEntry(Long instrumentId, LocalDate date) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instrument introuvable"));
+        priceHistoryRepository.findByInstrumentAndPriceDate(instrument, date)
+                .ifPresent(priceHistoryRepository::delete);
     }
 }

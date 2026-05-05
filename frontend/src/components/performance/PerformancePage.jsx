@@ -109,8 +109,37 @@ function fmtMonth(val) {
   return (val * 100).toFixed(2) + ' %'
 }
 
+// ── Helpers comparaison période précédente ────────────────────────────────
+
+function shiftDateOneYear(dateStr) {
+  if (!dateStr) return null
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return `${y - 1}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
+function prevPeriodDates(period, customFrom, customTo) {
+  if (period === 'GLOBAL') return null
+  const { from, to } = periodDates(period, customFrom, customTo)
+  if (!from) return null
+  return { from: shiftDateOneYear(from), to: shiftDateOneYear(to) }
+}
+
+// Construit un objet comparaison { prevStr, dStr, positive } pour un KPI donné.
+// scale=100 pour les taux (→ pts de %) ; scale=1 pour les ratios purs.
+// higherIsBetter=false inverse la logique de couleur (ex : volatilité).
+function buildCmp(curr, prev, fmtFn, scale = 100, higherIsBetter = true) {
+  if (curr == null || prev == null) return null
+  const delta = (curr - prev) * scale
+  const sign  = delta >= 0 ? '+' : ''
+  return {
+    prevStr:  fmtFn(prev),
+    dStr:     `${sign}${delta.toFixed(1)} pt`,
+    positive: higherIsBetter ? delta >= 0 : delta <= 0,
+  }
+}
+
 // ── KPI card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor }) {
+function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor, comparison }) {
   const colors = {
     indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
     teal:   'bg-teal-50 border-teal-200 text-teal-700',
@@ -124,6 +153,14 @@ function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor
       </div>
       <div className={`text-2xl font-bold whitespace-nowrap ${valueColor ?? ''}`}>{value}</div>
       {subtitle && <div className="text-xs mt-1 opacity-70">{subtitle}</div>}
+      {comparison && (
+        <div className="mt-1.5 pt-1.5 border-t border-current/20 text-xs flex flex-wrap items-center gap-1">
+          <span className="opacity-50">vs {comparison.prevStr}</span>
+          <span className={`font-semibold ${comparison.positive ? 'text-emerald-600' : 'text-red-500'}`}>
+            {comparison.dStr}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -212,6 +249,37 @@ function buildFixedRateSeries(portfolioSeries, annualRatePct) {
     if (i > 0) value *= (1 + monthlyRate)
     return { month: p.month, value: parseFloat(value.toFixed(3)) }
   })
+}
+
+// ── Série underwater (drawdown depth dans le temps) ───────────────────────
+
+function buildUnderwaterSeries(monthlyBreakdown) {
+  if (!monthlyBreakdown?.length) return []
+  let value = 100
+  let peak  = 100
+  return monthlyBreakdown.map(row => {
+    if (row.included && row.monthlyReturn != null) {
+      value *= (1 + row.monthlyReturn)
+      if (value > peak) peak = value
+    }
+    const depth = parseFloat(((value - peak) / peak * 100).toFixed(3))
+    return { month: row.month, depth }
+  })
+}
+
+function UnderwaterTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const { month, depth } = payload[0].payload
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
+      <p className="font-semibold text-gray-700 mb-1">{month}</p>
+      <div className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full shrink-0 bg-red-400" />
+        <span className="text-gray-500">Drawdown :</span>
+        <span className="font-semibold text-red-600">{depth.toFixed(2)} %</span>
+      </div>
+    </div>
+  )
 }
 
 function TwrTooltip({ active, payload }) {
@@ -493,6 +561,62 @@ function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, custom
       </ResponsiveContainer>
 
       <p className="text-xs text-gray-400 mt-1">Base 100 au {portfolioSeries[0]?.month}</p>
+    </div>
+  )
+}
+
+// ── Graphique underwater (drawdown dans le temps) ────────────────────────
+
+function UnderwaterChart({ monthlyBreakdown }) {
+  const series = useMemo(() => buildUnderwaterSeries(monthlyBreakdown), [monthlyBreakdown])
+  const hasDrawdown = series.some(p => p.depth < -1)
+  if (!hasDrawdown) return null
+
+  const n = series.length
+  const tickInterval = n > 36 ? 11 : n > 18 ? 5 : 2
+  const ticks = series
+    .map((p, i) => ({ ...p, i }))
+    .filter(({ month, i }) => {
+      if (i === 0 || i === n - 1) return true
+      if (tickInterval >= 11) return month.endsWith('-01')
+      return i % tickInterval === 0
+    })
+    .map(p => p.month)
+
+  const minDepth = Math.min(...series.map(p => p.depth))
+  const yDomain = [Math.floor(minDepth * 1.05) - 1, 0.5]
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <h2 className="text-sm font-semibold text-gray-700 mb-4">
+        Profil de drawdown
+        <InfoTooltip
+          text="À chaque mois, la profondeur = (valeur actuelle − pic historique) / pic × 100. Quand la courbe est à 0 %, le portefeuille est à son plus-haut. La largeur et la profondeur de la zone rouge indiquent la sévérité et la durée des pertes traversées."
+          width="w-80"
+        />
+      </h2>
+      <ResponsiveContainer width="100%" height={120}>
+        <AreaChart data={series} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="underwater-gradient" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <XAxis dataKey="month" ticks={ticks}
+            tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} />
+          <YAxis domain={yDomain}
+            tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false}
+            width={40} tickFormatter={v => `${v.toFixed(0)} %`} />
+          <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="4 4" />
+          <Tooltip content={<UnderwaterTooltip />} />
+          <Area type="monotone" dataKey="depth"
+            stroke="#ef4444" strokeWidth={1.5}
+            fill="url(#underwater-gradient)"
+            dot={false} activeDot={{ r: 3, fill: '#ef4444' }} />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   )
 }
@@ -1036,6 +1160,10 @@ export default function PerformancePage() {
   const [error, setError]           = useState(null)
   const [showBreakdown, setShowBreakdown] = useState(false)
   const [showWarnings, setShowWarnings]   = useState(false)
+  // Comparaison période précédente
+  const [showComparison, setShowComparison] = useState(false)
+  const [prevData, setPrevData]             = useState(null)
+  const [prevLoading, setPrevLoading]       = useState(false)
   const { trackPageView, trackEvent } = useAnalytics()
 
   const load = useCallback((p, cf, ct) => {
@@ -1045,6 +1173,7 @@ export default function PerformancePage() {
     setLoading(true)
     setError(null)
     setData(null)
+    setPrevData(null)
     setShowBreakdown(false)
     setShowWarnings(false)
     getGlobalPerformance(from, to)
@@ -1061,6 +1190,23 @@ export default function PerformancePage() {
       .finally(() => setLoading(false))
   }, [trackEvent])
 
+  const loadPrev = useCallback((p, cf, ct) => {
+    const prev = prevPeriodDates(p, cf, ct)
+    if (!prev) { setPrevData(null); return }
+    setPrevLoading(true)
+    getGlobalPerformance(prev.from, prev.to)
+      .then(dto => setPrevData(dto))
+      .catch(() => setPrevData(null))
+      .finally(() => setPrevLoading(false))
+  }, [])
+
+  const handleToggleComparison = () => {
+    const next = !showComparison
+    setShowComparison(next)
+    if (next && prevData == null) loadPrev(period, customFrom, customTo)
+    if (!next) setPrevData(null)
+  }
+
   // Chargement initial
   useEffect(() => {
     trackPageView('tools.performance.view')
@@ -1069,7 +1215,11 @@ export default function PerformancePage() {
 
   const handlePeriodChange = (p) => {
     setPeriod(p)
-    if (p !== 'CUSTOM') load(p, customFrom, customTo)
+    setPrevData(null)
+    if (p !== 'CUSTOM') {
+      load(p, customFrom, customTo)
+      if (showComparison) loadPrev(p, customFrom, customTo)
+    }
   }
 
   const handleCustomChange = (field, value) => {
@@ -1078,6 +1228,7 @@ export default function PerformancePage() {
     if (field === 'from') setCustomFrom(value)
     else setCustomTo(value)
     load('CUSTOM', newFrom, newTo)
+    if (showComparison) loadPrev('CUSTOM', newFrom, newTo)
   }
 
   return (
@@ -1116,7 +1267,25 @@ export default function PerformancePage() {
       {/* Résultats */}
       {data && (
         <>
-          {/* KPIs : TWR / MWR / Volatilité / Sharpe / Drawdown */}
+          {/* KPIs : TWR / MWR / Volatilité / Sharpe / Drawdown + toggle comparaison */}
+          <div className="flex items-center justify-end -mb-2">
+            {period !== 'GLOBAL' && (
+              <button
+                onClick={handleToggleComparison}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition ${
+                  showComparison
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-medium'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                {prevLoading
+                  ? <span className="text-gray-400">…</span>
+                  : <span>{showComparison ? '✓' : '⊕'}</span>
+                }
+                vs période précédente
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <KpiCard
               label="TWR annualisé"
@@ -1124,6 +1293,7 @@ export default function PerformancePage() {
               color="indigo"
               subtitle="Performance pure des actifs"
               tooltip="Time-Weighted Return — mesure la performance pure de vos actifs, indépendamment du timing et du volume de vos versements. C'est la métrique standard pour comparer un portefeuille à un benchmark (CW8, S&P 500). Un TWR de 9 %/an signifie que 1 € investi au début aurait gagné en moyenne 9 % par an."
+              comparison={showComparison ? buildCmp(data.twrAnnualized, prevData?.twrAnnualized, fmtPct) : null}
             />
             <KpiCard
               label="MWR annualisé"
@@ -1131,6 +1301,7 @@ export default function PerformancePage() {
               color="teal"
               subtitle="Performance réellement vécue"
               tooltip="Money-Weighted Return — mesure la performance que vous avez réellement vécue, qui intègre le fait que l'argent placé tôt a plus pesé que l'argent placé tard. C'est la réponse honnête à « combien j'ai gagné par an, en moyenne, avec mes choix d'investissement ». Calculé comme un XIRR sur l'ensemble de vos cashflows."
+              comparison={showComparison ? buildCmp(data.mwrAnnualized, prevData?.mwrAnnualized, fmtPct) : null}
             />
             <KpiCard
               label="Volatilité"
@@ -1138,6 +1309,7 @@ export default function PerformancePage() {
               color="gray"
               subtitle="Amplitude des variations mensuelles"
               tooltip="Écart-type annualisé des rendements mensuels (formule de Bessel, n−1). Mesure l'amplitude des variations de votre portefeuille. Un portefeuille 100 % ETF monde tourne autour de 12–15 %/an. Une crypto heavy peut dépasser 40 %/an. Plus c'est bas, plus le chemin vers le rendement est régulier."
+              comparison={showComparison ? buildCmp(data.volatilityAnnualized, prevData?.volatilityAnnualized, fmtVolatility, 100, false) : null}
             />
             <KpiCard
               label="Ratio de Sharpe"
@@ -1146,6 +1318,7 @@ export default function PerformancePage() {
               subtitle={sharpeSubtitle(data.sharpeRatio)}
               valueColor={sharpeColor(data.sharpeRatio)}
               tooltip="(TWR annualisé − 3 % taux sans risque) ÷ volatilité. Mesure le rendement obtenu par unité de risque prise. Sharpe > 1 = excellent, 0,5–1 = correct, < 0,5 = médiocre. Le S&P 500 tourne autour de 0,5–0,7 sur le long terme. Un Sharpe négatif signifie que vous êtes moins bien rémunéré que le Livret A pour le risque pris."
+              comparison={showComparison ? buildCmp(data.sharpeRatio, prevData?.sharpeRatio, fmtSharpe, 1) : null}
             />
             <KpiCard
               label="Drawdown max"
@@ -1154,6 +1327,7 @@ export default function PerformancePage() {
               subtitle={drawdownSubtitle(data.maxDrawdown)}
               valueColor={drawdownColor(data.maxDrawdown)}
               tooltip="La plus grosse perte traversée depuis un sommet (peak-to-trough) sur la période. Complète le ratio de Sharpe en montrant la sévérité réelle des baisses subies. Un portefeuille avec un Sharpe acceptable mais un drawdown de −45 % a dû être douloureux à traverser. Repères : un ETF monde a connu environ −34 % en 2008, −20 % en mars 2020, −22 % en 2022."
+              comparison={showComparison ? buildCmp(data.maxDrawdown, prevData?.maxDrawdown, fmtDrawdown) : null}
             />
           </div>
 
@@ -1184,6 +1358,11 @@ export default function PerformancePage() {
               customFrom={customFrom}
               customTo={customTo}
             />
+          )}
+
+          {/* Profil de drawdown (underwater chart) */}
+          {data.monthlyBreakdown?.length > 0 && (
+            <UnderwaterChart monthlyBreakdown={data.monthlyBreakdown} />
           )}
 
           {/* Performance par position */}

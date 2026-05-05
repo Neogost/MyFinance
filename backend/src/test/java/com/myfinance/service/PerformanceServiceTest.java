@@ -111,7 +111,7 @@ class PerformanceServiceTest {
     // ── Cas : règle métier #8 — mois du premier versement exclu (mode Global) ─
 
     @Test
-    void modeGlobal_premierMoisExclu_warningEmis() {
+    void modeGlobal_premierMoisExclu_aucunWarningEmis() {
         Position p = livretPosition();
         LocalDate firstOrder = LocalDate.of(2024, 1, 15);
         PositionOrder dep = order(p, firstOrder, OrderType.DEPOSIT, new BigDecimal("1000"));
@@ -124,7 +124,8 @@ class PerformanceServiceTest {
 
         PerformanceDto dto = service.computeGlobal(user, null, null);
 
-        assertThat(dto.warnings()).anyMatch(w -> w.contains("2024-01") && w.contains("exclu"));
+        // Le premier mois est exclu silencieusement — pas de warning (comportement attendu)
+        assertThat(dto.warnings()).noneMatch(w -> w.contains("exclu du chaînage TWR"));
         assertThat(dto.from()).isAfterOrEqualTo(LocalDate.of(2024, 2, 1));
     }
 
@@ -172,10 +173,10 @@ class PerformanceServiceTest {
         when(valuationService.valuePortfolioAt(any(), any(), any(), any(), any(), any()))
                 .thenReturn(BigDecimal.valueOf(1010));
 
-        // from = firstOrderDate → bascule en mode Global → warning "mois exclu"
+        // from = firstOrderDate → bascule en mode Global → pas de warning "mois exclu" (comportement silencieux)
         PerformanceDto dto = service.computeGlobal(user, firstOrder, null);
 
-        assertThat(dto.warnings()).anyMatch(w -> w.contains("exclu du chaînage TWR"));
+        assertThat(dto.warnings()).noneMatch(w -> w.contains("exclu du chaînage TWR"));
     }
 
     // ── Cas : TWR disponible, MWR calculé ────────────────────────────────────

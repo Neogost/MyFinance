@@ -178,18 +178,24 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           subtitle="Évolution, répartition, plus-values et avancement vers les objectifs."
         />
 
-        {/* Évolution historique + Projection FIRE */}
+        {/* Évolution + FIRE + Performance YTD */}
         {(wc.patrimoineEvolution || wc.fireProjection || wc.performanceYtd) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+
+            {/* Graphique — 2/3 : flex-col pour que le chart remplisse la hauteur */}
             {wc.patrimoineEvolution && (
-              <div className={`col-span-1 ${(wc.fireProjection || wc.performanceYtd) ? 'md:col-span-2' : 'md:col-span-3'} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
-                <h3 className="text-base font-semibold text-gray-800 mb-1">Évolution du patrimoine</h3>
-                <p className="text-xs text-gray-400 mb-4">
+              <div className={`col-span-1 ${(wc.fireProjection || wc.performanceYtd) ? 'md:col-span-2' : 'md:col-span-3'} flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+                <h3 className="text-base font-semibold text-gray-800 mb-1 shrink-0">Évolution du patrimoine</h3>
+                <p className="text-xs text-gray-400 mb-4 shrink-0">
                   Valeur brute par catégorie au fil des relevés saisis.
                 </p>
-                <PatrimoineEvolutionChart />
+                <div className="flex-1 min-h-0">
+                  <PatrimoineEvolutionChart />
+                </div>
               </div>
             )}
+
+            {/* Colonne droite — FIRE + YTD empilés dans 1/3 */}
             {(wc.fireProjection || wc.performanceYtd) && (
               <div className={`flex flex-col gap-4 md:gap-6 ${wc.patrimoineEvolution ? '' : 'md:col-span-3 md:grid md:grid-cols-3'}`}>
                 {wc.fireProjection && (
