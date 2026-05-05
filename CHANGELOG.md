@@ -1,5 +1,20 @@
 # Notes de version
 
+## v1.7.1 — 5 mai 2026
+
+> Correctif SQLITE_BUSY lors des imports CSV d'historique de cours.
+
+### 🐛 Correctifs
+
+#### SQLITE_BUSY sur import CSV d'historique de cours
+L'import d'un fichier CSV volumineux (ex. 2 877 lignes) verrouillait la base pendant ~43 secondes, provoquant des erreurs `SQLITE_BUSY` sur toutes les autres requêtes concurrentes (chargement de page, calcul de performance…).
+
+- **`@Transactional` sur `savePricesBatch`** : les 2 877 upserts s'exécutent en une seule transaction SQLite au lieu de 5 754 opérations individuelles — durée de lock réduite à < 1 s
+- **Mode WAL** (`PRAGMA journal_mode=WAL`) : les lectures ne sont plus bloquées pendant une écriture
+- **Busy timeout** (`busy_timeout=30000 ms`) : en cas de contention résiduelle, les connexions patientent 30 s au lieu d'échouer immédiatement
+
+---
+
 ## v1.7.0 — 5 mai 2026
 
 > Performance patrimoniale complète (TWR, MWR, volatilité, Sharpe, drawdown, underwater chart, comparaison N−1), historique des cours avec édition manuelle (admin), tableau de bord restructuré, contrat de location, charges courantes dans le simulateur d'emprunt et simulateurs publics sans connexion.
