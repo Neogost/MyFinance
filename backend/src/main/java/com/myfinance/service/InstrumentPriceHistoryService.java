@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -115,6 +116,7 @@ public class InstrumentPriceHistoryService {
      * Applique un upsert entrée par entrée — acceptable pour des volumes de backfill (< 10 000 lignes).
      * Pour le forward daily (1 ligne/jour/instrument), savePrice() suffit.
      */
+    @Transactional
     public int savePricesBatch(List<InstrumentPriceHistory> entries) {
         int count = 0;
         for (InstrumentPriceHistory entry : entries) {
@@ -139,6 +141,7 @@ public class InstrumentPriceHistoryService {
     }
 
     /** Upsert d'un cours manuel (source = MANUAL). Retourne l'entrée persistée. */
+    @Transactional
     public PriceHistoryEntryDto upsertManual(Long instrumentId, LocalDate date, BigDecimal price) {
         Instrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Instrument introuvable"));
