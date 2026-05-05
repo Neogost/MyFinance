@@ -32,6 +32,8 @@ data/                           # fichier SQLite
 logs/
 .env                            # variables d'environnement réelles
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 
 # =============================================================
