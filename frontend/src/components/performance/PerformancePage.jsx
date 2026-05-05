@@ -7,6 +7,7 @@ import { getGlobalPerformance, getBenchmarkPerformance } from '../../api/perform
 import { getInstruments } from '../../api/patrimoine'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import { CATEGORY_META } from '../patrimoine/constants'
+import DateRangeInput from '../ui/DateRangeInput'
 
 // ── Helpers de date ───────────────────────────────────────────────────────────
 
@@ -76,26 +77,16 @@ function PeriodSelector({ period, customFrom, customTo, onPeriodChange, onCustom
       </div>
 
       {period === 'CUSTOM' && (
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">Du</label>
-            <input
-              type="date"
-              value={customFrom}
-              onChange={e => onCustomChange('from', e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500 shrink-0">au</label>
-            <input
-              type="date"
-              value={customTo}
-              onChange={e => onCustomChange('to', e.target.value)}
-              className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            />
-          </div>
-          <span className="text-xs text-gray-400">(vide = aujourd'hui)</span>
+        <div className="pt-1 max-w-xs">
+          <DateRangeInput
+            from={customFrom}
+            to={customTo}
+            onFromChange={v => onCustomChange('from', v)}
+            onToChange={v => onCustomChange('to', v)}
+            placeholder="Sélectionner une période…"
+            maxDate={new Date()}
+          />
+          <p className="text-xs text-gray-400 mt-1">Vide = aujourd'hui pour la date de fin</p>
         </div>
       )}
     </div>
@@ -1041,6 +1032,13 @@ export default function PerformancePage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Performance patrimoniale</h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          TWR et MWR annualisés — combien rapportent vos actifs, indépendamment de vos versements.
+        </p>
+      </div>
 
       {/* Bandeau validation */}
       <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 flex items-start gap-3">

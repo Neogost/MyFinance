@@ -189,15 +189,14 @@ describe('PerformancePage', () => {
     })
   })
 
-  it('cliquer sur Personnalisée affiche les champs de date', async () => {
+  it('cliquer sur Personnalisée affiche le sélecteur de plage de dates', async () => {
     getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
     render(<PerformancePage />)
 
     fireEvent.click(screen.getByText('Personnalisée'))
 
-    // Les labels "Du" et "au" apparaissent pour les sélecteurs de date personnalisée
-    expect(screen.getByText('Du')).toBeInTheDocument()
-    expect(screen.getByText('au')).toBeInTheDocument()
+    // Le DateRangeInput affiche son placeholder
+    expect(screen.getByText('Sélectionner une période…')).toBeInTheDocument()
   })
 
   // ── Décomposition du rendement ───────────────────────────────────────────

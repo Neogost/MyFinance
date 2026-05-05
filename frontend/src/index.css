@@ -70,6 +70,79 @@ html.dark {
   filter: blur(0);
 }
 
+/* ── Date inputs — style unifié ─────────────────────────────────────────────────
+   Utilise :where() (spécificité 0) pour les règles de base : les classes Tailwind
+   appliquées directement sur les inputs restent prioritaires sans aucun conflit.
+   Seules les pseudo-éléments (::calendar-picker-indicator) nécessitent un sélecteur
+   direct — Tailwind ne peut pas les cibler.
+   ────────────────────────────────────────────────────────────────────────────── */
+
+/* Base : police héritée + taille cohérente — priorité 0, n'écrase aucune classe */
+:where(input[type="date"], input[type="month"]) {
+  font-family: inherit;
+  font-size: 0.875rem;   /* text-sm */
+  line-height: 1.5;
+  color-scheme: light;
+}
+
+html.dark :where(input[type="date"], input[type="month"]) {
+  color-scheme: dark;
+}
+
+/* Inputs sans classe Tailwind explicite : style de base cohérent avec les formulaires */
+:where(input[type="date"]:not([class]), input[type="month"]:not([class])) {
+  border: 1px solid #d1d5db;       /* gray-300 */
+  border-radius: 0.5rem;            /* rounded-lg */
+  padding: 0.375rem 0.75rem;        /* py-1.5 px-3 */
+  background-color: white;
+  color: #374151;                   /* gray-700 */
+  outline: none;
+}
+
+:where(input[type="date"]:not([class]):focus, input[type="month"]:not([class]):focus) {
+  border-color: #6366f1;            /* indigo-500 */
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+html.dark :where(input[type="date"]:not([class]), input[type="month"]:not([class])) {
+  border-color: #3d506a;
+  background-color: #1e2433;
+  color: #e2eaf4;
+}
+
+/* Icône calendrier — filtre CSS pour teinte indigo-600 (#4f46e5) depuis icône noire */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  border-radius: 3px;
+  padding: 1px;
+  transition: opacity 0.15s;
+  filter: invert(31%) sepia(95%) saturate(1200%) hue-rotate(218deg) brightness(90%) contrast(95%);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Icône calendrier en mode sombre — teinte indigo-300 (#a5b4fc) */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="month"]::-webkit-calendar-picker-indicator {
+  filter: invert(72%) sepia(40%) saturate(600%) hue-rotate(210deg) brightness(130%);
+}
+
+/* Zone de texte interne — couleur héritée du parent */
+input[type="date"]::-webkit-datetime-edit,
+input[type="month"]::-webkit-datetime-edit {
+  color: inherit;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="month"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
 /* ── Impression (Déclaration de patrimoine) ── */
 @media print {
   body * { visibility: hidden; }
