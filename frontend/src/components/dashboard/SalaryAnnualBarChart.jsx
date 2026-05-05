@@ -11,9 +11,10 @@ const fmtEur = v =>
     : '—'
 
 // Le tooltip affiche les valeurs reconstituées (totaux cumulés), pas les deltas
-function CustomTooltip({ active, payload, label, showBonuses, showBenefits, showOtherIncomes }) {
+function CustomTooltip({ active, payload, label, showOtherIncomes }) {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
+  const hasExtras = (d.bonusAmount > 0) || (d.benefitAmount > 0) || (showOtherIncomes && d.otherIncomeAmount > 0)
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
       <p className="font-semibold text-gray-800 mb-1">{label}</p>
@@ -32,62 +33,48 @@ function CustomTooltip({ active, payload, label, showBonuses, showBenefits, show
           <span className="font-medium text-gray-700 amount">{fmtEur(d.netAfterTax)}</span>
         </div>
       )}
-      {((showBonuses && d.bonusAmount > 0) || (showBenefits && d.benefitAmount > 0) || (showOtherIncomes && d.otherIncomeAmount > 0)) ? (
+      {d.bonusAmount > 0 && (
+        <div className="flex justify-between gap-4">
+          <span style={{ color: '#ec4899' }}>Primes brutes</span>
+          <span className="font-medium text-gray-700 amount">{fmtEur(d.bonusAmount)}</span>
+        </div>
+      )}
+      {d.benefitAmount > 0 && (
+        <div className="flex justify-between gap-4">
+          <span style={{ color: '#8b5cf6' }}>Avantages en nature</span>
+          <span className="font-medium text-gray-700 amount">{fmtEur(d.benefitAmount)}</span>
+        </div>
+      )}
+      {hasExtras && (
         <>
-          <div className="border-t border-gray-100 mt-1 pt-1 space-y-0.5">
-            {showBonuses && d.bonusAmount > 0 && (
-              <div className="flex justify-between gap-4">
-                <span style={{ color: '#ec4899' }}>Primes brutes</span>
-                <span className="font-medium text-gray-700 amount">{fmtEur(d.bonusAmount)}</span>
-              </div>
-            )}
-            {showBenefits && d.benefitAmount > 0 && (
-              <div className="flex justify-between gap-4">
-                <span style={{ color: '#8b5cf6' }}>Avantages en nature</span>
-                <span className="font-medium text-gray-700 amount">{fmtEur(d.benefitAmount)}</span>
-              </div>
-            )}
-            {showOtherIncomes && d.otherIncomeAmount > 0 && (
-              <>
-                {d.otherIncomeDetails?.map((item, i) => (
-                  <div key={i} className="flex justify-between gap-4">
-                    <span style={{ color: '#0ea5e9' }} className="truncate max-w-[140px]">{item.label}</span>
-                    <span className="font-medium text-gray-700 amount shrink-0">{fmtEur(item.amount)}</span>
-                  </div>
-                ))}
-                {d.otherIncomeDetails?.length > 1 && (
-                  <div className="flex justify-between gap-4 text-gray-400 text-[10px]">
-                    <span>Sous-total complémentaires</span>
-                    <span className="amount">{fmtEur(d.otherIncomeAmount)}</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          {showOtherIncomes && d.otherIncomeAmount > 0 && (
+            <div className="border-t border-gray-100 mt-1 pt-1 space-y-0.5">
+              {d.otherIncomeDetails?.map((item, i) => (
+                <div key={i} className="flex justify-between gap-4">
+                  <span style={{ color: '#0ea5e9' }} className="truncate max-w-[140px]">{item.label}</span>
+                  <span className="font-medium text-gray-700 amount shrink-0">{fmtEur(item.amount)}</span>
+                </div>
+              ))}
+              {d.otherIncomeDetails?.length > 1 && (
+                <div className="flex justify-between gap-4 text-gray-400 text-[10px]">
+                  <span>Sous-total complémentaires</span>
+                  <span className="amount">{fmtEur(d.otherIncomeAmount)}</span>
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex justify-between gap-4 border-t border-gray-200 mt-1 pt-1 font-semibold">
             <span className="text-gray-700">Total</span>
             <span className="text-gray-900 amount">
               {fmtEur(d.brut
-                + (showBonuses      ? (d.bonusAmount       ?? 0) : 0)
-                + (showBenefits     ? (d.benefitAmount     ?? 0) : 0)
+                + (d.bonusAmount       ?? 0)
+                + (d.benefitAmount     ?? 0)
                 + (showOtherIncomes ? (d.otherIncomeAmount ?? 0) : 0)
               )}
             </span>
           </div>
-          {d.netAfterTax != null && (
-            <div className="flex justify-between gap-4">
-              <span className="text-gray-500">dont net d'impôt + extras</span>
-              <span className="text-gray-700 amount">
-                {fmtEur(d.netAfterTax
-                  + (showBonuses      ? (d.bonusAmount       ?? 0) : 0)
-                  + (showBenefits     ? (d.benefitAmount     ?? 0) : 0)
-                  + (showOtherIncomes ? (d.otherIncomeAmount ?? 0) : 0)
-                )}
-              </span>
-            </div>
-          )}
         </>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -265,8 +252,6 @@ export default function SalaryAnnualBarChart() {
   const [data, setData]               = useState([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
-  const [showBonuses,      setShowBonuses]      = useState(false)
-  const [showBenefits,     setShowBenefits]     = useState(false)
   const [showOtherIncomes, setShowOtherIncomes] = useState(false)
 
   const hasBonuses       = data.some(d => (d.bonusAmount       ?? 0) > 0)
@@ -305,20 +290,8 @@ export default function SalaryAnnualBarChart() {
 
   return (
     <div>
-      {(hasBonuses || hasBenefits || hasOtherIncomes) && (
+      {hasOtherIncomes && (
         <div className="flex flex-wrap gap-4 mb-3">
-          {hasBonuses && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={showBonuses} onChange={e => setShowBonuses(e.target.checked)} className="accent-pink-500 w-4 h-4" />
-              <span className="text-sm text-gray-600">Primes</span>
-            </label>
-          )}
-          {hasBenefits && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={showBenefits} onChange={e => setShowBenefits(e.target.checked)} className="accent-violet-500 w-4 h-4" />
-              <span className="text-sm text-gray-600">Avantages en nature</span>
-            </label>
-          )}
           {hasOtherIncomes && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={showOtherIncomes} onChange={e => setShowOtherIncomes(e.target.checked)} className="accent-sky-500 w-4 h-4" />
@@ -339,7 +312,7 @@ export default function SalaryAnnualBarChart() {
           )}
           width={45}
         />
-        <Tooltip content={<CustomTooltip showBonuses={showBonuses} showBenefits={showBenefits} showOtherIncomes={showOtherIncomes} />} cursor={{ fill: '#f9fafb' }} />
+        <Tooltip content={<CustomTooltip showOtherIncomes={showOtherIncomes} />} cursor={{ fill: '#f9fafb' }} />
         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />
 
         {/* Segment bas : net d'impôt (affiché uniquement si profil fiscal renseigné) */}
@@ -351,28 +324,28 @@ export default function SalaryAnnualBarChart() {
           <Bar dataKey="segImpot" name="Impôt estimé" stackId="s" fill="#f97316" />
         )}
         {/* Segment haut : charges sociales (brut - net imposable) */}
-        <Bar 
+        <Bar
           dataKey="segCharges"
           name="Brut"
           stackId="s"
           fill="#d1d5db"
-          radius={[3, 3, 0, 0]}
+          radius={hasBonuses ? [0, 0, 0, 0] : [3, 3, 0, 0]}
         />
         {/* Sans profil fiscal : net imposable en base */}
         {!hasNetAfterTax && (
           <Bar dataKey="netImposable" name="Net imposable" stackId="s" fill="#7c3aed" radius={[0, 0, 0, 0]} />
         )}
-        {/* Primes brutes — barre séparée visible si checkbox activée */}
-        {showBonuses && (
-          <Bar dataKey="bonusAmount" name="Primes brutes" stackId="b" fill="#ec4899" radius={showBenefits ? [0,0,3,3] : [3,3,3,3]} opacity={0.85} />
+        {/* Primes brutes — dans la même pile, au-dessus du brut */}
+        {hasBonuses && (
+          <Bar dataKey="bonusAmount" name="Primes brutes" stackId="s" fill="#ec4899" radius={hasBenefits ? [0,0,0,0] : [3,3,0,0]} opacity={0.9} />
         )}
-        {/* Avantages en nature — empilés sur les primes */}
-        {showBenefits && (
-          <Bar dataKey="benefitAmount" name="Avantages en nature" stackId="b" fill="#8b5cf6" radius={showOtherIncomes ? [0,0,0,0] : [3,3,0,0]} opacity={0.85} />
+        {/* Avantages en nature — dans la même pile, au-dessus des primes */}
+        {hasBenefits && (
+          <Bar dataKey="benefitAmount" name="Avantages en nature" stackId="s" fill="#8b5cf6" radius={[3,3,0,0]} opacity={0.9} />
         )}
-        {/* Revenus complémentaires — sommet de la pile */}
+        {/* Revenus complémentaires — barre séparée */}
         {showOtherIncomes && (
-          <Bar dataKey="otherIncomeAmount" name="Revenus complémentaires" stackId="b" fill="#0ea5e9" radius={[3,3,0,0]} opacity={0.85} />
+          <Bar dataKey="otherIncomeAmount" name="Revenus complémentaires" stackId="b" fill="#0ea5e9" radius={[3,3,3,3]} opacity={0.85} />
         )}
       </BarChart>
     </ResponsiveContainer>
