@@ -148,7 +148,7 @@ Les logs sont persistés sur le NAS dans `NAS_PATH/logs/myfinance.log` (rotation
 # Backend
 cd backend
 ./mvnw test
-# 929 tests unitaires (services + controllers) · couverture JaCoCo : target/site/jacoco/index.html
+# 947 tests unitaires (services + controllers) · couverture JaCoCo : target/site/jacoco/index.html
 
 # Frontend
 cd frontend

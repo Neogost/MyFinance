@@ -266,12 +266,53 @@ public class PositionService {
                 .amountEur(computeAmountEur(request.amount(), position.getCurrency(), request.orderDate()))
                 .orderDate(request.orderDate())
                 .notes(request.notes())
+                .cryptoOperationType(request.cryptoOperationType())
+                .portfolioValueAtDateEur(request.portfolioValueAtDateEur())
                 .build();
 
-        PositionOrderDto dto = PositionOrderDto.from(positionOrderRepository.save(order));
+        PositionOrder saved = positionOrderRepository.save(order);
+
+        // Pour un SWAP_OUT : créer automatiquement l'ordre SWAP_IN jumeau sur la position de destination
+        if (request.cryptoOperationType() == CryptoOperationTypeEnum.SWAP_OUT
+                && request.swapCounterpartPositionId() != null) {
+            saved = createSwapCounterpart(saved, request, currentUser);
+        }
+
+        PositionOrderDto dto = PositionOrderDto.from(saved);
         log.info("[user:{}] Ordre créé #{} [position #{}, type: {}]",
                 currentUser.getId(), dto.id(), positionId, request.orderType());
         return dto;
+    }
+
+    private PositionOrder createSwapCounterpart(PositionOrder swapOut, CreatePositionOrderRequest request,
+                                                User currentUser) {
+        Position destPosition = getPositionWithOwnershipCheck(request.swapCounterpartPositionId(), currentUser);
+        if (destPosition.getCategory() != AssetCategory.CRYPTO) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La position de destination d'un swap doit être de catégorie CRYPTO.");
+        }
+
+        BigDecimal counterpartAmount = request.swapCounterpartAmount() != null
+                ? request.swapCounterpartAmount() : request.amount();
+
+        PositionOrder swapIn = PositionOrder.builder()
+                .position(destPosition)
+                .orderType(OrderType.BUY)
+                .quantity(request.swapCounterpartQuantity())
+                .unitPrice(request.unitPrice())
+                .amount(counterpartAmount)
+                .amountEur(swapOut.getAmountEur())  // même valeur EUR que le SWAP_OUT
+                .orderDate(swapOut.getOrderDate())
+                .notes(swapOut.getNotes())
+                .cryptoOperationType(CryptoOperationTypeEnum.SWAP_IN)
+                .swapCounterpartOrderId(swapOut.getId())
+                .build();
+
+        PositionOrder savedSwapIn = positionOrderRepository.save(swapIn);
+
+        // Lier le SWAP_OUT vers le SWAP_IN
+        swapOut.setSwapCounterpartOrderId(savedSwapIn.getId());
+        return positionOrderRepository.save(swapOut);
     }
 
     public PositionOrderDto updateOrder(Long positionId, Long orderId, UpdatePositionOrderRequest request, User currentUser) {
@@ -293,6 +334,8 @@ public class PositionService {
         order.setAmountEur(computeAmountEur(request.amount(), position.getCurrency(), request.orderDate()));
         order.setOrderDate(request.orderDate());
         order.setNotes(request.notes());
+        order.setCryptoOperationType(request.cryptoOperationType());
+        order.setPortfolioValueAtDateEur(request.portfolioValueAtDateEur());
 
         PositionOrderDto dto = PositionOrderDto.from(positionOrderRepository.save(order));
         log.info("[user:{}] Ordre modifié #{} [position #{}]", currentUser.getId(), orderId, positionId);

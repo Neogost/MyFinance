@@ -132,7 +132,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
   const isIncomePage     = currentPage === 'salary' || currentPage === 'other-incomes'
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
-  const isToolsPage      = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
+  const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
   const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
@@ -204,6 +204,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
                   {[
                     ['tax-simulator',         'Simulateur des impôts'],
+                    ['crypto-tax',             'Fiscalité crypto (2086)'],
                     ['bilan-financier',        'Bilan financier'],
                     ['compound-interest',      'Intérêts composés'],
                     ['loan-simulator',         "Simulateur d'emprunt"],
@@ -369,6 +370,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             <MobileSectionTitle>Outils</MobileSectionTitle>
             {[
               ['tax-simulator',         'Simulateur des impôts'],
+              ['crypto-tax',             'Fiscalité crypto (2086)'],
               ['bilan-financier',        'Bilan financier'],
               ['compound-interest',      'Intérêts composés'],
               ['loan-simulator',         "Simulateur d'emprunt"],

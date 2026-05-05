@@ -1,8 +1,10 @@
 package com.myfinance.repository;
 
+import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.Position;
 import com.myfinance.domain.PositionOrder;
+import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,4 +34,15 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     /** Premier ordre par instrument (toutes positions) — pour l'UI admin (résumé global). */
     @Query("SELECT po.position.instrument.id, MIN(po.orderDate) FROM PositionOrder po WHERE po.position.instrument IS NOT NULL GROUP BY po.position.instrument.id")
     List<Object[]> findMinOrderDatesGroupedByInstrument();
+
+    /** Tous les ordres CRYPTO d'un utilisateur avec cryptoOperationType renseigné, triés chronologiquement.
+     *  Utilisé par CryptoTaxService pour calculer le PTA et les plus-values. */
+    @Query("SELECT po FROM PositionOrder po " +
+           "WHERE po.position.user = :user " +
+           "AND po.position.category = :category " +
+           "AND po.cryptoOperationType IS NOT NULL " +
+           "ORDER BY po.orderDate ASC, po.id ASC")
+    List<PositionOrder> findCryptoOperationsByUserOrderByDateAsc(
+            @Param("user") User user,
+            @Param("category") AssetCategory category);
 }

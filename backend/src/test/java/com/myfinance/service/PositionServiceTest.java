@@ -359,7 +359,7 @@ class PositionServiceTest {
     void createOrder_sauvegardeEtRetourneLOrdre() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.DEPOSIT, null, null, new BigDecimal("500.00"),
-                LocalDate.of(2026, 4, 1), "Versement initial");
+                LocalDate.of(2026, 4, 1), "Versement initial", null, null, null, null, null);
 
         when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
         when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {
@@ -383,7 +383,7 @@ class PositionServiceTest {
     void createOrder_bourse_necessiteQuantiteEtPrix() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.BUY, null, null, new BigDecimal("884.40"),
-                LocalDate.now(), null);
+                LocalDate.now(), null, null, null, null, null, null);
 
         when(positionRepository.findById(3L)).thenReturn(Optional.of(bourse));
 
@@ -397,7 +397,7 @@ class PositionServiceTest {
     void createOrder_bourse_avecQuantiteEtPrix_sauvegarde() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.BUY, new BigDecimal("10"), new BigDecimal("88.44"),
-                new BigDecimal("884.40"), LocalDate.now(), null);
+                new BigDecimal("884.40"), LocalDate.now(), null, null, null, null, null, null);
 
         when(positionRepository.findById(3L)).thenReturn(Optional.of(bourse));
         when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {
@@ -420,7 +420,7 @@ class PositionServiceTest {
     void createOrder_leve400_siPositionLiquidite() {
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.DEPOSIT, null, null, new BigDecimal("100"),
-                LocalDate.now(), null);
+                LocalDate.now(), null, null, null, null, null, null);
 
         when(positionRepository.findById(2L)).thenReturn(Optional.of(liquidite));
 
@@ -506,7 +506,7 @@ class PositionServiceTest {
 
         CreatePositionOrderRequest request = new CreatePositionOrderRequest(
                 OrderType.AIRDROP, new BigDecimal("50"), new BigDecimal("0.10"),
-                new BigDecimal("5.00"), LocalDate.of(2026, 3, 1), "Airdrop reçu");
+                new BigDecimal("5.00"), LocalDate.of(2026, 3, 1), "Airdrop reçu", null, null, null, null, null);
 
         when(positionRepository.findById(5L)).thenReturn(Optional.of(crypto));
         when(positionOrderRepository.save(any(PositionOrder.class))).thenAnswer(inv -> {

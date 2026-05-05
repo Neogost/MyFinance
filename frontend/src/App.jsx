@@ -17,6 +17,7 @@ import PatrimoineDeclarationPage from './components/tools/PatrimoineDeclarationP
 import CrisisSimulatorPage from './components/tools/CrisisSimulatorPage'
 import LombardSimulatorPage from './components/tools/LombardSimulatorPage'
 import FiscalEnvelopeComparatorPage from './components/tools/FiscalEnvelopeComparatorPage'
+import CryptoTaxPage from './components/tools/CryptoTaxPage'
 import RetirementSimulatorPage from './components/tools/RetirementSimulatorPage'
 import DashboardPage from './components/dashboard/DashboardPage'
 import PatrimoinePage from './components/patrimoine/PatrimoinePage'
@@ -308,6 +309,8 @@ export default function App() {
         {currentPage === 'dettes'      && <DettePage />}
 
         {currentPage === 'tax-simulator' && <TaxSimulatorPage />}
+
+        {currentPage === 'crypto-tax' && <CryptoTaxPage />}
 
         {currentPage === 'bilan-financier' && <BilanFinancierPage user={user} />}
 

@@ -45,4 +45,20 @@ public class PositionOrder {
     private LocalDate orderDate;
 
     private String notes;
+
+    // ── Fiscalité crypto (article 150 VH bis CGI) ──────────────
+
+    /** Type d'opération crypto. null sur les ordres non-CRYPTO. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "crypto_operation_type")
+    private CryptoOperationTypeEnum cryptoOperationType;
+
+    /** Pour un SWAP_OUT : id de l'ordre SWAP_IN jumeau créé sur la position de destination. */
+    @Column(name = "swap_counterpart_order_id")
+    private Long swapCounterpartOrderId;
+
+    /** Override manuel de la VGP (valeur globale du portefeuille) au moment d'un SELL_FIAT.
+     *  null = calcul auto depuis instrument_price_history. */
+    @Column(name = "portfolio_value_at_date_eur")
+    private BigDecimal portfolioValueAtDateEur;
 }

@@ -1,5 +1,6 @@
 package com.myfinance.dto;
 
+import com.myfinance.domain.CryptoOperationTypeEnum;
 import com.myfinance.domain.OrderType;
 import com.myfinance.domain.PositionOrder;
 
@@ -14,7 +15,10 @@ public record PositionOrderDto(
         BigDecimal amount,
         BigDecimal amountEur,
         LocalDate orderDate,
-        String notes
+        String notes,
+        CryptoOperationTypeEnum cryptoOperationType,
+        Long swapCounterpartOrderId,
+        BigDecimal portfolioValueAtDateEur
 ) {
     public static PositionOrderDto from(PositionOrder order) {
         return new PositionOrderDto(
@@ -25,7 +29,10 @@ public record PositionOrderDto(
                 order.getAmount(),
                 order.getAmountEur(),
                 order.getOrderDate(),
-                order.getNotes()
+                order.getNotes(),
+                order.getCryptoOperationType(),
+                order.getSwapCounterpartOrderId(),
+                order.getPortfolioValueAtDateEur()
         );
     }
 }

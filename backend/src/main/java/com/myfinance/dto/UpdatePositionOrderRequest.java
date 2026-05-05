@@ -1,8 +1,10 @@
 package com.myfinance.dto;
 
+import com.myfinance.domain.CryptoOperationTypeEnum;
 import com.myfinance.domain.OrderType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -14,5 +16,8 @@ public record UpdatePositionOrderRequest(
         BigDecimal unitPrice,         // obligatoire pour BOURSE et CRYPTO
         @NotNull @DecimalMin(value = "0.01") BigDecimal amount,
         @NotNull LocalDate orderDate,
-        @Size(max = 2000) String notes
+        @Size(max = 2000) String notes,
+        // ── Fiscalité crypto ──────────────────────────────────────
+        CryptoOperationTypeEnum cryptoOperationType,
+        @Positive BigDecimal portfolioValueAtDateEur
 ) {}

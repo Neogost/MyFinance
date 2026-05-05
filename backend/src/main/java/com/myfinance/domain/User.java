@@ -93,6 +93,12 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean analyticsOptOut = false;
 
+    // ── Fiscalité crypto ───────────────────────────────────────
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean cryptoHistoricalDataConfirmed = false;
+
     // ── Regroupement familial ──────────────────────────────────
 
     @ToString.Exclude

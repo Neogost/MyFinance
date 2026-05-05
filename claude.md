@@ -279,6 +279,15 @@ frontend/src/
 | `GET` | `/api/tax-simulator` | Authentifié | Simulation IRPP pour l'utilisateur connecté |
 | `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Simulation IRPP pour un autre utilisateur |
 
+### Fiscalité crypto (formulaire 2086)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/crypto-tax/state` | Authentifié | État courant (PTA, valorisation portefeuille, confirmation historique) |
+| `GET` | `/api/crypto-tax/summary?year=&taxOption=&tmi=` | Authentifié | Synthèse annuelle (cessions, PV nette, impôt PFU ou barème) |
+| `GET` | `/api/crypto-tax/cessions?year=` | Authentifié | Détail des cessions au format 2086 (ligne par SELL_FIAT) |
+| `GET` | `/api/crypto-tax/form-2086.csv?year=` | Authentifié | Export CSV du formulaire 2086 |
+| `PUT` | `/api/crypto-tax/historical-data-confirmation` | Authentifié | Confirmer/infirmer la complétude de l'historique crypto |
+
 ### Patrimoine — Instruments
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -922,6 +931,17 @@ npm run dev
   - Convention de nommage : `module.feature.action` (3 segments snake_case) — validée côté backend
   - Tests : 793 tests BUILD SUCCESS
   - Documentation : `docs/architecture/analytics.md` + section Analytics dans `docs/architecture/decisions/PATTERNS-frontend.md`
+
+- **Fiscalité crypto — formulaire 2086** (Outils → Fiscalité crypto) :
+  - Méthode proportionnelle officielle (article 150 VH bis CGI) — investisseur occasionnel PFU 30 % ou barème
+  - `CryptoOperationTypeEnum` : `BUY_FIAT`, `SELL_FIAT`, `SWAP_OUT`, `SWAP_IN`, `TRANSFER_IN`, `TRANSFER_OUT`
+  - Trois champs ajoutés sur `PositionOrder` : `cryptoOperationType`, `swapCounterpartOrderId`, `portfolioValueAtDateEur`
+  - `PositionService.createOrder` crée automatiquement l'ordre `SWAP_IN` jumeau quand `SWAP_OUT` + `swapCounterpartPositionId` fourni
+  - `CryptoTaxService` : algorithme `runAlgorithm` en itération chronologique — PTA, VGP depuis `instrument_price_history`, override manuel, seuil 305 €
+  - `User.cryptoHistoricalDataConfirmed` : flag de confirmation de la saisie rétroactive complète (bandeau brouillon si false)
+  - Migration SQL `018_add_crypto_tax_fields.sql` (backfill BUY→BUY_FIAT, SELL→SELL_FIAT sur positions CRYPTO)
+  - Tests : 947 tests BUILD SUCCESS (CryptoTaxServiceTest +10, CryptoTaxControllerTest +7)
+  - Documentation : `docs/architecture/tools/crypto-tax-helper.md`, `docs/api/crypto-tax.md`
 
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)
