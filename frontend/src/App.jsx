@@ -138,7 +138,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics', 'performance']
+    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
     window.location.hash = page
     setCurrentPage(page)
@@ -337,7 +337,7 @@ export default function App() {
         )}
 
         {currentPage === 'admin-analytics' && user.role === 'ADMIN' && <AnalyticsPage />}
-        {currentPage === 'performance'     && user.role === 'ADMIN' && <PerformancePage />}
+        {currentPage === 'performance'     && <PerformancePage />}
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
 

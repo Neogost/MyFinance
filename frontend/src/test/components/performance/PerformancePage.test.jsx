@@ -110,10 +110,10 @@ describe('PerformancePage', () => {
 
   // ── Chargement ────────────────────────────────────────────────────────────
 
-  it('affiche le bandeau de validation en cours', async () => {
+  it('affiche le titre de la page', async () => {
     getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
     render(<PerformancePage />)
-    expect(screen.getByText(/Fonctionnalité en cours de validation/i)).toBeInTheDocument()
+    expect(screen.getByText('Performance patrimoniale')).toBeInTheDocument()
   })
 
   it('affiche un indicateur de chargement puis les KPIs', async () => {

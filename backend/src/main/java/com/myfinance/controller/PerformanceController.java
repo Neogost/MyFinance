@@ -23,26 +23,19 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/patrimoine/performance")
 @RequiredArgsConstructor
-@Tag(name = "Performance patrimoniale", description = "TWR + MWR — ADMIN uniquement, en cours de validation")
+@Tag(name = "Performance patrimoniale", description = "TWR + MWR — tous utilisateurs authentifiés")
 public class PerformanceController {
 
-    private final PerformanceService  performanceService;
-    private final BenchmarkService    benchmarkService;
-    private final InstrumentRepository instrumentRepository;
+    private final PerformanceService    performanceService;
+    private final BenchmarkService      benchmarkService;
+    private final InstrumentRepository  instrumentRepository;
 
-    @Operation(summary = "Performance du patrimoine (TWR + MWR)",
-            description = """
-                    Calcule la performance sur la période spécifiée.
-                    Sans paramètres : depuis le premier ordre jusqu'à aujourd'hui (Global).
-                    Avec `from` : période restreinte — snapshot d'ouverture synthétique à la date demandée.
-                    ADMIN uniquement.
-                    """)
+    @Operation(summary = "Performance du patrimoine (TWR + MWR)")
     @ApiResponse(responseCode = "200", description = "Performance calculée",
             content = @Content(schema = @Schema(implementation = PerformanceDto.class)))
     @ApiResponse(responseCode = "401", description = "Non authentifié")
-    @ApiResponse(responseCode = "403", description = "Rôle ADMIN requis")
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PerformanceDto> getPerformance(
             @AuthenticationPrincipal User currentUser,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -50,17 +43,11 @@ public class PerformanceController {
         return ResponseEntity.ok(performanceService.computeGlobal(currentUser, from, to));
     }
 
-    @Operation(summary = "TWR d'un instrument benchmark sur la même période",
-            description = """
-                    Calcule le TWR pur (price return, sans cashflows) d'un instrument
-                    utilisé comme référence de comparaison (ex : CW8, S&P 500).
-                    Retourne la courbe base 100 pour superposition sur le graphique.
-                    ADMIN uniquement.
-                    """)
+    @Operation(summary = "TWR d'un instrument benchmark sur la même période")
     @ApiResponse(responseCode = "200", description = "TWR benchmark calculé")
     @ApiResponse(responseCode = "404", description = "Instrument non trouvé")
     @GetMapping("/benchmark")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BenchmarkDto> getBenchmark(
             @RequestParam Long instrumentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,

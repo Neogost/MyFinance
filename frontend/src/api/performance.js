@@ -14,3 +14,4 @@ export const getBenchmarkPerformance = (instrumentId, from, to) => {
   if (to)   params.set('to', to)
   return api.get(`/api/patrimoine/performance/benchmark?${params}`).then(r => r.data)
 }
+

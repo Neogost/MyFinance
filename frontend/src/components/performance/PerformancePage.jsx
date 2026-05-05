@@ -1040,18 +1040,6 @@ export default function PerformancePage() {
         </p>
       </div>
 
-      {/* Bandeau validation */}
-      <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl px-4 py-3 flex items-start gap-3">
-        <span className="text-lg">🚧</span>
-        <div>
-          <p className="font-semibold text-sm">Fonctionnalité en cours de validation</p>
-          <p className="text-xs mt-0.5">
-            Calculs en cours de fiabilisation — accès ADMIN uniquement.
-            Vérifiez le tableau mensuel ci-dessous face à un calcul Excel avant de vous fier aux chiffres.
-          </p>
-        </div>
-      </div>
-
       {/* Sélecteur de période */}
       <PeriodSelector
         period={period}

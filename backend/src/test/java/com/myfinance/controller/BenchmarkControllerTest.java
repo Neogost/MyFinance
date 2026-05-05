@@ -93,8 +93,10 @@ class BenchmarkControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void getBenchmark_roleUser_retourne403() throws Exception {
-        mockMvc.perform(get("/api/patrimoine/performance/benchmark?instrumentId=42"))
-                .andExpect(status().isForbidden());
+    void getBenchmark_roleUser_retourne200() throws Exception {
+        when(instrumentRepository.findById(42L)).thenReturn(Optional.of(cw8()));
+        when(benchmarkService.compute(any(), any(), any())).thenReturn(sampleBenchmark());
+        mockMvc.perform(get("/api/patrimoine/performance/benchmark?instrumentId=42&from=2024-01-01"))
+                .andExpect(status().isOk());
     }
 }

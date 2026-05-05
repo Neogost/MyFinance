@@ -123,18 +123,20 @@ function MobileSectionTitle({ children }) {
 }
 
 export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null, onShowReleaseNotes }) {
-  const [incomeOpen,     setIncomeOpen]     = useState(false)
-  const [toolsOpen,      setToolsOpen]      = useState(false)
-  const [adminOpen,      setAdminOpen]      = useState(false)
+  const [incomeOpen,      setIncomeOpen]     = useState(false)
+  const [patrimoineOpen,  setPatrimoineOpen] = useState(false)
+  const [toolsOpen,       setToolsOpen]      = useState(false)
+  const [adminOpen,       setAdminOpen]      = useState(false)
   const { trackEvent } = useAnalytics()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const isIncomePage = currentPage === 'salary' || currentPage === 'other-incomes'
-  const isToolsPage  = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
-  const isAdminPage  = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','performance'].includes(currentPage)
+  const isIncomePage     = currentPage === 'salary' || currentPage === 'other-incomes'
+  const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
+  const isToolsPage      = ['tax-simulator','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
+  const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
-  function closeAll() { setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }
+  function closeAll() { setIncomeOpen(false); setPatrimoineOpen(false); setToolsOpen(false); setAdminOpen(false) }
   function closeMobile() { setMobileMenuOpen(false) }
 
   return (
@@ -148,7 +150,24 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
         {/* ── Nav desktop (cachée sur mobile) ── */}
         <nav className="hidden md:flex items-center gap-1">
           <NavBtn page="dashboard" label="Tableau de bord" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
-          <NavBtn page="patrimoine" label="Patrimoine" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+
+          <div className="relative">
+            <button
+              onClick={() => { setPatrimoineOpen(v => !v); setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isPatrimoinePage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+            >
+              Patrimoine <span className="text-xs">{patrimoineOpen ? '▲' : '▼'}</span>
+            </button>
+            {patrimoineOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPatrimoineOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
+                  <button onClick={() => { onNavigate('patrimoine'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'patrimoine' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Positions</button>
+                  <button onClick={() => { onNavigate('performance'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'performance' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Performance</button>
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="relative">
             <button
@@ -224,7 +243,6 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ['admin-instruments',    'Instruments financiers',     0],
                       ['admin-registrations',  "Demandes d'inscription",     pendingRegistrations],
                       ['admin-analytics',      'Analytics',                  0],
-                      ['performance',          'Performance (en travaux)',   0],
                     ].map(([page, label, badge]) => (
                       <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
                         className={`w-full text-left px-4 py-2 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
@@ -341,8 +359,10 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             <MobileMenuItem label="Salariat"              page="salary"        currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
             <MobileMenuItem label="Revenus complémentaires" page="other-incomes" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
 
-            {/* Passifs */}
-            <MobileSectionTitle>Actifs & Passifs</MobileSectionTitle>
+            {/* Patrimoine */}
+            <MobileSectionTitle>Patrimoine</MobileSectionTitle>
+            <MobileMenuItem label="Positions"    page="patrimoine"  currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+            <MobileMenuItem label="Performance"  page="performance" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
             <MobileMenuItem label="Passifs (grandes possessions)" page="possessions" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
 
             {/* Outils */}
@@ -372,7 +392,6 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
                 <MobileMenuItem label="Analytics"                  page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Performance (en travaux)"  page="performance"         currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
               </>
             )}
 

@@ -170,8 +170,9 @@ class PerformanceControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    void getPerformance_roleUser_retourne403() throws Exception {
+    void getPerformance_roleUser_retourne200() throws Exception {
+        when(performanceService.computeGlobal(any(), any(), any())).thenReturn(sampleDto());
         mockMvc.perform(get("/api/patrimoine/performance"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 }
