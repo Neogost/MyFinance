@@ -2,9 +2,53 @@
 
 ## v1.7.0 — *en cours*
 
-> Contrat de location sur les revenus locatifs, charges courantes dans le simulateur d'emprunt, enrichissement du graphique salarial annuel, simulateurs publics sans connexion et correctifs d'alignement.
+> Performance patrimoniale (TWR, MWR, volatilité, ratio de Sharpe) avec sélecteur de période, comparaison à un benchmark, contrat de location, charges courantes dans le simulateur d'emprunt, enrichissement du graphique salarial annuel et simulateurs publics sans connexion.
 
 ### ✨ Nouveautés
+
+#### Performance patrimoniale (Patrimoine → Performance)
+
+Nouveau module complet de mesure de la performance du patrimoine financier — accessible à tous les utilisateurs authentifiés via le menu **Patrimoine ▾**.
+
+**Quatre indicateurs principaux** affichés en haut de page :
+
+- **TWR annualisé** (Time-Weighted Return) — performance pure des actifs, indépendante du timing et du volume de vos versements. C'est la métrique standard pour comparer à un indice (CW8, S&P 500…).
+- **MWR annualisé** (Money-Weighted Return) — performance que vous avez réellement vécue, qui intègre le timing de vos versements. Un MWR < TWR signifie que vos gros versements sont arrivés à un moment moins favorable.
+- **Volatilité annualisée** — amplitude des variations mensuelles (écart-type × √12). Un portefeuille 100 % ETF monde tourne autour de 12–15 %/an ; une crypto heavy peut dépasser 40 %.
+- **Ratio de Sharpe** — rendement obtenu par unité de risque pris (Sharpe > 1 = excellent, 0,5–1 = correct, < 0,5 = médiocre). Couleur dynamique : rouge < 0, ambre < 0,5, neutre < 1, vert ≥ 1.
+
+**Sélecteur de période** avec 6 presets : **Global** (depuis le premier ordre), **YTD** (1er janvier de l'année courante), **1 an**, **3 ans**, **5 ans**, **Personnalisée** (date pickers libres). Le calcul s'adapte automatiquement.
+
+**Performance par catégorie** (Bourse / Crypto / Livrets) — une carte par catégorie présente avec son TWR, son MWR, sa valeur actuelle et sa plus-value.
+
+**Performance par position** — tableau groupé par **partenaire** (broker, banque, plateforme), trié par valeur décroissante. Chaque partenaire affiche ses positions par catégorie avec TWR, MWR, valeur, plus-value, et un sous-total agrégé. Style aligné sur la vue Patrimoine.
+
+**Graphique de performance cumulée (base 100)** — courbe d'évolution de la valeur d'1 € investi au début de la période, mois par mois. Permet de visualiser la trajectoire complète sur la période sélectionnée.
+
+**Comparaison à un benchmark** — sélecteur intégré au graphique avec deux modes :
+- **Indice** : recherche d'un instrument du référentiel (CW8, S&P 500…) → TWR pur de l'instrument superposé en courbe pointillée orange
+- **Taux fixe** : saisie d'un taux annuel (ex : 7 %/an correspondant à la moyenne historique du MSCI World) → courbe de croissance théorique superposée
+
+**Décomposition du gain** dans la section Synthèse — barre empilée séparant la **plus-value de marché** (appréciation des cours) des **revenus perçus** (dividendes, intérêts, airdrops réinvestis), avec montants signés et pourcentages du versé.
+
+**Détail mois par mois** — section dépliable qui expose le calcul Modified Dietz ligne par ligne (V_début, V_fin, flux net, Σ w·F, R_m). Permet de valider chaque sous-période contre un calcul Excel.
+
+**Section pédagogique** dépliable en bas de page : explique TWR et MWR avec un exemple concret sur 3 ans (Alice qui investit avant la baisse vs Bob qui investit après) — pour comprendre pourquoi deux investisseurs sur le même fonds peuvent avoir des MWR radicalement différents.
+
+#### Composants de saisie de date personnalisés
+
+Deux nouveaux composants remplacent le calendrier natif du navigateur (souvent peu intégré au design) :
+
+- **`DateInput`** : popover calendrier stylé Tailwind avec navigation mois/année rapide (clic sur le mois → grille des 12 mois ; clic sur l'année → grille de 12 ans, navigation par décennie).
+- **`DateRangeInput`** : double calendrier indépendant (gauche = début, droite = fin) avec aperçu de plage au survol et navigation rapide identique. Phase de sélection ① / ② mise en évidence visuellement.
+
+Les deux composants supportent `minDate` / `maxDate` pour griser les jours hors plage (utilisé dans la page Performance pour interdire les dates futures).
+
+Les anciens `<input type="date">` du reste de l'application bénéficient d'un nouveau style global : icône calendrier teintée indigo (light + dark), font normalisée.
+
+#### Toggles individuels de diversification (Tableau de bord)
+
+Le panneau de personnalisation du dashboard expose désormais **un toggle indépendant par dimension** de diversification (Bourse, Crypto, Immobilier physique). Vous pouvez afficher uniquement celles qui vous intéressent au lieu d'un unique toggle global.
 
 #### Contrat de location (Revenus → Complémentaires)
 
@@ -15,7 +59,6 @@ Les revenus de type **Locatif** peuvent désormais être saisis comme un contrat
 - En mode contrat, le champ "date de perception unique" est remplacé et le montant est labellisé "par mois"
 - Le simulateur d'impôts calcule automatiquement le montant annuel proratisé (loyer × mois dans l'année fiscale, gestion des entrées/sorties en cours d'année)
 - La liste affiche un badge "Contrat · le X" et la période du bail ; le montant est affiché avec "/mois"
-- Migration : `014_add_rental_contract_fields.sql`
 
 #### Charges courantes dans le simulateur d'emprunt (Outils → Simulateur)
 
@@ -46,6 +89,26 @@ Les barres s'empilent sur le graphique. Le tooltip affiche chaque revenu complé
 - **Comparateur d'enveloppes fiscales** : la TMI est pré-remplie depuis le simulateur d'impôts si connecté, sinon saisie manuelle
 
 Le tracking analytics fonctionne en mode anonyme (events tracés avec `user=null`).
+
+### 🛠️ Sous le capot
+
+#### Historique de prix et de taux de change (Administration → Instruments)
+
+Pour permettre les calculs de performance historique, deux nouvelles tables stockent l'évolution quotidienne des cours :
+
+- **`instrument_price_history`** — un cours par instrument et par jour (alimenté quotidiennement par le scheduler Boursorama et CoinGecko)
+- **`exchange_rate_history`** — un taux par devise et par jour (alimenté quotidiennement par Frankfurter / BCE)
+
+**Backfill manuel pour l'historique antérieur au déploiement** :
+- **CRYPTO** : bouton "↻ Backfill" dans la gestion des instruments → CoinGecko remonte tout l'historique disponible
+- **BOURSE** : bouton "📤 Import CSV" → import au format `date;price` (dates ISO ou françaises, décimales `,` ou `.`, tolère le copier/coller depuis Boursorama)
+- **Devises** : bouton "↻ Histo" dans la modal des taux de change → Frankfurter depuis 1999
+
+#### Correction de la conversion devise sur les ordres en devise étrangère
+
+Bug corrigé sur les positions en devise non-EUR (USD, GBP, CHF…) : le champ `amountEur` des ordres existants contenait en réalité le montant en devise native (le taux de change n'était pas appliqué à la création de l'ordre).
+
+Les nouveaux ordres sont désormais correctement convertis en euros au taux du jour de l'ordre. Les ordres déjà saisis avant la correction ont été recalculés rétroactivement.
 
 ### 🐛 Corrections
 
