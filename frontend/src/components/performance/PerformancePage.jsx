@@ -110,21 +110,48 @@ function fmtMonth(val) {
 }
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, tooltip, color = 'indigo', subtitle }) {
+function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor }) {
   const colors = {
     indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
     teal:   'bg-teal-50 border-teal-200 text-teal-700',
     gray:   'bg-gray-50 border-gray-200 text-gray-700',
+    amber:  'bg-amber-50 border-amber-200 text-amber-700',
   }
   return (
     <div className={`border rounded-xl p-5 ${colors[color]}`}>
       <div className="text-xs font-medium mb-1 uppercase tracking-wide flex items-center">
         {label}<InfoTooltip text={tooltip} />
       </div>
-      <div className="text-3xl font-bold">{value}</div>
+      <div className={`text-3xl font-bold ${valueColor ?? ''}`}>{value}</div>
       {subtitle && <div className="text-xs mt-1 opacity-70">{subtitle}</div>}
     </div>
   )
+}
+
+function fmtVolatility(val) {
+  if (val == null) return '—'
+  return (val * 100).toFixed(1) + ' %/an'
+}
+
+function fmtSharpe(val) {
+  if (val == null) return '—'
+  return val.toFixed(2)
+}
+
+function sharpeColor(val) {
+  if (val == null) return ''
+  if (val < 0)   return 'text-red-600'
+  if (val < 0.5) return 'text-amber-600'
+  if (val < 1)   return ''          // neutre — hérite de la carte gray
+  return 'text-emerald-700'
+}
+
+function sharpeSubtitle(val) {
+  if (val == null) return 'Non calculable'
+  if (val < 0)   return 'Rendement sous le taux sans risque'
+  if (val < 0.5) return 'En dessous de la moyenne'
+  if (val < 1)   return 'Correct'
+  return 'Excellent (> 1)'
 }
 
 // ── Graphique TWR cumulé base 100 ────────────────────────────────────────
@@ -1066,8 +1093,8 @@ export default function PerformancePage() {
       {/* Résultats */}
       {data && (
         <>
-          {/* KPIs TWR + MWR */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* KPIs TWR + MWR + Volatilité + Sharpe */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
               label="TWR annualisé"
               value={fmtPct(data.twrAnnualized)}
@@ -1081,6 +1108,21 @@ export default function PerformancePage() {
               color="teal"
               subtitle="Performance réellement vécue"
               tooltip="Money-Weighted Return — mesure la performance que vous avez réellement vécue, qui intègre le fait que l'argent placé tôt a plus pesé que l'argent placé tard. C'est la réponse honnête à « combien j'ai gagné par an, en moyenne, avec mes choix d'investissement ». Calculé comme un XIRR sur l'ensemble de vos cashflows."
+            />
+            <KpiCard
+              label="Volatilité"
+              value={fmtVolatility(data.volatilityAnnualized)}
+              color="gray"
+              subtitle="Amplitude des variations mensuelles"
+              tooltip="Écart-type annualisé des rendements mensuels (formule de Bessel, n−1). Mesure l'amplitude des variations de votre portefeuille. Un portefeuille 100 % ETF monde tourne autour de 12–15 %/an. Une crypto heavy peut dépasser 40 %/an. Plus c'est bas, plus le chemin vers le rendement est régulier."
+            />
+            <KpiCard
+              label="Ratio de Sharpe"
+              value={fmtSharpe(data.sharpeRatio)}
+              color="gray"
+              subtitle={sharpeSubtitle(data.sharpeRatio)}
+              valueColor={sharpeColor(data.sharpeRatio)}
+              tooltip="(TWR annualisé − 3 % taux sans risque) ÷ volatilité. Mesure le rendement obtenu par unité de risque prise. Sharpe > 1 = excellent, 0,5–1 = correct, < 0,5 = médiocre. Le S&P 500 tourne autour de 0,5–0,7 sur le long terme. Un Sharpe négatif signifie que vous êtes moins bien rémunéré que le Livret A pour le risque pris."
             />
           </div>
 

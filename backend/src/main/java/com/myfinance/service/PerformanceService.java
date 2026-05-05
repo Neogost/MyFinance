@@ -54,10 +54,15 @@ public class PerformanceService {
 
     // ── Résultat intermédiaire d'un calcul de tranche (global ou catégorie) ───
 
+    /** Taux sans risque utilisé pour le ratio de Sharpe (Livret A 3 %). */
+    private static final double RISK_FREE_RATE = 0.03;
+
     private record SliceResult(
             LocalDate firstChainingMonth,
             Double twrAnnualized,
             Double mwrAnnualized,
+            Double volatilityAnnualized,
+            Double sharpeRatio,
             BigDecimal currentValue,
             BigDecimal totalInvested,
             BigDecimal totalDividends,
@@ -158,6 +163,8 @@ public class PerformanceService {
                     catEnum.name(),
                     catResult.twrAnnualized(),
                     catResult.mwrAnnualized(),
+                    catResult.volatilityAnnualized(),
+                    catResult.sharpeRatio(),
                     catResult.currentValue().setScale(2, RoundingMode.HALF_UP),
                     catResult.totalInvested().setScale(2, RoundingMode.HALF_UP),
                     absGain,
@@ -223,6 +230,8 @@ public class PerformanceService {
                 Math.max(0, durationYears),
                 global.twrAnnualized(),
                 global.mwrAnnualized(),
+                global.volatilityAnnualized(),
+                global.sharpeRatio(),
                 global.totalInvested().setScale(2, RoundingMode.HALF_UP),
                 global.currentValue().setScale(2, RoundingMode.HALF_UP),
                 absoluteGain.setScale(2, RoundingMode.HALF_UP),
@@ -424,14 +433,40 @@ public class PerformanceService {
             }
         }
 
+        // Volatilité annualisée + ratio de Sharpe
+        Double volatility = computeVolatility(monthlyReturns);
+        Double sharpe     = computeSharpe(twrAnnualized, volatility);
+
         return new SliceResult(firstChainingMonth, twrAnnualized, mwrAnnualized,
-                currentValue, totalInvested, totalDividends, breakdown);
+                volatility, sharpe, currentValue, totalInvested, totalDividends, breakdown);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Écart-type des rendements mensuels (Bessel n−1) × √12 pour annualiser.
+     * Retourne null si moins de 2 mois inclus.
+     */
+    private static Double computeVolatility(List<Double> monthlyReturns) {
+        if (monthlyReturns.size() < 2) return null;
+        double mean = monthlyReturns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = monthlyReturns.stream()
+                .mapToDouble(r -> (r - mean) * (r - mean))
+                .sum() / (monthlyReturns.size() - 1);
+        return Math.sqrt(variance) * Math.sqrt(12);
+    }
+
+    /**
+     * Ratio de Sharpe = (TWR annualisé − taux sans risque) / volatilité annualisée.
+     * Taux sans risque : {@link #RISK_FREE_RATE} (Livret A 3 %).
+     */
+    private static Double computeSharpe(Double twrAnnualized, Double volatility) {
+        if (twrAnnualized == null || volatility == null || volatility == 0) return null;
+        return (twrAnnualized - RISK_FREE_RATE) / volatility;
+    }
+
     private SliceResult emptySlice() {
-        return new SliceResult(null, null, null,
+        return new SliceResult(null, null, null, null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of());
     }
 
@@ -472,7 +507,7 @@ public class PerformanceService {
     private PerformanceDto emptyResult(LocalDate to, List<String> warnings) {
         return new PerformanceDto(
                 Instant.now(), to, to, 0,
-                null, null,
+                null, null, null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
                 warnings, List.of(), List.of(), List.of()
         );

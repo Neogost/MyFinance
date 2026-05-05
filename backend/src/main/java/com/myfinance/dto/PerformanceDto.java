@@ -16,6 +16,8 @@ public record PerformanceDto(
         double durationYears,                  // (to - from) / 365.25
         Double twrAnnualized,                  // null si calcul impossible
         Double mwrAnnualized,                  // null si XIRR non convergent
+        Double volatilityAnnualized,           // écart-type des R_m × √12 — null si < 2 mois
+        Double sharpeRatio,                    // (twrAnnualized − riskFreeRate) / volatility — null si non calculable
         BigDecimal totalInvestedEur,           // Σ cashflows externes nets (versements - retraits)
         BigDecimal currentValueEur,            // valorisation globale actuelle
         BigDecimal absoluteGainEur,            // currentValueEur - totalInvestedEur

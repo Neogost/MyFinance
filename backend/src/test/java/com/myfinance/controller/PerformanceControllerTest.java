@@ -39,7 +39,7 @@ class PerformanceControllerTest {
 
     private PerformanceDto sampleDto() {
         CategoryPerformanceDto bourseCategory = new CategoryPerformanceDto(
-                "BOURSE", 0.085, 0.072,
+                "BOURSE", 0.085, 0.072, 0.142, 0.39,
                 new BigDecimal("40000.00"), new BigDecimal("32000.00"),
                 new BigDecimal("8000.00"), new BigDecimal("500.00")
         );
@@ -56,6 +56,8 @@ class PerformanceControllerTest {
                 1.25,
                 0.092,
                 0.078,
+                0.135,   // volatilityAnnualized
+                0.46,    // sharpeRatio
                 new BigDecimal("45200.00"),
                 new BigDecimal("58900.00"),
                 new BigDecimal("13700.00"),
@@ -118,7 +120,7 @@ class PerformanceControllerTest {
     void getPerformance_twrEtMwrNull_serialiseNulls() throws Exception {
         PerformanceDto dtoSansResultat = new PerformanceDto(
                 Instant.now(), LocalDate.now(), LocalDate.now(), 0,
-                null, null,
+                null, null, null, null,
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
                 List.of("Aucune position éligible"), List.of(), List.of(), List.of()
         );
