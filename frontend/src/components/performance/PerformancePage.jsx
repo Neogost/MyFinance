@@ -162,6 +162,17 @@ function mergeBenchmark(portfolioSeries, benchmarkSeries) {
   return portfolioSeries.map(p => ({ ...p, benchmark: bMap[p.month] ?? null }))
 }
 
+function buildFixedRateSeries(portfolioSeries, annualRatePct) {
+  const r = parseFloat(annualRatePct)
+  if (isNaN(r) || r < -99 || r > 1000) return null
+  const monthlyRate = Math.pow(1 + r / 100, 1 / 12) - 1
+  let value = 100
+  return portfolioSeries.map((p, i) => {
+    if (i > 0) value *= (1 + monthlyRate)
+    return { month: p.month, value: parseFloat(value.toFixed(3)) }
+  })
+}
+
 function TwrTooltip({ active, payload }) {
   if (!active || !payload?.length) return null
   const month = payload[0]?.payload?.month
@@ -189,11 +200,11 @@ function TwrTooltip({ active, payload }) {
 
 // ── Sélecteur de benchmark ────────────────────────────────────────────────
 
-function BenchmarkSelector({ selectedId, selectedLabel, onSelect, onClear }) {
-  const [query, setQuery]       = useState('')
-  const [results, setResults]   = useState([])
-  const [open, setOpen]         = useState(false)
-  const [loading, setLoading]   = useState(false)
+function InstrumentPicker({ selectedId, selectedLabel, onSelect, onClear }) {
+  const [query, setQuery]     = useState('')
+  const [results, setResults] = useState([])
+  const [open, setOpen]       = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (query.length < 2) { setResults([]); return }
@@ -206,44 +217,78 @@ function BenchmarkSelector({ selectedId, selectedLabel, onSelect, onClear }) {
 
   const pick = (inst) => {
     onSelect(inst.id, inst.name + (inst.ticker ? ` (${inst.ticker})` : ''))
-    setQuery('')
-    setResults([])
-    setOpen(false)
+    setQuery(''); setResults([]); setOpen(false)
   }
 
+  if (selectedId) {
+    return (
+      <div className="flex items-center gap-2 text-xs bg-gray-100 rounded-lg px-3 py-1.5">
+        <span className="font-medium text-gray-700 truncate max-w-[180px]">{selectedLabel}</span>
+        <button onClick={onClear} className="text-gray-400 hover:text-red-500 shrink-0">✕</button>
+      </div>
+    )
+  }
   return (
     <div className="relative">
-      {selectedId ? (
-        <div className="flex items-center gap-2 text-xs bg-gray-100 rounded-lg px-3 py-1.5">
-          <span className="font-medium text-gray-700 truncate max-w-[180px]">{selectedLabel}</span>
-          <button onClick={onClear} className="text-gray-400 hover:text-red-500 shrink-0">✕</button>
+      <input
+        type="text" placeholder="Rechercher un indice…" value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+      />
+      {loading && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">…</span>}
+      {open && results.length > 0 && (
+        <div className="absolute top-full mt-1 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+          {results.map(inst => (
+            <button key={inst.id} onClick={() => pick(inst)}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 flex items-center gap-2">
+              <span className="font-medium text-gray-800 truncate">{inst.name}</span>
+              {inst.ticker && <span className="text-gray-400 shrink-0">{inst.ticker}</span>}
+            </button>
+          ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+function BenchmarkSelector({
+  mode, onModeChange,
+  selectedId, selectedLabel, onSelect, onClear,
+  fixedRateInput, onFixedRateChange,
+}) {
+  const tabCls = (m) => `px-2.5 py-1 text-xs rounded-md transition font-medium ${
+    mode === m ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'
+  }`
+  return (
+    <div className="flex flex-col gap-2 items-end">
+      {/* Onglets mode */}
+      <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
+        <button className={tabCls('instrument')} onClick={() => onModeChange('instrument')}>
+          📈 Indice
+        </button>
+        <button className={tabCls('rate')} onClick={() => onModeChange('rate')}>
+          % Taux fixe
+        </button>
+      </div>
+      {/* Contenu selon le mode */}
+      {mode === 'instrument' ? (
+        <InstrumentPicker
+          selectedId={selectedId} selectedLabel={selectedLabel}
+          onSelect={onSelect} onClear={onClear}
+        />
       ) : (
-        <div className="relative">
+        <div className="flex items-center gap-1.5">
           <input
-            type="text"
-            placeholder="Comparer à un indice…"
-            value={query}
-            onChange={e => { setQuery(e.target.value); setOpen(true) }}
-            onFocus={() => setOpen(true)}
-            className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 w-52 focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white"
+            type="number" min="-99" max="100" step="0.1"
+            value={fixedRateInput}
+            onChange={e => onFixedRateChange(e.target.value)}
+            placeholder="7,0"
+            className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 w-20 text-right focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
           />
-          {loading && (
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">…</span>
-          )}
-          {open && results.length > 0 && (
-            <div className="absolute top-full mt-1 left-0 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-              {results.map(inst => (
-                <button
-                  key={inst.id}
-                  onClick={() => pick(inst)}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-indigo-50 flex items-center gap-2"
-                >
-                  <span className="font-medium text-gray-800 truncate">{inst.name}</span>
-                  {inst.ticker && <span className="text-gray-400 shrink-0">{inst.ticker}</span>}
-                </button>
-              ))}
-            </div>
+          <span className="text-xs text-gray-500 font-medium">%/an</span>
+          {fixedRateInput && (
+            <button onClick={() => onFixedRateChange('')} className="text-gray-400 hover:text-red-500 text-xs">✕</button>
           )}
         </div>
       )}
@@ -254,45 +299,72 @@ function BenchmarkSelector({ selectedId, selectedLabel, onSelect, onClear }) {
 // ── Graphique complet ─────────────────────────────────────────────────────
 
 function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, customTo }) {
+  const [benchmarkMode,  setBenchmarkMode]  = useState('instrument')
+  // -- mode instrument --
   const [benchmarkId,    setBenchmarkId]    = useState(null)
   const [benchmarkLabel, setBenchmarkLabel] = useState(null)
-  const [benchmarkSeries, setBenchmarkSeries] = useState(null)
-  const [benchmarkTwr,   setBenchmarkTwr]   = useState(null)
+  const [instSeries,     setInstSeries]     = useState(null)
+  const [instTwr,        setInstTwr]        = useState(null)
   const [benchmarkLoading, setBenchmarkLoading] = useState(false)
+  // -- mode taux fixe --
+  const [fixedRateInput, setFixedRateInput] = useState('')
 
   const portfolioSeries = useMemo(
     () => buildTwr100Series(monthlyBreakdown, from),
     [monthlyBreakdown, from]
   )
+
+  // Série de référence : instrument ou taux fixe
+  const benchmarkSeries = useMemo(() => {
+    if (benchmarkMode === 'rate') return buildFixedRateSeries(portfolioSeries, fixedRateInput)
+    return instSeries
+  }, [benchmarkMode, fixedRateInput, instSeries, portfolioSeries])
+
+  const benchmarkTwr = useMemo(() => {
+    if (benchmarkMode === 'rate') {
+      const r = parseFloat(fixedRateInput)
+      return isNaN(r) ? null : r / 100
+    }
+    return instTwr
+  }, [benchmarkMode, fixedRateInput, instTwr])
+
+  const benchmarkDisplayLabel = useMemo(() => {
+    if (benchmarkMode === 'rate') {
+      const r = parseFloat(fixedRateInput)
+      return isNaN(r) || fixedRateInput === '' ? null : `Taux fixe +${r.toFixed(1)} %/an`
+    }
+    return benchmarkLabel
+  }, [benchmarkMode, fixedRateInput, benchmarkLabel])
+
   const chartData = useMemo(
     () => mergeBenchmark(portfolioSeries, benchmarkSeries),
     [portfolioSeries, benchmarkSeries]
   )
 
-  // Recharger le benchmark quand la période change
+  // Charger le benchmark instrument quand la période change
   useEffect(() => {
-    if (!benchmarkId) return
+    if (benchmarkMode !== 'instrument' || !benchmarkId) return
     setBenchmarkLoading(true)
     const { from: f, to: t } = period === 'CUSTOM'
       ? { from: customFrom || null, to: customTo || null }
       : { from, to: null }
     getBenchmarkPerformance(benchmarkId, f, t)
-      .then(dto => { setBenchmarkSeries(dto.series); setBenchmarkTwr(dto.twrAnnualized) })
-      .catch(() => { setBenchmarkSeries(null); setBenchmarkTwr(null) })
+      .then(dto => { setInstSeries(dto.series); setInstTwr(dto.twrAnnualized) })
+      .catch(() => { setInstSeries(null); setInstTwr(null) })
       .finally(() => setBenchmarkLoading(false))
-  }, [benchmarkId, from, period, customFrom, customTo])
+  }, [benchmarkId, benchmarkMode, from, period, customFrom, customTo])
 
+  const handleModeChange = (m) => {
+    setBenchmarkMode(m)
+    // Réinitialiser l'autre mode lors du switch
+    if (m === 'rate')       { setBenchmarkId(null); setBenchmarkLabel(null); setInstSeries(null); setInstTwr(null) }
+    if (m === 'instrument') { setFixedRateInput('') }
+  }
   const handleSelectBenchmark = (id, label) => {
-    setBenchmarkId(id)
-    setBenchmarkLabel(label)
-    setBenchmarkSeries(null)
-    setBenchmarkTwr(null)
+    setBenchmarkId(id); setBenchmarkLabel(label); setInstSeries(null); setInstTwr(null)
   }
   const handleClearBenchmark = () => {
-    setBenchmarkId(null)
-    setBenchmarkLabel(null)
-    setBenchmarkSeries(null)
-    setBenchmarkTwr(null)
+    setBenchmarkId(null); setBenchmarkLabel(null); setInstSeries(null); setInstTwr(null)
   }
 
   const hasData = portfolioSeries.some(p => p.portfolio !== 100)
@@ -326,20 +398,27 @@ function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, custom
             />
           </h2>
           {/* KPI benchmark inline si disponible */}
-          {benchmarkTwr != null && (
-            <span className="text-xs bg-gray-100 rounded-lg px-2 py-1 text-gray-600">
-              {benchmarkLabel} : <span className="font-semibold text-gray-800">{fmtPct(benchmarkTwr)}</span>
+          {benchmarkTwr != null && benchmarkDisplayLabel && (
+            <span className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-amber-700">
+              {benchmarkMode === 'rate'
+                ? <span className="font-semibold">{benchmarkDisplayLabel}</span>
+                : <>{benchmarkDisplayLabel} : <span className="font-semibold">{fmtPct(benchmarkTwr)}</span></>
+              }
             </span>
           )}
           {benchmarkLoading && (
-            <span className="text-xs text-gray-400">Chargement benchmark…</span>
+            <span className="text-xs text-gray-400">Chargement…</span>
           )}
         </div>
         <BenchmarkSelector
+          mode={benchmarkMode}
+          onModeChange={handleModeChange}
           selectedId={benchmarkId}
           selectedLabel={benchmarkLabel}
           onSelect={handleSelectBenchmark}
           onClear={handleClearBenchmark}
+          fixedRateInput={fixedRateInput}
+          onFixedRateChange={setFixedRateInput}
         />
       </div>
 
@@ -365,7 +444,7 @@ function TwrCumulativeChart({ monthlyBreakdown, from, period, customFrom, custom
             dot={false} activeDot={{ r: 4, fill: '#4f46e5' }} connectNulls />
           {/* Courbe benchmark (si sélectionné) */}
           {benchmarkSeries && (
-            <Line type="monotone" dataKey="benchmark" name={benchmarkLabel}
+            <Line type="monotone" dataKey="benchmark" name={benchmarkDisplayLabel}
               stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 3"
               dot={false} activeDot={{ r: 4, fill: '#f59e0b' }} connectNulls />
           )}

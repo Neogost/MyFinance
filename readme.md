@@ -153,7 +153,7 @@ cd backend
 # Frontend
 cd frontend
 npm test
-# 946 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes, simulateur retraite, performance patrimoniale)
+# 948 tests Vitest (pages CRUD, widgets dashboard, formulaires, utils, graphiques, infrastructure, simulateur Lombard, comparateur enveloppes, simulateur retraite, performance patrimoniale)
 ```
 
 ## Documentation

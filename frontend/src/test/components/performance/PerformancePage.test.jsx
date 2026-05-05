@@ -231,6 +231,28 @@ describe('PerformancePage', () => {
     expect(screen.getAllByText(/Bob/i).length).toBeGreaterThanOrEqual(1)
   })
 
+  // ── Sélecteur benchmark taux fixe ────────────────────────────────────────
+
+  it('affiche les deux modes du sélecteur de benchmark', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => screen.getByText('Performance cumulée (base 100)'))
+
+    expect(screen.getByText('📈 Indice')).toBeInTheDocument()
+    expect(screen.getByText('% Taux fixe')).toBeInTheDocument()
+  })
+
+  it('affiche le champ taux quand le mode Taux fixe est sélectionné', async () => {
+    getGlobalPerformance.mockResolvedValue(DTO_COMPLET)
+    render(<PerformancePage />)
+
+    await waitFor(() => screen.getByText('% Taux fixe'))
+    fireEvent.click(screen.getByText('% Taux fixe'))
+
+    expect(screen.getByText('%/an')).toBeInTheDocument()
+  })
+
   // ── Graphique TWR cumulé ──────────────────────────────────────────────────
 
   it('affiche le graphique TWR cumulé quand il y a des mois inclus', async () => {
