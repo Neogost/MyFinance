@@ -6,7 +6,9 @@ import com.myfinance.domain.*;
 import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
+import com.myfinance.domain.BonusTypeEnum;
 import com.myfinance.repository.ContractBenefitRepository;
+import com.myfinance.repository.ContractBonusRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import com.myfinance.repository.SalaryRevisionRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class SalaryContractService {
 
     private final SalaryContractRepository    salaryContractRepository;
     private final ContractBenefitRepository   contractBenefitRepository;
+    private final ContractBonusRepository     contractBonusRepository;
     private final SalaryRevisionRepository    salaryRevisionRepository;
     private final TaxParameters               taxParameters;
     private final PublicSectorParameters      publicSectorParameters;
@@ -199,6 +202,16 @@ public class SalaryContractService {
                 .mapToDouble(b -> b.getMonthlyAmount() != null ? b.getMonthlyAmount() : 0.0)
                 .sum() * 12f;
 
+        LocalDate today = LocalDate.now();
+        float monthlyActiveMensuelleGross = (float) contractBonusRepository
+                .findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(contract)
+                .stream()
+                .filter(b -> b.getType() == BonusTypeEnum.MENSUELLE)
+                .filter(b -> b.getStartDate() != null && !b.getStartDate().isAfter(today))
+                .filter(b -> b.getEndDate() == null || !b.getEndDate().isBefore(today))
+                .mapToDouble(b -> b.getGrossAmount() != null ? b.getGrossAmount() : 0.0)
+                .sum();
+
         Optional<SalaryRevision> activeRevision = salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
                         contract, LocalDate.now());
@@ -238,6 +251,7 @@ public class SalaryContractService {
 
         return SalaryContractDto.from(contract, taxParameters, publicSectorParameters,
                 contractOwner, taxSimulatorService, annualBenefits,
-                activeRevisionId, effectiveSalary, pointValueUsed);
+                activeRevisionId, effectiveSalary, pointValueUsed,
+                monthlyActiveMensuelleGross);
     }
 }

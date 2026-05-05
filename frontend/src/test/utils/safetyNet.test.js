@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { computeSafetyNetTarget } from '../../utils/safetyNet'
+import { computeSafetyNetTarget, computeMonthlyReferenceNet } from '../../utils/safetyNet'
 
 const EXPENSES_SUMMARY = { totalMonthlyExpenses: 1800 }
-const ACTIVE_CONTRACT  = { monthlyNetAfterTax: 2500 }
+const ACTIVE_CONTRACT  = { monthlyNetAfterTax: 2500, monthlyGrossSalary: 3200 }
 
 describe('computeSafetyNetTarget', () => {
   it('retourne null si user est null', () => {
@@ -59,9 +59,17 @@ describe('computeSafetyNetTarget', () => {
 
   // ── MONTHS_SALARY ────────────────────────────────────────────────────────
 
-  it('MONTHS_SALARY : retourne mois × salaire net mensuel', () => {
+  it('MONTHS_SALARY : retourne mois × salaire net mensuel (sans primes)', () => {
     const user = { safetyNetMode: 'MONTHS_SALARY', safetyNetMonths: 6 }
     expect(computeSafetyNetTarget(user, null, ACTIVE_CONTRACT)).toBe(15000)
+  })
+
+  it('MONTHS_SALARY : inclut les primes mensuelles actives dans le calcul', () => {
+    const user = { safetyNetMode: 'MONTHS_SALARY', safetyNetMonths: 6 }
+    const contract = { monthlyNetAfterTax: 2500, monthlyGrossSalary: 3200, monthlyActiveMensuelleGross: 400 }
+    // ratio net/brut = 2500/3200 ≈ 0.78125 → bonus net ≈ 312.5 → référence ≈ 2812.5 → 6 × 2812.5 = 16875
+    const result = computeSafetyNetTarget(user, null, contract)
+    expect(result).toBeCloseTo(16875, 0)
   })
 
   it('MONTHS_SALARY : retourne null si activeContract est null', () => {
@@ -82,5 +90,21 @@ describe('computeSafetyNetTarget', () => {
   it('MONTHS_SALARY : retourne null si safetyNetMonths est 0', () => {
     const user = { safetyNetMode: 'MONTHS_SALARY', safetyNetMonths: 0 }
     expect(computeSafetyNetTarget(user, null, ACTIVE_CONTRACT)).toBeNull()
+  })
+
+  // ── computeMonthlyReferenceNet ────────────────────────────────────────────
+
+  it('computeMonthlyReferenceNet : retourne salaire seul sans primes', () => {
+    expect(computeMonthlyReferenceNet(ACTIVE_CONTRACT)).toBe(2500)
+  })
+
+  it('computeMonthlyReferenceNet : ajoute les primes mensuelles via ratio net/brut', () => {
+    const contract = { monthlyNetAfterTax: 2500, monthlyGrossSalary: 3200, monthlyActiveMensuelleGross: 400 }
+    expect(computeMonthlyReferenceNet(contract)).toBeCloseTo(2812.5, 1)
+  })
+
+  it('computeMonthlyReferenceNet : fallback 0.75 si ratio non calculable', () => {
+    const contract = { monthlyNetAfterTax: 2500, monthlyGrossSalary: 0, monthlyActiveMensuelleGross: 400 }
+    expect(computeMonthlyReferenceNet(contract)).toBeCloseTo(2800, 1)
   })
 })

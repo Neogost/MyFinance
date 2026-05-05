@@ -62,7 +62,9 @@ public record SalaryContractDto(
         Float annualSuperGross,
         Float monthlySuperGross,
         Float dailySuperGross,
-        Float hourlySuperGross
+        Float hourlySuperGross,
+        // ── Primes mensuelles actives (MENSUELLE, pour matelas de sécurité) ──
+        Float monthlyActiveMensuelleGross  // somme brute des primes MENSUELLE actives à la date du jour
 ) {
     public static SalaryContractDto from(SalaryContract c,
                                          TaxParameters taxParams,
@@ -72,7 +74,8 @@ public record SalaryContractDto(
                                          float annualBenefits,
                                          Long activeRevisionId,
                                          float effectiveSalary,
-                                         Float pointValueUsed) {
+                                         Float pointValueUsed,
+                                         float monthlyActiveMensuelleGross) {
         ContractTypeEnum type = c.getContractType() != null ? c.getContractType() : ContractTypeEnum.PRIVATE;
 
         float annualNetImp = computeNetImposable(c, type, effectiveSalary, taxParams, publicParams);
@@ -130,7 +133,8 @@ public record SalaryContractDto(
                 annualSuperGross,
                 annualSuperGross != null ? annualSuperGross / paidMonths : null,
                 annualSuperGross != null ? annualSuperGross / 228f : null,
-                annualSuperGross != null ? annualSuperGross / workingHours : null
+                annualSuperGross != null ? annualSuperGross / workingHours : null,
+                monthlyActiveMensuelleGross
         );
     }
 

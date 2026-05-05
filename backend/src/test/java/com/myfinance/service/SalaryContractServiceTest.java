@@ -11,6 +11,7 @@ import com.myfinance.dto.CreateSalaryContractRequest;
 import com.myfinance.dto.SalaryContractDto;
 import com.myfinance.dto.UpdateSalaryContractRequest;
 import com.myfinance.repository.ContractBenefitRepository;
+import com.myfinance.repository.ContractBonusRepository;
 import com.myfinance.repository.SalaryContractRepository;
 import com.myfinance.repository.SalaryRevisionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ class SalaryContractServiceTest {
 
     @Mock SalaryContractRepository    salaryContractRepository;
     @Mock ContractBenefitRepository   contractBenefitRepository;
+    @Mock ContractBonusRepository     contractBonusRepository;
     @Mock SalaryRevisionRepository    salaryRevisionRepository;
     @Mock TaxParameters               taxParameters;
     @Mock PublicSectorParameters      publicSectorParameters;
@@ -89,6 +91,7 @@ class SalaryContractServiceTest {
         Mockito.lenient().when(taxSimulatorService.estimerImpotSurSalaire(anyFloat(), any())).thenReturn(null);
         // Aucun avantage en nature par défaut
         Mockito.lenient().when(contractBenefitRepository.findByContractOrderByLabelAsc(any())).thenReturn(List.of());
+        Mockito.lenient().when(contractBonusRepository.findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(any())).thenReturn(List.of());
         // Aucune révision salariale par défaut → salaire du contrat utilisé
         Mockito.lenient().when(salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))

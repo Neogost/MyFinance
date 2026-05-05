@@ -3,7 +3,7 @@ import { useAnalytics } from '../../hooks/useAnalytics'
 import { updateSafetyNet } from '../../api/auth'
 import { getExpenseSummary } from '../../api/expenses'
 import { getSalaryContracts } from '../../api/income'
-import { computeSafetyNetTarget } from '../../utils/safetyNet'
+import { computeSafetyNetTarget, computeMonthlyReferenceNet } from '../../utils/safetyNet'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -178,7 +178,17 @@ export default function SafetyNetPanel({ user, onUpdate }) {
             <p className="text-sm font-semibold text-indigo-800">Objectif calculé : {fmtEur.format(previewTarget)}</p>
             <p className="text-xs text-indigo-500 mt-0.5">
               {mode === 'MONTHS_EXPENSES' && `${months} mois × ${fmtEur.format(expensesSummary?.totalMonthlyExpenses ?? 0)} de dépenses/mois`}
-              {mode === 'MONTHS_SALARY'   && `${months} mois × ${fmtEur.format(activeContract?.monthlyNetAfterTax ?? 0)} de salaire net/mois`}
+              {mode === 'MONTHS_SALARY'   && (() => {
+                const ref        = computeMonthlyReferenceNet(activeContract)
+                const salary     = activeContract?.monthlyNetAfterTax ?? 0
+                const bonusGross = activeContract?.monthlyActiveMensuelleGross ?? 0
+                const gross      = activeContract?.monthlyGrossSalary
+                const netRatio   = gross > 0 && salary > 0 ? salary / gross : 0.75
+                const bonusNet   = bonusGross * netRatio
+                return bonusGross > 0
+                  ? `${months} mois × ${fmtEur.format(ref)} (${fmtEur.format(salary)} salaire + ${fmtEur.format(bonusNet)} primes)`
+                  : `${months} mois × ${fmtEur.format(ref)} de salaire net/mois`
+              })()}
               {mode === 'FIXED_AMOUNT'    && 'Montant fixe défini manuellement'}
             </p>
           </div>

@@ -57,7 +57,9 @@ class SalaryContractControllerTest {
                 // net d'impôt (null : profil fiscal non renseigné)
                 null, null, null, null, null, 0f,
                 // super brut
-                65250f, 5437.50f, 286.18f, 40.88f
+                65250f, 5437.50f, 286.18f, 40.88f,
+                // primes mensuelles actives
+                0f
         );
     }
 
@@ -173,7 +175,7 @@ class SalaryContractControllerTest {
                 48000f, null, 100f, null, 13, 35f, 9.5f, 50f, false, null,
                 39375.03f, 3692.3f, 3028.85f, 1596f, 30.07f, 24.67f, 210.52f, 172.70f, 90.25f, 90.25f,
                 null, null, null, null, null, 0f,
-                69600f, 5353.85f, 305.26f, 43.61f);
+                69600f, 5353.85f, 305.26f, 43.61f, 0f);
 
         when(salaryContractService.update(eq(1L), any(), any())).thenReturn(updated);
 
