@@ -180,7 +180,7 @@ public class CryptoTaxService {
     public String exportCsv(User user, int year) {
         List<CryptoCessionDto> cessions = getCessions(user, year);
         StringBuilder sb = new StringBuilder();
-        sb.append("N°,Date de cession,Valeur portefeuille (VGP),Prix de cession (PC),Prix total acquisition (PTA),Plus-value,Notes\n");
+        sb.append("N°,Date de cession (211),Valeur portefeuille VGP (212),Prix de cession PC (213),Prix total acquisition PTA (218),Plus-value (222),Notes\n");
 
         BigDecimal totalPc = BigDecimal.ZERO;
         BigDecimal totalPv = BigDecimal.ZERO;

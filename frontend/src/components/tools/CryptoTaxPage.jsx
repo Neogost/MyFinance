@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   getCryptoTaxState,
   getCryptoTaxSummary,
@@ -30,20 +31,109 @@ function KpiCard({ label, value, sub, colorClass = 'text-gray-900' }) {
   )
 }
 
-function InfoTooltip({ text }) {
-  const [show, setShow] = useState(false)
+// ── Encart de report sur la déclaration officielle ──────────────
+
+function DeclarationBoxesPanel({ totalPlusValue, totalMoinsValue, plusValueNetteImposable, exempt, taxOption }) {
+  if (exempt) {
+    return (
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p className="text-sm font-semibold text-emerald-800 mb-1">📋 Déclaration officielle</p>
+        <p className="text-xs text-emerald-700">
+          ✓ Cessions ≤ 305 € — <strong>aucune obligation déclarative</strong>. Vous n'avez ni le formulaire 2086 ni les cases 3AN/3BN à remplir sur la 2042-C.
+        </p>
+      </div>
+    )
+  }
+
+  const targetBox = taxOption === 'BAREME' ? '3CN' : '3AN'
+  const hasMoinsValue = totalMoinsValue > 0
+  const hasPlusValue  = plusValueNetteImposable > 0
+
   return (
-    <span className="relative inline-block ml-1 align-middle">
-      <button type="button"
-        className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold leading-none flex items-center justify-center hover:bg-gray-300"
-        onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>?</button>
-      {show && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-xl">
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+      <p className="text-sm font-semibold text-amber-800 mb-2">
+        📋 À reporter dans votre déclaration de revenus
+      </p>
+      <div className="space-y-2 text-xs">
+        <p className="text-amber-900">
+          <strong>1.</strong> Détail de chaque cession → formulaire <strong>2086</strong> (annexe — colonnes 211 à 222, voir tableau ci-dessous)
+        </p>
+        <p className="text-amber-900">
+          <strong>2.</strong> Totaux → formulaire <strong>2042-C</strong>, section <em>« Plus-values des actifs numériques »</em> :
+        </p>
+        <ul className="ml-5 space-y-1">
+          {hasPlusValue && (
+            <li className="flex items-start gap-2">
+              <span className="text-amber-700">→</span>
+              <span>
+                Case <strong className="bg-white px-1.5 py-0.5 rounded border border-amber-300">{targetBox}</strong>
+                {' '}(plus-value imposable {taxOption === 'BAREME' ? 'au barème IR' : 'au PFU'}) :{' '}
+                <strong>{fmt(plusValueNetteImposable)}</strong>
+              </span>
+            </li>
+          )}
+          {hasMoinsValue && (
+            <li className="flex items-start gap-2">
+              <span className="text-amber-700">→</span>
+              <span>
+                Case <strong className="bg-white px-1.5 py-0.5 rounded border border-amber-300">3BN</strong>
+                {' '}(moins-value globale de l'année — imputable uniquement sur les PV de la même année pour les investisseurs occasionnels) :{' '}
+                <strong>{fmt(totalMoinsValue)}</strong>
+              </span>
+            </li>
+          )}
+          {!hasPlusValue && !hasMoinsValue && (
+            <li className="text-amber-700 italic">Aucune plus ni moins-value à déclarer cette année.</li>
+          )}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function InfoTooltip({ text }) {
+  const [rect, setRect] = useState(null)
+  const btnRef = useRef(null)
+
+  function handleEnter() {
+    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect())
+  }
+  function handleLeave() {
+    setRect(null)
+  }
+
+  // Tooltip 256 px (w-64) centré au-dessus du bouton, contraint à la viewport
+  let tooltipStyle = null
+  if (rect) {
+    const width = 256
+    const margin = 8
+    let left = rect.left + rect.width / 2 - width / 2
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin))
+    tooltipStyle = {
+      position: 'fixed',
+      top: rect.top - margin,
+      left,
+      width,
+      transform: 'translateY(-100%)',
+      zIndex: 9999,
+    }
+  }
+
+  return (
+    <>
+      <span className="inline-block ml-1 align-middle">
+        <button ref={btnRef} type="button"
+          className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold leading-none flex items-center justify-center hover:bg-gray-300"
+          onMouseEnter={handleEnter} onMouseLeave={handleLeave}>?</button>
+      </span>
+      {rect && createPortal(
+        <div style={tooltipStyle}
+          className="bg-gray-800 text-white text-xs rounded-lg p-3 shadow-xl pointer-events-none">
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800" />
-        </div>
+        </div>,
+        document.body
       )}
-    </span>
+    </>
   )
 }
 
@@ -365,7 +455,7 @@ function ManualMode({ year, taxOption, tmi }) {
 
   function exportCsv() {
     setExporting(true)
-    const lines = ['N°,Date de cession,VGP,Prix de cession (PC),PTA avant,Plus-value,Notes']
+    const lines = ['N°,Date de cession (211),VGP (212),Prix de cession PC (213),PTA avant (218),Plus-value (222),Notes']
     result.cessionsYear.forEach((c, i) => {
       lines.push([
         i + 1, c.op.date,
@@ -405,6 +495,15 @@ function ManualMode({ year, taxOption, tmi }) {
 
       {/* Simulateur hypothétique */}
       <HypotheticalSimulator currentPta={result.ptaAtYearEnd} taxOption={taxOption} tmi={tmi} />
+
+      {/* Encart déclaration officielle */}
+      <DeclarationBoxesPanel
+        totalPlusValue={result.totalPlusValue}
+        totalMoinsValue={result.totalMoinsValue}
+        plusValueNetteImposable={result.pvNette}
+        exempt={result.exempt}
+        taxOption={taxOption}
+      />
 
       {/* Seuil 305 € */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -450,12 +549,26 @@ function ManualMode({ year, taxOption, tmi }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="px-3 py-2 text-left text-xs text-gray-500">Date</th>
+                    <th className="px-3 py-2 text-left text-xs text-gray-500">
+                      Date <span className="text-gray-400 font-normal">(211)</span>
+                    </th>
                     <th className="px-3 py-2 text-left text-xs text-gray-500">Crypto</th>
-                    <th className="px-3 py-2 text-right text-xs text-gray-500">PC</th>
-                    <th className="px-3 py-2 text-right text-xs text-gray-500">PTA avant</th>
-                    <th className="px-3 py-2 text-right text-xs text-gray-500">VGP</th>
-                    <th className="px-3 py-2 text-right text-xs text-gray-500">Plus-value</th>
+                    <th className="px-3 py-2 text-right text-xs text-gray-500">
+                      PC <span className="text-gray-400 font-normal">(213)</span>
+                      <InfoTooltip text="Prix de cession — colonne 213 du formulaire 2086. Montant en euros reçu lors de la vente." />
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs text-gray-500">
+                      PTA avant <span className="text-gray-400 font-normal">(218)</span>
+                      <InfoTooltip text="Prix Total d'Acquisition — colonne 218. Somme cumulée des achats fiat avant cette cession." />
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs text-gray-500">
+                      VGP <span className="text-gray-400 font-normal">(212)</span>
+                      <InfoTooltip text="Valeur Globale du Portefeuille — colonne 212. Valeur totale de toutes vos cryptos au moment de la cession." />
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs text-gray-500">
+                      Plus-value <span className="text-gray-400 font-normal">(222)</span>
+                      <InfoTooltip text="Plus ou moins-value — colonne 222 du formulaire 2086. Calculée selon la formule officielle PV = PC − (PTA × PC / VGP)." />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -663,6 +776,15 @@ function ConnectedMode({ year, taxOption, tmi }) {
           {/* Simulateur hypothétique */}
           <HypotheticalSimulator currentPta={state?.currentPta} taxOption={taxOption} tmi={tmi} />
 
+          {/* Encart déclaration officielle */}
+          <DeclarationBoxesPanel
+            totalPlusValue={Number(summary.totalPlusValueEur)}
+            totalMoinsValue={Number(summary.totalMoinsValueEur)}
+            plusValueNetteImposable={Number(summary.plusValueNetteImposable)}
+            exempt={summary.exemptedBy305Threshold}
+            taxOption={taxOption}
+          />
+
           {/* Seuil 305 € */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
@@ -712,12 +834,26 @@ function ConnectedMode({ year, taxOption, tmi }) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        <th className="px-3 py-2 text-left text-xs text-gray-500">Date</th>
+                        <th className="px-3 py-2 text-left text-xs text-gray-500">
+                          Date <span className="text-gray-400 font-normal">(211)</span>
+                        </th>
                         <th className="px-3 py-2 text-left text-xs text-gray-500">Crypto</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">PC</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">PTA avant</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">VGP</th>
-                        <th className="px-3 py-2 text-right text-xs text-gray-500">Plus-value</th>
+                        <th className="px-3 py-2 text-right text-xs text-gray-500">
+                          PC <span className="text-gray-400 font-normal">(213)</span>
+                          <InfoTooltip text="Prix de cession — colonne 213 du formulaire 2086. Montant en euros reçu lors de la vente." />
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs text-gray-500">
+                          PTA avant <span className="text-gray-400 font-normal">(218)</span>
+                          <InfoTooltip text="Prix Total d'Acquisition — colonne 218. Somme cumulée des achats fiat avant cette cession." />
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs text-gray-500">
+                          VGP <span className="text-gray-400 font-normal">(212)</span>
+                          <InfoTooltip text="Valeur Globale du Portefeuille — colonne 212. Valeur totale de toutes vos cryptos au moment de la cession." />
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs text-gray-500">
+                          Plus-value <span className="text-gray-400 font-normal">(222)</span>
+                          <InfoTooltip text="Plus ou moins-value — colonne 222 du formulaire 2086. Calculée selon la formule officielle PV = PC − (PTA × PC / VGP)." />
+                        </th>
                         <th className="px-3 py-2 text-left text-xs text-gray-500">Notes</th>
                       </tr>
                     </thead>
