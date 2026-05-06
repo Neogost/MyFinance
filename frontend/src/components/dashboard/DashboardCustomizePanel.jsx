@@ -2,6 +2,7 @@ export const WIDGET_GROUPS = [
   {
     title: 'Revenus & Dépenses',
     widgets: [
+      { key: 'cashFlow',          label: 'Flux des revenus' },
       { key: 'salaryAnnual',      label: 'Évolution salariale annuelle' },
       { key: 'expensesBreakdown', label: 'Répartition des dépenses' },
       { key: 'salaryMonthly',     label: 'Détail mensuel par bulletins' },
