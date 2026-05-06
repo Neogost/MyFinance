@@ -125,13 +125,19 @@ public class TaxSimulatorService {
         float taxOnOnePart  = calculerImpotSurUnePart(incomePerPart);
         float baremeEstimatedTax = taxOnOnePart * parts;
 
-        // ── Étape 7 : Impôt total et taux effectif ─────────────
-        float totalEstimatedTax = baremeEstimatedTax + separateTaxAmount;
+        // ── Étape 7 bis : Décote ───────────────────────────────
+        boolean jointTaxation = user.isJointTaxation();
+        float decoteAmount    = applyDecote(baremeEstimatedTax, jointTaxation);
+        float taxAfterDecote  = Math.max(0f, baremeEstimatedTax - decoteAmount);
+
+        // ── Étape 8 : Impôt total et taux effectif ─────────────
+        float totalEstimatedTax = taxAfterDecote + separateTaxAmount;
         float effectiveTaxRate  = grossTaxableIncome > 0
                 ? (totalEstimatedTax / grossTaxableIncome) * 100f
                 : 0f;
 
-        log.info("[user:{}] Simulation fiscale {} - source: {}, parts: {}", user.getId(), year, sourceLabel, parts);
+        log.info("[user:{}] Simulation fiscale {} - source: {}, parts: {}, joint: {}, décote: {}",
+                user.getId(), year, sourceLabel, parts, jointTaxation, decoteAmount);
         return new TaxSimulationDto(
                 year,
                 sourceLabel,
@@ -144,10 +150,32 @@ public class TaxSimulatorService {
                 deductionType,
                 netTaxableIncome,
                 parts,
+                jointTaxation,
                 baremeEstimatedTax,
+                decoteAmount,
+                taxAfterDecote,
                 totalEstimatedTax,
                 Math.round(effectiveTaxRate * 100f) / 100f // arrondi 2 décimales
         );
+    }
+
+    /**
+     * Calcule la décote IRPP applicable (art. 197 I-4 CGI).
+     * Retourne 0 si non éligible ou si la config decote est désactivée (rate = 0).
+     */
+    float applyDecote(float baremeTax, boolean jointTaxation) {
+        TaxParameters.Decote d = taxParameters.getDecote();
+        if (d == null || d.getRate() <= 0) return 0f;
+
+        float threshold = jointTaxation ? d.getCoupleThreshold() : d.getSingleThreshold();
+        float cap       = jointTaxation ? d.getCoupleCap()       : d.getSingleCap();
+
+        if (baremeTax >= threshold) return 0f;
+
+        float decote = cap - baremeTax * d.getRate();
+        if (decote < 0)             return 0f;
+        if (decote > baremeTax)     return baremeTax; // jamais > impôt
+        return decote;
     }
 
     // ── Revenus salariaux via bulletins réels ──────────────────
@@ -273,7 +301,11 @@ public class TaxSimulatorService {
         float revenuNetImposable = Math.max(0f, netImposable - abattement);
         float parts = user.getFiscalParts();
         float impotSurUnePart = calculerImpotSurUnePart(revenuNetImposable / parts);
-        return impotSurUnePart * parts;
+        float impotBareme     = impotSurUnePart * parts;
+
+        // Application de la décote (art. 197 I-4 CGI)
+        float decote = applyDecote(impotBareme, user.isJointTaxation());
+        return Math.max(0f, impotBareme - decote);
     }
 
     // ── Calcul de l'impôt sur une part (barème progressif) ─────

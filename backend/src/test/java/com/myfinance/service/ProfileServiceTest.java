@@ -193,7 +193,7 @@ class ProfileServiceTest {
         user.setCustomProfessionalDeduction(3000f);
 
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                2.0f, true,
+                2.0f, true, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         UserDto result = profileService.updateFiscalProfile(user, req);
@@ -210,7 +210,7 @@ class ProfileServiceTest {
     void updateFiscalProfile_fraisReelsAvecKm_calculeAllowanceKilometrique() {
         // 1 000 km × taux 5 CV ≤ 3 000 km = 1 000 × 0,636 = 636 €
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 1000, 5, false,
                 null, null, null, null, null, null, null, null, null, null);
 
@@ -224,7 +224,7 @@ class ProfileServiceTest {
     void updateFiscalProfile_fraisReelsAvecVehiculeElectrique_appliqueLeMult() {
         // 1 000 km × 0,636 × 1,20 = 763 €
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 1000, 5, true,
                 null, null, null, null, null, null, null, null, null, null);
 
@@ -236,7 +236,7 @@ class ProfileServiceTest {
     @Test
     void updateFiscalProfile_fraisReelsAvecPlusieursCategories_sommeLesTotal() {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null,
                 600f,   // transport TC
                 500f,   // repas
@@ -254,7 +254,7 @@ class ProfileServiceTest {
     void updateFiscalProfile_fraisReelsAvecTeletravail_deduiseLAllocationEmployeur() {
         // 100 j × (2,50 − 1,00) = 150 €
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null, null, null, null, null, null, null, null, null,
                 100, 1.00f);
 
@@ -269,7 +269,7 @@ class ProfileServiceTest {
     void updateFiscalProfile_teletravailCouvertParEmployeur_totalNul() {
         // Employeur rembourse >= 2,50 → 0 €
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null, null, null, null, null, null, null, null, null,
                 100, 3.00f);
 
@@ -281,7 +281,7 @@ class ProfileServiceTest {
     @Test
     void updateFiscalProfile_sansDonnees_customDeductionZero() {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         UserDto result = profileService.updateFiscalProfile(user, req);
@@ -296,7 +296,7 @@ class ProfileServiceTest {
         User inconnu = User.builder().id(99L).build();
 
         assertThatThrownBy(() -> profileService.updateFiscalProfile(inconnu,
-                new UpdateFiscalProfileRequest(1.0f, true,
+                new UpdateFiscalProfileRequest(1.0f, true, null,
                         null, null, null, null, null, null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())

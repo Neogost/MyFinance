@@ -71,6 +71,7 @@ function computeKmAllowance(km, cv, electric, bareme) {
 export default function FiscalProfilePanel({ user, onUpdate }) {
   const [fiscalParts, setFiscalParts] = useState(user.fiscalParts ?? '')
   const [flatRate,    setFlatRate]    = useState(user.useFlatRateDeduction ?? true)
+  const [jointTaxation, setJointTaxation] = useState(user.jointTaxation ?? false)
   const [saving,  setSaving]  = useState(false)
   const { trackEvent } = useAnalytics()
   const [success, setSuccess] = useState(false)
@@ -172,6 +173,7 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
       const payload = {
         fiscalParts: fiscalParts !== '' ? parseFloat(fiscalParts) : null,
         useFlatRateDeduction: flatRate,
+        jointTaxation,
       }
       if (!flatRate) {
         payload.realExpensesTransportKm            = expenses.transportKm !== '' ? parseInt(expenses.transportKm) : null
@@ -219,6 +221,24 @@ export default function FiscalProfilePanel({ user, onUpdate }) {
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">parts</span>
         </div>
         <p className="text-xs text-gray-400">1 part = célibataire, 2 = couple, +0,5 par enfant à charge</p>
+      </div>
+
+      {/* Imposition commune (statut matrimonial) */}
+      <div className="flex flex-col gap-1.5 mb-5">
+        <label className="text-sm font-semibold text-gray-700 flex items-center">
+          Statut matrimonial fiscal
+          <FieldTooltip text="Détermine la décote IRPP applicable (art. 197 I-4 CGI). Les couples mariés ou pacsés en imposition commune bénéficient d'un seuil et d'un plafond de décote plus élevés. Le statut est indépendant du nombre de parts : un célibataire avec 2 enfants reste « célibataire » pour la décote." />
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox"
+            checked={jointTaxation}
+            onChange={e => { setJointTaxation(e.target.checked); setSuccess(false) }}
+            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+          <span className="text-sm text-gray-700">Je suis marié·e ou pacsé·e en imposition commune</span>
+        </label>
+        <p className="text-xs text-gray-400">
+          Décochez si vous êtes célibataire, divorcé·e, veuf·ve ou parent isolé.
+        </p>
       </div>
 
       {/* Mode de déduction */}

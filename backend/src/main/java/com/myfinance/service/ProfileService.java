@@ -52,6 +52,7 @@ public class ProfileService {
 
         user.setFiscalParts(request.fiscalParts());
         user.setUseFlatRateDeduction(request.useFlatRateDeduction());
+        user.setJointTaxation(Boolean.TRUE.equals(request.jointTaxation()));
 
         if (Boolean.FALSE.equals(request.useFlatRateDeduction())) {
             user.setRealExpensesTransportKm(request.realExpensesTransportKm());

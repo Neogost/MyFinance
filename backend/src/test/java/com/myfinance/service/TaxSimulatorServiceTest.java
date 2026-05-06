@@ -509,4 +509,76 @@ class TaxSimulatorServiceTest {
         assertThat(result.salaryIncome()).isGreaterThan(35000f);
         assertThat(result.salaryIncome()).isCloseTo(39375f, org.assertj.core.data.Offset.offset(10f));
     }
+
+    // ── Décote IRPP (art. 197 I-4 CGI) ─────────────────────────
+
+    private TaxParameters.Decote decoteParams() {
+        TaxParameters.Decote d = new TaxParameters.Decote();
+        d.setRate(0.4525f);
+        d.setSingleThreshold(1964f);
+        d.setSingleCap(889f);
+        d.setCoupleThreshold(3248f);
+        d.setCoupleCap(1470f);
+        return d;
+    }
+
+    @Test
+    void applyDecote_celibataire_impotSousLeSeuil_retourneLaDecote() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        // 889 − 1800 × 0,4525 = 74,50
+        Float decote = taxSimulatorService.applyDecote(1800f, false);
+        assertThat(decote).isCloseTo(74.50f, org.assertj.core.data.Offset.offset(0.01f));
+    }
+
+    @Test
+    void applyDecote_celibataire_impotAuDessusDuSeuil_retourneZero() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        Float decote = taxSimulatorService.applyDecote(2100f, false);
+        assertThat(decote).isEqualTo(0f);
+    }
+
+    @Test
+    void applyDecote_couple_impotSousLeSeuil_retourneLaDecoteCouple() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        // 1470 − 2500 × 0,4525 = 338,75
+        Float decote = taxSimulatorService.applyDecote(2500f, true);
+        assertThat(decote).isCloseTo(338.75f, org.assertj.core.data.Offset.offset(0.01f));
+    }
+
+    @Test
+    void applyDecote_couple_impotAuDessusDuSeuilCouple_retourneZero() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        Float decote = taxSimulatorService.applyDecote(3500f, true);
+        assertThat(decote).isEqualTo(0f);
+    }
+
+    @Test
+    void applyDecote_decoteCalculeeSuperieureAImpot_estPlafonneeAImpot() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        // Couple, impôt 600 → 1470 − 600 × 0,4525 = 1198,50 mais plafonné à 600
+        Float decote = taxSimulatorService.applyDecote(600f, true);
+        assertThat(decote).isEqualTo(600f);
+    }
+
+    @Test
+    void applyDecote_configDesactivee_retourneZero() {
+        // Config décote vide (rate = 0 par défaut)
+        when(taxParameters.getDecote()).thenReturn(new TaxParameters.Decote());
+        Float decote = taxSimulatorService.applyDecote(1800f, false);
+        assertThat(decote).isEqualTo(0f);
+    }
+
+    @Test
+    void estimerImpotSurSalaire_appliqueLaDecote() {
+        when(taxParameters.getDecote()).thenReturn(decoteParams());
+        User celibataire = User.builder().id(99L)
+                .fiscalParts(1.0f).useFlatRateDeduction(true)
+                .jointTaxation(false).build();
+        // Brackets de test : 0% jusqu'à 10 000, 10% au-delà
+        // Net imposable 18 000 → abattement 1 800 → base 16 200
+        // Impôt brut = (16 200 − 10 000) × 10% = 620 €
+        // Décote = 889 − 620 × 0,4525 = 608,45 € → impôt final = 620 − 608,45 = 11,55 €
+        Float impot = taxSimulatorService.estimerImpotSurSalaire(18000f, celibataire);
+        assertThat(impot).isCloseTo(11.55f, org.assertj.core.data.Offset.offset(0.05f));
+    }
 }

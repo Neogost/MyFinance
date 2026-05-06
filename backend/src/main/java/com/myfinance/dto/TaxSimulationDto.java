@@ -16,7 +16,10 @@ public record TaxSimulationDto(
         String deductionType,             // "FORFAITAIRE_10_POURCENT" ou "FRAIS_REELS"
         float netTaxableIncome,           // Revenu net imposable au barème (€)
         float fiscalParts,                // Quotient familial utilisé
-        float baremeEstimatedTax,         // Impôt calculé via le barème progressif (€)
-        float totalEstimatedTax,          // Impôt total estimé (barème + taux fixes) (€)
+        boolean jointTaxation,            // true = couple en imposition commune (impacte la décote)
+        float baremeEstimatedTax,         // Impôt brut calculé via le barème progressif, AVANT décote (€)
+        float decoteAmount,               // Décote appliquée (€), 0 si non éligible
+        float taxAfterDecote,             // baremeEstimatedTax − decoteAmount (€)
+        float totalEstimatedTax,          // Impôt total estimé : taxAfterDecote + separateTaxAmount (€)
         float effectiveTaxRate            // Taux effectif d'imposition (%)
 ) {}

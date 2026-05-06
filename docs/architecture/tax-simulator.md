@@ -14,13 +14,14 @@ Le simulateur est accessible depuis un menu **Outils** dédié et retourne :
 
 ## 2. Nouvelles données profil utilisateur
 
-Deux informations fiscales sont ajoutées à l'entité `User` :
+Plusieurs informations fiscales sont ajoutées à l'entité `User` :
 
 | Champ | Type | Nullable | Description |
 |-------|------|----------|-------------|
 | `fiscalParts` | `Float` | Non | Nombre de parts fiscales (quotient familial) |
 | `useFlatRateDeduction` | `Boolean` | Non | `true` = abattement forfaitaire 10% ; `false` = frais réels |
 | `customProfessionalDeduction` | `Float` | Oui | Montant déclaré en € (renseigné uniquement si `useFlatRateDeduction = false`) |
+| `jointTaxation` | `Boolean` | Non | `true` = marié·e ou pacsé·e en imposition commune (couple) ; `false` = célibataire, divorcé·e, veuf·ve, parent isolé (défaut). Utilisé pour la décote (§ 5 bis). |
 
 ### Exemples de `fiscalParts`
 
@@ -129,11 +130,22 @@ revenuParPart = revenuNetImposable / fiscalParts
 // Étape 6 — Impôt sur une part (barème progressif — section 5)
 impôtSurUnePart = calcul par tranches
 
-// Étape 7 — Impôt total
+// Étape 7 — Impôt brut au barème
 impôtBarème = impôtSurUnePart × fiscalParts
-impôtTotal  = impôtBarème + revenusTaxésSéparément
 
-// Étape 8 — Résultats
+// Étape 7 bis — Décote pour les bas revenus (cf. § 5 bis)
+seuil   = (jointTaxation) ? decote.couple-threshold   : decote.single-threshold
+plafond = (jointTaxation) ? decote.couple-cap         : decote.single-cap
+si impôtBarème < seuil :
+    décote = max(0, plafond - impôtBarème × decote.rate)
+sinon :
+    décote = 0
+impôtAprèsDécote = max(0, impôtBarème - décote)
+
+// Étape 8 — Impôt total
+impôtTotal  = impôtAprèsDécote + revenusTaxésSéparément
+
+// Étape 9 — Résultats
 revenusBrutsGlobaux = revenusSalariaux + Σ amount (OtherIncomes cochés et imposables)
 tauxEffectif = impôtTotal / revenusBrutsGlobaux × 100
 ```
@@ -210,6 +222,65 @@ pour chaque tranche [from, to, rate] :
 
 ---
 
+## 5 bis. Décote pour les bas revenus
+
+### Principe
+
+La décote est une réduction automatique d'impôt pour les contribuables modestes — appliquée par l'administration **après le calcul du barème** mais **avant les crédits/réductions d'impôt**.
+
+> Source : [economie.gouv.fr — Pouvez-vous bénéficier de la décote ?](https://www.economie.gouv.fr/particuliers/impots-et-fiscalite/gerer-mon-impot-sur-le-revenu/pouvez-vous-beneficier-de-la-decote-de-limpot-sur-le-revenu)
+
+### Règles (déclaration 2025, revenus 2024)
+
+| Situation officielle | Champ | Seuil d'éligibilité | Plafond | Formule |
+|---|---|---|---|---|
+| Célibataire, divorcé·e, veuf·ve, parent isolé | `jointTaxation = false` | impôtBarème < **1 964 €** | **889 €** | `décote = 889 − (impôtBarème × 45,25 %)` |
+| Marié·e ou pacsé·e en imposition commune | `jointTaxation = true` | impôtBarème < **3 248 €** | **1 470 €** | `décote = 1 470 − (impôtBarème × 45,25 %)` |
+
+> **Important** : la décote est basée sur le **statut matrimonial déclaré** (`jointTaxation`), **pas** sur le nombre de parts fiscales (`fiscalParts`). Un célibataire avec 2 enfants (2 parts) reste dans la catégorie « célibataire » pour la décote.
+
+### Algorithme
+
+```
+si impôtBarème >= seuil (selon jointTaxation) :
+    décote = 0                                    // pas éligible
+sinon :
+    décote = max(0, plafond - impôtBarème × 0.4525)
+impôtAprèsDécote = max(0, impôtBarème - décote)
+```
+
+### Configuration externalisée — `tax-parameters.yml`
+
+```yaml
+tax:
+  decote:
+    rate: 0.4525                # taux de réduction proportionnelle
+    single-threshold: 1964.0    # seuil d'éligibilité célibataire
+    single-cap: 889.0           # plafond de décote célibataire
+    couple-threshold: 3248.0    # seuil d'éligibilité couple
+    couple-cap: 1470.0          # plafond de décote couple
+```
+
+> Mise à jour annuelle simple — modifier ces 5 valeurs et redémarrer l'application.
+
+### Exemples chiffrés
+
+| Cas | `jointTaxation` | Impôt brut | Calcul | Décote | Impôt final |
+|-----|-----------------|------------|--------|--------|-------------|
+| Célibataire, salaire modeste | `false` | 1 800 € | 889 − 1 800 × 0,4525 = **74,50 €** | 74,50 € | **1 725,50 €** |
+| Célibataire, juste au seuil | `false` | 1 950 € | 889 − 1 950 × 0,4525 = **6,63 €** | 6,63 € | **1 943,37 €** |
+| Célibataire, au-dessus du seuil | `false` | 2 100 € | 2 100 ≥ 1 964 → pas éligible | 0 € | **2 100 €** |
+| Couple, revenus modestes | `true`  | 2 500 € | 1 470 − 2 500 × 0,4525 = **338,75 €** | 338,75 € | **2 161,25 €** |
+| Couple, au-dessus du seuil | `true`  | 3 500 € | 3 500 ≥ 3 248 → pas éligible | 0 € | **3 500 €** |
+| Couple, impôt très bas | `true`  | 600 €   | 1 470 − 600 × 0,4525 = **1 198,50 €** mais plafonné à l'impôt | 600 € | **0 €** |
+
+### Validation
+
+- `decote.rate`, `*-threshold`, `*-cap` : tous obligatoires, > 0
+- Si la section `decote` est absente dans le YAML, la décote est désactivée (= 0) — comportement V0 préservé pour les anciennes configs
+
+---
+
 ## 6. Résultats affichés
 
 | Élément | Description |
@@ -223,6 +294,8 @@ pour chaque tranche [from, to, rate] :
 | Abattement appliqué | Montant en € + type (forfaitaire 10% ou frais réels) |
 | Revenu net imposable au barème | Montant en € |
 | Quotient familial | Nombre de parts |
+| Impôt brut au barème | Montant en € (avant décote) |
+| **Décote appliquée** | Montant en € (affiché en vert si > 0, sinon ligne masquée) |
 | **Impôt estimé total** | **Montant annuel en €** |
 | **Impôt mensuel estimé** | **Impôt annuel ÷ 12 — indicatif prélèvement à la source** |
 | **Taux effectif** | **En %** |
@@ -245,6 +318,7 @@ classDiagram
         +Float fiscalParts
         +Boolean useFlatRateDeduction
         +Float customProfessionalDeduction
+        +Boolean jointTaxation
     }
 ```
 
@@ -284,7 +358,10 @@ classDiagram
         +String deductionType
         +Float netTaxableIncome
         +Float fiscalParts
+        +Boolean jointTaxation
         +Float baremeEstimatedTax
+        +Float decoteAmount
+        +Float taxAfterDecote
         +Float totalEstimatedTax
         +Float effectiveTaxRate
     }
@@ -292,6 +369,10 @@ classDiagram
 
 - `salaryIncomeSource` : `"PROJECTION_CONTRAT"` ou `"BULLETINS_REELS"`
 - `deductionType` : `"FORFAITAIRE_10_POURCENT"` ou `"FRAIS_REELS"`
+- `baremeEstimatedTax` : impôt brut issu du barème, **avant décote**
+- `decoteAmount` : décote appliquée (0 si non éligible)
+- `taxAfterDecote` : `baremeEstimatedTax − decoteAmount`
+- `totalEstimatedTax` : `taxAfterDecote + separateTaxAmount`
 
 ---
 
@@ -307,7 +388,6 @@ classDiagram
 
 ## 10. Limites et hypothèses (v1)
 
-- Pas de calcul de **décote** (applicable aux bas revenus — simplification volontaire)
 - Pas de gestion du **plafonnement du quotient familial** (avantage max par demi-part limité — simplification)
 - Le simulateur ne gère pas les crédits ou réductions d'impôts
 - La simulation est **stateless** : les sélections (cases à cocher, choix de source) ne sont pas persistées

@@ -21,6 +21,7 @@ public class TaxParameters {
     private float employerFlatRate = 0.45f;
     private EmployeeContributions employeeContributions = new EmployeeContributions();
     private FlatRateDeduction flatRateDeduction = new FlatRateDeduction();
+    private Decote decote = new Decote();
     private List<TaxBracket> brackets;
 
     @Data
@@ -41,6 +42,20 @@ public class TaxParameters {
         private float rate = 0.10f;
         private float min = 504.0f;
         private float max = 13522.0f;
+    }
+
+    /**
+     * Décote IRPP — réduction d'impôt pour les bas revenus (art. 197 I-4 CGI).
+     * Valeurs par défaut désactivées (0) pour préserver le comportement V0
+     * si la section decote est absente du YAML.
+     */
+    @Data
+    public static class Decote {
+        private float rate            = 0f;   // 0 = décote désactivée
+        private float singleThreshold = 0f;
+        private float singleCap       = 0f;
+        private float coupleThreshold = 0f;
+        private float coupleCap       = 0f;
     }
 
     @Data

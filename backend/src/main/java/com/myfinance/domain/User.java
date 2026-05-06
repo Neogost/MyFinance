@@ -55,6 +55,10 @@ public class User implements UserDetails {
 
     private Float customProfessionalDeduction; // Total frais réels calculé (€), si useFlatRateDeduction = false
 
+    @Column(name = "joint_taxation", nullable = false)
+    @Builder.Default
+    private boolean jointTaxation = false; // true = marié·e ou pacsé·e en imposition commune (impacte la décote)
+
     // ── Frais réels — Détail par catégorie ─────────────────────
     // Calculé par ProfileService.computeTotalRealExpenses() → stocké dans customProfessionalDeduction.
 

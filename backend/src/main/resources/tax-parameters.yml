@@ -83,6 +83,14 @@ tax:
     rate: 0.10      # Taux abattement forfaitaire frais professionnels (10%)
     min: 504.0      # Plancher de l'abattement en €
     max: 13522.0    # Plafond de l'abattement en €
+  # Décote IRPP — réduction d'impôt pour les bas revenus (art. 197 I-4 CGI)
+  # Valeurs déclaration 2025 (revenus 2024). Mise à jour annuelle.
+  decote:
+    rate: 0.4525             # taux de réduction proportionnelle
+    single-threshold: 1964.0 # seuil d'éligibilité célibataire/divorcé/veuf/parent isolé
+    single-cap: 889.0        # plafond de décote célibataire
+    couple-threshold: 3248.0 # seuil d'éligibilité couple en imposition commune
+    couple-cap: 1470.0       # plafond de décote couple
   brackets:
     - from: 0.0
       to: 11497.0

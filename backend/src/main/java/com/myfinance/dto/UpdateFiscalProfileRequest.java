@@ -12,6 +12,8 @@ public record UpdateFiscalProfileRequest(
 
         Boolean useFlatRateDeduction,
 
+        Boolean jointTaxation,
+
         @PositiveOrZero @Max(value = 1_000_000, message = "realExpensesTransportKm ne peut excéder 1 000 000 km/an")
         Integer realExpensesTransportKm,
 

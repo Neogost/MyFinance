@@ -16,11 +16,11 @@ function fmt(amount) {
   return amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
 }
 
-function ResultRow({ label, value, highlight }) {
+function ResultRow({ label, value, highlight, valueClass }) {
   return (
     <tr className={highlight ? 'bg-indigo-50 font-semibold' : 'border-t border-gray-100'}>
       <td className="py-2.5 pr-6 pl-1 text-sm text-gray-600">{label}</td>
-      <td className="py-2.5 pr-1 text-right text-sm text-gray-900 amount">{value}</td>
+      <td className={`py-2.5 pr-1 text-right text-sm amount ${valueClass ?? 'text-gray-900'}`}>{value}</td>
     </tr>
   )
 }
@@ -204,6 +204,13 @@ export default function TaxSimulatorPage() {
               <ResultRow label="Revenu net imposable (barème)" value={fmt(result.netTaxableIncome)} highlight />
               <ResultRow label="Quotient familial (parts)" value={result.fiscalParts} />
               <ResultRow label="Impôt au barème progressif" value={fmt(result.baremeEstimatedTax)} />
+              {result.decoteAmount > 0 && (
+                <ResultRow
+                  label="Décote appliquée (bas revenus)"
+                  value={`− ${fmt(result.decoteAmount)}`}
+                  valueClass="text-emerald-600 font-semibold"
+                />
+              )}
               <ResultRow label="Impôt à taux fixe" value={fmt(result.separateTaxAmount)} />
               <ResultRow label="Impôt total estimé (annuel)" value={fmt(result.totalEstimatedTax)} highlight />
               <ResultRow label="Impôt mensuel estimé" value={fmt(result.totalEstimatedTax / 12)} highlight />

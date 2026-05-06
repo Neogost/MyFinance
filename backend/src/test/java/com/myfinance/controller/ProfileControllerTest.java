@@ -135,7 +135,7 @@ class ProfileControllerTest {
     @WithMockCustomUser
     void updateFiscalProfile_fraisReels_retourne200() throws Exception {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
         UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 1.0f, false, 1400f, null, null, null, null, null, null, null,
@@ -154,7 +154,7 @@ class ProfileControllerTest {
     @WithMockCustomUser
     void updateFiscalProfile_forfaitaire_retourne200() throws Exception {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                2.0f, true,
+                2.0f, true, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
         UserDto dto = new UserDto(1L, "jean.dupont", "Jean", "Dupont", null, RoleEnum.USER,
                 2.0f, true, null, null, null, null, null, null, null, null,
@@ -207,7 +207,7 @@ class ProfileControllerTest {
     @WithMockCustomUser
     void updateFiscalProfile_fiscalPartsNegatif_retourne400() throws Exception {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                -1.0f, true,
+                -1.0f, true, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/api/profile/fiscal")
@@ -220,7 +220,7 @@ class ProfileControllerTest {
     @WithMockCustomUser
     void updateFiscalProfile_realExpensesMealsNegatif_retourne400() throws Exception {
         UpdateFiscalProfileRequest req = new UpdateFiscalProfileRequest(
-                1.0f, false,
+                1.0f, false, null,
                 null, null, null, null, -100f, null, null, null, null, null, null, null, null);
 
         mockMvc.perform(put("/api/profile/fiscal")
