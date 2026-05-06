@@ -149,8 +149,8 @@ class CryptoTaxServiceTest {
 
         assertThat(summary.exemptedBy305Threshold()).isFalse();
         assertThat(summary.plusValueNetteImposable()).isEqualByComparingTo("333.33");
-        // Impôt PFU = 333.33 × 30% = 100.00
-        assertThat(summary.estimatedTaxEur()).isEqualByComparingTo("100.00");
+        // Impôt PFU = 333.33 × 31,4% ≈ 104.67
+        assertThat(summary.estimatedTaxEur()).isEqualByComparingTo("104.67");
         assertThat(summary.cessionsCount()).isEqualTo(1);
     }
 

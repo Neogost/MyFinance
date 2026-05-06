@@ -82,7 +82,7 @@ Content-Type: application/json
 | `amount` | `number` | oui | > 0 | Montant perçu (€) |
 | `date` | `date` | oui | | Date de perception (ISO 8601) |
 | `isTaxable` | `boolean` | oui | | Ce revenu est-il imposable ? Pré-rempli selon le type (voir tableau ci-dessous) |
-| `specificTaxRate` | `number` | non | 0–100 | Taux d'imposition fixe en % (ex : `30.0` pour la flat tax). `null` = inclus dans le barème IRPP normal |
+| `specificTaxRate` | `number` | non | 0–100 | Taux d'imposition fixe en % (ex : `31.4` pour la flat tax). `null` = inclus dans le barème IRPP normal |
 | `positionId` | `number` | non | LOCATIF uniquement | Identifiant d'une position `IMMO_PHYSIQUE` à associer au revenu locatif. Permet le calcul du KPI rendement brut locatif. Refusé pour les autres types (`400`). Si le bien est supprimé, le lien est nettoyé automatiquement. |
 
 ### Types disponibles (`OtherIncomeTypeEnum`)
@@ -90,7 +90,7 @@ Content-Type: application/json
 | Valeur | Description | `isTaxable` suggéré | `specificTaxRate` suggéré |
 |--------|-------------|---------------------|---------------------------|
 | `LOCATIF` | Revenu locatif (loyers, charges récupérées…) | `true` | `null` (barème IRPP) |
-| `DIVIDENDE` | Dividendes hors portefeuille suivi | `true` | `30.0` (flat tax PFU fréquente) |
+| `DIVIDENDE` | Dividendes hors portefeuille suivi | `true` | `31.4` (flat tax PFU fréquente) |
 | `AIDE_SOCIALE` | Allocations, aides (CAF, Pôle Emploi…) | `false` | — |
 | `AUTRE` | Autre revenu non salarial (libellé libre) | `true` | `null` |
 

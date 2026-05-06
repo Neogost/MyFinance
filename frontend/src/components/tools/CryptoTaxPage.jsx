@@ -67,7 +67,7 @@ function HypotheticalSimulator({ currentPta, taxOption, tmi }) {
     if (taxOption === 'BAREME' && tmi != null) {
       tax = pvPositive * ((tmi / 100) + 0.172)
     } else {
-      tax = pvPositive * 0.30
+      tax = pvPositive * 0.314
     }
   }
 
@@ -398,7 +398,7 @@ function ManualMode({ year, taxOption, tmi }) {
           colorClass={result.pvNette > 0 ? 'text-red-600' : 'text-green-600'} />
         <KpiCard label="Impôt estimé"
           value={result.exempt ? 'Exonéré' : fmt(result.estimatedTax)}
-          sub={result.exempt ? 'Seuil 305 € non atteint' : (taxOption === 'BAREME' ? 'Barème IR' : 'PFU 30 %')}
+          sub={result.exempt ? 'Seuil 305 € non atteint' : (taxOption === 'BAREME' ? 'Barème IR' : 'PFU 31,4 %')}
           colorClass={result.exempt ? 'text-green-600' : 'text-gray-900'} />
         <KpiCard label="PTA restant" value={fmt(result.ptaAtYearEnd)} sub="Base de coût cumulée" />
       </div>
@@ -832,7 +832,7 @@ export default function CryptoTaxPage() {
             {['PFU', 'BAREME'].map(opt => (
               <button key={opt} onClick={() => setTaxOption(opt)}
                 className={`px-4 py-2 ${taxOption === opt ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                {opt === 'PFU' ? 'PFU 30 %' : 'Barème IR'}
+                {opt === 'PFU' ? 'PFU 31,4 %' : 'Barème IR'}
               </button>
             ))}
           </div>
@@ -940,7 +940,7 @@ function PedagoExample() {
             <div>
               <p className="font-semibold text-gray-800">Tu déclares et tu paies l'impôt</p>
               <p className="text-gray-500 text-xs mt-0.5">
-                Avec la flat tax (PFU) à 30 % : <strong>333,33 × 30 % = 100 €</strong> d'impôt.
+                Avec la flat tax (PFU) à 31,4 % : <strong>333,33 × 31,4 % ≈ 104,67 €</strong> d'impôt.
                 Il te reste donc 900 € net dans la poche — pas 1 000.
               </p>
               <div className="mt-2 bg-green-50 rounded-lg px-3 py-2 text-xs space-y-1">

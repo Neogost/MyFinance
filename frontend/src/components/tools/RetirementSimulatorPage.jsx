@@ -532,7 +532,7 @@ export default function RetirementSimulatorPage({ user }) {
           <Section title="Stratégie PER" collapsible defaultOpen={false}>
             <p className="text-xs text-gray-400 -mt-1">
               Capital nécessaire pour combler le manque entre la pension et votre objectif.
-              <InfoTooltip width="w-80" text="Le PER (Plan Épargne Retraite) permet de déduire vos versements de votre revenu imposable (avantage fiscal à l'entrée), mais la sortie est taxée au barème IR + PFU 30 % sur les gains. L'idée : déduire à votre TMI active (haute) et payer à votre TMI retraite (basse). Le capital PER calculé ici est le complément nécessaire au-delà de votre pension pour atteindre votre objectif." />
+              <InfoTooltip width="w-80" text="Le PER (Plan Épargne Retraite) permet de déduire vos versements de votre revenu imposable (avantage fiscal à l'entrée), mais la sortie est taxée au barème IR + PFU 31,4 % sur les gains. L'idée : déduire à votre TMI active (haute) et payer à votre TMI retraite (basse). Le capital PER calculé ici est le complément nécessaire au-delà de votre pension pour atteindre votre objectif." />
             </p>
             <NumInput label="Rendement annuel PER (%)" value={perAnnualReturn}
               onChange={setPerAnnualReturn} min={0} max={15} step={0.5} unit="%"

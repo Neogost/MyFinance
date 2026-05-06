@@ -212,7 +212,7 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
                 <input
                   name="specificTaxRate" type="number" min="0" max="100" step="0.1"
                   value={form.specificTaxRate} onChange={handleChange}
-                  placeholder="ex : 12.8 pour le PFU dividendes"
+                  placeholder="ex : 14.2 pour le PFU dividendes"
                   className={inputCls}
                 />
               </div>

@@ -32,7 +32,7 @@ import java.util.Map;
 public class CryptoTaxService {
 
     private static final BigDecimal SEUIL_305 = new BigDecimal("305");
-    private static final BigDecimal PFU_RATE  = new BigDecimal("0.30");
+    private static final BigDecimal PFU_RATE  = new BigDecimal("0.314");
     private static final BigDecimal PS_RATE   = new BigDecimal("0.172");
     private static final MathContext MC        = new MathContext(10, RoundingMode.HALF_UP);
 

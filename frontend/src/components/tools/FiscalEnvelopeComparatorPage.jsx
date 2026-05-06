@@ -501,10 +501,10 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Option fiscale CTO / PEA&lt;5 ans / AV&lt;8 ans
-              <InfoTooltip width="w-80" text="Prélèvement Forfaitaire Unique (PFU) : flat tax de 30 % (12,8 % IR + 17,2 % prélèvements sociaux). C'est l'option par défaut depuis 2018. Option barème : les plus-values s'ajoutent à vos revenus et sont taxées à votre TMI + 17,2 % PS. L'option barème peut être avantageuse si votre TMI est de 0 ou 11 %, mais elle s'applique alors à tous vos revenus de capitaux de l'année." />
+              <InfoTooltip width="w-80" text="Prélèvement Forfaitaire Unique (PFU) : flat tax de 31,4 % (14,2 % IR + 17,2 % prélèvements sociaux). C'est l'option par défaut depuis 2018. Option barème : les plus-values s'ajoutent à vos revenus et sont taxées à votre TMI + 17,2 % PS. L'option barème peut être avantageuse si votre TMI est de 0 ou 11 %, mais elle s'applique alors à tous vos revenus de capitaux de l'année." />
             </label>
             <Toggle2
-              left={{ value: 'pfu', label: 'PFU 30 %' }}
+              left={{ value: 'pfu', label: 'PFU 31,4 %' }}
               right={{ value: 'bareme', label: 'Barème IR' }}
               value={taxOption}
               onChange={setTaxOption}
@@ -542,7 +542,7 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
             <div>
               <label htmlFor="reinvest" className="text-xs text-gray-700 cursor-pointer">
                 Réinvestir l'économie d'impôt PER dans un CTO virtuel
-                <InfoTooltip width="w-80" text="Pour comparer le PER équitablement, il faut tenir compte de l'économie d'impôt réalisée à l'entrée (TMI × versement). Cette option la réinvestit chaque année dans un CTO virtuel (sans frais). À la sortie, le CTO virtuel est taxé au PFU 30 % sur ses gains. Sans cette option, vous supposez que l'économie d'impôt est dépensée — ce qui sous-estime l'avantage réel du PER." />
+                <InfoTooltip width="w-80" text="Pour comparer le PER équitablement, il faut tenir compte de l'économie d'impôt réalisée à l'entrée (TMI × versement). Cette option la réinvestit chaque année dans un CTO virtuel (sans frais). À la sortie, le CTO virtuel est taxé au PFU 31,4 % sur ses gains. Sans cette option, vous supposez que l'économie d'impôt est dépensée — ce qui sous-estime l'avantage réel du PER." />
               </label>
               <p className="text-xs text-gray-400 mt-0.5">
                 Économie annuelle : {fmt(Math.min(monthlyContrib * 12, perAnnualCap) * currentTMI / 100)} ({fmtPct(currentTMI)} × versement)
@@ -565,7 +565,7 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600">
             <div className="flex items-start gap-1.5">
               <span className="font-bold text-gray-700 shrink-0">CTO</span>
-              <span className="text-gray-500">Compte-titres ordinaire — aucun avantage à l'entrée, pas de plafond, PFU 30 % à la sortie. Univers illimité (actions monde, ETF, crypto…). Idéal si TMI faible ou investissement hors UE.</span>
+              <span className="text-gray-500">Compte-titres ordinaire — aucun avantage à l'entrée, pas de plafond, PFU 31,4 % à la sortie. Univers illimité (actions monde, ETF, crypto…). Idéal si TMI faible ou investissement hors UE.</span>
             </div>
             <div className="flex items-start gap-1.5">
               <span className="font-bold text-indigo-600 shrink-0">PEA</span>
@@ -679,13 +679,13 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
                   },
                   {
                     label: 'Impôt sortie',
-                    tip: 'Impôt dû lors du retrait : PFU 30 % (CTO, AV<8ans, PEA<5ans), PS 17,2 % uniquement (PEA>5ans), taux réduit 24,7 % après abattement (AV>8ans), barème IR + PFU 30 % sur gains (PER).',
+                    tip: 'Impôt dû lors du retrait : PFU 31,4 % (CTO, AV<8ans, PEA<5ans), PS 17,2 % uniquement (PEA>5ans), taux réduit 24,7 % après abattement (AV>8ans), barème IR + PFU 31,4 % sur gains (PER).',
                     fn: e => e.taxAtExit > 0 ? `−${fmt(e.taxAtExit)}` : '0 €',
                     cls: 'text-red-600',
                   },
                   {
                     label: 'Réinvest. éco. PER',
-                    tip: 'Capital net de l\'économie d\'impôt PER réinvestie dans un CTO virtuel sur toute la durée, après PFU 30 % sur les gains de ce CTO virtuel. Ne s\'affiche que si l\'option est activée.',
+                    tip: 'Capital net de l\'économie d\'impôt PER réinvestie dans un CTO virtuel sur toute la durée, après PFU 31,4 % sur les gains de ce CTO virtuel. Ne s\'affiche que si l\'option est activée.',
                     fn: e => e.netSavings > 0 ? `+${fmt(e.netSavings)}` : '—',
                     cls: 'text-emerald-600',
                   },
@@ -732,11 +732,11 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
             ? <p>② Rendement identique {fmtPct(sharedRate)}/an brut appliqué aux 4 enveloppes (mode « même taux »). L'écart de résultat reflète uniquement la fiscalité.</p>
             : <p>② Rendements différenciés par enveloppe : CTO {fmtPct(effectiveReturns.cto)}, PEA {fmtPct(effectiveReturns.pea)}, AV {fmtPct(effectiveReturns.av)}, PER {fmtPct(effectiveReturns.per)} — ces hypothèses influencent le classement autant que la fiscalité.</p>
           }
-          <p>③ CTO : dividendes ({fmtPct(dividendYield)}/an) taxés annuellement au {taxOption === 'pfu' ? 'PFU 30 %' : 'barème IR + PS'}, plus-values taxées à la sortie uniquement.</p>
+          <p>③ CTO : dividendes ({fmtPct(dividendYield)}/an) taxés annuellement au {taxOption === 'pfu' ? 'PFU 31,4 %' : 'barème IR + PS'}, plus-values taxées à la sortie uniquement.</p>
           <p>④ PEA : exonération IR après 5 ans ; seuls les prélèvements sociaux ({fmtPct(FISCAL_PARAMS.SOCIAL_CHARGES_RATE * 100)}) s'appliquent sur les gains.</p>
           <p>⑤ AV : abattement annuel {householdSituation === 'couple' ? '9 200 €' : '4 600 €'} appliqué une fois à la sortie (modèle de rachat unique). Taux réduit 24,7 % si versements ≤ 150 000 €.</p>
-          <p>⑥ PER : déduction TMI {fmtPct(currentTMI)} sur les versements. Sortie en capital : versements taxés au barème (TMI retraite {fmtPct(retirementTMI)}), gains au PFU 30 %.</p>
-          {reinvestTaxSaving && <p>⑦ Réinvestissement de l'économie PER : capitalisée au rendement PER ({fmtPct(effectiveReturns.per)}/an), nette de PFU 30 % à la sortie.</p>}
+          <p>⑥ PER : déduction TMI {fmtPct(currentTMI)} sur les versements. Sortie en capital : versements taxés au barème (TMI retraite {fmtPct(retirementTMI)}), gains au PFU 31,4 %.</p>
+          {reinvestTaxSaving && <p>⑦ Réinvestissement de l'économie PER : capitalisée au rendement PER ({fmtPct(effectiveReturns.per)}/an), nette de PFU 31,4 % à la sortie.</p>}
           <p>⑧ Les frais d'enveloppe sont déduits mensuellement du rendement (approche linéaire conservatrice).</p>
           <p>⑨ Les graphiques affichent le capital brut avant imposition à la sortie. Les cartes et le tableau affichent le capital net.</p>
           <p className="text-gray-400 italic mt-2">Simulation indicative — non contractuelle. Consultez un conseiller en gestion de patrimoine pour une analyse personnalisée.</p>

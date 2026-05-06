@@ -72,7 +72,7 @@ Deux nouveaux champs sont ajoutés à l'entité `OtherIncome` :
 | Champ | Type | Nullable | Description |
 |-------|------|----------|-------------|
 | `isTaxable` | `Boolean` | Non | Indique si ce revenu est soumis à l'impôt (défaut : `true`) |
-| `specificTaxRate` | `Float` | Oui | Taux d'imposition spécifique en % (ex : 30.0 pour la flat tax). `null` = inclus dans le barème IRPP normal |
+| `specificTaxRate` | `Float` | Oui | Taux d'imposition spécifique en % (ex : 31.4 pour la flat tax). `null` = inclus dans le barème IRPP normal |
 
 #### Comportement dans le simulateur
 
@@ -80,14 +80,14 @@ Deux nouveaux champs sont ajoutés à l'entité `OtherIncome` :
 |-------------|-------------------|------------|
 | `false` | — | Exclu du calcul |
 | `true` | `null` | Inclus dans le revenu net imposable global (barème IRPP) |
-| `true` | ex. 30.0 | Taxé séparément : `amount × specificTaxRate / 100` — s'ajoute à l'impôt final sans entrer dans le barème |
+| `true` | ex. 31.4 | Taxé séparément : `amount × specificTaxRate / 100` — s'ajoute à l'impôt final sans entrer dans le barème |
 
 #### Valeurs par défaut suggérées à la saisie
 
 | Type | `isTaxable` par défaut | `specificTaxRate` suggéré |
 |------|------------------------|---------------------------|
 | `LOCATIF` | `true` | `null` (barème IRPP) |
-| `DIVIDENDE` | `true` | `30.0` (flat tax PFU fréquente) |
+| `DIVIDENDE` | `true` | `31.4` (flat tax PFU fréquente) |
 | `AIDE_SOCIALE` | `false` | — |
 | `AUTRE` | `true` | `null` |
 

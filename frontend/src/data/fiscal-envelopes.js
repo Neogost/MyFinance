@@ -1,8 +1,8 @@
 // Barèmes fiscaux enveloppes — à réviser annuellement si la loi de finances change
 
 export const FISCAL_PARAMS = {
-  PFU_RATE:               0.30,   // Flat tax = 12,8 % IR + 17,2 % PS
-  IR_RATE_PFU:            0.128,
+  PFU_RATE:               0.314,  // Flat tax = 14,2 % IR + 17,2 % PS
+  IR_RATE_PFU:            0.142,
   SOCIAL_CHARGES_RATE:    0.172,  // Prélèvements sociaux (CSG+CRDS+CASA+prélèvement de solidarité)
 
   // Assurance-vie après 8 ans (versements ≤ 150 000 €)

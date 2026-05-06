@@ -76,7 +76,7 @@ export default function LombardSimulatorPage() {
 
   // Comparaison vente
   const [compareWithSale,    setCompareWithSale]    = useState(false)
-  const [capitalGainTaxRate, setCapitalGainTaxRate] = useState(30)
+  const [capitalGainTaxRate, setCapitalGainTaxRate] = useState(31.4)
   const [expectedReturn,     setExpectedReturn]     = useState(5)
 
   // Effet de levier (réinvestissement)
@@ -415,7 +415,7 @@ export default function LombardSimulatorPage() {
                 className="accent-indigo-600" />
               <span className="text-sm font-semibold text-gray-800 flex items-center">
                 Effet de levier (réinvestissement)
-                <InfoTooltip width="w-80" text="Stratégie classique du Lombard : emprunter à taux faible pour réinvestir dans un actif au rendement attendu plus élevé. Si le rendement net de l'investissement (après PFU 30 %) dépasse le coût du crédit, l'opération est gagnante. Attention : le levier amplifie aussi les pertes en cas de crise." />
+                <InfoTooltip width="w-80" text="Stratégie classique du Lombard : emprunter à taux faible pour réinvestir dans un actif au rendement attendu plus élevé. Si le rendement net de l'investissement (après PFU 31,4 %) dépasse le coût du crédit, l'opération est gagnante. Attention : le levier amplifie aussi les pertes en cas de crise." />
               </span>
             </label>
             {leverageEnabled && (
@@ -429,7 +429,7 @@ export default function LombardSimulatorPage() {
                 <div>
                   <label className="text-xs text-gray-500 flex items-center">
                     Taux PFU plus-value (%)
-                    <InfoTooltip width="w-72" text="Prélèvement Forfaitaire Unique (flat tax) appliqué aux plus-values mobilières en France : 12,8 % d'impôt + 17,2 % de prélèvements sociaux = 30 %. Applicable sauf option pour le barème progressif." />
+                    <InfoTooltip width="w-72" text="Prélèvement Forfaitaire Unique (flat tax) appliqué aux plus-values mobilières en France : 14,2 % d'impôt + 17,2 % de prélèvements sociaux = 31,4 %. Applicable sauf option pour le barème progressif." />
                   </label>
                   <input type="number" min="0" max="50" step="1" value={leverageTaxRate}
                     onChange={e => setLeverageTaxRate(parseFloat(e.target.value) || 0)}
@@ -455,7 +455,7 @@ export default function LombardSimulatorPage() {
                 <div>
                   <label className="text-xs text-gray-500 flex items-center">
                     Taux PFU plus-value (%)
-                    <InfoTooltip width="w-72" text="Prélèvement Forfaitaire Unique (flat tax) appliqué aux plus-values mobilières en France : 12,8 % d'impôt + 17,2 % de prélèvements sociaux = 30 %. Applicable sauf option pour le barème progressif." />
+                    <InfoTooltip width="w-72" text="Prélèvement Forfaitaire Unique (flat tax) appliqué aux plus-values mobilières en France : 14,2 % d'impôt + 17,2 % de prélèvements sociaux = 31,4 %. Applicable sauf option pour le barème progressif." />
                   </label>
                   <input type="number" min="0" max="50" step="1" value={capitalGainTaxRate}
                     onChange={e => setCapitalGainTaxRate(parseFloat(e.target.value) || 0)}

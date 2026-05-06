@@ -4,7 +4,7 @@
 
 Permettre à l'utilisateur de **comparer le rendement net après impôt** d'un même investissement (versement initial + versements périodiques) selon l'enveloppe fiscale utilisée :
 
-- **CTO** — Compte-titres ordinaire (flat tax PFU 30 %)
+- **CTO** — Compte-titres ordinaire (flat tax PFU 31,4 %)
 - **PEA** — Plan d'Épargne en Actions (exonération d'IR après 5 ans, prélèvements sociaux 17,2 %)
 - **AV** — Assurance-vie (abattement annuel après 8 ans, frais d'enveloppe)
 - **PER** — Plan Épargne Retraite (déduction du revenu imposable à l'entrée, taxation à la sortie)
@@ -26,8 +26,8 @@ Le simulateur **pré-remplit la TMI** de l'utilisateur depuis le simulateur d'im
 | Avantage à l'entrée | Aucun |
 | Plafond de versement | Aucun |
 | Univers d'investissement | Tous instruments (actions monde, ETF, obligations, fonds, crypto…) |
-| Imposition pendant la phase d'épargne | Dividendes + intérêts taxés annuellement (PFU 30 % par défaut) |
-| Imposition à la sortie | Plus-values taxées au PFU 30 % (12,8 % IR + 17,2 % PS) ou option barème |
+| Imposition pendant la phase d'épargne | Dividendes + intérêts taxés annuellement (PFU 31,4 % par défaut) |
+| Imposition à la sortie | Plus-values taxées au PFU 31,4 % (14,2 % IR + 17,2 % PS) ou option barème |
 | Durée d'attache | Aucune |
 | Souplesse | Maximale — retraits libres |
 
@@ -39,7 +39,7 @@ Le simulateur **pré-remplit la TMI** de l'utilisateur depuis le simulateur d'im
 | Plafond de versement | 150 000 € (PEA classique) ou 225 000 € (PEA-PME inclus) |
 | Univers d'investissement | Actions UE / ETF éligibles UE uniquement |
 | Imposition pendant la phase d'épargne | Aucune si pas de retrait |
-| Imposition à la sortie | **Avant 5 ans** : retrait = clôture, PFU 30 % sur plus-values<br>**Après 5 ans** : exonération IR, prélèvements sociaux **17,2 %** sur plus-values |
+| Imposition à la sortie | **Avant 5 ans** : retrait = clôture, PFU 31,4 % sur plus-values<br>**Après 5 ans** : exonération IR, prélèvements sociaux **17,2 %** sur plus-values |
 | Durée d'attache | 5 ans (perte avantage si retrait avant) |
 | Souplesse | Retraits possibles sans clôture après 5 ans |
 
@@ -51,7 +51,7 @@ Le simulateur **pré-remplit la TMI** de l'utilisateur depuis le simulateur d'im
 | Plafond de versement | Aucun (plafond uniquement sur abattement à la sortie) |
 | Univers d'investissement | Fonds euros + Unités de Compte (UC : actions, ETF, SCPI, immobilier) |
 | Imposition pendant la phase d'épargne | Aucune en l'absence de rachat |
-| Imposition à la sortie | **Avant 8 ans** : PFU 30 % (12,8 % IR + 17,2 % PS) sur les gains rachetés<br>**Après 8 ans** : abattement annuel **4 600 €** (célibataire) ou **9 200 €** (couple) sur gains, puis **24,7 %** (7,5 % IR + 17,2 % PS) si versements ≤ 150 000 €, sinon PFU 30 % au-delà |
+| Imposition à la sortie | **Avant 8 ans** : PFU 31,4 % (14,2 % IR + 17,2 % PS) sur les gains rachetés<br>**Après 8 ans** : abattement annuel **4 600 €** (célibataire) ou **9 200 €** (couple) sur gains, puis **24,7 %** (7,5 % IR + 17,2 % PS) si versements ≤ 150 000 €, sinon PFU 31,4 % au-delà |
 | Durée d'attache | 8 ans (recommandé) |
 | Souplesse | Rachats partiels possibles à tout moment |
 | Frais d'enveloppe | Frais de gestion **0,6 %/an** (typique) sur encours UC + frais d'arbitrage |
@@ -66,7 +66,7 @@ Le simulateur **pré-remplit la TMI** de l'utilisateur depuis le simulateur d'im
 | Plafond de versement | Plafond annuel de déduction (cumulable sur 3 ans) |
 | Univers d'investissement | Fonds euros + UC (similaire à l'AV) |
 | Imposition pendant la phase d'épargne | Aucune |
-| Imposition à la sortie | **Sortie en capital** : capital taxé au barème IR (TMI à la retraite) ; gains taxés au PFU 30 %<br>**Sortie en rente** : taxée comme rente viagère à titre gratuit (RVTG) |
+| Imposition à la sortie | **Sortie en capital** : capital taxé au barème IR (TMI à la retraite) ; gains taxés au PFU 31,4 %<br>**Sortie en rente** : taxée comme rente viagère à titre gratuit (RVTG) |
 | Durée d'attache | Bloqué jusqu'à la retraite (sauf 6 cas de déblocage anticipé : achat RP, accident de la vie, etc.) |
 | Souplesse | Faible — capital indisponible avant retraite |
 | Frais d'enveloppe | Frais de gestion **0,6 %/an** (typique) sur encours UC |
@@ -111,7 +111,7 @@ Le simulateur **pré-remplit la TMI** de l'utilisateur depuis le simulateur d'im
 | `perAnnualCap` | `number` | Plafond annuel de déduction PER (€, défaut 32 909) |
 | `reinvestPerTaxSaving` | `boolean` | Si `true`, l'économie d'impôt PER est réinvestie chaque année dans un CTO virtuel (cas optimal d'utilisation du PER) |
 | `dividendYield` | `number` | Rendement en dividendes (%, défaut 2) — utilisé uniquement pour le CTO (taxation annuelle des dividendes) |
-| `taxOption` | `'pfu' \| 'bareme'` | Option fiscale CTO/PEA<5ans/AV<8ans : flat tax 30 % ou barème IR (utilise `currentTMI + 17,2 %`) |
+| `taxOption` | `'pfu' \| 'bareme'` | Option fiscale CTO/PEA<5ans/AV<8ans : flat tax 31,4 % ou barème IR (utilise `currentTMI + 17,2 %`) |
 
 ---
 
@@ -135,7 +135,7 @@ Hypothèse simplificatrice : les dividendes sont **taxés annuellement** au PFU 
 netReturnMonthly = (gross - dividendYield/12/100) + (dividendYield/12/100) × (1 - effectiveDivTaxRate)
                  - ctoFees / 12 / 100
 
-avec effectiveDivTaxRate = (taxOption === 'pfu') ? 0.30 : (currentTMI/100 + 0.172)
+avec effectiveDivTaxRate = (taxOption === 'pfu') ? 0.314 : (currentTMI/100 + 0.172)
 
 capitalCTO(t) = capitalCTO(t-1) × (1 + netReturnMonthly) + monthlyContribution
 ```
@@ -144,7 +144,7 @@ capitalCTO(t) = capitalCTO(t-1) × (1 + netReturnMonthly) + monthlyContribution
 
 ```
 gainsCTO    = capitalCTO(n) - totalGrossContribs
-taxOnGainsCTO = (taxOption === 'pfu') ? gainsCTO × 0.30 : gainsCTO × (currentTMI/100 + 0.172)
+taxOnGainsCTO = (taxOption === 'pfu') ? gainsCTO × 0.314 : gainsCTO × (currentTMI/100 + 0.172)
 netCapitalCTO = capitalCTO(n) - taxOnGainsCTO
 ```
 
@@ -163,7 +163,7 @@ capitalPEA(t)    = capitalPEA(t-1) × (1 + netReturnMonthly) + monthlyContributi
 gainsPEA = capitalPEA(n) - totalGrossContribs
 
 if duration < 5:
-  taxOnGainsPEA = gainsPEA × 0.30        // PFU
+  taxOnGainsPEA = gainsPEA × 0.314        // PFU
 else:
   taxOnGainsPEA = gainsPEA × 0.172       // PS uniquement
 
@@ -185,7 +185,7 @@ capitalAV(t)     = capitalAV(t-1) × (1 + netReturnMonthly) + monthlyContributio
 gainsAV = capitalAV(n) - totalGrossContribs
 
 if duration < 8:
-  taxOnGainsAV = gainsAV × 0.30
+  taxOnGainsAV = gainsAV × 0.314
 else:
   abattement   = (householdSituation === 'couple') ? 9200 : 4600
   taxableGains = max(0, gainsAV - abattement)
@@ -196,7 +196,7 @@ else:
   else:
     portionFavorable   = max(0, 150000 - (totalGrossContribs - gainsAV)) // simplification
     portionPFU         = taxableGains - portionFavorable
-    taxOnGainsAV       = portionFavorable × 0.247 + portionPFU × 0.30
+    taxOnGainsAV       = portionFavorable × 0.247 + portionPFU × 0.314
 
 netCapitalAV = capitalAV(n) - taxOnGainsAV
 ```
@@ -222,7 +222,7 @@ totalTaxSavings    = annualTaxSaving × duration
 if reinvestPerTaxSaving:
   // Le tax saving est réinvesti chaque année dans un CTO virtuel
   capitalSavings(t) = capitalSavings(t-1) × (1 + (gross × 12 - dividendYield × effectiveDivTaxRate) - ctoFees) + annualTaxSaving
-  // En sortie : taxe PFU 30 % sur le gain du CTO virtuel
+  // En sortie : taxe PFU 31,4 % sur le gain du CTO virtuel
   netSavings = capitalSavings(duration) - taxOnSavingsCTO
 else:
   netSavings = 0   // l'économie d'impôt est dépensée, pas comptabilisée
@@ -236,8 +236,8 @@ gainsPER       = capitalPER(n) - totalGrossContribs
 // Capital (versements déduits à l'entrée) → taxé au barème IR (TMI retraite)
 taxOnCapitalPER = totalGrossContribs × retirementTMI / 100
 
-// Gains → taxés au PFU 30 %
-taxOnGainsPER   = gainsPER × 0.30
+// Gains → taxés au PFU 31,4 %
+taxOnGainsPER   = gainsPER × 0.314
 
 netCapitalPER = capitalPER(n) - taxOnCapitalPER - taxOnGainsPER + netSavings
 ```
@@ -409,7 +409,7 @@ Fichier `frontend/src/data/fiscal-envelopes.js` :
 
 ```js
 export const FISCAL_ENVELOPE_PARAMS = {
-  PFU_RATE: 0.30,
+  PFU_RATE: 0.314,
   SOCIAL_CHARGES_RATE: 0.172,
   AV_REDUCED_RATE: 0.247,        // 7,5 % + 17,2 %
   AV_ABATEMENT_SINGLE: 4600,

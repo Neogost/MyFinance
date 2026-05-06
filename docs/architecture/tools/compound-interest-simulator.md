@@ -27,7 +27,7 @@ L'utilisateur renseigne les paramètres initiaux et obtient une projection year-
 | `contributionGrowthRate` | `number` | Non | Hausse annuelle des versements en % (0 par défaut) — ex : +3 %/an pour suivre l'évolution du salaire |
 | `inflationRate` | `number` | Non | Taux d'inflation annuel à déduire du rendement (%, 2 par défaut) |
 | `managementFees` | `number` | Non | Frais de gestion annuels en % déduits du taux nominal (0 par défaut) — ex : ETF 0,2 % |
-| `applyPFU` | `boolean` | Non | Applique la flat tax PFU 30 % en réduisant le taux effectif à 70 % (false par défaut) |
+| `applyPFU` | `boolean` | Non | Applique la flat tax PFU 31,4 % en réduisant le taux effectif à 68,6 % (false par défaut) |
 | `withdrawalRate` | `number` | Non | Taux de retrait annuel en % du capital final, appliqué après la simulation pour estimer un revenu passif et modéliser la phase de décaissement (0 par défaut) |
 | `lumpSums` | `Array<{id, year, amount}>` | Non | Apports ponctuels (héritage, vente d'un bien, prime…) ajoutés à une année donnée ([] par défaut) |
 
@@ -35,7 +35,7 @@ L'utilisateur renseigne les paramètres initiaux et obtient une projection year-
 
 ```
 realRate = annualRate - inflationRate - managementFees
-effectiveRate = applyPFU ? realRate × 0.70 : realRate
+effectiveRate = applyPFU ? realRate × 0.686 : realRate
 ```
 
 Le taux effectif est utilisé pour tous les calculs de projection.
@@ -254,7 +254,7 @@ Notes méthodologiques (footnotes dynamiques)
 **Section "Options avancées" :** (repliée par défaut)
 - `Inflation annuelle (%)` — 0–20 %, step 0,1 — déduite du taux nominal
 - `Frais de gestion annuels (%)` — 0–5 %, step 0,05
-- `PFU 30 % — flat tax CTO` — checkbox — affiche le rendement net estimé si coché
+- `PFU 31,4 % — flat tax CTO` — checkbox — affiche le rendement net estimé si coché
 - `Taux de retrait (%/an)` — 0–20 %, step 0,1 (masqué en mode inversé variante `monthlyIncome`)
 - Récapitulatif taux : nominal → effectif (avec déductions affichées)
 - Warning si `realRate < 0`

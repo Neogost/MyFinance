@@ -18,7 +18,7 @@ Réponse à la question concrète : *« J'ai acheté 1 000 € de crypto en 2020
 |---------|-------|
 | Article CGI | **150 VH bis** (cessions à titre onéreux d'actifs numériques) |
 | Profil ciblé | Particulier investissant ses propres capitaux à titre non habituel |
-| Imposition par défaut | **PFU 30 %** = 12,8 % IR + 17,2 % prélèvements sociaux |
+| Imposition par défaut | **PFU 31,4 %** = 14,2 % IR + 17,2 % prélèvements sociaux |
 | Option | **Barème progressif IR** (depuis 2023) sur l'IR uniquement — PS toujours 17,2 % |
 | Seuil d'exonération | Cessions annuelles totales ≤ **305 €** → impôt = 0 et pas d'obligation déclarative |
 | Méthode de calcul | **Proportionnelle au portefeuille global** (pas FIFO) |
@@ -286,7 +286,7 @@ Structure :
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Année [▾ 2025]    Option : ( ) PFU 30 %  ( ) Barème   │
+│  Année [▾ 2025]    Option : ( ) PFU 31,4 %  ( ) Barème   │
 ├─────────────────────────────────────────────────────────┤
 │  ⚠ Saisie de l'historique non confirmée — calculs en   │
 │     mode brouillon. [Confirmer l'historique complet]    │
@@ -372,7 +372,7 @@ L'utilisateur ouvre le CSV dans Excel/LibreOffice, contrôle les valeurs, et rep
 ```
 PV = 12 000 − (8 000 × 12 000 / 24 000) = 12 000 − 4 000 = 8 000 €
 PTA après = 8 000 − 4 000 = 4 000 €
-Impôt PFU = 8 000 × 30 % = 2 400 €
+Impôt PFU = 8 000 × 31,4 % = 2 512 €
 ```
 
 ### Exemple 2 — Cas du brief utilisateur
@@ -386,7 +386,7 @@ Impôt PFU = 8 000 × 30 % = 2 400 €
 PV = 1 000 − (1 000 × 1 000 / 1 500) = 1 000 − 666,67 = 333,33 €
 PTA après = 1 000 − 666,67 = 333,33 €
 Total cessions année = 1 000 € > 305 € → déclaration requise
-Impôt PFU = 333,33 × 30 % = 100 €
+Impôt PFU = 333,33 × 31,4 % ≈ 104,67 €
 ```
 
 ### Exemple 3 — Avec swap intermédiaire

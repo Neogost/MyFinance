@@ -77,7 +77,7 @@ function FrequencyToggle({ value, onChange }) {
 // ── Calcul principal ──────────────────────────────────────────────────────────
 
 function buildChartData({ initialAmount, realRate, duration, contributionAmount, contributionFrequency, contributionGrowthRate, applyPFU, lumpSums = [] }) {
-  const effectiveRate = applyPFU ? realRate * 0.70 : realRate
+  const effectiveRate = applyPFU ? realRate * 0.686 : realRate
   const r  = effectiveRate / 100
   const rm = r / 12
 
@@ -346,7 +346,7 @@ export default function CompoundInterestSimulatorPage() {
       notes.push(`Le taux d'inflation (${fmtPct(inflationRate)}) est déduit du taux nominal pour obtenir le taux réel (${fmtPct(realRate)}). Les montants affichés sont exprimés en euros constants d'aujourd'hui.`)
     }
     if (applyPFU) {
-      notes.push('La flat tax PFU 30 % est simulée en réduisant le rendement effectif à 70 % du taux nominal (simplification — en réalité la fiscalité s\'applique à la cession pour un PEA ou annuellement sur les coupons pour un CTO).')
+      notes.push('La flat tax PFU 31,4 % est simulée en réduisant le rendement effectif à 70 % du taux nominal (simplification — en réalité la fiscalité s\'applique à la cession pour un PEA ou annuellement sur les coupons pour un CTO).')
     }
     if (contributionGrowth > 0) {
       notes.push(`Les versements augmentent de ${fmtPct(contributionGrowth)} par an (effet de palier). Le versement de la dernière année est indiqué dans le tableau détaillé.`)
@@ -601,9 +601,9 @@ export default function CompoundInterestSimulatorPage() {
                   onChange={e => setApplyPFU(e.target.checked)}
                   className="accent-indigo-600 w-4 h-4"
                 />
-                <span className="text-sm text-gray-700">PFU 30 % — flat tax CTO</span>
+                <span className="text-sm text-gray-700">PFU 31,4 % — flat tax CTO</span>
               </label>
-              {applyPFU && <p className="text-xs text-gray-400 pl-6">Rendement net estimé : {fmtPct(realRate * 0.70)}</p>}
+              {applyPFU && <p className="text-xs text-gray-400 pl-6">Rendement net estimé : {fmtPct(realRate * 0.686)}</p>}
             </div>
             {!(mode === 'inverse' && inverseVariant === 'monthlyIncome') && (
               <NumInput
@@ -625,11 +625,11 @@ export default function CompoundInterestSimulatorPage() {
                 <div>
                   − inflation {fmtPct(inflationRate)}
                   {managementFees > 0 && ` − frais ${fmtPct(managementFees)}`}
-                  {applyPFU && ' × 70 % (PFU)'}
+                  {applyPFU && ' × 68,6 % (PFU)'}
                 </div>
               )}
               <div className="font-semibold text-gray-600 border-t border-gray-200 pt-0.5 mt-0.5">
-                Taux effectif : {fmtPct(applyPFU ? realRate * 0.70 : realRate)}
+                Taux effectif : {fmtPct(applyPFU ? realRate * 0.686 : realRate)}
               </div>
             </div>
           </Section>
@@ -737,7 +737,7 @@ export default function CompoundInterestSimulatorPage() {
               Avec {fmt(initialAmount)} de départ
               {contribution > 0 && ` · ${fmt(contribution)} ${frequency === 'monthly' ? '/mois' : '/an'}${contributionGrowth > 0 ? ` +${contributionGrowth}%/an` : ''}`}
               {inflationRate > 0 && ` · inflation ${fmtPct(inflationRate)} déduite`}
-              {applyPFU && ' · PFU 30 %'}
+              {applyPFU && ' · PFU 31,4 %'}
             </p>
 
             {crossoverIndex >= 0 && (
@@ -823,7 +823,7 @@ export default function CompoundInterestSimulatorPage() {
               </div>
               <p className="text-xs text-gray-400 text-center mt-3">
                 Retrait de {fmt(annualWithdrawal)} / an ({fmt(monthlyWithdrawal)} / mois)
-                {' · '}taux de rendement pendant la retraite : {fmtPct(applyPFU ? realRate * 0.70 : realRate)}
+                {' · '}taux de rendement pendant la retraite : {fmtPct(applyPFU ? realRate * 0.686 : realRate)}
                 {!isSustainable && ` · durée estimée : ${depletionIndex} an${depletionIndex > 1 ? 's' : ''}`}
               </p>
             </div>
@@ -877,7 +877,7 @@ export default function CompoundInterestSimulatorPage() {
                           onMouseEnter={i === 0 ? undefined : e => {
                             const rect = e.currentTarget.getBoundingClientRect()
                             const prev = chartData[i - 1]
-                            const effectiveRate = applyPFU ? realRate * 0.70 : realRate
+                            const effectiveRate = applyPFU ? realRate * 0.686 : realRate
                             const annualContribs = row.versement * (frequency === 'monthly' ? 12 : 1)
                             const flipUp = window.innerHeight - rect.bottom < 320
                             setInteretTooltip({

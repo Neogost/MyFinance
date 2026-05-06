@@ -78,7 +78,7 @@ L'utilisateur peut **ajuster fictivement** chaque catégorie (champ surchargeabl
 | Paramètre | Type | Description |
 |-----------|------|-------------|
 | `marginCallThreshold` | `number` | Seuil de couverture déclenchant un appel de marge (défaut : LTV utilisé + 10 pts) |
-| `simulatedMarketDrop` | `number` | Baisse simulée du portefeuille (%, 0–80) — défaut 30 % |
+| `simulatedMarketDrop` | `number` | Baisse simulée du portefeuille (%, 0–80) — défaut 31,4 % |
 
 ### 3.5 Effet de levier (réinvestissement) — optionnel
 
@@ -86,7 +86,7 @@ L'utilisateur peut **ajuster fictivement** chaque catégorie (champ surchargeabl
 |-----------|------|-------------|
 | `leverageEnabled` | `boolean` | Activer la simulation de réinvestissement du capital emprunté |
 | `leverageReturn` | `number` | Rendement annuel attendu du réinvestissement (%) — défaut 7 |
-| `leverageTaxRate` | `number` | Taux d'imposition des plus-values (PFU, défaut 30 %) |
+| `leverageTaxRate` | `number` | Taux d'imposition des plus-values (PFU, défaut 31,4 %) |
 
 L'hypothèse implicite : le capital emprunté est réinvesti dans un actif de type BOURSE (cas standard du Lombard à effet de levier). Le drawdown BOURSE du scénario de stress est appliqué à ce capital pour évaluer le risque combiné.
 
@@ -96,7 +96,7 @@ L'hypothèse implicite : le capital emprunté est réinvesti dans un actif de ty
 |-----------|------|-------------|
 | `compareWithSale` | `boolean` | Activer la comparaison |
 | `assetsToSell` | `Map<AssetCategory, number>` | Montant à vendre par catégorie pour atteindre `loanAmount` (alternative au crédit) |
-| `capitalGainTaxRate` | `number` | Taux d'imposition des plus-values (défaut 30 % — flat tax) |
+| `capitalGainTaxRate` | `number` | Taux d'imposition des plus-values (défaut 31,4 % — flat tax) |
 | `expectedReturn` | `number` | Rendement annuel attendu du portefeuille (%) — pour comparer le manque à gagner |
 
 ### 3.7 Sauvegarde de simulation — optionnel
@@ -421,7 +421,7 @@ Tableau parallèle des 3 scénarios standards (Prudent / Réaliste / Optimiste) 
 ### 5.7 Section "Comparaison vente vs Lombard" (dépliable)
 
 - Toggle "Activer la comparaison"
-- Saisie : taux de PFU (défaut 30 %), rendement attendu (%), répartition de la vente par catégorie
+- Saisie : taux de PFU (défaut 31,4 %), rendement attendu (%), répartition de la vente par catégorie
 - Tableau de comparaison :
 
 | Indicateur | Vente d'actifs | Crédit Lombard |
@@ -460,7 +460,7 @@ Le simulateur intègre des tooltips (icône ℹ qui s'ouvre vers le bas pour év
 | Mode de remboursement | In fine vs Amortissable |
 | Section Margin call | Mécanisme d'appel de marge |
 | Section Effet de levier | Stratégie de réinvestissement et risques |
-| Champs PFU (×2) | Flat tax 30 % détaillée |
+| Champs PFU (×2) | Flat tax 31,4 % détaillée |
 | Section Stress test | Méthodologie + lien avec `crisisScenarios.js` |
 | Encart "Impact sur le capital réinvesti" | Hypothèse de drawdown BOURSE appliqué au levier |
 

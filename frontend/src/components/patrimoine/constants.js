@@ -12,7 +12,7 @@ export const FISCAL_ENVELOPE_LABELS = {
   CTO:       { label: 'CTO',            formLabel: 'CTO — Compte Titres Ordinaire',       color: 'bg-gray-100 text-gray-600',     chartColor: '#64748b' },
   PEA:       { label: 'PEA',            formLabel: 'PEA — Plan Épargne Actions',          color: 'bg-emerald-100 text-emerald-700', chartColor: '#059669' },
   AV:        { label: 'AV',             formLabel: 'AV — Assurance Vie',                  color: 'bg-violet-100 text-violet-700', chartColor: '#7c3aed' },
-  FLAT_TAX:  { label: 'Flat taxe',      formLabel: 'Flat taxe (30 % PFU)',                color: 'bg-orange-100 text-orange-700', chartColor: '#ea580c' },
+  FLAT_TAX:  { label: 'Flat taxe',      formLabel: 'Flat taxe (31,4 % PFU)',                color: 'bg-orange-100 text-orange-700', chartColor: '#ea580c' },
   PEE_PERCO: { label: 'PEE / PERCO',    formLabel: 'PEE / PERCO — Épargne salariale',    color: 'bg-sky-100 text-sky-700',       chartColor: '#0284c7' },
   PER:       { label: 'PER',            formLabel: 'PER — Plan Épargne Retraite',         color: 'bg-indigo-100 text-indigo-700', chartColor: '#4338ca' },
   AUTRE:     { label: 'Autre',          formLabel: 'Autre enveloppe',                     color: 'bg-gray-100 text-gray-500',     chartColor: '#a1a1aa' },
