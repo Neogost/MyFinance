@@ -4,7 +4,10 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentAllocationDto;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.InstrumentPricePointDto;
 import com.myfinance.dto.InstrumentSectorAllocationDto;
+import com.myfinance.dto.OrderMarkerDto;
+import com.myfinance.domain.User;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.dto.UpdateStablePriceRequest;
 import com.myfinance.service.InstrumentService;
@@ -16,9 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -127,5 +132,22 @@ public class InstrumentController {
                 authentication.getName(), id);
         instrumentService.deleteInstrument(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /** GET /api/instruments/{id}/price-history?from=&to= — historique des cours (authentifié) */
+    @GetMapping("/{id}/price-history")
+    public List<InstrumentPricePointDto> getPriceHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to) {
+        return instrumentService.getPriceHistory(id, from, to);
+    }
+
+    /** GET /api/instruments/{id}/order-markers — ordres BUY/SELL de l'utilisateur sur toutes ses positions liées (authentifié) */
+    @GetMapping("/{id}/order-markers")
+    public List<OrderMarkerDto> getOrderMarkers(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+        return instrumentService.getOrderMarkers(id, currentUser);
     }
 }

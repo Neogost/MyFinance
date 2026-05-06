@@ -5,6 +5,7 @@ import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.domain.AssetCategory;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.InstrumentPricePointDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.service.InstrumentService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import com.myfinance.support.WithMockCustomUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -26,6 +28,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -348,5 +351,76 @@ class InstrumentControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(trop)))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ── GET /api/instruments/{id}/price-history ────────────────
+
+    @Test
+    @WithMockUser
+    void getPriceHistory_retourne200AvecListe() throws Exception {
+        var point = new InstrumentPricePointDto(
+                java.time.LocalDate.of(2024, 1, 15),
+                new BigDecimal("42000.00")
+        );
+        when(instrumentService.getPriceHistory(eq(1L), any(), any()))
+                .thenReturn(java.util.List.of(point));
+
+        mockMvc.perform(get("/api/instruments/1/price-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].date").value("2024-01-15"))
+                .andExpect(jsonPath("$[0].price").value(42000.00));
+    }
+
+    @Test
+    @WithMockUser
+    void getPriceHistory_avecParametreFrom_passeLaDate() throws Exception {
+        when(instrumentService.getPriceHistory(eq(1L), any(), any()))
+                .thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/instruments/1/price-history")
+                        .param("from", "2023-01-01")
+                        .param("to",   "2024-01-01"))
+                .andExpect(status().isOk());
+
+        verify(instrumentService).getPriceHistory(
+                eq(1L),
+                eq(java.time.LocalDate.of(2023, 1, 1)),
+                eq(java.time.LocalDate.of(2024, 1, 1))
+        );
+    }
+
+    @Test
+    void getPriceHistory_sansAuthentification_retourne401() throws Exception {
+        mockMvc.perform(get("/api/instruments/1/price-history"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ── GET /api/instruments/{id}/order-markers ────────────────
+
+    @Test
+    @WithMockCustomUser
+    void getOrderMarkers_retourne200AvecListe() throws Exception {
+        var marker = new com.myfinance.dto.OrderMarkerDto(
+                java.time.LocalDate.of(2024, 3, 10),
+                com.myfinance.domain.OrderType.BUY,
+                new BigDecimal("8000.00"),
+                new BigDecimal("0.2"),
+                "Bitcoin Ledger"
+        );
+        when(instrumentService.getOrderMarkers(eq(1L), any()))
+                .thenReturn(java.util.List.of(marker));
+
+        mockMvc.perform(get("/api/instruments/1/order-markers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].orderType").value("BUY"))
+                .andExpect(jsonPath("$[0].positionLabel").value("Bitcoin Ledger"));
+    }
+
+    @Test
+    void getOrderMarkers_sansAuthentification_retourne401() throws Exception {
+        mockMvc.perform(get("/api/instruments/1/order-markers"))
+                .andExpect(status().isUnauthorized());
     }
 }

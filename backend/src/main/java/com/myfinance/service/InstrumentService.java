@@ -4,15 +4,21 @@ import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
 import com.myfinance.domain.InstrumentAllocation;
 import com.myfinance.domain.InstrumentSectorAllocation;
+import com.myfinance.domain.OrderType;
 import com.myfinance.domain.Position;
+import com.myfinance.domain.User;
 import com.myfinance.dto.InstrumentSectorAllocationDto;
 import com.myfinance.repository.InstrumentSectorAllocationRepository;
 import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentAllocationDto;
 import com.myfinance.dto.InstrumentDto;
+import com.myfinance.dto.InstrumentPricePointDto;
+import com.myfinance.dto.OrderMarkerDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.repository.InstrumentAllocationRepository;
+import com.myfinance.repository.InstrumentPriceHistoryRepository;
 import com.myfinance.repository.InstrumentRepository;
+import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import com.myfinance.repository.PositionSnapshotRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +44,8 @@ public class InstrumentService {
     private final InstrumentSectorAllocationRepository sectorAllocationRepository;
     private final PositionRepository                   positionRepository;
     private final PositionSnapshotRepository           positionSnapshotRepository;
+    private final InstrumentPriceHistoryRepository     priceHistoryRepository;
+    private final PositionOrderRepository              positionOrderRepository;
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -292,5 +301,46 @@ public class InstrumentService {
                 }
             });
         }
+    }
+
+    // ── Historique des prix (accessible à tous les utilisateurs) ─
+
+    public List<InstrumentPricePointDto> getPriceHistory(Long instrumentId, LocalDate from, LocalDate to) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Instrument introuvable : " + instrumentId));
+
+        LocalDate effectiveTo   = to   != null ? to   : LocalDate.now();
+        LocalDate effectiveFrom = from != null ? from : effectiveTo.minusYears(3);
+
+        return priceHistoryRepository
+                .findByInstrumentAndPriceDateBetweenOrderByPriceDateAsc(instrument, effectiveFrom, effectiveTo)
+                .stream()
+                .map(InstrumentPricePointDto::from)
+                .toList();
+    }
+
+    /** Tous les ordres BUY/SELL de l'utilisateur sur toutes ses positions liées à cet instrument.
+     *  Utilisé pour afficher les marqueurs d'achat/vente sur le graphique d'évolution du cours. */
+    public List<OrderMarkerDto> getOrderMarkers(Long instrumentId, User user) {
+        Instrument instrument = instrumentRepository.findById(instrumentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Instrument introuvable : " + instrumentId));
+
+        List<Position> userPositions = positionRepository.findByInstrument(instrument)
+                .stream()
+                .filter(p -> p.getUser().getId().equals(user.getId()))
+                .toList();
+
+        if (userPositions.isEmpty()) return List.of();
+
+        return positionOrderRepository.findByPositionInOrderByOrderDateAsc(userPositions)
+                .stream()
+                .filter(o -> o.getOrderType() == OrderType.BUY
+                         || o.getOrderType() == OrderType.SELL
+                         || o.getOrderType() == OrderType.DIVIDEND
+                         || o.getOrderType() == OrderType.INTEREST)
+                .map(OrderMarkerDto::from)
+                .toList();
     }
 }

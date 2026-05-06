@@ -24,6 +24,7 @@ import CategoryStrategyBar from './CategoryStrategyBar'
 import PatrimoineActionBar from './PatrimoineActionBar'
 import PatrimoineFilters from './PatrimoineFilters'
 import ExportCsvModal from './ExportCsvModal'
+import PriceHistoryModal from './PriceHistoryModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 
@@ -36,6 +37,7 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
   const [balanceTarget, setBalanceTarget]     = useState(null)
   const [estimatedTarget, setEstimatedTarget] = useState(null)
   const [ordersTarget, setOrdersTarget]       = useState(null)
+  const [historyTarget, setHistoryTarget]     = useState(null)
   const [showPriceUpdate, setShowPriceUpdate]               = useState(false)
   const [showExchangeRateUpdate, setShowExchangeRateUpdate] = useState(false)
   const [showSnapshots, setShowSnapshots]                   = useState(false)
@@ -586,6 +588,7 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
           onUpdateBalance={setBalanceTarget}
           onUpdateEstimatedValue={setEstimatedTarget}
           onViewOrders={setOrdersTarget}
+          onViewHistory={setHistoryTarget}
         />
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
@@ -604,6 +607,7 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
               onUpdateBalance={setBalanceTarget}
               onUpdateEstimatedValue={setEstimatedTarget}
               onViewOrders={setOrdersTarget}
+              onViewHistory={setHistoryTarget}
               linkedDebt={debtByPositionId[position.id]}
             />
           ))}
@@ -655,6 +659,13 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
           position={ordersTarget}
           onClose={() => setOrdersTarget(null)}
           onOrdersChanged={handleOrdersChanged}
+        />
+      )}
+
+      {historyTarget && (
+        <PriceHistoryModal
+          position={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
 

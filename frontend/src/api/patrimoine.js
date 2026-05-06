@@ -2,8 +2,16 @@ import api from './client'
 
 // ── Instruments ────────────────────────────────────────────────
 
-export const getInstruments          = (params = {}) => api.get('/api/instruments', { params }).then(r => r.data)
-export const getInstrument           = (id)           => api.get(`/api/instruments/${id}`).then(r => r.data)
+export const getInstruments            = (params = {}) => api.get('/api/instruments', { params }).then(r => r.data)
+export const getInstrument             = (id)           => api.get(`/api/instruments/${id}`).then(r => r.data)
+export const getInstrumentPriceHistory = (id, from, to) => {
+  const params = {}
+  if (from) params.from = from
+  if (to)   params.to   = to
+  return api.get(`/api/instruments/${id}/price-history`, { params }).then(r => r.data)
+}
+export const getInstrumentOrderMarkers = (id) =>
+  api.get(`/api/instruments/${id}/order-markers`).then(r => r.data)
 export const createInstrument        = (data)         => api.post('/api/instruments', data).then(r => r.data)
 export const updateInstrument        = (id, data)     => api.put(`/api/instruments/${id}`, data).then(r => r.data)
 export const getActiveInstruments      = ()                    => api.get('/api/instruments/active').then(r => r.data)

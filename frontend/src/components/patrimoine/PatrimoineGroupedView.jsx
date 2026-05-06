@@ -80,7 +80,7 @@ const STALE_MS = 30 * 24 * 60 * 60 * 1000
 
 const isStale = (dateStr) => dateStr && new Date(dateStr) < new Date(Date.now() - STALE_MS)
 
-function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders }) {
+function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmClose,  setConfirmClose]  = useState(false)
 
@@ -128,6 +128,13 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
           Mvts
         </button>
       )}
+      {(position.category === 'BOURSE' || position.category === 'CRYPTO') &&
+        position.instrument?.id && !position.instrument?.stablePrice && (
+        <button onClick={() => onViewHistory(position)}
+          className="hidden md:inline-flex px-2 py-0.5 bg-violet-50 border border-violet-200 rounded text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100">
+          Cours
+        </button>
+      )}
       <button onClick={() => onEdit(position)}
         className="px-2 py-0.5 border border-gray-300 rounded text-xs text-gray-600 hover:border-indigo-400 hover:text-indigo-600">
         Modifier
@@ -147,7 +154,7 @@ function ActionButtons({ position, onEdit, onDelete, onClose, onUpdateBalance, o
   )
 }
 
-function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false, showTaux = false, hasTaux = false }) {
+function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, readOnly = false, showTaux = false, hasTaux = false }) {
   const fiscal        = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c             = position.computed ?? {}
   const gain          = parseFloat(c.capitalGainEur ?? 0)
@@ -267,13 +274,14 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
           onUpdateBalance={onUpdateBalance}
           onUpdateEstimatedValue={onUpdateEstimatedValue}
           onViewOrders={onViewOrders}
+          onViewHistory={onViewHistory}
         />}
       </td>
     </tr>
   )
 }
 
-export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, readOnly = false }) {
+export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, readOnly = false }) {
   const [collapsed, setCollapsed] = useState(new Set())
 
   const toggle = (partner) => setCollapsed(prev => {
@@ -396,6 +404,7 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                             onUpdateBalance={onUpdateBalance}
                             onUpdateEstimatedValue={onUpdateEstimatedValue}
                             onViewOrders={onViewOrders}
+                            onViewHistory={onViewHistory}
                             readOnly={readOnly}
                             showTaux={hasTaux && position.category === 'LIVRET'}
                             hasTaux={hasTaux}

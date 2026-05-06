@@ -3,7 +3,7 @@ import { CATEGORY_META, FISCAL_ENVELOPE_LABELS } from './constants'
 import { fmt, fmtUnits, Amount } from './utils'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
-export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, linkedDebt }) {
+export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, linkedDebt }) {
   const meta   = CATEGORY_META[position.category] ?? {}
   const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c      = position.computed ?? {}
@@ -152,6 +152,12 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
                 <button onClick={() => onViewOrders(position)}
                   className="px-2 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition">
                   Mouvements
+                </button>
+              )}
+              {isBourseOrCrypto && position.instrument?.id && !position.instrument?.stablePrice && (
+                <button onClick={() => onViewHistory(position)}
+                  className="px-2 py-1 bg-violet-50 border border-violet-200 rounded-lg text-xs font-semibold text-violet-700 dark:text-violet-300 hover:bg-violet-100 transition">
+                  Évolution du cours →
                 </button>
               )}
               <button onClick={() => onEdit(position)}
