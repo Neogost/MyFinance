@@ -214,7 +214,7 @@ export default function PriceHistoryModal({ position, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-4xl max-h-[90vh] flex flex-col">
 
         {/* En-tête */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100">
