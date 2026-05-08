@@ -54,6 +54,17 @@ html.dark {
   --color-purple-50:   rgba(168, 85, 247, 0.12);
 }
 
+/* ── Safe area insets (Dynamic Island, iPhone notch, home indicator) ──
+   viewport-fit=cover est requis dans le meta viewport (déjà présent).
+   pt-safe : au moins 0.75rem (py-3) mais jamais moins que la safe area top.
+   pb-safe : padding-bottom égal à la safe area bottom (home indicator).      */
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* ── Carousel — barre de progression ── */
 @keyframes carousel-progress {
   from { width: 0% }

@@ -144,7 +144,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
       {/* ══════════════════════════════════════
           HEADER (desktop complet / mobile simplifié)
       ══════════════════════════════════════ */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 py-3 bg-white shadow-sm">
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 md:px-6 pt-safe pb-3 bg-white shadow-sm">
         <img src={logo} alt="MyFinance" className="h-8 md:h-12 w-auto" />
 
         {/* ── Nav desktop (cachée sur mobile) ── */}
@@ -308,7 +308,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
       {/* ══════════════════════════════════════
           BOTTOM NAV (mobile uniquement)
       ══════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex safe-area-inset-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex pb-safe">
         {BOTTOM_NAV.map(({ page, label, Icon }) => (
           <button
             key={page}
@@ -341,7 +341,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 flex flex-col justify-end">
           <div className="fixed inset-0 bg-black/40" onClick={closeMobile} />
-          <div className="relative bg-white rounded-t-2xl z-50 max-h-[80vh] overflow-y-auto pb-24">
+          <div className="relative bg-white rounded-t-2xl z-50 max-h-[80vh] overflow-y-auto" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2" />
 
             {/* Identité utilisateur */}
