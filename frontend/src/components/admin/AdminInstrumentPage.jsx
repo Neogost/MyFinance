@@ -3,11 +3,14 @@ import {
   getInstruments, createInstrument, updateInstrument, deleteInstrument,
   runMarketDataUpdate, runAllocationUpdate,
   getPriceHistorySummary, backfillCryptoPrices, importBoursePrices,
+  getExchangeRates, updateExchangeRates, backfillExchangeRate,
+  getExchangeRateHistorySummary, getExchangeRateCurrencyUsage, deleteExchangeRateCurrency,
 } from '../../api/patrimoine'
 import AdminInstrumentForm from './AdminInstrumentForm'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
 import PriceHistoryModal from './PriceHistoryModal'
+import ExchangeRateHistoryModal from './ExchangeRateHistoryModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
@@ -56,21 +59,115 @@ export default function AdminInstrumentPage() {
   const fileInputRef = useRef(null)
   const csvTargetIdRef = useRef(null)
 
+  // ── Devises ──────────────────────────────────────────────────────────────────
+  const [exchangeRates,        setExchangeRates]        = useState([])
+  const [rateHistorySummary,   setRateHistorySummary]   = useState([])
+  const [rateHistoryTarget,    setRateHistoryTarget]    = useState(null)
+  const [backfillingCurrency,  setBackfillingCurrency]  = useState(null)
+  const [rateBackfillCurrency, setRateBackfillCurrency] = useState(null) // devise dont le picker est ouvert
+  const [rateBackfillDate,     setRateBackfillDate]     = useState('')
+  const [rateBackfillReport,   setRateBackfillReport]   = useState(null)
+  const [rateBackfillError,    setRateBackfillError]    = useState(null)
+  const [deleteRateTarget,     setDeleteRateTarget]     = useState(null) // { currency, instrumentCount, positionCount }
+  const [deletingRate,         setDeletingRate]         = useState(false)
+  const [deleteRateError,      setDeleteRateError]      = useState(null)
+  const [showAddRate,          setShowAddRate]          = useState(false)
+  const [addRateCurrency,      setAddRateCurrency]      = useState('')
+  const [addRateValue,         setAddRateValue]         = useState('')
+  const [addRateSaving,        setAddRateSaving]        = useState(false)
+  const [addRateError,         setAddRateError]         = useState(null)
+
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     try {
       setLoading(true)
-      const [list, summary] = await Promise.all([
+      const [list, summary, rates, rateSummary] = await Promise.all([
         getInstruments(),
         getPriceHistorySummary().catch(() => ({})),
+        getExchangeRates().catch(() => []),
+        getExchangeRateHistorySummary().catch(() => []),
       ])
       setInstruments(list)
       setHistorySummary(summary)
+      setExchangeRates(rates)
+      setRateHistorySummary(rateSummary)
     } catch {
       setError('Impossible de charger les instruments.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAddRate(e) {
+    e.preventDefault()
+    const code = addRateCurrency.trim().toUpperCase()
+    const rate = parseFloat(addRateValue)
+    if (!code || isNaN(rate) || rate <= 0) {
+      setAddRateError('Code devise et taux valide requis.')
+      return
+    }
+    setAddRateSaving(true)
+    setAddRateError(null)
+    try {
+      const updated = await updateExchangeRates([{ currency: code, rate }])
+      const upserted = updated.find(r => r.currency === code)
+      setExchangeRates(rs => {
+        const exists = rs.some(r => r.currency === code)
+        return exists
+          ? rs.map(r => r.currency === code ? upserted : r)
+          : [...rs, upserted].sort((a, b) => a.currency.localeCompare(b.currency))
+      })
+      setShowAddRate(false)
+      setAddRateCurrency('')
+      setAddRateValue('')
+    } catch {
+      setAddRateError('Échec de l\'enregistrement.')
+    } finally {
+      setAddRateSaving(false)
+    }
+  }
+
+  async function handleDeleteRateClick(currency) {
+    setDeleteRateError(null)
+    try {
+      const usage = await getExchangeRateCurrencyUsage(currency)
+      setDeleteRateTarget(usage)
+    } catch {
+      setDeleteRateError('Impossible de vérifier l\'utilisation de cette devise.')
+    }
+  }
+
+  async function handleDeleteRateConfirm() {
+    if (!deleteRateTarget) return
+    setDeletingRate(true)
+    setDeleteRateError(null)
+    try {
+      await deleteExchangeRateCurrency(deleteRateTarget.currency)
+      setExchangeRates(rs => rs.filter(r => r.currency !== deleteRateTarget.currency))
+      setRateHistorySummary(rs => rs.filter(s => s.currency !== deleteRateTarget.currency))
+      setDeleteRateTarget(null)
+    } catch (e) {
+      setDeleteRateError(e?.response?.data?.message || 'Échec de la suppression.')
+    } finally {
+      setDeletingRate(false)
+    }
+  }
+
+  async function handleRateBackfill(currency, from) {
+    setBackfillingCurrency(currency)
+    setRateBackfillReport(null)
+    setRateBackfillError(null)
+    setRateBackfillCurrency(null)
+    try {
+      trackEvent('FEATURE_USE', 'admin.exchange_rate.backfill', { currency })
+      const report = await backfillExchangeRate(currency, from ? { from } : {})
+      setRateBackfillReport(report)
+      setRateHistorySummary(await getExchangeRateHistorySummary().catch(() => rateHistorySummary))
+    } catch (e) {
+      setRateBackfillError(e?.response?.data?.message || `Échec du backfill ${currency}.`)
+    } finally {
+      setBackfillingCurrency(null)
     }
   }
 
@@ -455,6 +552,264 @@ export default function AdminInstrumentPage() {
           )}
         </div>
       ))}
+
+      {/* ── DEVISES ── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">DEVISES</h3>
+          <button
+            onClick={() => { setShowAddRate(true); setAddRateCurrency(''); setAddRateValue(''); setAddRateError(null) }}
+            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition"
+          >
+            + Ajouter
+          </button>
+        </div>
+
+        {/* Rapport backfill devise */}
+        {rateBackfillError && (
+          <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{rateBackfillError}</p>
+        )}
+        {rateBackfillReport && (
+          <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-xs">
+            <p className="font-semibold text-orange-700">
+              Backfill {rateBackfillReport.targetLabel} : {rateBackfillReport.linesInserted} insérés,{' '}
+              {rateBackfillReport.linesUpdated} mis à jour
+              {rateBackfillReport.fromDate && ` (${rateBackfillReport.fromDate} → ${rateBackfillReport.toDate})`}
+            </p>
+          </div>
+        )}
+
+        {exchangeRates.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm p-6 text-center text-gray-400 text-sm">
+            Aucune devise configurée
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-2 md:px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Devise</th>
+                  <th className="px-2 md:px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Taux actuel</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mis à jour</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Historique</th>
+                  <th className="px-2 md:px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {exchangeRates.map(er => {
+                  const summary = rateHistorySummary.find(s => s.currency === er.currency)
+                  const stale = !er.lastUpdatedAt || new Date(er.lastUpdatedAt) < new Date(Date.now() - STALE_MS)
+                  const dateStr = fmtDate(er.lastUpdatedAt)
+                  return (
+                    <tr key={er.currency} className="border-t border-gray-100 hover:bg-gray-50 transition">
+                      <td className="px-2 md:px-4 py-3 text-sm text-gray-800 font-medium">
+                        <span>{er.currency}</span>
+                        <span className="text-xs text-gray-400 ml-1.5 font-normal">/ EUR</span>
+                        <div className="md:hidden mt-0.5">
+                          {stale && <span className="text-xs text-orange-500 font-medium">⚠ Taux obsolète</span>}
+                        </div>
+                      </td>
+                      <td className="px-2 md:px-4 py-3 text-sm text-right font-semibold whitespace-nowrap">
+                        <span className={stale ? 'text-orange-600' : 'text-gray-800'}>
+                          {parseFloat(er.rate).toLocaleString('fr-FR', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
+                        </span>
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-3 text-xs">
+                        {dateStr
+                          ? <span className={stale ? 'text-orange-500 font-medium' : 'text-gray-400'}>{stale && '⚠ '}{dateStr}</span>
+                          : <span className="text-gray-300">Jamais</span>}
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-3 text-xs">
+                        <div className="space-y-0.5">
+                          {summary?.dayCount > 0 ? (
+                            <div>
+                              <span className="text-gray-700 font-medium">{summary.dayCount} j</span>
+                              <span className="text-gray-400 ml-1">({summary.fromDate} → {summary.toDate})</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300">Aucun historique</span>
+                          )}
+                          <button
+                            onClick={() => setRateHistoryTarget(er.currency)}
+                            className="mt-0.5 flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium transition"
+                          >
+                            <span>📊</span><span>Consulter</span>
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-2 md:px-4 py-3">
+                        {rateBackfillCurrency === er.currency ? (
+                          <div className="hidden md:flex items-center gap-2">
+                            <input
+                              type="date"
+                              value={rateBackfillDate}
+                              onChange={e => setRateBackfillDate(e.target.value)}
+                              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            />
+                            <button
+                              onClick={() => handleRateBackfill(er.currency, rateBackfillDate || undefined)}
+                              className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"
+                            >
+                              Lancer
+                            </button>
+                            <button
+                              onClick={() => setRateBackfillCurrency(null)}
+                              className="px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:bg-gray-50 transition"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => { setRateBackfillCurrency(er.currency); setRateBackfillDate('') }}
+                              disabled={backfillingCurrency === er.currency}
+                              className="hidden md:inline-flex px-3 py-1 border border-indigo-200 rounded-md text-xs text-indigo-600 hover:border-indigo-500 hover:bg-indigo-50 disabled:opacity-60 transition"
+                            >
+                              {backfillingCurrency === er.currency ? '⟳ Backfill…' : '↻ Backfill'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRateClick(er.currency)}
+                              className="hidden md:inline-flex px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {rateHistoryTarget && (
+        <ExchangeRateHistoryModal
+          currency={rateHistoryTarget}
+          onClose={async (dirty) => {
+            setRateHistoryTarget(null)
+            if (dirty) setRateHistorySummary(await getExchangeRateHistorySummary().catch(() => rateHistorySummary))
+          }}
+        />
+      )}
+
+      {showAddRate && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Ajouter une devise</h3>
+            <form onSubmit={handleAddRate} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                  Code ISO 4217 (ex : USD, GBP, CHF)
+                </label>
+                <input
+                  type="text"
+                  value={addRateCurrency}
+                  onChange={e => setAddRateCurrency(e.target.value.toUpperCase())}
+                  maxLength={3}
+                  placeholder="USD"
+                  autoFocus
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition font-mono uppercase"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                  Taux initial (unités de devise pour 1 EUR)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  min="0"
+                  value={addRateValue}
+                  onChange={e => setAddRateValue(e.target.value)}
+                  placeholder="1.08"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
+                />
+              </div>
+              {addRateError && <p className="text-sm text-red-600">{addRateError}</p>}
+              <div className="flex justify-end gap-3 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRate(false)}
+                  disabled={addRateSaving}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={addRateSaving}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 transition"
+                >
+                  {addRateSaving ? 'Enregistrement…' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {deleteRateTarget && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              Supprimer la devise {deleteRateTarget.currency}
+            </h3>
+            <p className="text-sm text-gray-700 mb-3">
+              Le taux courant et l'intégralité de l'historique{' '}
+              <span className="font-semibold">{deleteRateTarget.currency}/EUR</span> seront supprimés.
+              Cette action est irréversible.
+            </p>
+
+            {(deleteRateTarget.instrumentCount > 0 || deleteRateTarget.positionCount > 0) && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p className="font-semibold mb-1">⚠ Éléments associés à cette devise :</p>
+                <ul className="list-disc list-inside space-y-0.5 text-xs">
+                  {deleteRateTarget.instrumentCount > 0 && (
+                    <li>
+                      <span className="font-medium">{deleteRateTarget.instrumentCount}</span>{' '}
+                      instrument{deleteRateTarget.instrumentCount > 1 ? 's' : ''} libellé{deleteRateTarget.instrumentCount > 1 ? 's' : ''} en {deleteRateTarget.currency}
+                    </li>
+                  )}
+                  {deleteRateTarget.positionCount > 0 && (
+                    <li>
+                      <span className="font-medium">{deleteRateTarget.positionCount}</span>{' '}
+                      position{deleteRateTarget.positionCount > 1 ? 's' : ''} dans cette devise
+                    </li>
+                  )}
+                </ul>
+                <p className="mt-2 text-xs text-amber-700">
+                  Ces éléments ne seront pas supprimés, mais leurs valorisations en EUR ne pourront plus être calculées.
+                </p>
+              </div>
+            )}
+
+            {deleteRateError && (
+              <p className="text-sm text-red-600 mb-3">{deleteRateError}</p>
+            )}
+
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                onClick={() => { setDeleteRateTarget(null); setDeleteRateError(null) }}
+                disabled={deletingRate}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteRateConfirm}
+                disabled={deletingRate}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 disabled:opacity-60 transition"
+              >
+                {deletingRate ? 'Suppression…' : 'Supprimer définitivement'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {tooltip && (
         <div

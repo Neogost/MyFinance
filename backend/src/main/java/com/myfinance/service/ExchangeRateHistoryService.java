@@ -1,10 +1,14 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.ExchangeRateHistory;
+import com.myfinance.dto.ExchangeRateHistoryEntryDto;
+import com.myfinance.dto.ExchangeRateHistorySummaryDto;
 import com.myfinance.repository.ExchangeRateHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -98,5 +102,49 @@ public class ExchangeRateHistoryService {
             log.info("[TauxHistorique] {} taux persisté(s) pour le {}", count, date);
         }
         return count;
+    }
+
+    // ── Consultation UI ────────────────────────────────────────────────────────
+
+    /** Historique d'une devise sur une plage de dates, trié ASC. */
+    public List<ExchangeRateHistoryEntryDto> getHistory(String currency, LocalDate from, LocalDate to) {
+        return rateHistoryRepository
+                .findByCurrencyAndRateDateBetweenOrderByRateDateAsc(currency, from, to)
+                .stream()
+                .map(h -> new ExchangeRateHistoryEntryDto(h.getCurrency(), h.getRateDate(), h.getRate(), h.getSource()))
+                .toList();
+    }
+
+    /** Résumé par devise (nb jours, plage) pour l'affichage admin. */
+    public List<ExchangeRateHistorySummaryDto> getSummaryByCurrency() {
+        return rateHistoryRepository.findSummaryGroupedByCurrency()
+                .stream()
+                .map(row -> new ExchangeRateHistorySummaryDto(
+                        (String)   row[0],
+                        ((Number)  row[1]).longValue(),
+                        (LocalDate) row[2],
+                        (LocalDate) row[3]
+                ))
+                .toList();
+    }
+
+    /** Ajoute ou met à jour manuellement un taux (source = MANUAL). */
+    public ExchangeRateHistoryEntryDto upsertManual(String currency, LocalDate date, BigDecimal rate) {
+        ExchangeRateHistory entry = rateHistoryRepository
+                .findByCurrencyAndRateDate(currency, date)
+                .orElse(ExchangeRateHistory.builder().currency(currency).rateDate(date).build());
+        entry.setRate(rate);
+        entry.setSource(SOURCE_MANUAL);
+        ExchangeRateHistory saved = rateHistoryRepository.save(entry);
+        return new ExchangeRateHistoryEntryDto(saved.getCurrency(), saved.getRateDate(), saved.getRate(), saved.getSource());
+    }
+
+    /** Supprime une entrée d'historique (404 si inexistante). */
+    public void deleteEntry(String currency, LocalDate date) {
+        ExchangeRateHistory entry = rateHistoryRepository
+                .findByCurrencyAndRateDate(currency, date)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Aucun taux trouvé pour " + currency + " au " + date));
+        rateHistoryRepository.delete(entry);
     }
 }

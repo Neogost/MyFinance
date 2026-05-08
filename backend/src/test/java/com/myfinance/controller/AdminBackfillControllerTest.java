@@ -40,6 +40,8 @@ class AdminBackfillControllerTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean InstrumentBackfillService instrumentBackfillService;
     @MockitoBean ExchangeRateBackfillService exchangeRateBackfillService;
+    @MockitoBean com.myfinance.service.ExchangeRateHistoryService exchangeRateHistoryService;
+    @MockitoBean com.myfinance.service.ExchangeRateService exchangeRateService;
     @MockitoBean com.myfinance.service.InstrumentPriceHistoryService priceHistoryService;
     @MockitoBean com.myfinance.repository.PositionOrderRepository positionOrderRepository;
 
@@ -205,5 +207,95 @@ class AdminBackfillControllerTest {
                         .get("/api/admin/instruments/price-history-summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.1.dayCount").value(432));
+    }
+
+    // ── exchange-rates/history-summary ────────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void exchangeRateHistorySummary_retourne200() throws Exception {
+        when(exchangeRateHistoryService.getSummaryByCurrency())
+                .thenReturn(java.util.List.of(
+                        new com.myfinance.dto.ExchangeRateHistorySummaryDto(
+                                "USD", 500L,
+                                LocalDate.of(2023, 1, 1), LocalDate.of(2026, 5, 8))));
+
+        mockMvc.perform(get("/api/admin/exchange-rates/history-summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currency").value("USD"))
+                .andExpect(jsonPath("$[0].dayCount").value(500));
+    }
+
+    // ── exchange-rates/{currency}/history ─────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void getExchangeRateHistory_retourne200() throws Exception {
+        when(exchangeRateHistoryService.getHistory(eq("USD"), any(), any()))
+                .thenReturn(java.util.List.of(
+                        new com.myfinance.dto.ExchangeRateHistoryEntryDto(
+                                "USD", LocalDate.of(2024, 1, 1),
+                                new java.math.BigDecimal("1.10"), "ECB")));
+
+        mockMvc.perform(get("/api/admin/exchange-rates/USD/history")
+                        .param("from", "2024-01-01")
+                        .param("to",   "2024-12-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currency").value("USD"))
+                .andExpect(jsonPath("$[0].rate").value(1.10));
+    }
+
+    // ── PUT exchange-rates/{currency}/history/{date} ──────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void upsertExchangeRate_retourne200() throws Exception {
+        when(exchangeRateHistoryService.upsertManual(eq("USD"), any(), any()))
+                .thenReturn(new com.myfinance.dto.ExchangeRateHistoryEntryDto(
+                        "USD", LocalDate.of(2024, 6, 1),
+                        new java.math.BigDecimal("1.08"), "MANUAL"));
+
+        mockMvc.perform(put("/api/admin/exchange-rates/USD/history/2024-06-01")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"rate\":1.08}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.source").value("MANUAL"));
+    }
+
+    // ── DELETE exchange-rates/{currency}/history/{date} ───────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteExchangeRate_retourne204() throws Exception {
+        doNothing().when(exchangeRateHistoryService).deleteEntry(eq("USD"), any());
+
+        mockMvc.perform(delete("/api/admin/exchange-rates/USD/history/2024-06-01"))
+                .andExpect(status().isNoContent());
+    }
+
+    // ── GET exchange-rates/{currency}/usage ───────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void exchangeRateCurrencyUsage_retourne200() throws Exception {
+        when(exchangeRateService.checkUsage(eq("USD")))
+                .thenReturn(new com.myfinance.dto.ExchangeRateUsageDto("USD", 3L, 7L));
+
+        mockMvc.perform(get("/api/admin/exchange-rates/USD/usage"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currency").value("USD"))
+                .andExpect(jsonPath("$.instrumentCount").value(3))
+                .andExpect(jsonPath("$.positionCount").value(7));
+    }
+
+    // ── DELETE exchange-rates/{currency} ──────────────────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deleteExchangeRateCurrency_retourne204() throws Exception {
+        doNothing().when(exchangeRateService).delete(eq("USD"));
+
+        mockMvc.perform(delete("/api/admin/exchange-rates/USD"))
+                .andExpect(status().isNoContent());
     }
 }

@@ -1,11 +1,17 @@
 package com.myfinance.controller;
 
 import com.myfinance.dto.BackfillReport;
+import com.myfinance.dto.ExchangeRateHistoryEntryDto;
+import com.myfinance.dto.ExchangeRateHistorySummaryDto;
+import com.myfinance.dto.ExchangeRateUsageDto;
 import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.dto.PriceHistorySummaryDto;
 import com.myfinance.dto.UpsertPriceRequest;
+import com.myfinance.dto.UpsertRateRequest;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.service.ExchangeRateBackfillService;
+import com.myfinance.service.ExchangeRateHistoryService;
+import com.myfinance.service.ExchangeRateService;
 import com.myfinance.service.InstrumentBackfillService;
 import com.myfinance.service.InstrumentPriceHistoryService;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +39,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminBackfillController {
 
-    private final InstrumentBackfillService instrumentBackfillService;
-    private final ExchangeRateBackfillService exchangeRateBackfillService;
+    private final InstrumentBackfillService     instrumentBackfillService;
+    private final ExchangeRateBackfillService   exchangeRateBackfillService;
+    private final ExchangeRateHistoryService    exchangeRateHistoryService;
+    private final ExchangeRateService           exchangeRateService;
     private final InstrumentPriceHistoryService priceHistoryService;
-    private final PositionOrderRepository positionOrderRepository;
+    private final PositionOrderRepository       positionOrderRepository;
 
     /**
      * Résumé d'historique de prix + date du premier ordre par instrument — pour l'UI admin.
@@ -121,6 +129,56 @@ public class AdminBackfillController {
             @PathVariable Long id,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         priceHistoryService.deleteEntry(id, date);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Historique des taux de change ─────────────────────────────────────────
+
+    /** Résumé par devise (nb jours, plage) — pour l'affichage admin. */
+    @GetMapping("/api/admin/exchange-rates/history-summary")
+    public ResponseEntity<List<ExchangeRateHistorySummaryDto>> exchangeRateHistorySummary() {
+        return ResponseEntity.ok(exchangeRateHistoryService.getSummaryByCurrency());
+    }
+
+    /** Historique d'une devise sur une plage de dates. */
+    @GetMapping("/api/admin/exchange-rates/{currency}/history")
+    public ResponseEntity<List<ExchangeRateHistoryEntryDto>> getExchangeRateHistory(
+            @PathVariable String currency,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(exchangeRateHistoryService.getHistory(currency, from, to));
+    }
+
+    /** Ajoute ou met à jour manuellement le taux d'une devise à une date donnée (source = MANUAL). */
+    @PutMapping("/api/admin/exchange-rates/{currency}/history/{date}")
+    public ResponseEntity<ExchangeRateHistoryEntryDto> upsertExchangeRate(
+            @PathVariable String currency,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestBody UpsertRateRequest body) {
+        return ResponseEntity.ok(exchangeRateHistoryService.upsertManual(currency, date, body.rate()));
+    }
+
+    /** Supprime le taux d'une devise à une date donnée. */
+    @DeleteMapping("/api/admin/exchange-rates/{currency}/history/{date}")
+    public ResponseEntity<Void> deleteExchangeRateHistoryEntry(
+            @PathVariable String currency,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        exchangeRateHistoryService.deleteEntry(currency, date);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Suppression d'une devise complète ────────────────────────────────────
+
+    /** Compte les instruments et positions qui utilisent cette devise — pour le dialogue de confirmation. */
+    @GetMapping("/api/admin/exchange-rates/{currency}/usage")
+    public ResponseEntity<ExchangeRateUsageDto> exchangeRateCurrencyUsage(@PathVariable String currency) {
+        return ResponseEntity.ok(exchangeRateService.checkUsage(currency));
+    }
+
+    /** Supprime la devise : taux courant + historique complet. Les positions/instruments ne sont pas supprimés. */
+    @DeleteMapping("/api/admin/exchange-rates/{currency}")
+    public ResponseEntity<Void> deleteExchangeRateCurrency(@PathVariable String currency) {
+        exchangeRateService.delete(currency);
         return ResponseEntity.noContent().build();
     }
 }

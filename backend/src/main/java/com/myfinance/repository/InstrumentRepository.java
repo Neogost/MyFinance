@@ -17,6 +17,8 @@ public interface InstrumentRepository extends JpaRepository<Instrument, Long> {
 
     Optional<Instrument> findByTicker(String ticker);
 
+    long countByCurrency(String currency);
+
     boolean existsByIsin(String isin);
 
     boolean existsByTicker(String ticker);

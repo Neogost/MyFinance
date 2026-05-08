@@ -49,9 +49,18 @@ export const importBoursePrices      = (id, file)      => {
   fd.append('file', file)
   return api.post(`/api/admin/instruments/${id}/import-prices`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
 }
-export const backfillExchangeRate    = (currency, params = {}) =>
+export const backfillExchangeRate         = (currency, params = {}) =>
   api.post(`/api/admin/exchange-rates/${currency}/backfill`, null, { params }).then(r => r.data)
-export const getPriceHistorySummary  = ()              => api.get('/api/admin/instruments/price-history-summary').then(r => r.data)
+export const getPriceHistorySummary       = () => api.get('/api/admin/instruments/price-history-summary').then(r => r.data)
+export const getExchangeRateHistorySummary  = () => api.get('/api/admin/exchange-rates/history-summary').then(r => r.data)
+export const getExchangeRateCurrencyUsage   = (currency) => api.get(`/api/admin/exchange-rates/${currency}/usage`).then(r => r.data)
+export const deleteExchangeRateCurrency     = (currency) => api.delete(`/api/admin/exchange-rates/${currency}`)
+export const getExchangeRateHistory       = (currency, from, to) =>
+  api.get(`/api/admin/exchange-rates/${currency}/history`, { params: { from, to } }).then(r => r.data)
+export const upsertExchangeRateHistory    = (currency, date, rate) =>
+  api.put(`/api/admin/exchange-rates/${currency}/history/${date}`, { rate }).then(r => r.data)
+export const deleteExchangeRateHistory    = (currency, date) =>
+  api.delete(`/api/admin/exchange-rates/${currency}/history/${date}`)
 
 // ── Snapshots ──────────────────────────────────────────────────
 
