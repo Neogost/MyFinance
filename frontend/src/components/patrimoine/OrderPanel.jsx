@@ -398,6 +398,7 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState(null)
+  const [filterType, setFilterType]       = useState(null)
 
   useEffect(() => { fetchOrders() }, [position.id])
 
@@ -440,6 +441,12 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
   }
 
   const isBourseOrCrypto = position.category === 'BOURSE' || position.category === 'CRYPTO'
+
+  // Types distincts présents dans la liste, dans l'ordre d'apparition
+  const availableTypes = [...new Set(orders.map(o => o.orderType))]
+
+  // Liste affichée (filtrée), les totaux restent calculés sur tous les ordres
+  const visibleOrders = filterType ? orders.filter(o => o.orderType === filterType) : orders
 
   const totalAchete = orders
     .filter(o => ['DEPOSIT', 'BUY'].includes(o.orderType))
@@ -510,6 +517,37 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
           </div>
         )}
 
+        {/* Filtres par type — uniquement si ≥ 2 types différents */}
+        {!loading && availableTypes.length > 1 && (
+          <div className="flex flex-wrap gap-1.5 px-6 py-2 border-b border-gray-100">
+            <button
+              onClick={() => setFilterType(null)}
+              className={`text-xs px-2.5 py-1 rounded-full font-medium transition ${
+                filterType === null
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              Tous ({orders.length})
+            </button>
+            {availableTypes.map(type => {
+              const { label, color } = ORDER_TYPE_LABELS[type] ?? { label: type, color: 'bg-gray-100 text-gray-600' }
+              const count = orders.filter(o => o.orderType === type).length
+              return (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(f => f === type ? null : type)}
+                  className={`text-xs px-2.5 py-1 rounded-full font-medium transition ${
+                    filterType === type ? color + ' ring-2 ring-offset-1 ring-current' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Liste des ordres */}
         <div className="overflow-y-auto flex-1 px-6 py-4">
           {loading && <p className="text-sm text-gray-400">Chargement…</p>}
@@ -520,7 +558,10 @@ export default function OrderPanel({ position, onClose, onOrdersChanged }) {
               <p className="text-xs mt-1">Cliquez sur « + Ajouter » pour enregistrer un mouvement.</p>
             </div>
           )}
-          {orders.map(order => {
+          {!loading && visibleOrders.length === 0 && orders.length > 0 && (
+            <p className="text-sm text-gray-400 text-center py-6">Aucun mouvement pour ce filtre.</p>
+          )}
+          {visibleOrders.map(order => {
             const { label, color } = ORDER_TYPE_LABELS[order.orderType] ?? {}
             const isDebit = ['WITHDRAWAL', 'SELL'].includes(order.orderType)
             return (
