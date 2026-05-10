@@ -19,6 +19,7 @@ import SafetyNetWidget from './SafetyNetWidget'
 import DetteWidget from './DetteWidget'
 import PatrimoineNetWidget from './PatrimoineNetWidget'
 import CashFlowSankeyWidget from './CashFlowSankeyWidget'
+import UpcomingExpensesWidget from './UpcomingExpensesWidget'
 import GeographicExposureWidget from './GeographicExposureWidget'
 import SectorExposureWidget from './SectorExposureWidget'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
@@ -133,13 +134,25 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
           subtitle="Évolution du salaire et répartition des charges mensuelles."
         />
 
-        {wc.cashFlow && (
-          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-base font-semibold text-gray-800 mb-1">Flux des revenus</h3>
-            <p className="text-xs text-gray-400 mb-6">
-              De vos sources de revenus jusqu'à chaque dépense individuelle, par catégorie.
-            </p>
-            <CashFlowSankeyWidget />
+        {(wc.cashFlow || wc.upcomingExpenses) && (
+          <div className={`mb-6 grid gap-4 md:gap-6
+            ${wc.cashFlow && wc.upcomingExpenses ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1'}`}>
+
+            {wc.cashFlow && (
+              <div className={`${wc.upcomingExpenses ? 'md:col-span-2' : ''} bg-white rounded-xl shadow-sm border border-gray-200 p-6`}>
+                <h3 className="text-base font-semibold text-gray-800 mb-1">Flux des revenus</h3>
+                <p className="text-xs text-gray-400 mb-6">
+                  De vos sources de revenus jusqu'à chaque dépense individuelle, par catégorie.
+                </p>
+                <CashFlowSankeyWidget />
+              </div>
+            )}
+
+            {wc.upcomingExpenses && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <UpcomingExpensesWidget onNavigate={onNavigate} />
+              </div>
+            )}
           </div>
         )}
 
