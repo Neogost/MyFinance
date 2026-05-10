@@ -108,6 +108,10 @@ public class User implements UserDetails {
     @Column(name = "all_time_high_eur")
     private java.math.BigDecimal allTimeHighEur;
 
+    /** Dernier décile INSEE calculé — mémorisé pour détecter la progression (badge L'Ascension). */
+    @Column(name = "last_known_decile")
+    private Integer lastKnownDecile;
+
     @Column(name = "initial_net_worth_eur")
     private java.math.BigDecimal initialNetWorthEur;
 

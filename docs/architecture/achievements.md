@@ -1,7 +1,7 @@
 # 🏆 Achievements / Hauts faits — gamification du patrimoine
 
-> **Statut : ✅ V2 en cours — 61 badges implémentés / 119 au catalogue**
-> V1 (25 badges) et V2 tiers Trivial/Faible/Moyen (+36) sont en production. Seul le tiers "Plus lourd" reste à faire.
+> **Statut : ✅ V2 complète — 67 badges implémentés (25 V1 + 36 V2 Trivial/Faible/Moyen + 6 Plus lourd)**
+> Tous les tiers V2 sont en production, y compris les 6 badges "Plus lourd" (Bull Run, Diamond Hands, Le Sang-Froid, Le Rebalancer, L'Ascension, Le Disciple).
 
 ---
 
@@ -121,18 +121,25 @@ Code = identifiant Java (enum `AchievementCode`). Niveaux = Bronze 🥉 · Argen
 
 **Total V2 : ~80 niveaux sur 36 badges supplémentaires.**
 
-### 🔴 Badges restants — tiers "Plus lourd" (non implémentés)
+### ✅ Badges "Plus lourd" — implémentés en V2
+
+| Badge | Évaluateur | Paliers | Données requises |
+|---|---|---|---|
+| 🐂 `BULL_RUN` | `evalBullRun` | +10%/+25%/+50% YTD BOURSE | Snapshots avec catégorie BOURSE |
+| 💎 `DIAMOND_HANDS` | `evalDiamondHands` | 1/3/5 ans | `Position.createdAt` sur positions ACTIVE |
+| ❄ `LE_SANG_FROID` | `evalSangFroid` | unique | Snapshots chronologiques + ordres SELL |
+| 🎯 `LE_REBALANCER` | `evalRebalancer` | unique | Ordres avec position chargée |
+| 📊 `L_ASCENSION` | `evalAscension` | D5/D7/D8/D9 INSEE | Snapshots + `PatrimoineReferentiel` + `User.birthDate` |
+| 💪 `LE_DISCIPLE` | `evalDisciple` | 30%/50%/70% | Snapshots + contrat salarial actif |
+
+**Champ DB ajouté :** `users.last_known_decile` (migration `021_add_last_known_decile.sql`) — mémorise le décile INSEE pour détecter la progression.
+
+### 🔴 Badges non implémentés
 
 | Badge | Raison du report |
 |---|---|
-| 🐂 Bull Run (performance YTD) | Nécessite TWR/MWR calculé sur données historiques de prix |
-| 💎 Diamond Hands (position tenue N ans ininterrompue) | Nécessite de distinguer "same position" vs réouverture |
 | 🐂 Buffett-Mode (perf > benchmark) | Nécessite un flux de données benchmark (CAC40, S&P500) |
-| ❄ Le Sang-Froid (pas de vente lors d'une baisse > 10%) | Nécessite données de marché historiques pour détecter les baisses |
-| 🎯 Le Rebalancer (rééquilibrage manuel détecté) | Nécessite de corréler des ventes et achats dans la même semaine |
-| 📊 L'Ascension (progression décile INSEE) | Nécessite de stocker le décile historique de l'utilisateur |
 | 🎖 Le Spécialiste (compléter une catégorie entière) | Nécessite de définir les critères de "complétude" par catégorie |
-| 💪 Le Disciple (taux d'épargne > X% sur 12 mois) | Nécessite historique mensuel revenus + dépenses |
 | ⛅ Pluie d'Avril (matelas maintenu ≥ 12 mois) | Nécessite d'historiser la valeur du matelas mois par mois |
 | 🎯 L'Architecte Précis (±5pts sur toutes dimensions BOURSE) | Données de répartition géo/sectorielle complexes à agréger |
 | 🌱 ISR (tous badges ESG) | Nécessite données ESG sur les instruments (non disponible) |

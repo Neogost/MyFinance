@@ -174,6 +174,38 @@ public class AchievementCatalog {
                 AchievementSensitivity.NULLE, true,
                 unique()),
 
+            // ── V2 Plus lourd ────────────────────────────────────────────────
+            def(AchievementCode.BULL_RUN, "🐂", "Bull Run",
+                "Performance YTD du portefeuille BOURSE",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",10), of(2,"Or","🥇",25), of(3,"Diamant","💎",50)),
+
+            def(AchievementCode.DIAMOND_HANDS, "💎", "Diamond Hands",
+                "Position BOURSE ou CRYPTO détenue sans interruption depuis N ans",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",1), of(2,"Or","🥇",3), of(3,"Diamant","💎",5)),
+
+            def(AchievementCode.LE_SANG_FROID, "❄", "Le Sang-Froid",
+                "Aucune vente lors d'un repli mensuel > 10 % du portefeuille investissable",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.LE_REBALANCER, "🎯", "Le Rebalancer",
+                "Vente dans une catégorie et achat dans une autre dans la même semaine",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.L_ASCENSION, "📊", "L'Ascension",
+                "Décile de patrimoine INSEE dans sa tranche d'âge",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",5), of(2,"Argent","🥈",7),
+                of(3,"Or","🥇",8), of(4,"Platine","💠",9)),
+
+            def(AchievementCode.LE_DISCIPLE, "💪", "Le Disciple",
+                "Taux d'épargne moyen sur les 12 derniers mois (croissance patrimoine / salaire)",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",30), of(2,"Or","🥇",50), of(3,"Diamant","💎",70)),
+
             // ── V2 Trivial ────────────────────────────────────────────────────
             def(AchievementCode.THE_FIRST_MILLION, "🏆", "The First Million",
                 "Patrimoine total ≥ 1 million €",

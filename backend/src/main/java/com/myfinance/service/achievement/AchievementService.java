@@ -1,5 +1,6 @@
 package com.myfinance.service.achievement;
 
+import com.myfinance.config.PatrimoineReferentiel;
 import com.myfinance.domain.*;
 import com.myfinance.repository.*;
 import com.myfinance.domain.InstrumentAllocation;
@@ -59,6 +60,7 @@ public class AchievementService {
     private final RecurringExpenseRepository            expenseRepo;
     private final DebtRepository                        debtRepo;
     private final DebtService                           debtService;
+    private final PatrimoineReferentiel                  referentiel;
 
     // ── Batch ─────────────────────────────────────────────────────────────────
 
@@ -204,6 +206,13 @@ public class AchievementService {
                 case PATRIOTE_PEA        -> evalPatriotePea(user, def);
                 case LE_VETERAN          -> evalVeteranPosition(user, def);
                 case L_ANNALISTE         -> evalAnnaliste(user, def);
+                // ── V2 Plus lourd ─────────────────────────────────────────────
+                case BULL_RUN            -> evalBullRun(user, def);
+                case DIAMOND_HANDS       -> evalDiamondHands(user, def);
+                case LE_SANG_FROID       -> evalSangFroid(user, def);
+                case LE_REBALANCER       -> evalRebalancer(user, def);
+                case L_ASCENSION         -> evalAscension(user, def);
+                case LE_DISCIPLE         -> evalDisciple(user, def);
             };
         } catch (Exception e) {
             log.debug("[Achievements] Évaluation {} échouée pour user {}: {}", def.code(), user.getId(), e.getMessage());
@@ -710,6 +719,138 @@ public class AchievementService {
         int consecutive = 0;
         for (int y = currentYear; years.contains(y); y--) consecutive++;
         return levelForValue(def, BigDecimal.valueOf(consecutive));
+    }
+
+    // ── V2 Plus lourd ────────────────────────────────────────────────────────
+
+    /** Performance YTD du portefeuille BOURSE depuis le 1er janvier. */
+    private int evalBullRun(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findByUserOrderBySnapshotDateDesc(user);
+        if (snaps.size() < 2) return 0;
+        PortfolioSnapshot current = snaps.get(0);
+        LocalDate jan1 = LocalDate.of(LocalDate.now().getYear(), 1, 1);
+        PortfolioSnapshot baseline = snaps.stream()
+                .filter(s -> !s.getSnapshotDate().isAfter(jan1))
+                .findFirst().orElse(null);
+        if (baseline == null) return 0;
+        double baseVal = categoryValue(baseline, AssetCategory.BOURSE).doubleValue();
+        if (baseVal <= 0) return 0;
+        double currentVal = categoryValue(current, AssetCategory.BOURSE).doubleValue();
+        double perf = (currentVal - baseVal) / baseVal * 100;
+        return levelForValue(def, BigDecimal.valueOf(perf));
+    }
+
+    /** Position BOURSE ou CRYPTO active détenue sans interruption depuis N ans. */
+    private int evalDiamondHands(User user, AchievementDefinition def) {
+        long maxYears = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE)
+                .stream()
+                .filter(p -> (AssetCategory.BOURSE == p.getCategory() || AssetCategory.CRYPTO == p.getCategory())
+                        && p.getCreatedAt() != null)
+                .mapToLong(p -> ChronoUnit.YEARS.between(p.getCreatedAt().toLocalDate(), LocalDate.now()))
+                .max().orElse(0);
+        return levelForValue(def, BigDecimal.valueOf(maxYears));
+    }
+
+    /** Aucune vente lors d'un repli mensuel > 10 % du portefeuille investissable. */
+    private int evalSangFroid(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findByUserWithPositionsOrderBySnapshotDateAsc(user);
+        if (snaps.size() < 2) return 0;
+        for (int i = 1; i < snaps.size(); i++) {
+            PortfolioSnapshot prev = snaps.get(i - 1);
+            PortfolioSnapshot curr = snaps.get(i);
+            BigDecimal prevVal = investableValue(prev);
+            if (prevVal.compareTo(BigDecimal.ZERO) <= 0) continue;
+            BigDecimal drop = prevVal.subtract(investableValue(curr))
+                    .divide(prevVal, 4, java.math.RoundingMode.HALF_UP);
+            if (drop.compareTo(new BigDecimal("0.10")) >= 0) {
+                boolean hadSell = orderRepo.existsByPositionUserAndOrderTypeAndOrderDateBetween(
+                        user, OrderType.SELL, prev.getSnapshotDate(), curr.getSnapshotDate());
+                if (!hadSell) return 1;
+            }
+        }
+        return 0;
+    }
+
+    /** Vente dans une catégorie et achat dans une autre catégorie dans la même semaine. */
+    private int evalRebalancer(User user, AchievementDefinition def) {
+        List<PositionOrder> orders = orderRepo.findByPositionUserWithPositionOrderByOrderDateAsc(user);
+        for (PositionOrder sell : orders) {
+            if (OrderType.SELL != sell.getOrderType() || sell.getPosition() == null) continue;
+            AssetCategory sellCat = sell.getPosition().getCategory();
+            if (sellCat == null) continue;
+            LocalDate sellDate = sell.getOrderDate();
+            LocalDate windowEnd = sellDate.plusDays(7);
+            boolean found = orders.stream()
+                    .filter(o -> OrderType.BUY == o.getOrderType() && o.getPosition() != null)
+                    .filter(o -> !o.getOrderDate().isBefore(sellDate) && !o.getOrderDate().isAfter(windowEnd))
+                    .anyMatch(o -> sellCat != o.getPosition().getCategory());
+            if (found) return 1;
+        }
+        return 0;
+    }
+
+    /** Décile de patrimoine INSEE dans la tranche d'âge de l'utilisateur. */
+    private int evalAscension(User user, AchievementDefinition def) {
+        if (user.getBirthDate() == null) return 0;
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        int age = (int) ChronoUnit.YEARS.between(user.getBirthDate(), LocalDate.now());
+        double patrimoine = totalPatrimoine(snaps.get(0)).doubleValue();
+        int decile = computeInseeDecile(age, patrimoine);
+        if (decile <= 0) return 0;
+        if (!Objects.equals(user.getLastKnownDecile(), decile)) {
+            user.setLastKnownDecile(decile);
+            userRepository.save(user);
+        }
+        return levelForValue(def, BigDecimal.valueOf(decile));
+    }
+
+    /** Taux d'épargne sur la période couverte par les snapshots (max 12 mois). */
+    private int evalDisciple(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findByUserOrderBySnapshotDateDesc(user);
+        if (snaps.size() < 2) return 0;
+        PortfolioSnapshot current = snaps.get(0);
+        LocalDate cutoff = current.getSnapshotDate().minusMonths(12);
+        PortfolioSnapshot baseline = snaps.stream()
+                .filter(s -> !s.getSnapshotDate().isAfter(cutoff))
+                .findFirst().orElse(snaps.get(snaps.size() - 1));
+        if (baseline == current) return 0;
+        double delta = totalPatrimoine(current).doubleValue() - totalPatrimoine(baseline).doubleValue();
+        if (delta <= 0) return 0;
+        Optional<SalaryContract> contract = salaryRepo.findByUserAndEndDateIsNull(user);
+        if (contract.isEmpty() || contract.get().getAnnualGrossSalary() == null) return 0;
+        double monthlySalary = contract.get().getAnnualGrossSalary().doubleValue() * 0.72 / 12;
+        if (monthlySalary <= 0) return 0;
+        long months = ChronoUnit.MONTHS.between(baseline.getSnapshotDate(), current.getSnapshotDate());
+        if (months <= 0) return 0;
+        double savingsRate = delta / (months * monthlySalary) * 100;
+        return levelForValue(def, BigDecimal.valueOf(savingsRate));
+    }
+
+    /** Retourne le rang décile INSEE (1–10) du patrimoine dans la tranche d'âge. */
+    private int computeInseeDecile(int age, double patrimoine) {
+        if (referentiel.getTranches() == null) return 0;
+        PatrimoineReferentiel.Tranche tranche = referentiel.getTranches().stream()
+                .filter(t -> age >= t.getAgeMin() && age <= t.getAgeMax())
+                .findFirst().orElse(null);
+        if (tranche == null) return 0;
+        long[] seuils = { tranche.getD1(), tranche.getD2(), tranche.getD3(), tranche.getD4(),
+                          tranche.getD5(), tranche.getD6(), tranche.getD7(), tranche.getD8(), tranche.getD9() };
+        for (int i = 0; i < seuils.length; i++) {
+            if (patrimoine < seuils[i]) return i + 1;
+        }
+        return 10;
+    }
+
+    /** Valeur investissable = BOURSE + CRYPTO (pour le calcul de drawdown). */
+    private BigDecimal investableValue(PortfolioSnapshot snap) {
+        return snap.getPositionSnapshots().stream()
+                .filter(ps -> ps.getPosition() != null
+                        && (AssetCategory.BOURSE == ps.getPosition().getCategory()
+                            || AssetCategory.CRYPTO == ps.getPosition().getCategory()))
+                .map(PositionSnapshot::getCurrentValueEur)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // ── Helpers communs V2 ───────────────────────────────────────────────────

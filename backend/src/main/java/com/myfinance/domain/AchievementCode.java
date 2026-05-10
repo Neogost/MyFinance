@@ -69,6 +69,14 @@ public enum AchievementCode {
     LEVIER_MAITRISE,
     L_INTER_SECTORIEL,
 
+    // ── V2 Plus lourd — données historiques et calculs avancés ──────────────
+    BULL_RUN,
+    DIAMOND_HANDS,
+    LE_SANG_FROID,
+    LE_REBALANCER,
+    L_ASCENSION,
+    LE_DISCIPLE,
+
     // ── V2 Moyen — agrégation + calcul ───────────────────────────────────────
     LE_RENTIER,
     LEAN_FIRE,

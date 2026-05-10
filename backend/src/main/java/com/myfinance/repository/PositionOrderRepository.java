@@ -2,6 +2,7 @@ package com.myfinance.repository;
 
 import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.Instrument;
+import com.myfinance.domain.OrderType;
 import com.myfinance.domain.Position;
 import com.myfinance.domain.PositionOrder;
 import com.myfinance.domain.User;
@@ -49,6 +50,14 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     /** Dates des ordres BUY sur BOURSE et CRYPTO pour un utilisateur — pour le calcul du DCA-Master streak mensuel. */
     @Query("SELECT po.orderDate FROM PositionOrder po WHERE po.position.user = :user AND po.orderType = com.myfinance.domain.OrderType.BUY AND po.position.category IN (com.myfinance.domain.AssetCategory.BOURSE, com.myfinance.domain.AssetCategory.CRYPTO) ORDER BY po.orderDate ASC")
     List<java.time.LocalDate> findBuyDatesForBourseOrCrypto(@Param("user") User user);
+
+    /** Vérifie si une vente existe entre deux dates — pour LE_SANG_FROID. */
+    boolean existsByPositionUserAndOrderTypeAndOrderDateBetween(
+            User user, OrderType orderType, java.time.LocalDate from, java.time.LocalDate to);
+
+    /** Tous les ordres d'un utilisateur avec leur position chargée — pour LE_REBALANCER. */
+    @Query("SELECT po FROM PositionOrder po JOIN FETCH po.position p WHERE p.user = :user ORDER BY po.orderDate ASC")
+    List<PositionOrder> findByPositionUserWithPositionOrderByOrderDateAsc(@Param("user") User user);
 
     /** Somme des montants d'un type d'ordre dans une enveloppe fiscale donnée — pour PATRIOTE_PEA. */
     @Query("SELECT COALESCE(SUM(po.amountEur), 0) FROM PositionOrder po WHERE po.position.user = :user AND po.position.fiscalEnvelope = :envelope AND po.orderType = :orderType")
