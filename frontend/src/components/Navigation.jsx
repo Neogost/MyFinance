@@ -122,7 +122,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, appVersion = null, onShowReleaseNotes }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, appVersion = null, onShowReleaseNotes }) {
   const [incomeOpen,      setIncomeOpen]     = useState(false)
   const [patrimoineOpen,  setPatrimoineOpen] = useState(false)
   const [toolsOpen,       setToolsOpen]      = useState(false)
@@ -259,7 +259,14 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
           <NavBtn page="documentation" label="Documentation" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
-          <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+          <div className="relative inline-flex">
+            <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+            {unseenAchievements > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 pointer-events-none">
+                {unseenAchievements}
+              </span>
+            )}
+          </div>
         </nav>
 
         {/* ── Droite desktop ── */}

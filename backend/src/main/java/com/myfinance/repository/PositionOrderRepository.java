@@ -45,4 +45,8 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     List<PositionOrder> findCryptoOperationsByUserOrderByDateAsc(
             @Param("user") User user,
             @Param("category") AssetCategory category);
+
+    /** Dates des ordres BUY sur BOURSE et CRYPTO pour un utilisateur — pour le calcul du DCA-Master streak mensuel. */
+    @Query("SELECT po.orderDate FROM PositionOrder po WHERE po.position.user = :user AND po.orderType = com.myfinance.domain.OrderType.BUY AND po.position.category IN (com.myfinance.domain.AssetCategory.BOURSE, com.myfinance.domain.AssetCategory.CRYPTO) ORDER BY po.orderDate ASC")
+    List<java.time.LocalDate> findBuyDatesForBourseOrCrypto(@Param("user") User user);
 }

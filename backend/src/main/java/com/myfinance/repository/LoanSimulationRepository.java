@@ -9,4 +9,6 @@ import java.util.List;
 public interface LoanSimulationRepository extends JpaRepository<LoanSimulation, Long> {
 
     List<LoanSimulation> findByUserOrderBySavedAtDesc(User user);
+
+    long countByUser(User user);
 }

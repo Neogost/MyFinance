@@ -70,4 +70,11 @@ public interface AnalyticsEventRepository extends JpaRepository<AnalyticsEvent, 
         ORDER BY day ASC
     """, nativeQuery = true)
     List<Object[]> findDailyRetention(@Param("fromMs") long fromMs, @Param("toMs") long toMs);
+
+    /** Nombre d'events FEATURE_USE ou BUTTON_CLICK dont le nom correspond au pattern LIKE. */
+    @Query("SELECT COUNT(a) FROM AnalyticsEvent a WHERE a.user = :user AND a.eventType = :eventType AND a.eventName LIKE :pattern")
+    long countByUserAndEventTypeAndEventNameLike(
+            @Param("user") User user,
+            @Param("eventType") com.myfinance.domain.EventType eventType,
+            @Param("pattern") String pattern);
 }

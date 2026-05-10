@@ -6,6 +6,7 @@ import FiscalProfilePanel from '../profile/FiscalProfilePanel'
 import PersonalInfoPanel from '../profile/PersonalInfoPanel'
 import SafetyNetPanel from '../profile/SafetyNetPanel'
 import AnalyticsOptOutPanel from '../profile/AnalyticsOptOutPanel'
+import AchievementsPanel from '../profile/AchievementsPanel'
 import DeleteAccountModal from '../profile/DeleteAccountModal'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
@@ -82,7 +83,7 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate, 
   }
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="max-w-4xl mx-auto flex flex-col gap-6">
       <div className="bg-white rounded-xl shadow-sm p-4 md:p-8">
         <h2 className="text-xl font-bold text-gray-900 mb-1">Mon profil</h2>
         <p className="text-sm text-gray-500 mb-6">
@@ -152,10 +153,21 @@ export default function ChangePasswordForm({ user, onGroupChange, onUserUpdate, 
       </form>
       </div>
 
-      <PersonalInfoPanel user={user} onUpdate={onUserUpdate} />
-      <FiscalProfilePanel user={user} onUpdate={onUserUpdate} />
-      <FamilyGroupPanel onGroupChange={onGroupChange} />
-      <SafetyNetPanel user={user} onUpdate={onUserUpdate} />
+      {/* Hauts faits — pleine largeur */}
+      <AchievementsPanel />
+
+      {/* Infos personnelles + Fiscal — 2 colonnes sur lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PersonalInfoPanel user={user} onUpdate={onUserUpdate} />
+        <FiscalProfilePanel user={user} onUpdate={onUserUpdate} />
+      </div>
+
+      {/* Famille + Matelas — 2 colonnes sur lg */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FamilyGroupPanel onGroupChange={onGroupChange} />
+        <SafetyNetPanel user={user} onUpdate={onUserUpdate} />
+      </div>
+
       <AnalyticsOptOutPanel user={user} onUpdate={onUserUpdate} />
 
       {/* Zone de danger */}

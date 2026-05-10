@@ -38,6 +38,7 @@ import DocumentationPage from './components/documentation/DocumentationPage'
 import ContactPage from './components/ContactPage'
 import ReleaseNotesModal from './components/ReleaseNotesModal'
 import logo from './assets/logo.png'
+import { getMyAchievements } from './api/achievements'
 
 export default function App() {
   const [user,        setUser]        = useState(null)
@@ -52,9 +53,10 @@ export default function App() {
   })
   const [familyMode,  setFamilyMode]  = useState(false)
   const [appError,    setAppError]    = useState(null) // code HTTP 5xx ou null
-  const [pendingRegistrations, setPendingRegistrations] = useState(0)
-  const [appVersion,           setAppVersion]           = useState(null)
-  const [showReleaseNotes,     setShowReleaseNotes]     = useState(false)
+  const [pendingRegistrations,  setPendingRegistrations]  = useState(0)
+  const [appVersion,            setAppVersion]            = useState(null)
+  const [showReleaseNotes,      setShowReleaseNotes]      = useState(false)
+  const [unseenAchievements,    setUnseenAchievements]    = useState(0)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -83,6 +85,7 @@ export default function App() {
         // Restauration de session : génère un sessionId si absent (rechargement de page)
         if (!sessionStorage.getItem('analytics-session-id')) initAnalyticsSession(u)
         getAppVersion().then(setAppVersion).catch(() => {})
+        getMyAchievements().then(d => setUnseenAchievements(d.unseenCount ?? 0)).catch(() => {})
         if (u?.role === 'ADMIN') {
           getRegistrations('PENDING').then(list => setPendingRegistrations(list.length)).catch(() => {})
         }
@@ -141,6 +144,7 @@ export default function App() {
   function handleNavigate(page) {
     const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
+    if (page === 'profile') setUnseenAchievements(0) // efface le compteur dès qu'on ouvre le profil
     window.location.hash = page
     setCurrentPage(page)
   }
@@ -289,6 +293,7 @@ export default function App() {
         familyMode={familyMode}
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
         pendingRegistrations={pendingRegistrations}
+        unseenAchievements={unseenAchievements}
         appVersion={appVersion}
         onShowReleaseNotes={() => setShowReleaseNotes(true)}
       />

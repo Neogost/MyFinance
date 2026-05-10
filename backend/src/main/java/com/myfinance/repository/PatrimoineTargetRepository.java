@@ -10,5 +10,7 @@ public interface PatrimoineTargetRepository extends JpaRepository<PatrimoineTarg
 
     List<PatrimoineTarget> findByUser(User user);
 
+    boolean existsByUser(User user);
+
     void deleteByUser(User user);
 }

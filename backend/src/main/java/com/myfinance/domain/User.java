@@ -103,6 +103,17 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean cryptoHistoricalDataConfirmed = false;
 
+    // ── Hauts faits ────────────────────────────────────────────
+
+    @Column(name = "all_time_high_eur")
+    private java.math.BigDecimal allTimeHighEur;
+
+    @Column(name = "initial_net_worth_eur")
+    private java.math.BigDecimal initialNetWorthEur;
+
+    @Column(name = "last_achievement_seen_at")
+    private java.time.LocalDateTime lastAchievementSeenAt;
+
     // ── Regroupement familial ──────────────────────────────────
 
     @ToString.Exclude

@@ -9,8 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface LoginEventRepository extends JpaRepository<LoginEvent, Long> {
+
+    /** Connexions réussies d'un login donné, ordonnées les plus récentes en tête — pour le calcul du streak quotidien. */
+    @Query("SELECT e FROM LoginEvent e WHERE e.login = :login AND e.eventType = com.myfinance.domain.LoginEventType.SUCCESS ORDER BY e.timestamp DESC")
+    List<LoginEvent> findSuccessfulByLoginOrderByTimestampDesc(@Param("login") String login);
+
 
     @Query(value = """
             SELECT e FROM LoginEvent e

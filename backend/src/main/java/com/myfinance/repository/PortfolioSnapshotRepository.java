@@ -25,4 +25,10 @@ public interface PortfolioSnapshotRepository extends JpaRepository<PortfolioSnap
            "WHERE ps.user = :user " +
            "ORDER BY ps.snapshotDate ASC")
     List<PortfolioSnapshot> findByUserWithPositionsOrderBySnapshotDateAsc(@Param("user") User user);
+
+    /** 3 derniers snapshots d'un utilisateur — positions chargées en lazy dans la même transaction. */
+    List<PortfolioSnapshot> findTop3ByUserOrderBySnapshotDateDesc(User user);
+
+    /** Nombre de snapshots créés par un utilisateur. */
+    long countByUser(User user);
 }
