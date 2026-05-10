@@ -430,10 +430,235 @@ Suivent les conventions du projet :
 
 ---
 
-## 10. Évolutions futures envisagées
+## 10. Calendrier des abonnements — spécification fonctionnelle
+
+> **Statut : spécifié, non implémenté.**
+
+### 10.1 Vision
+
+Offrir une vue temporelle des prélèvements récurrents : savoir *quand* sortent les charges, combien un mois donné coûte, et anticiper les mois chargés. La fonctionnalité s'appuie entièrement sur les dépenses déjà saisies — aucune saisie supplémentaire n'est requise (seul un champ optionnel `paymentDay` est ajouté).
+
+---
+
+### 10.2 Modèle de données — évolution
+
+#### Nouveau champ : `paymentDay`
+
+| Champ | Type Java | Colonne SQLite | Contrainte | Description |
+|-------|-----------|----------------|------------|-------------|
+| `paymentDay` | `Integer` | `payment_day` | nullable, 1–28 | Jour du mois du prélèvement (mensuel uniquement) |
+
+**Convention par fréquence :**
+
+| Fréquence | Source de la date de prélèvement | Comportement si absent |
+|-----------|-----------------------------------|------------------------|
+| `MONTHLY` | `paymentDay` (1–28) | Ignorée dans le calendrier |
+| `ANNUAL`  | `startDate` (jour + mois extraits) | Ignorée dans le calendrier si `startDate` est null |
+
+> **Pourquoi 1–28 et pas 1–31 ?** Pour éviter les jours inexistants en février. Un prélèvement saisi le 29 serait silencieusement absent certains mois. On limite à 28, cohérent avec la réalité bancaire française (les banques n'acceptent pas les dates > 28 pour les prélèvements automatiques).
+
+**Aucun autre champ ni table n'est nécessaire.** Tout le calcul du calendrier est effectué côté frontend à partir du `GET /api/recurring-expenses` existant.
+
+**Migration :** `022_add_payment_day_to_recurring_expenses.sql`
+```sql
+ALTER TABLE recurring_expenses ADD COLUMN payment_day INTEGER;
+```
+
+---
+
+### 10.3 Logique de calcul du calendrier
+
+#### Règles de placement d'une dépense dans le calendrier
+
+```
+Pour chaque RecurringExpenseDto :
+
+  Si frequency = MONTHLY :
+    → placée le jour paymentDay de chaque mois
+    → ignorée si paymentDay est null
+
+  Si frequency = ANNUAL :
+    → placée le jour startDate.dayOfMonth du mois startDate.monthValue, une fois par an
+    → ignorée si startDate est null
+```
+
+#### Calcul du montant à afficher
+
+Le montant affiché dans le calendrier est toujours le **montant effectif** (quote-part appliquée) :
+```
+montantAffiché = amount × (sharePercentage / 100)
+```
+
+Pour les dépenses annuelles, le montant affiché est le montant **brut annuel** (pas la projection mensuelle).
+
+#### Total mensuel
+
+```
+totalDuMois = Σ montantAffiché des dépenses MONTHLY avec paymentDay défini
+            + Σ montantAffiché des dépenses ANNUAL dont le mois correspond au mois affiché
+```
+
+---
+
+### 10.4 Vues
+
+Le calendrier expose **deux vues** sélectionnables via un toggle :
+
+#### Vue Grille (calendrier mensuel)
+
+- Grille classique 7 colonnes × 5–6 lignes pour le mois sélectionné
+- Navigation précédent / suivant par mois, retour au mois courant
+- Chaque jour portant au moins un prélèvement affiche :
+  - Une pastille colorée par catégorie de dépense
+  - Le total du jour au survol (tooltip)
+- En-tête du mois : total des prélèvements du mois et nombre de lignes
+- Les dépenses ANNUAL n'apparaissent que dans le mois correspondant
+
+#### Vue Timeline (annuelle)
+
+- 12 blocs mensuels pour l'année sélectionnée (navigation par an)
+- Chaque bloc affiche :
+  - Le mois et le total du mois
+  - La liste des dépenses du mois (libellé, catégorie, montant effectif, date de prélèvement)
+  - Les dépenses MONTHLY triées par `paymentDay` croissant
+  - Les dépenses ANNUAL insérées à leur position chronologique
+- Les dépenses sans date de prélèvement ne figurent pas dans la liste mais leur absence n'est pas signalée (le calendrier ne couvre que les dépenses datées)
+
+#### Bandeau de synthèse (commun aux deux vues)
+
+Affiché en permanence en haut de la page, il récapitule les dépenses **datées** uniquement :
+
+| KPI | Calcul |
+|-----|--------|
+| Total annuel des abonnements datés | Σ annualAmount des dépenses avec date |
+| Coût mensuel moyen | total annuel / 12 |
+| Nombre d'abonnements datés | count |
+| Mois le plus chargé | mois avec le plus grand `totalDuMois` |
+
+---
+
+### 10.5 Navigation — évolution
+
+Le bouton simple **Dépenses** devient un **menu déroulant** `Dépenses ▾`, sur le même modèle que `Revenus ▾` et `Outils ▾` :
+
+```
+Dashboard | Patrimoine | Revenus ▾ | Dépenses ▾ | Outils ▾ | [ADMIN] | Mon profil | Déconnexion
+                                         ├─ Mes dépenses
+                                         └─ Calendrier
+```
+
+Sur mobile, les deux entrées apparaissent dans le menu hamburger sous une section "Dépenses".
+
+---
+
+### 10.6 Architecture frontend
+
+```
+frontend/src/
+├── api/
+│   └── expenses.js                              # inchangé — GET /api/recurring-expenses suffit
+└── components/
+    └── expenses/
+        ├── RecurringExpensePage.jsx             # inchangé
+        ├── RecurringExpenseForm.jsx             # +champ paymentDay (conditionnel si MONTHLY)
+        ├── SubscriptionCalendarPage.jsx         # nouveau — page principale du calendrier
+        ├── CalendarGridView.jsx                 # nouveau — vue grille mensuelle
+        └── CalendarTimelineView.jsx             # nouveau — vue timeline annuelle
+```
+
+#### `SubscriptionCalendarPage`
+
+Responsabilités :
+- Charge les dépenses via `GET /api/recurring-expenses` au montage
+- Filtre celles qui ont une date de prélèvement exploitable
+- Calcule le calendrier côté client (pas de nouvel endpoint)
+- Gère l'état : `viewMode` (`GRID` | `TIMELINE`), `selectedMonth`, `selectedYear`
+- Affiche le bandeau de synthèse + le toggle de vue + la vue active
+
+#### `CalendarGridView`
+
+Props : `expenses[]`, `month` (1–12), `year`, `onMonthChange`
+
+Logique interne :
+- Construit la grille des jours du mois
+- Pour chaque jour, filtre les dépenses dont `paymentDay === jour` (MONTHLY) ou dont `startDate.dayOfMonth === jour && startDate.month === month` (ANNUAL)
+- Pastilles colorées par `category` (couleur de la catégorie)
+
+#### `CalendarTimelineView`
+
+Props : `expenses[]`, `year`, `onYearChange`
+
+Logique interne :
+- Itère sur les 12 mois
+- Pour chaque mois, collecte les dépenses MONTHLY + ANNUAL du mois
+- Trie par `paymentDay` / jour de `startDate`
+
+#### Mise à jour de `RecurringExpenseForm`
+
+Ajout du champ `paymentDay` :
+- Visible uniquement si `frequency === 'MONTHLY'`
+- Input numérique 1–28 (ou select avec 1 à 28), non obligatoire
+- Label : "Jour de prélèvement (optionnel)"
+- Pour ANNUAL : note informative — "Le jour de prélèvement est déduit de la date de début"
+
+---
+
+### 10.7 API — évolution minimale
+
+Aucun nouvel endpoint. Seuls les DTOs et les request records existants sont enrichis :
+
+| DTO / Record | Modification |
+|---|---|
+| `RecurringExpenseDto` | + champ `Integer paymentDay` |
+| `CreateRecurringExpenseRequest` | + champ `Integer paymentDay` (nullable) |
+| `UpdateRecurringExpenseRequest` | + champ `Integer paymentDay` (nullable) |
+
+Validation ajoutée dans `RecurringExpenseService` :
+```
+si paymentDay != null → doit être dans [1, 28]
+si frequency = ANNUAL → paymentDay ignoré côté backend (non persisté — la date vient de startDate)
+```
+
+> **Note :** On pourrait aussi persister `paymentDay` pour ANNUAL à des fins d'affichage, mais `startDate` suffit et évite la redondance.
+
+---
+
+### 10.8 Règles métier
+
+1. `paymentDay` n'a de sens que pour les dépenses `MONTHLY`. Pour `ANNUAL`, c'est `startDate` qui fait foi.
+2. Une dépense sans date exploitable n'est pas affichée dans le calendrier (ni en grille, ni en timeline) — elle continue d'apparaître normalement dans la page "Mes dépenses".
+3. Le calendrier n'affiche que les dépenses **actives** (`endDate == null` ou `endDate >= aujourd'hui`).
+4. La modification d'une dépense (ex : changement de `paymentDay`) se répercute immédiatement dans le calendrier lors du prochain chargement.
+5. Le bandeau de synthèse ne comptabilise que les dépenses *avec date*, pour refléter fidèlement ce qui est planifié.
+
+---
+
+### 10.9 Tests
+
+| Classe de test | Cas couverts |
+|----------------|--------------|
+| `RecurringExpenseServiceTest` | Validation `paymentDay` hors [1,28] → 400 ; `paymentDay` null accepté ; `paymentDay` sur ANNUAL ignoré |
+| `RecurringExpenseControllerTest` | GET retourne `paymentDay` ; PUT accepte et persiste `paymentDay` |
+| `SubscriptionCalendarPage.test.jsx` | Calcul correct du total mensuel ; dépense ANNUAL placée au bon mois ; dépenses sans date absentes du calendrier |
+
+---
+
+### 10.10 Points d'attention pour l'implémentation
+
+| Point | Détail |
+|-------|--------|
+| **Jours variables** | Février a 28/29 jours. Un `paymentDay = 28` est affiché le 28 en février, ce qui est correct. On interdit > 28 à la saisie pour éviter tout cas limite. |
+| **Fuseau horaire** | Tout en `LocalDate` côté backend, calculs `Date` JS côté frontend — utiliser `date-fns` ou calcul natif JS sans `new Date()` sur des strings ISO pour éviter les décalages UTC. |
+| **Performance** | `GET /api/recurring-expenses` retourne au maximum quelques dizaines de lignes — le calcul frontend est négligeable, aucune pagination nécessaire. |
+| **Dépense active vs terminée** | Utiliser `endDate` pour exclure les dépenses terminées du calendrier (déjà géré par le filtre frontend existant). |
+
+---
+
+## 11. Évolutions futures envisagées
 
 | Évolution | Description |
 |-----------|-------------|
+| **Cumul progressif** | Ajouter une courbe de cumul annuel dans la vue timeline (total dépensé depuis le 1er janvier) |
 | **Graphique d'évolution** | Historisation mensuelle des dépenses pour visualiser leur évolution dans le tableau de bord |
 | **Import automatique** | Import depuis un relevé bancaire (CSV/OFX) pour détecter les dépenses récurrentes |
 | **Regroupements familiaux** | Partager une dépense entre plusieurs membres d'un groupe (future feature `FamilyGroup`) |

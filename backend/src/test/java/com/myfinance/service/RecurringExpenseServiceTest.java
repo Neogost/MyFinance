@@ -79,7 +79,7 @@ class RecurringExpenseServiceTest {
     void create_sauvegardeEtRetourneLDto() {
         CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
                 ExpenseCategoryEnum.ABONNEMENTS, "Netflix", 17.99f,
-                FrequencyEnum.MONTHLY, 100f, null, null, null);
+                FrequencyEnum.MONTHLY, 100f, null, null, null, null);
 
         when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> {
             RecurringExpense e = inv.getArgument(0);
@@ -105,7 +105,7 @@ class RecurringExpenseServiceTest {
     void create_calculeMontantMensuel_pourDepenseAnnuelle() {
         CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
                 ExpenseCategoryEnum.ASSURANCES, "Assurance auto", 600f,
-                FrequencyEnum.ANNUAL, 100f, null, null, null);
+                FrequencyEnum.ANNUAL, 100f, null, null, null, null);
 
         when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> {
             RecurringExpense e = inv.getArgument(0);
@@ -129,7 +129,7 @@ class RecurringExpenseServiceTest {
     void update_modifieLaDependance() {
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
                 ExpenseCategoryEnum.LOGEMENT, "Loyer révisé", 1100f,
-                FrequencyEnum.MONTHLY, 50f, null, null, null);
+                FrequencyEnum.MONTHLY, 50f, null, null, null, null);
 
         when(recurringExpenseRepository.findById(1L)).thenReturn(Optional.of(expense));
         when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -146,7 +146,7 @@ class RecurringExpenseServiceTest {
         when(recurringExpenseRepository.findById(99L)).thenReturn(Optional.empty());
 
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
-                ExpenseCategoryEnum.AUTRE, "Test", 100f, FrequencyEnum.MONTHLY, 100f, null, null, null);
+                ExpenseCategoryEnum.AUTRE, "Test", 100f, FrequencyEnum.MONTHLY, 100f, null, null, null, null);
 
         assertThatThrownBy(() -> recurringExpenseService.update(99L, request, owner))
                 .isInstanceOf(ResponseStatusException.class)
@@ -159,7 +159,7 @@ class RecurringExpenseServiceTest {
         when(recurringExpenseRepository.findById(1L)).thenReturn(Optional.of(expense));
 
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
-                ExpenseCategoryEnum.LOGEMENT, "Loyer", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null);
+                ExpenseCategoryEnum.LOGEMENT, "Loyer", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null, null);
 
         assertThatThrownBy(() -> recurringExpenseService.update(1L, request, otherUser))
                 .isInstanceOf(ResponseStatusException.class)
@@ -175,7 +175,7 @@ class RecurringExpenseServiceTest {
         when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
-                ExpenseCategoryEnum.LOGEMENT, "Loyer admin", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null);
+                ExpenseCategoryEnum.LOGEMENT, "Loyer admin", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null, null);
 
         assertThatNoException().isThrownBy(() -> recurringExpenseService.update(1L, request, admin));
     }
@@ -210,6 +210,65 @@ class RecurringExpenseServiceTest {
         recurringExpenseService.delete(1L, admin);
 
         verify(recurringExpenseRepository).deleteById(1L);
+    }
+
+    // ── paymentDay ─────────────────────────────────────────────
+
+    @Test
+    void create_persistePaymentDay_pourDepenseMensuelle() {
+        CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
+                ExpenseCategoryEnum.ABONNEMENTS, "Spotify", 10f,
+                FrequencyEnum.MONTHLY, 100f, null, null, null, 8);
+
+        when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> {
+            RecurringExpense e = inv.getArgument(0);
+            assertThat(e.getPaymentDay()).isEqualTo(8);
+            return RecurringExpense.builder()
+                    .id(5L).user(owner)
+                    .category(e.getCategory()).label(e.getLabel())
+                    .amount(e.getAmount()).frequency(e.getFrequency())
+                    .sharePercentage(e.getSharePercentage())
+                    .paymentDay(e.getPaymentDay())
+                    .build();
+        });
+
+        RecurringExpenseDto result = recurringExpenseService.create(request, owner);
+        assertThat(result.paymentDay()).isEqualTo(8);
+    }
+
+    @Test
+    void create_ignorePaysmentDay_pourDepenseAnnuelle() {
+        CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
+                ExpenseCategoryEnum.ASSURANCES, "Assurance vie", 500f,
+                FrequencyEnum.ANNUAL, 100f, null, null, null, 15);
+
+        when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> {
+            RecurringExpense e = inv.getArgument(0);
+            // Pour ANNUAL, paymentDay doit être forcé à null côté service
+            assertThat(e.getPaymentDay()).isNull();
+            return RecurringExpense.builder()
+                    .id(6L).user(owner)
+                    .category(e.getCategory()).label(e.getLabel())
+                    .amount(e.getAmount()).frequency(e.getFrequency())
+                    .sharePercentage(e.getSharePercentage())
+                    .build();
+        });
+
+        recurringExpenseService.create(request, owner);
+        verify(recurringExpenseRepository).save(argThat(e -> e.getPaymentDay() == null));
+    }
+
+    @Test
+    void update_miseAJourPaymentDay() {
+        UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
+                ExpenseCategoryEnum.LOGEMENT, "Loyer Paris", 1000f,
+                FrequencyEnum.MONTHLY, 50f, null, null, null, 5);
+
+        when(recurringExpenseRepository.findById(1L)).thenReturn(Optional.of(expense));
+        when(recurringExpenseRepository.save(any(RecurringExpense.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RecurringExpenseDto result = recurringExpenseService.update(1L, request, owner);
+        assertThat(result.paymentDay()).isEqualTo(5);
     }
 
     // ── getSummary ─────────────────────────────────────────────

@@ -17,7 +17,8 @@ public record RecurringExpenseDto(
         Float annualAmount,
         LocalDate startDate,
         LocalDate endDate,
-        String notes
+        String notes,
+        Integer paymentDay
 ) {
     public static RecurringExpenseDto from(RecurringExpense e) {
         float effective = e.getAmount() * (e.getSharePercentage() / 100f);
@@ -35,7 +36,8 @@ public record RecurringExpenseDto(
                 annual,
                 e.getStartDate(),
                 e.getEndDate(),
-                e.getNotes()
+                e.getNotes(),
+                e.getPaymentDay()
         );
     }
 }

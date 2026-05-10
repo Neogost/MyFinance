@@ -44,7 +44,7 @@ class RecurringExpenseControllerTest {
         expenseDto = new RecurringExpenseDto(
                 1L, ExpenseCategoryEnum.LOGEMENT, "Loyer Paris",
                 1000f, FrequencyEnum.MONTHLY, 50f,
-                500f, 6000f, null, null, null);
+                500f, 6000f, null, null, null, null);
     }
 
     // ── GET /api/recurring-expenses ────────────────────────────
@@ -98,7 +98,7 @@ class RecurringExpenseControllerTest {
     void create_avecCorpsValide_retourne201() throws Exception {
         CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
                 ExpenseCategoryEnum.LOGEMENT, "Loyer Paris",
-                1000f, FrequencyEnum.MONTHLY, 50f, null, null, null);
+                1000f, FrequencyEnum.MONTHLY, 50f, null, null, null, null);
 
         when(recurringExpenseService.create(any(), any())).thenReturn(expenseDto);
 
@@ -114,7 +114,7 @@ class RecurringExpenseControllerTest {
     @WithMockCustomUser
     void create_avecMontantNegatif_retourne400() throws Exception {
         CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
-                ExpenseCategoryEnum.LOGEMENT, "Loyer", -500f, FrequencyEnum.MONTHLY, 100f, null, null, null);
+                ExpenseCategoryEnum.LOGEMENT, "Loyer", -500f, FrequencyEnum.MONTHLY, 100f, null, null, null, null);
 
         mockMvc.perform(post("/api/recurring-expenses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +126,7 @@ class RecurringExpenseControllerTest {
     @WithMockCustomUser
     void create_avecLabelVide_retourne400() throws Exception {
         CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
-                ExpenseCategoryEnum.ABONNEMENTS, "", 17.99f, FrequencyEnum.MONTHLY, 100f, null, null, null);
+                ExpenseCategoryEnum.ABONNEMENTS, "", 17.99f, FrequencyEnum.MONTHLY, 100f, null, null, null, null);
 
         mockMvc.perform(post("/api/recurring-expenses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -141,11 +141,11 @@ class RecurringExpenseControllerTest {
     void update_avecCorpsValide_retourne200() throws Exception {
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
                 ExpenseCategoryEnum.LOGEMENT, "Loyer révisé", 1100f,
-                FrequencyEnum.MONTHLY, 50f, null, null, null);
+                FrequencyEnum.MONTHLY, 50f, null, null, null, null);
         RecurringExpenseDto updated = new RecurringExpenseDto(
                 1L, ExpenseCategoryEnum.LOGEMENT, "Loyer révisé",
                 1100f, FrequencyEnum.MONTHLY, 50f,
-                550f, 6600f, null, null, null);
+                550f, 6600f, null, null, null, null);
 
         when(recurringExpenseService.update(eq(1L), any(), any())).thenReturn(updated);
 
@@ -161,7 +161,7 @@ class RecurringExpenseControllerTest {
     @WithMockCustomUser
     void update_retourne403_siAccesNonAutorise() throws Exception {
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
-                ExpenseCategoryEnum.LOGEMENT, "Loyer", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null);
+                ExpenseCategoryEnum.LOGEMENT, "Loyer", 1000f, FrequencyEnum.MONTHLY, 50f, null, null, null, null);
 
         when(recurringExpenseService.update(eq(1L), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN));
@@ -176,7 +176,7 @@ class RecurringExpenseControllerTest {
     @WithMockCustomUser
     void update_retourne404_siIntrouvable() throws Exception {
         UpdateRecurringExpenseRequest request = new UpdateRecurringExpenseRequest(
-                ExpenseCategoryEnum.AUTRE, "Test", 100f, FrequencyEnum.MONTHLY, 100f, null, null, null);
+                ExpenseCategoryEnum.AUTRE, "Test", 100f, FrequencyEnum.MONTHLY, 100f, null, null, null, null);
 
         when(recurringExpenseService.update(eq(99L), any(), any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -185,6 +185,36 @@ class RecurringExpenseControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
+    }
+
+    // ── paymentDay validation ─────────────────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void create_avecPaymentDay29_retourne400() throws Exception {
+        CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
+                ExpenseCategoryEnum.ABONNEMENTS, "Spotify", 10f,
+                FrequencyEnum.MONTHLY, 100f, null, null, null, 29);
+
+        mockMvc.perform(post("/api/recurring-expenses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void create_avecPaymentDay15_retourne201() throws Exception {
+        CreateRecurringExpenseRequest request = new CreateRecurringExpenseRequest(
+                ExpenseCategoryEnum.ABONNEMENTS, "Spotify", 10f,
+                FrequencyEnum.MONTHLY, 100f, null, null, null, 15);
+
+        when(recurringExpenseService.create(any(), any())).thenReturn(expenseDto);
+
+        mockMvc.perform(post("/api/recurring-expenses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
     }
 
     // ── DELETE /api/recurring-expenses/{id} ───────────────────

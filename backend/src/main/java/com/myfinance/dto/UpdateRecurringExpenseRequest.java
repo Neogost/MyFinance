@@ -14,5 +14,6 @@ public record UpdateRecurringExpenseRequest(
         @NotNull @DecimalMin("0.01") @DecimalMax("100.0") Float sharePercentage,
         LocalDate startDate,
         LocalDate endDate,
-        @Size(max = 2000) String notes
+        @Size(max = 2000) String notes,
+        @Min(1) @Max(28) Integer paymentDay
 ) {}

@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.domain.ExpenseCategoryEnum;
+import com.myfinance.domain.FrequencyEnum;
 import com.myfinance.domain.RecurringExpense;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
@@ -48,6 +49,7 @@ public class RecurringExpenseService {
                 .startDate(request.startDate())
                 .endDate(request.endDate())
                 .notes(request.notes())
+                .paymentDay(request.frequency() == FrequencyEnum.MONTHLY ? request.paymentDay() : null)
                 .build();
 
         RecurringExpenseDto dto = RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
@@ -69,6 +71,7 @@ public class RecurringExpenseService {
         expense.setStartDate(request.startDate());
         expense.setEndDate(request.endDate());
         expense.setNotes(request.notes());
+        expense.setPaymentDay(request.frequency() == FrequencyEnum.MONTHLY ? request.paymentDay() : null);
 
         RecurringExpenseDto dto = RecurringExpenseDto.from(recurringExpenseRepository.save(expense));
         log.info("[user:{}] Dépense récurrente modifiée #{} [catégorie: {}]",

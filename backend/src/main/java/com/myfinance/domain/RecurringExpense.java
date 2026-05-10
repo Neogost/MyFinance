@@ -48,4 +48,9 @@ public class RecurringExpense {
 
     @Column(length = 500)
     private String notes;
+
+    // Jour du mois du prélèvement (1-28) — MONTHLY uniquement.
+    // Pour ANNUAL, la date de prélèvement est déduite de startDate (jour + mois).
+    @Column(name = "payment_day")
+    private Integer paymentDay;
 }
