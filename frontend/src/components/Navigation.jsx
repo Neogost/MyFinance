@@ -125,6 +125,7 @@ function MobileSectionTitle({ children }) {
 export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, appVersion = null, onShowReleaseNotes }) {
   const [incomeOpen,      setIncomeOpen]     = useState(false)
   const [patrimoineOpen,  setPatrimoineOpen] = useState(false)
+  const [expensesOpen,    setExpensesOpen]   = useState(false)
   const [toolsOpen,       setToolsOpen]      = useState(false)
   const [adminOpen,       setAdminOpen]      = useState(false)
   const { trackEvent } = useAnalytics()
@@ -132,11 +133,12 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
 
   const isIncomePage     = currentPage === 'salary' || currentPage === 'other-incomes'
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
+  const isExpensesPage   = currentPage === 'expenses' || currentPage === 'subscription-calendar'
   const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
   const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
-  function closeAll() { setIncomeOpen(false); setPatrimoineOpen(false); setToolsOpen(false); setAdminOpen(false) }
+  function closeAll() { setIncomeOpen(false); setPatrimoineOpen(false); setExpensesOpen(false); setToolsOpen(false); setAdminOpen(false) }
   function closeMobile() { setMobileMenuOpen(false) }
 
   return (
@@ -187,7 +189,23 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             )}
           </div>
 
-          <NavBtn page="expenses"    label="Dépenses"  currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
+          <div className="relative">
+            <button
+              onClick={() => { setExpensesOpen(v => !v); setIncomeOpen(false); setPatrimoineOpen(false); setToolsOpen(false); setAdminOpen(false) }}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isExpensesPage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+            >
+              Dépenses <span className="text-xs">{expensesOpen ? '▲' : '▼'}</span>
+            </button>
+            {expensesOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setExpensesOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[180px] py-1">
+                  <button onClick={() => { onNavigate('expenses'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'expenses' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Mes dépenses</button>
+                  <button onClick={() => { onNavigate('subscription-calendar'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'subscription-calendar' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Calendrier</button>
+                </div>
+              </>
+            )}
+          </div>
           <NavBtn page="possessions" label="Passifs"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
           <NavBtn page="dettes"      label="Dettes"    currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
 
@@ -372,6 +390,10 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             <MobileMenuItem label="Positions"    page="patrimoine"  currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
             <MobileMenuItem label="Performance"  page="performance" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
             <MobileMenuItem label="Passifs (grandes possessions)" page="possessions" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+
+            {/* Dépenses */}
+            <MobileSectionTitle>Dépenses</MobileSectionTitle>
+            <MobileMenuItem label="Mes dépenses" page="expenses" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
 
             {/* Outils */}
             <MobileSectionTitle>Outils</MobileSectionTitle>

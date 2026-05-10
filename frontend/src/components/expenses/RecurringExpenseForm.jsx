@@ -22,6 +22,7 @@ const EMPTY = {
   startDate: '',
   endDate: '',
   notes: '',
+  paymentDay: '',
 }
 
 export default function RecurringExpenseForm({ expense, onSubmit, onCancel }) {
@@ -41,6 +42,7 @@ export default function RecurringExpenseForm({ expense, onSubmit, onCancel }) {
           startDate:       expense.startDate ?? '',
           endDate:         expense.endDate ?? '',
           notes:           expense.notes ?? '',
+          paymentDay:      expense.paymentDay ?? '',
         }
       : EMPTY
     )
@@ -71,9 +73,10 @@ export default function RecurringExpenseForm({ expense, onSubmit, onCancel }) {
         ...form,
         amount:          parseFloat(form.amount),
         sharePercentage: parseFloat(form.sharePercentage),
-        startDate:       form.startDate || null,
-        endDate:         form.endDate   || null,
-        notes:           form.notes     || null,
+        startDate:       form.startDate  || null,
+        endDate:         form.endDate    || null,
+        notes:           form.notes      || null,
+        paymentDay:      form.frequency === 'MONTHLY' && form.paymentDay ? parseInt(form.paymentDay, 10) : null,
       })
     } catch {
       setError('Une erreur est survenue.')
@@ -127,6 +130,37 @@ export default function RecurringExpenseForm({ expense, onSubmit, onCancel }) {
               </select>
             </div>
           </div>
+
+          {/* Jour de prélèvement — mensuel uniquement */}
+          {form.frequency === 'MONTHLY' && (
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>
+                Jour de prélèvement
+                <span className="ml-1 font-normal text-gray-400">(optionnel, 1–28)</span>
+              </label>
+              <input
+                name="paymentDay" type="number" min="1" max="28" step="1"
+                value={form.paymentDay} onChange={handleChange}
+                placeholder="ex : 8"
+                className={inputCls}
+              />
+              {form.paymentDay && (
+                <p className="text-xs text-indigo-600 bg-indigo-50 rounded px-2 py-1">
+                  Prélèvement le <strong>{form.paymentDay}</strong> de chaque mois — visible dans le calendrier des abonnements
+                </p>
+              )}
+            </div>
+          )}
+          {form.frequency === 'ANNUAL' && form.startDate && (
+            <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+              La date de prélèvement est déduite de la date de début : le <strong>{new Date(form.startDate + 'T00:00:00').getDate()}</strong> de chaque année.
+            </p>
+          )}
+          {form.frequency === 'ANNUAL' && !form.startDate && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+              Sans date de début, cette dépense n'apparaîtra pas dans le calendrier des abonnements.
+            </p>
+          )}
 
           {/* Part colocation */}
           <div className="flex flex-col gap-1.5">

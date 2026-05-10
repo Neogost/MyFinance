@@ -28,6 +28,7 @@ import AdminInstrumentPage from './components/admin/AdminInstrumentPage'
 import RegistrationRequestPage from './components/admin/RegistrationRequestPage'
 import { getRegistrations } from './api/registrations'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
+import SubscriptionCalendarPage from './components/expenses/SubscriptionCalendarPage'
 import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
 import { logout, getMe, getAppVersion } from './api/auth'
@@ -307,7 +308,8 @@ export default function App() {
 
         {currentPage === 'other-incomes' && <OtherIncomePage />}
 
-        {currentPage === 'expenses'    && <RecurringExpensePage />}
+        {currentPage === 'expenses'               && <RecurringExpensePage />}
+        {currentPage === 'subscription-calendar' && <SubscriptionCalendarPage onNavigate={handleNavigate} />}
 
         {currentPage === 'possessions' && <PossessionPage />}
 
