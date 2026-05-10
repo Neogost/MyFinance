@@ -1,5 +1,169 @@
 # Notes de version
 
+## v1.8.0 — 10 mai 2026
+
+> Gamification complète (67 hauts faits), fiscalité crypto (formulaire 2086), calendrier des abonnements, nouveaux widgets tableau de bord et améliorations patrimoniales.
+
+### ✨ Nouveautés
+
+#### Hauts faits — gamification du suivi patrimonial
+
+Un système de **67 hauts faits** récompense votre progression dans l'application. Chaque badge débloqué est visible sur votre page profil, avec son palier (Bronze / Argent / Or / Platine / Diamant), la date d'obtention et un indicateur 🆕 dans la navigation quand de nouveaux badges vous attendent.
+
+**Quatre familles de badges :**
+
+**Patrimoine & performance** — jalons chiffrés validés sur 3 relevés consécutifs pour éviter les faux positifs : *To The Moon* (50 K → 1 M€), *Baron de la Bourse*, *Crypto Addict*, *Magnat de l'Immo*, *Pablo Escobar* (liquidités), *The First Million*, *Pierre Papier*, *La Fourmi*…
+
+**Comportement & discipline** — récompensent vos bonnes habitudes :
+- *DCA Master* : mois consécutifs avec un achat BOURSE ou CRYPTO
+- *Comptable Méticuleux* : bulletins de paie saisis sans interruption
+- *Photographe* : régularité des relevés patrimoniaux
+- *Quotidien* : connexions consécutives
+
+**Stratégie avancée** (badges "Plus lourd", calculs historiques) :
+- *Bull Run* : performance YTD de votre portefeuille Bourse +10/+25/+50 %
+- *Diamond Hands* : position BOURSE ou CRYPTO active depuis 1/3/5 ans sans interruption
+- *Le Sang-Froid* : aucune vente pendant un repli mensuel > 10 % du portefeuille investissable
+- *Le Rebalancer* : vente dans une catégorie et achat dans une autre dans la même semaine
+- *L'Ascension* : rang décile INSEE dans votre tranche d'âge (D5 / D7 / D8 / D9)
+- *Le Disciple* : taux d'épargne > 30 / 50 / 70 % sur 12 mois glissants
+
+**Easter eggs secrets** — à découvrir par vous-même (*The Answer*, *Vampire*…)
+
+Les badges sensibles au "triche" (patrimoine, scores) sont validés en **batch nocturne** sur 3 relevés consécutifs. Les badges comportementaux sont évalués en temps réel à l'ouverture de la page profil.
+
+---
+
+#### Fiscalité crypto — formulaire 2086 (Outils → Fiscalité crypto)
+
+Module complet de calcul fiscal pour les cessions de cryptomonnaies, conforme à l'**article 150 VH bis du CGI** (méthode proportionnelle officielle).
+
+**Suivi du Prix Total d'Acquisition (PTA)** : calculé automatiquement en itération chronologique sur l'ensemble de vos ordres crypto, en tenant compte des acquisitions (BUY, SWAP_IN, TRANSFER_IN) et des cessions (SELL, SWAP_OUT).
+
+**Types d'opérations crypto** : chaque mouvement peut être qualifié comme `BUY_FIAT`, `SELL_FIAT`, `SWAP_OUT/IN`, `TRANSFER_IN/OUT` — les échanges crypto-crypto (swaps) génèrent automatiquement les deux lignes miroir.
+
+**Synthèse annuelle** (`Outils → Fiscalité crypto`) :
+- Total des cessions imposables, plus-value nette, seuil de 305 €
+- Choix de l'option fiscale : PFU 30 % (31,4 % depuis 2026) ou barème TMI
+- Montant d'impôt estimé avec décomposition IR + prélèvements sociaux
+
+**Export CSV formulaire 2086** : génère le fichier à joindre à votre déclaration, une ligne par cession avec toutes les colonnes officielles (valeur globale du portefeuille au moment de la cession, fraction de PTA, plus-value partielle).
+
+**Détail des cessions** : tableau interactif avec date, actif cédé, prix de cession, PTA proportionnel, plus-value unitaire — chaque ligne correspond à une ligne du formulaire 2086.
+
+**Mise à jour PFU 2026** : le taux de la flat tax est passé de 30 % à 31,4 % conformément à la loi de finances 2026 (IR 12,8 % + prélèvements sociaux 17,2 % → 0,2 pt supplémentaire).
+
+---
+
+#### Calendrier des abonnements (Dépenses → Calendrier)
+
+Visualisez l'ensemble de vos prélèvements récurrents dans le temps. Accessible via le menu **Dépenses ▾** (desktop uniquement).
+
+**Nouveau champ "Jour de prélèvement"** sur chaque dépense mensuelle (1–28) : indiquez à quelle date du mois votre prélèvement est débité. Pour les dépenses annuelles, la date est automatiquement déduite de la date de début.
+
+**Vue grille mensuelle** — calendrier mois par mois avec :
+- Pastilles colorées par catégorie sur chaque jour de prélèvement
+- Tooltips avec libellé, montant et catégorie
+- Badge "annuel" en ambre sur les prélèvements annuels (les "surprises")
+- Fond grisé sur les colonnes samedi/dimanche
+- Légende contextuelle (uniquement les catégories présentes dans le mois)
+- Bouton "Aujourd'hui" pour revenir au mois courant
+
+**Vue timeline annuelle** — 12 blocs mensuels avec :
+- Liste des prélèvements du mois triée chronologiquement
+- Badge **"dans Xj"** / **"aujourd'hui"** sur les échéances à moins de 7 jours
+- Total du mois affiché en en-tête
+- Bloc du mois courant mis en évidence
+
+**Bandeau de synthèse** en haut de page : total annuel daté, coût mensuel moyen, nombre d'abonnements datés, mois le plus chargé.
+
+**Alerte dépenses sans date** : si des dépenses actives n'ont pas de jour de prélèvement renseigné, un bandeau amber l'indique avec lien direct vers *Mes dépenses* pour compléter.
+
+---
+
+#### Widget "Prochains prélèvements" (Tableau de bord)
+
+Nouveau widget à droite du diagramme "Flux des revenus" (proportion 2/3 — 1/3).
+
+Affiche les **6 prochaines échéances** à venir :
+- **Mensuelles** : prélèvements dans les 14 prochains jours
+- **Annuelles** : dans les 60 prochains jours — mises en avant en ambre car ce sont les "surprises" potentielles
+
+**Fallback intelligent** : si aucun prélèvement n'est dans les fenêtres ci-dessus, la prochaine dépense annuelle est affichée quelle que soit la date — vous ne ratez jamais une échéance annuelle même calme en mensuel.
+
+**Urgence visuelle** : les prélèvements à moins de 3 jours ont un fond orange.
+
+Lien *"Voir tout →"* vers le calendrier des abonnements. Configurable via le panneau de personnalisation du tableau de bord.
+
+---
+
+#### Diagramme Sankey "Flux des revenus" (Tableau de bord)
+
+Nouveau widget visualisant le flux complet de vos revenus vers vos dépenses sous forme d'un **diagramme Sankey** :
+
+- **Sources** : salaire net, revenus complémentaires (locatif, dividendes, autres)
+- **Nœud central** : total revenus disponibles
+- **Sorties** : chaque catégorie de dépenses récurrentes (largeur proportionnelle au montant), capacité d'épargne résiduelle
+
+Permet de voir d'un coup d'œil où part votre argent et quelle proportion vous épargnez réellement.
+
+---
+
+#### Graphique d'évolution du cours par position (Patrimoine)
+
+Sur chaque position BOURSE ou CRYPTO, un bouton **📈 Évolution** ouvre une modale avec le graphique historique du cours de l'instrument sur la période souhaitée.
+
+- Sélection de la plage : 1 mois, 3 mois, 6 mois, 1 an, Tout l'historique
+- Recharts LineChart avec tooltip de valeur et date
+- Affichage du cours actuel, de la variation sur la période et de la date de dernier cours
+
+---
+
+#### Décote IRPP pour les bas revenus (Simulateur d'impôts)
+
+La **décote** (article 197 I-4 du CGI) est désormais calculée et appliquée dans le simulateur d'impôts. Elle réduit l'impôt brut pour les contribuables juste au-dessus du seuil d'imposition :
+
+- Célibataires : décote si impôt brut < 1 929 € · Couples : < 3 191 €
+- Formule officielle : décote = 0,4575 × (seuil − impôt brut)
+- Impact visible dans le détail du calcul avec montant de décote appliqué
+
+---
+
+#### Gestion avancée des devises (Administration → Taux de change)
+
+La modal de gestion des devises expose désormais l'**historique complet** des taux de change :
+
+- **Colonne "Histo"** par devise avec nombre de jours et plage couverte
+- **Bouton "↻ Backfill"** : remonte l'historique via Frankfurter/BCE depuis la date du premier ordre dans cette devise (ou 5 ans par défaut) jusqu'à aujourd'hui
+- **Ajout** d'une nouvelle devise avec taux initial
+- **Suppression** d'une devise avec modal de confirmation listant l'impact (N positions, N ordres affectés)
+
+---
+
+### 🔧 Améliorations
+
+#### Filtre par type de mouvement (Patrimoine → Ordres d'une position)
+
+Le panneau des ordres d'une position propose des **chips de filtrage** : Tous / Achat / Vente / Dividende / Dépôt. Utile sur les positions avec un historique d'ordres long.
+
+#### Formulaire 2042-C et numéros de colonnes 2086 (Fiscalité crypto)
+
+- Panneau **2042-C** : récapitulatif des cases à reporter sur votre déclaration de revenus (3AN, 3BN, 3VG…)
+- **Numéros de colonnes 2086** affichés sur chaque ligne du tableau de cessions — facilite la saisie manuelle dans le formulaire papier
+- **Tooltips explicatifs** via portal sur tous les termes techniques (PTA, VGP, seuil 305 €, cessions imposables…) — les tooltips traversent les conteneurs `overflow-hidden`
+
+#### Safe area iOS (Dynamic Island, home indicator)
+
+La navigation et la bottom bar respectent désormais les zones système iOS : Dynamic Island en haut, home indicator en bas. Plus de chevauchement sur iPhone 14 Pro et ultérieurs.
+
+---
+
+### 🐛 Corrections
+
+- **SQLITE_BUSY_SNAPSHOT** sur `GET /api/achievements/me` : évaluation et lecture des badges réunis en une seule transaction + pool HikariCP limité à 1 connexion pour sérialiser les accès SQLite (mode WAL). Fallback silencieux si le lock ne peut être acquis (retourne les badges existants sans évaluation).
+
+---
+
 ## v1.7.1 — 5 mai 2026
 
 > Correctif SQLITE_BUSY lors des imports CSV d'historique de cours.
