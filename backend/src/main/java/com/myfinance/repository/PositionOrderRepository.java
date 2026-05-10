@@ -49,4 +49,11 @@ public interface PositionOrderRepository extends JpaRepository<PositionOrder, Lo
     /** Dates des ordres BUY sur BOURSE et CRYPTO pour un utilisateur — pour le calcul du DCA-Master streak mensuel. */
     @Query("SELECT po.orderDate FROM PositionOrder po WHERE po.position.user = :user AND po.orderType = com.myfinance.domain.OrderType.BUY AND po.position.category IN (com.myfinance.domain.AssetCategory.BOURSE, com.myfinance.domain.AssetCategory.CRYPTO) ORDER BY po.orderDate ASC")
     List<java.time.LocalDate> findBuyDatesForBourseOrCrypto(@Param("user") User user);
+
+    /** Somme des montants d'un type d'ordre dans une enveloppe fiscale donnée — pour PATRIOTE_PEA. */
+    @Query("SELECT COALESCE(SUM(po.amountEur), 0) FROM PositionOrder po WHERE po.position.user = :user AND po.position.fiscalEnvelope = :envelope AND po.orderType = :orderType")
+    java.math.BigDecimal sumAmountByEnvelopeAndOrderType(
+            @Param("user") User user,
+            @Param("envelope") com.myfinance.domain.FiscalEnvelope envelope,
+            @Param("orderType") com.myfinance.domain.OrderType orderType);
 }

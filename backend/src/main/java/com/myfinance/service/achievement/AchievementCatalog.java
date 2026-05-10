@@ -172,7 +172,199 @@ public class AchievementCatalog {
             def(AchievementCode.VAMPIRE, "🌃", "Le Vampire",
                 "Mode nuit activé",
                 AchievementSensitivity.NULLE, true,
-                unique())
+                unique()),
+
+            // ── V2 Trivial ────────────────────────────────────────────────────
+            def(AchievementCode.THE_FIRST_MILLION, "🏆", "The First Million",
+                "Patrimoine total ≥ 1 million €",
+                AchievementSensitivity.FORTE, false,
+                unique()),
+
+            def(AchievementCode.PIERRE_PAPIER, "📃", "Le Pierre-Papier",
+                "Patrimoine en immobilier papier (SCPI, OPCI…)",
+                AchievementSensitivity.FORTE, false,
+                of(1,"Bronze","🥉",1_000), of(2,"Argent","🥈",10_000),
+                of(3,"Or","🥇",50_000), of(4,"Platine","💠",100_000), of(5,"Diamant","💎",250_000)),
+
+            def(AchievementCode.LA_FOURMI, "🐜", "La Fourmi",
+                "Épargne sur livrets",
+                AchievementSensitivity.FORTE, false,
+                of(1,"Bronze","🥉",1_000), of(2,"Argent","🥈",5_000),
+                of(3,"Or","🥇",15_000), of(4,"Platine","💠",30_000), of(5,"Diamant","💎",60_000)),
+
+            def(AchievementCode.PAS_TOUS_MEME_PANIER, "🥚", "Pas tous dans le même panier",
+                "Aucune catégorie d'actif ne dépasse 50 % du patrimoine",
+                AchievementSensitivity.MOYENNE, false,
+                unique()),
+
+            def(AchievementCode.LE_COSMOPOLITE, "💱", "Le Cosmopolite",
+                "Positions dans des instruments libellés en plusieurs devises",
+                AchievementSensitivity.MOYENNE, false,
+                of(1,"Bronze","🥉",2), of(2,"Or","🥇",3), of(3,"Diamant","💎",5)),
+
+            def(AchievementCode.LE_PREVOYANT, "🧓", "Le Prévoyant",
+                "Avoir un Plan d'Épargne Retraite (PER) actif",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LE_ROYAL_FLUSH, "🎰", "Le Royal Flush",
+                "Au moins une position active dans chaque enveloppe fiscale : PEA + AV + PER + CTO",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.MULTI_SOURCES, "🎁", "Multi-sources",
+                "Au moins 3 types de revenus complémentaires différents",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.MULTI_PROPRIETAIRE, "🏘", "Multi-propriétaire",
+                "Nombre de biens immobiliers physiques",
+                AchievementSensitivity.MOYENNE, false,
+                of(1,"Bronze","🥉",2), of(2,"Or","🥇",3), of(3,"Diamant","💎",5)),
+
+            def(AchievementCode.PREMIER_TOIT, "🔑", "Premier Toit",
+                "Premier bien immobilier physique ajouté",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LE_DIVERSIFICATEUR, "🌈", "Le Diversificateur",
+                "Nombre de cryptos différentes dans le portefeuille",
+                AchievementSensitivity.MOYENNE, false,
+                of(1,"Bronze","🥉",5), of(2,"Or","🥇",10), of(3,"Diamant","💎",20)),
+
+            def(AchievementCode.PREMIER_REMBOURSEMENT, "🔥", "Premier Remboursement",
+                "Première dette entièrement remboursée",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LIBERTE_CONQUISE, "🆓", "Liberté Conquise",
+                "Aucune dette active — patrimoine entièrement libre",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LORD_DU_MANOIR, "🏠", "Le Lord du Manoir",
+                "Un bien immobilier physique financé par un crédit immobilier",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LE_COLLECTIONNEUR, "🎖", "Le Collectionneur",
+                "Niveaux de hauts faits débloqués",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",10), of(2,"Argent","🥈",25), of(3,"Diamant","💎",50)),
+
+            def(AchievementCode.LE_CHASSEUR, "🔍", "Le Chasseur",
+                "Hauts faits secrets découverts",
+                AchievementSensitivity.NULLE, true,
+                unique()),
+
+            def(AchievementCode.L_ENCYCLOPEDISTE, "📚", "L'Encyclopédiste",
+                "Badges distincts débloqués dans différentes catégories",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",5), of(2,"Argent","🥈",10), of(3,"Diamant","💎",15)),
+
+            // ── V2 Faible ─────────────────────────────────────────────────────
+            def(AchievementCode.FORTERESSE_SECURITE, "🛡", "Forteresse de Sécurité",
+                "Matelas de sécurité 100 % atteint",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.LE_DESENDET, "🚫", "Le Désendetté",
+                "Ratio dette / patrimoine",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",70), // threshold stocké en % inversé : 100-30=70
+                of(2,"Argent","🥈",85), // 100-15=85
+                of(3,"Or","🥇",95),     // 100-5=95
+                of(4,"Diamant","💎",100)), // 0% dette
+
+            def(AchievementCode.LE_BOUCLIER, "⛅", "Le Bouclier",
+                "Liquidités couvrant N mois de dépenses récurrentes",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",6), of(2,"Argent","🥈",12),
+                of(3,"Or","🥇",24), of(4,"Diamant","💎",36)),
+
+            def(AchievementCode.AV_VETERAN, "⏳", "AV Vétéran",
+                "Assurance-vie ouverte depuis ≥ 8 ans (abattement fiscal actif)",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.L_ACCOMPLISSEUR, "🎯", "L'Accomplisseur",
+                "Premier objectif patrimonial atteint",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.LE_RETOUR, "👋", "Le Retour",
+                "Reconnexion après ≥ 30 jours d'absence",
+                AchievementSensitivity.NULLE, false,
+                unique()),
+
+            def(AchievementCode.LE_FIDELE, "📮", "Le Fidèle",
+                "Au moins une connexion par mois pendant 12 mois consécutifs",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.COMEBACK_KID, "🎢", "Comeback Kid",
+                "Patrimoine revenu à son ATH après un drawdown > 15 %",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.SORTIE_DU_ROUGE, "➕", "Sortie du Rouge",
+                "Patrimoine passé de moins de 1 000 € à plus de 10 000 €",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.LEVIER_MAITRISE, "⚖", "Le Levier Maîtrisé",
+                "Bien immobilier avec un ratio crédit / valeur entre 30 % et 70 %",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.L_INTER_SECTORIEL, "🏭", "L'Inter-Sectoriel",
+                "Exposition à des secteurs différents dans les instruments BOURSE",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",3), of(2,"Or","🥇",5), of(3,"Diamant","💎",8)),
+
+            // ── V2 Moyen ──────────────────────────────────────────────────────
+            def(AchievementCode.LE_RENTIER, "🏖", "Le Rentier",
+                "Revenus passifs (locatif + dividendes) en % du salaire mensuel net",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Bronze","🥉",25), of(2,"Argent","🥈",50),
+                of(3,"Or","🥇",75), of(4,"Diamant","💎",100)),
+
+            def(AchievementCode.LEAN_FIRE, "🥗", "Lean FIRE",
+                "Patrimoine ≥ 12 × dépenses annuelles",
+                AchievementSensitivity.MOYENNE, false,
+                unique()),
+
+            def(AchievementCode.FAT_FIRE, "💎", "Fat FIRE",
+                "Patrimoine ≥ 25 × dépenses annuelles (objectif FIRE officiel)",
+                AchievementSensitivity.MOYENNE, false,
+                unique()),
+
+            def(AchievementCode.FREE_AT_LAST, "🏝", "Free at Last",
+                "Revenus passifs ≥ dépenses récurrentes mensuelles",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.FIRE_STARTER, "🔥", "FIRE Starter",
+                "Pourcentage de l'objectif FIRE atteint (25 × dépenses annuelles)",
+                AchievementSensitivity.MOYENNE, false,
+                of(1,"Bronze","🥉",1), of(2,"Argent","🥈",5),
+                of(3,"Or","🥇",10), of(4,"Platine","💠",25), of(5,"Diamant","💎",50)),
+
+            def(AchievementCode.PATRIOTE_PEA, "🇫🇷", "Patriote du PEA",
+                "Capital net investi dans le PEA",
+                AchievementSensitivity.MOYENNE, false,
+                of(1,"Bronze","🥉",25_000), of(2,"Argent","🥈",75_000),
+                of(3,"Diamant","💎",150_000)),
+
+            def(AchievementCode.LE_VETERAN, "🦉", "Le Vétéran",
+                "Position détenue sans interruption depuis ≥ 10 ans",
+                AchievementSensitivity.FAIBLE, false,
+                unique()),
+
+            def(AchievementCode.L_ANNALISTE, "📚", "L'Annaliste",
+                "Au moins un relevé de patrimoine par année calendaire",
+                AchievementSensitivity.FAIBLE, false,
+                of(1,"Or","🥇",5), of(2,"Diamant","💎",10))
         );
     }
 

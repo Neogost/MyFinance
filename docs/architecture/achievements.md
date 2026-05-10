@@ -1,7 +1,7 @@
 # 🏆 Achievements / Hauts faits — gamification du patrimoine
 
-> **Statut : ✅ V1 spécifiée — prête pour implémentation**
-> Le périmètre MVP (25 badges) est figé ci-dessous. Le catalogue complet (119 badges) reste un backlog pour les versions ultérieures.
+> **Statut : ✅ V2 en cours — 61 badges implémentés / 119 au catalogue**
+> V1 (25 badges) et V2 tiers Trivial/Faible/Moyen (+36) sont en production. Seul le tiers "Plus lourd" reste à faire.
 
 ---
 
@@ -42,7 +42,9 @@ Sélection conçue pour **couvrir l'intégralité des mécaniques** à implémen
 | 🟩 **Easter egg secret** | #22 The Answer · #23 Le Vampire |
 | **Calcul ATH historique** | #24 Le Phénix · #25 Le Décollage |
 
-### Liste des 25 badges retenus
+### Liste des badges implémentés
+
+#### V1 — 25 badges fondateurs
 
 Code = identifiant Java (enum `AchievementCode`). Niveaux = Bronze 🥉 · Argent 🥈 · Or 🥇 · Platine 💠 · Diamant 💎.
 
@@ -74,7 +76,66 @@ Code = identifiant Java (enum `AchievementCode`). Niveaux = Bronze 🥉 · Argen
 | 24 | `PHENIX` | 🐦 Le Phénix | Performance | 🟧 | unique *(retour à ATH après −20 %)* | Snapshot mensuel |
 | 25 | `DECOLLAGE` | 🚀 Le Décollage | Progression | 🟧 | × 2 · × 5 · × 10 du patrimoine initial | Snapshot mensuel |
 
-**Total : ~80 niveaux à instrumenter sur 25 badges.**
+**Total V1 : ~80 niveaux sur 25 badges.**
+
+#### V2 — 36 badges supplémentaires (Trivial / Faible / Moyen)
+
+| Code | Badge | Tier | Paliers |
+|---|---|---|---|
+| `THE_FIRST_MILLION` | 🏆 The First Million | Trivial 🟥 | unique |
+| `PIERRE_PAPIER` | 📃 Le Pierre-Papier | Trivial 🟥 | 1K→250K |
+| `LA_FOURMI` | 🐜 La Fourmi | Trivial 🟥 | 1K→60K |
+| `PAS_TOUS_MEME_PANIER` | 🥚 Pas tous dans le même panier | Trivial 🟧 | unique |
+| `LE_COSMOPOLITE` | 💱 Le Cosmopolite | Trivial 🟧 | 2·3·5 devises |
+| `LE_PREVOYANT` | 🧓 Le Prévoyant | Trivial 🟩 | unique |
+| `LE_ROYAL_FLUSH` | 🎰 Le Royal Flush | Trivial 🟩 | unique |
+| `MULTI_SOURCES` | 🎁 Multi-sources | Trivial 🟨 | unique |
+| `MULTI_PROPRIETAIRE` | 🏘 Multi-propriétaire | Trivial 🟧 | 2·3·5 |
+| `PREMIER_TOIT` | 🔑 Premier Toit | Trivial 🟩 | unique |
+| `LE_DIVERSIFICATEUR` | 🌈 Le Diversificateur | Trivial 🟧 | 5·10·20 cryptos |
+| `PREMIER_REMBOURSEMENT` | 🔥 Premier Remboursement | Trivial 🟩 | unique |
+| `LIBERTE_CONQUISE` | 🆓 Liberté Conquise | Trivial 🟩 | unique |
+| `LORD_DU_MANOIR` | 🏠 Le Lord du Manoir | Trivial 🟩 | unique |
+| `LE_COLLECTIONNEUR` | 🎖 Le Collectionneur | Trivial 🟨 | 10·25·50 niveaux |
+| `LE_CHASSEUR` | 🔍 Le Chasseur | Trivial 🟩 secret | unique |
+| `L_ENCYCLOPEDISTE` | 📚 L'Encyclopédiste | Trivial 🟨 | 5·10·15 badges distincts |
+| `FORTERESSE_SECURITE` | 🛡 Forteresse de Sécurité | Faible 🟨 | unique |
+| `LE_DESENDET` | 🚫 Le Désendetté | Faible 🟨 | <30%·<15%·<5%·0% dette |
+| `LE_BOUCLIER` | ⛅ Le Bouclier | Faible 🟨 | 6·12·24·36 mois |
+| `AV_VETERAN` | ⏳ AV Vétéran | Faible 🟨 | unique (≥ 8 ans) |
+| `L_ACCOMPLISSEUR` | 🎯 L'Accomplisseur | Faible 🟨 | unique |
+| `LE_RETOUR` | 👋 Le Retour | Faible 🟩 | unique |
+| `LE_FIDELE` | 📮 Le Fidèle | Faible 🟨 | unique (12 mois consécutifs) |
+| `COMEBACK_KID` | 🎢 Comeback Kid | Faible 🟧 | unique |
+| `SORTIE_DU_ROUGE` | ➕ Sortie du Rouge | Faible 🟨 | unique |
+| `LEVIER_MAITRISE` | ⚖ Le Levier Maîtrisé | Faible 🟨 | unique |
+| `L_INTER_SECTORIEL` | 🏭 L'Inter-Sectoriel | Faible 🟨 | 3·5·8 secteurs |
+| `LE_RENTIER` | 🏖 Le Rentier | Moyen 🟨 | 25%·50%·75%·100% revenus passifs |
+| `LEAN_FIRE` | 🥗 Lean FIRE | Moyen 🟧 | unique (12× dépenses) |
+| `FAT_FIRE` | 💎 Fat FIRE | Moyen 🟧 | unique (25× dépenses) |
+| `FREE_AT_LAST` | 🏝 Free at Last | Moyen 🟨 | unique |
+| `FIRE_STARTER` | 🔥 FIRE Starter | Moyen 🟧 | 1%·5%·10%·25%·50% |
+| `PATRIOTE_PEA` | 🇫🇷 Patriote du PEA | Moyen 🟧 | 25K·75K·150K |
+| `LE_VETERAN` | 🦉 Le Vétéran | Moyen 🟨 | unique (position ≥ 10 ans) |
+| `L_ANNALISTE` | 📚 L'Annaliste | Moyen 🟨 | 5·10 ans de snapshots |
+
+**Total V2 : ~80 niveaux sur 36 badges supplémentaires.**
+
+### 🔴 Badges restants — tiers "Plus lourd" (non implémentés)
+
+| Badge | Raison du report |
+|---|---|
+| 🐂 Bull Run (performance YTD) | Nécessite TWR/MWR calculé sur données historiques de prix |
+| 💎 Diamond Hands (position tenue N ans ininterrompue) | Nécessite de distinguer "same position" vs réouverture |
+| 🐂 Buffett-Mode (perf > benchmark) | Nécessite un flux de données benchmark (CAC40, S&P500) |
+| ❄ Le Sang-Froid (pas de vente lors d'une baisse > 10%) | Nécessite données de marché historiques pour détecter les baisses |
+| 🎯 Le Rebalancer (rééquilibrage manuel détecté) | Nécessite de corréler des ventes et achats dans la même semaine |
+| 📊 L'Ascension (progression décile INSEE) | Nécessite de stocker le décile historique de l'utilisateur |
+| 🎖 Le Spécialiste (compléter une catégorie entière) | Nécessite de définir les critères de "complétude" par catégorie |
+| 💪 Le Disciple (taux d'épargne > X% sur 12 mois) | Nécessite historique mensuel revenus + dépenses |
+| ⛅ Pluie d'Avril (matelas maintenu ≥ 12 mois) | Nécessite d'historiser la valeur du matelas mois par mois |
+| 🎯 L'Architecte Précis (±5pts sur toutes dimensions BOURSE) | Données de répartition géo/sectorielle complexes à agréger |
+| 🌱 ISR (tous badges ESG) | Nécessite données ESG sur les instruments (non disponible) |
 
 ### Données dépendantes à instrumenter pour le MVP
 

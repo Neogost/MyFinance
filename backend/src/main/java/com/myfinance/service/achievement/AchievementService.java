@@ -3,6 +3,8 @@ package com.myfinance.service.achievement;
 import com.myfinance.domain.*;
 import com.myfinance.repository.*;
 import com.myfinance.domain.InstrumentAllocation;
+import com.myfinance.domain.InstrumentSectorAllocation;
+import com.myfinance.service.DebtService;
 import com.myfinance.service.PatrimoineScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,21 +40,25 @@ public class AchievementService {
     @Value("${scheduler.enabled:false}")
     private boolean schedulerEnabled;
 
-    private final AchievementCatalog               catalog;
-    private final UserAchievementRepository        achievementRepo;
-    private final UserRepository                   userRepository;
-    private final PortfolioSnapshotRepository      snapshotRepo;
-    private final PositionRepository               positionRepo;
-    private final InstrumentAllocationRepository   allocationRepo;
-    private final PatrimoineScoreService           scoreService;
-    private final MonthlyPaySlipRepository         paySlipRepo;
-    private final PositionOrderRepository          orderRepo;
-    private final AnalyticsEventRepository         analyticsRepo;
-    private final LoanSimulationRepository         loanRepo;
-    private final SalaryContractRepository         salaryRepo;
-    private final OtherIncomeRepository            otherIncomeRepo;
-    private final PatrimoineTargetRepository       targetRepo;
-    private final LoginEventRepository             loginRepo;
+    private final AchievementCatalog                    catalog;
+    private final UserAchievementRepository             achievementRepo;
+    private final UserRepository                        userRepository;
+    private final PortfolioSnapshotRepository           snapshotRepo;
+    private final PositionRepository                    positionRepo;
+    private final InstrumentAllocationRepository        allocationRepo;
+    private final InstrumentSectorAllocationRepository  sectorAllocationRepo;
+    private final PatrimoineScoreService                scoreService;
+    private final MonthlyPaySlipRepository              paySlipRepo;
+    private final PositionOrderRepository               orderRepo;
+    private final AnalyticsEventRepository              analyticsRepo;
+    private final LoanSimulationRepository              loanRepo;
+    private final SalaryContractRepository              salaryRepo;
+    private final OtherIncomeRepository                 otherIncomeRepo;
+    private final PatrimoineTargetRepository            targetRepo;
+    private final LoginEventRepository                  loginRepo;
+    private final RecurringExpenseRepository            expenseRepo;
+    private final DebtRepository                        debtRepo;
+    private final DebtService                           debtService;
 
     // ── Batch ─────────────────────────────────────────────────────────────────
 
@@ -159,6 +165,45 @@ public class AchievementService {
                 case FUNAMBULE           -> evalAnalyticsCount(user, def, EventType.PAGE_VIEW, "tools.lombard%");
                 case THE_ANSWER          -> evalTheAnswer(user, def);
                 case VAMPIRE             -> evalVampire(user, def);
+                // ── V2 Trivial ────────────────────────────────────────────────
+                case THE_FIRST_MILLION   -> evalSnapshotThreshold(user, def, this::totalPatrimoine);
+                case PIERRE_PAPIER       -> evalSnapshotThreshold(user, def, s -> categoryValue(s, AssetCategory.IMMO_PAPIER));
+                case LA_FOURMI           -> evalSnapshotThreshold(user, def, s -> categoryValue(s, AssetCategory.LIVRET));
+                case PAS_TOUS_MEME_PANIER -> evalPasTousMemeParier(user, def);
+                case LE_COSMOPOLITE      -> evalCosmopolite(user, def);
+                case LE_PREVOYANT        -> evalEnveloppePresence(user, def, FiscalEnvelope.PER);
+                case LE_ROYAL_FLUSH      -> evalRoyalFlush(user, def);
+                case MULTI_SOURCES       -> evalMultiSources(user, def);
+                case MULTI_PROPRIETAIRE  -> evalMultiProprietaire(user, def);
+                case PREMIER_TOIT        -> evalCategoryPresence(user, def, AssetCategory.IMMO_PHYSIQUE);
+                case LE_DIVERSIFICATEUR  -> evalDiversificateurCrypto(user, def);
+                case PREMIER_REMBOURSEMENT -> evalPremierRemboursement(user, def);
+                case LIBERTE_CONQUISE    -> evalLibertéConquise(user, def);
+                case LORD_DU_MANOIR      -> evalLordDuManoir(user, def);
+                case LE_COLLECTIONNEUR   -> evalCollectionneur(user, def);
+                case LE_CHASSEUR         -> evalChasseur(user, def);
+                case L_ENCYCLOPEDISTE    -> evalEncyclopediste(user, def);
+                // ── V2 Faible ─────────────────────────────────────────────────
+                case FORTERESSE_SECURITE -> evalForteresseSécurité(user, def);
+                case LE_DESENDET         -> evalDesendet(user, def);
+                case LE_BOUCLIER         -> evalBouclier(user, def);
+                case AV_VETERAN          -> evalAvVeteran(user, def);
+                case L_ACCOMPLISSEUR     -> evalAccomplisseur(user, def);
+                case LE_RETOUR           -> evalRetour(user, def);
+                case LE_FIDELE           -> evalFidele(user, def);
+                case COMEBACK_KID        -> evalComebackKid(user, def);
+                case SORTIE_DU_ROUGE     -> evalSortieRouge(user, def);
+                case LEVIER_MAITRISE     -> evalLevierMaitrise(user, def);
+                case L_INTER_SECTORIEL   -> evalInterSectoriel(user, def);
+                // ── V2 Moyen ──────────────────────────────────────────────────
+                case LE_RENTIER          -> evalRentier(user, def);
+                case LEAN_FIRE           -> evalFireMultiple(user, def, 12);
+                case FAT_FIRE            -> evalFireMultiple(user, def, 25);
+                case FREE_AT_LAST        -> evalFreeAtLast(user, def);
+                case FIRE_STARTER        -> evalFireStarter(user, def);
+                case PATRIOTE_PEA        -> evalPatriotePea(user, def);
+                case LE_VETERAN          -> evalVeteranPosition(user, def);
+                case L_ANNALISTE         -> evalAnnaliste(user, def);
             };
         } catch (Exception e) {
             log.debug("[Achievements] Évaluation {} échouée pour user {}: {}", def.code(), user.getId(), e.getMessage());
@@ -357,6 +402,341 @@ public class AchievementService {
         long events = analyticsRepo.countByUserAndEventTypeAndEventNameLike(
                 user, EventType.BUTTON_CLICK, "%dark_mode%");
         return events > 0 ? 1 : 0;
+    }
+
+    // ── V2 Trivial ───────────────────────────────────────────────────────────
+
+    private int evalPasTousMemeParier(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        PortfolioSnapshot snap = snaps.get(0);
+        BigDecimal total = totalPatrimoine(snap);
+        if (total.compareTo(BigDecimal.ZERO) == 0) return 0;
+        BigDecimal max = snap.getPositionSnapshots().stream()
+                .filter(ps -> ps.getPosition() != null && ps.getCurrentValueEur() != null)
+                .collect(Collectors.groupingBy(ps -> ps.getPosition().getCategory(),
+                        Collectors.reducing(BigDecimal.ZERO, PositionSnapshot::getCurrentValueEur, BigDecimal::add)))
+                .values().stream().max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO);
+        BigDecimal ratio = max.multiply(BigDecimal.valueOf(100)).divide(total, 2, java.math.RoundingMode.HALF_UP);
+        return ratio.compareTo(new BigDecimal("50")) < 0 ? 1 : 0;
+    }
+
+    private int evalCosmopolite(User user, AchievementDefinition def) {
+        long currencies = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE).stream()
+                .map(Position::getInstrument).filter(Objects::nonNull)
+                .map(i -> i.getCurrency()).filter(Objects::nonNull)
+                .filter(c -> !"EUR".equalsIgnoreCase(c))
+                .distinct().count();
+        return levelForValue(def, BigDecimal.valueOf(currencies));
+    }
+
+    private int evalEnveloppePresence(User user, AchievementDefinition def, FiscalEnvelope env) {
+        boolean has = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE).stream()
+                .anyMatch(p -> env == p.getFiscalEnvelope());
+        return has ? 1 : 0;
+    }
+
+    private int evalRoyalFlush(User user, AchievementDefinition def) {
+        Set<FiscalEnvelope> envelopes = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE)
+                .stream().map(Position::getFiscalEnvelope).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        boolean royal = envelopes.containsAll(Set.of(FiscalEnvelope.PEA, FiscalEnvelope.AV, FiscalEnvelope.PER, FiscalEnvelope.CTO));
+        return royal ? 1 : 0;
+    }
+
+    private int evalMultiSources(User user, AchievementDefinition def) {
+        long types = otherIncomeRepo.findByUserOrderByDateDesc(user).stream()
+                .map(OtherIncome::getType).filter(Objects::nonNull).distinct().count();
+        return types >= 3 ? 1 : 0;
+    }
+
+    private int evalMultiProprietaire(User user, AchievementDefinition def) {
+        long count = positionRepo.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(user, AssetCategory.IMMO_PHYSIQUE, PositionStatus.ACTIVE).size();
+        return levelForValue(def, BigDecimal.valueOf(count));
+    }
+
+    private int evalCategoryPresence(User user, AchievementDefinition def, AssetCategory cat) {
+        boolean has = !positionRepo.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(user, cat, PositionStatus.ACTIVE).isEmpty();
+        return has ? 1 : 0;
+    }
+
+    private int evalDiversificateurCrypto(User user, AchievementDefinition def) {
+        long cryptos = positionRepo.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(user, AssetCategory.CRYPTO, PositionStatus.ACTIVE)
+                .stream().map(Position::getInstrument).filter(Objects::nonNull).distinct().count();
+        return levelForValue(def, BigDecimal.valueOf(cryptos));
+    }
+
+    private int evalPremierRemboursement(User user, AchievementDefinition def) {
+        boolean any = debtRepo.findByUserOrderByTypeAscLabelAsc(user).stream().anyMatch(d ->
+                d.getRemainingCapitalOverride() != null && d.getRemainingCapitalOverride().compareTo(BigDecimal.ZERO) <= 0);
+        return any ? 1 : 0;
+    }
+
+    private int evalLibertéConquise(User user, AchievementDefinition def) {
+        boolean noDebt = debtRepo.findByUserOrderByTypeAscLabelAsc(user).isEmpty();
+        return (noDebt && snapshotRepo.countByUser(user) > 0) ? 1 : 0;
+    }
+
+    private int evalLordDuManoir(User user, AchievementDefinition def) {
+        boolean hasImmo = !positionRepo.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(user, AssetCategory.IMMO_PHYSIQUE, PositionStatus.ACTIVE).isEmpty();
+        boolean hasImmoDebt = debtRepo.findByUserOrderByTypeAscLabelAsc(user).stream()
+                .anyMatch(d -> DebtTypeEnum.IMMOBILIER == d.getType());
+        return (hasImmo && hasImmoDebt) ? 1 : 0;
+    }
+
+    private int evalCollectionneur(User user, AchievementDefinition def) {
+        long count = achievementRepo.countByUserAndConfirmedAtIsNotNull(user);
+        return levelForValue(def, BigDecimal.valueOf(count));
+    }
+
+    private int evalChasseur(User user, AchievementDefinition def) {
+        Set<AchievementCode> secretCodes = catalog.all().stream()
+                .filter(AchievementDefinition::secret).map(AchievementDefinition::code)
+                .collect(Collectors.toSet());
+        long confirmed = achievementRepo.findByUserAndConfirmedAtIsNotNullOrderByConfirmedAtDesc(user).stream()
+                .filter(a -> secretCodes.contains(a.getAchievementCode())).count();
+        return confirmed >= secretCodes.size() ? 1 : 0;
+    }
+
+    private int evalEncyclopediste(User user, AchievementDefinition def) {
+        long distinctCodes = achievementRepo.findByUserAndConfirmedAtIsNotNullOrderByConfirmedAtDesc(user).stream()
+                .map(UserAchievement::getAchievementCode).distinct().count();
+        return levelForValue(def, BigDecimal.valueOf(distinctCodes));
+    }
+
+    // ── V2 Faible ────────────────────────────────────────────────────────────
+
+    private int evalForteresseSécurité(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty() || user.getSafetyNetMode() == null) return 0;
+        PortfolioSnapshot snap = snaps.get(0);
+        double liquid = categoryValue(snap, AssetCategory.LIQUIDITE).doubleValue()
+                      + categoryValue(snap, AssetCategory.LIVRET).doubleValue();
+        double target = computeSafetyNetTarget(user);
+        return (target > 0 && liquid >= target) ? 1 : 0;
+    }
+
+    private int evalDesendet(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        double patrimoine = totalPatrimoine(snaps.get(0)).doubleValue();
+        if (patrimoine <= 0) return 0;
+        double totalDebt = debtRepo.findByUserOrderByTypeAscLabelAsc(user).stream()
+                .mapToDouble(d -> d.getRemainingCapitalOverride() != null
+                        ? Math.max(0, d.getRemainingCapitalOverride().doubleValue())
+                        : Math.max(0, d.getInitialCapital() != null ? d.getInitialCapital().doubleValue() : 0))
+                .sum();
+        if (totalDebt == 0) return def.levels().size(); // 0% dette → Diamant
+        double ratio = totalDebt / patrimoine * 100;
+        // Seuils inversés : 100-ratio > threshold ; threshold = 100-seuil dette
+        // Bronze ≥ 70 = dette < 30 % ; Argent ≥ 85 = dette < 15 % ; etc.
+        double inverseRatio = 100 - ratio;
+        return levelForValue(def, BigDecimal.valueOf(inverseRatio));
+    }
+
+    private int evalBouclier(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        double liquid = categoryValue(snaps.get(0), AssetCategory.LIQUIDITE).doubleValue()
+                      + categoryValue(snaps.get(0), AssetCategory.LIVRET).doubleValue();
+        double monthly = monthlyExpenses(user);
+        if (monthly <= 0) return 0;
+        double months = liquid / monthly;
+        return levelForValue(def, BigDecimal.valueOf(months));
+    }
+
+    private int evalAvVeteran(User user, AchievementDefinition def) {
+        boolean veteran = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE).stream()
+                .anyMatch(p -> FiscalEnvelope.AV == p.getFiscalEnvelope()
+                        && p.getCreatedAt() != null
+                        && p.getCreatedAt().isBefore(java.time.LocalDateTime.now().minusYears(8)));
+        return veteran ? 1 : 0;
+    }
+
+    private int evalAccomplisseur(User user, AchievementDefinition def) {
+        List<PatrimoineTarget> targets = targetRepo.findByUser(user).stream()
+                .filter(t -> t.getTargetAmountEur() != null && t.getTargetAmountEur() > 0)
+                .toList();
+        if (targets.isEmpty()) return 0;
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        Map<String, Double> catValues = snaps.get(0).getPositionSnapshots().stream()
+                .filter(ps -> ps.getPosition() != null && ps.getCurrentValueEur() != null)
+                .collect(Collectors.groupingBy(ps -> ps.getPosition().getCategory().name(),
+                        Collectors.summingDouble(ps -> ps.getCurrentValueEur().doubleValue())));
+        boolean achieved = targets.stream().anyMatch(t -> {
+            Double actual = catValues.get(t.getCategory());
+            return actual != null && actual >= t.getTargetAmountEur();
+        });
+        return achieved ? 1 : 0;
+    }
+
+    private int evalRetour(User user, AchievementDefinition def) {
+        List<LoginEvent> logins = loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin());
+        if (logins.size() < 2) return 0;
+        for (int i = 0; i < logins.size() - 1; i++) {
+            long days = java.time.temporal.ChronoUnit.DAYS.between(
+                    logins.get(i + 1).getTimestamp(), logins.get(i).getTimestamp());
+            if (days >= 30) return 1;
+        }
+        return 0;
+    }
+
+    private int evalFidele(User user, AchievementDefinition def) {
+        List<LoginEvent> logins = loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin());
+        Set<YearMonth> months = logins.stream()
+                .map(e -> YearMonth.from(e.getTimestamp())).collect(Collectors.toSet());
+        YearMonth current = YearMonth.now();
+        for (int i = 0; i < 12; i++) {
+            if (!months.contains(current.minusMonths(i))) return 0;
+        }
+        return 1;
+    }
+
+    private int evalComebackKid(User user, AchievementDefinition def) {
+        if (user.getAllTimeHighEur() == null) return 0;
+        List<PortfolioSnapshot> snaps = snapshotRepo.findByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        BigDecimal ath = user.getAllTimeHighEur();
+        BigDecimal current = snaps.get(0).getTotalCurrentValueEur();
+        if (current == null || current.compareTo(ath.multiply(new BigDecimal("0.95"))) < 0) return 0;
+        BigDecimal drawdownThreshold = ath.multiply(new BigDecimal("0.85")); // -15 %
+        boolean hadDrawdown = snaps.stream()
+                .filter(s -> s.getTotalCurrentValueEur() != null)
+                .anyMatch(s -> s.getTotalCurrentValueEur().compareTo(drawdownThreshold) < 0);
+        return hadDrawdown ? 1 : 0;
+    }
+
+    private int evalSortieRouge(User user, AchievementDefinition def) {
+        if (user.getInitialNetWorthEur() == null || user.getInitialNetWorthEur().compareTo(new BigDecimal("1000")) >= 0) return 0;
+        List<PortfolioSnapshot> snaps = snapshotRepo.findByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        BigDecimal current = snaps.get(0).getTotalCurrentValueEur();
+        return (current != null && current.compareTo(new BigDecimal("10000")) >= 0) ? 1 : 0;
+    }
+
+    private int evalLevierMaitrise(User user, AchievementDefinition def) {
+        List<Position> immoPos = positionRepo.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(user, AssetCategory.IMMO_PHYSIQUE, PositionStatus.ACTIVE);
+        Set<Long> immoIds = immoPos.stream().filter(p -> p.getEstimatedCurrentValue() != null)
+                .map(Position::getId).collect(Collectors.toSet());
+        if (immoIds.isEmpty()) return 0;
+        return debtRepo.findByUserOrderByTypeAscLabelAsc(user).stream()
+                .filter(d -> DebtTypeEnum.IMMOBILIER == d.getType() && d.getPositionId() != null
+                        && immoIds.contains(d.getPositionId()))
+                .anyMatch(d -> {
+                    Position pos = immoPos.stream().filter(p -> p.getId().equals(d.getPositionId())).findFirst().orElse(null);
+                    if (pos == null || pos.getEstimatedCurrentValue() == null) return false;
+                    double capital = d.getRemainingCapitalOverride() != null ? d.getRemainingCapitalOverride().doubleValue()
+                            : (d.getInitialCapital() != null ? d.getInitialCapital().doubleValue() : 0);
+                    double value = pos.getEstimatedCurrentValue().doubleValue();
+                    if (value <= 0) return false;
+                    double ltv = capital / value * 100;
+                    return ltv >= 30 && ltv <= 70;
+                }) ? 1 : 0;
+    }
+
+    private int evalInterSectoriel(User user, AchievementDefinition def) {
+        List<Position> active = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE);
+        List<Instrument> instruments = active.stream().map(Position::getInstrument)
+                .filter(Objects::nonNull).distinct().toList();
+        if (instruments.isEmpty()) return 0;
+        long sectors = sectorAllocationRepo.findByInstrumentInOrderByPercentageDesc(instruments).stream()
+                .map(InstrumentSectorAllocation::getSector).filter(Objects::nonNull).distinct().count();
+        return levelForValue(def, BigDecimal.valueOf(sectors));
+    }
+
+    // ── V2 Moyen ─────────────────────────────────────────────────────────────
+
+    private int evalRentier(User user, AchievementDefinition def) {
+        double salary = 0.0;
+        Optional<SalaryContract> contract = salaryRepo.findByUserAndEndDateIsNull(user);
+        if (contract.isPresent() && contract.get().getAnnualGrossSalary() != null) {
+            salary = contract.get().getAnnualGrossSalary().doubleValue() * 0.72 / 12;
+        }
+        if (salary <= 0) return 0;
+        double passive = otherIncomeRepo.findByUserOrderByDateDesc(user).stream()
+                .filter(i -> i.getAmount() != null && (OtherIncomeTypeEnum.LOCATIF == i.getType() || OtherIncomeTypeEnum.DIVIDENDE == i.getType()))
+                .mapToDouble(i -> i.getAmount()).sum();
+        double ratio = passive / salary * 100;
+        return levelForValue(def, BigDecimal.valueOf(ratio));
+    }
+
+    private int evalFireMultiple(User user, AchievementDefinition def, int multiple) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        double patrimoine = totalPatrimoine(snaps.get(0)).doubleValue();
+        double annualExpenses = monthlyExpenses(user) * 12;
+        if (annualExpenses <= 0) return 0;
+        return patrimoine >= annualExpenses * multiple ? 1 : 0;
+    }
+
+    private int evalFreeAtLast(User user, AchievementDefinition def) {
+        double passive = otherIncomeRepo.findByUserOrderByDateDesc(user).stream()
+                .filter(i -> i.getAmount() != null && (OtherIncomeTypeEnum.LOCATIF == i.getType() || OtherIncomeTypeEnum.DIVIDENDE == i.getType()))
+                .mapToDouble(i -> i.getAmount()).sum();
+        double monthly = monthlyExpenses(user);
+        return (monthly > 0 && passive >= monthly) ? 1 : 0;
+    }
+
+    private int evalFireStarter(User user, AchievementDefinition def) {
+        List<PortfolioSnapshot> snaps = snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user);
+        if (snaps.isEmpty()) return 0;
+        double patrimoine = totalPatrimoine(snaps.get(0)).doubleValue();
+        double fireTarget = monthlyExpenses(user) * 12 * 25;
+        if (fireTarget <= 0) return 0;
+        double pct = patrimoine / fireTarget * 100;
+        return levelForValue(def, BigDecimal.valueOf(pct));
+    }
+
+    private int evalPatriotePea(User user, AchievementDefinition def) {
+        BigDecimal buys  = orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.BUY);
+        BigDecimal sells = orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.SELL);
+        BigDecimal net = (buys != null ? buys : BigDecimal.ZERO)
+                        .subtract(sells != null ? sells : BigDecimal.ZERO);
+        return levelForValue(def, net.max(BigDecimal.ZERO));
+    }
+
+    private int evalVeteranPosition(User user, AchievementDefinition def) {
+        boolean veteran = positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE).stream()
+                .anyMatch(p -> p.getCreatedAt() != null
+                        && p.getCreatedAt().isBefore(java.time.LocalDateTime.now().minusYears(10)));
+        return veteran ? 1 : 0;
+    }
+
+    private int evalAnnaliste(User user, AchievementDefinition def) {
+        Set<Integer> years = snapshotRepo.findByUserOrderBySnapshotDateDesc(user).stream()
+                .map(s -> s.getSnapshotDate().getYear()).collect(Collectors.toSet());
+        int currentYear = java.time.LocalDate.now().getYear();
+        int consecutive = 0;
+        for (int y = currentYear; years.contains(y); y--) consecutive++;
+        return levelForValue(def, BigDecimal.valueOf(consecutive));
+    }
+
+    // ── Helpers communs V2 ───────────────────────────────────────────────────
+
+    private double monthlyExpenses(User user) {
+        return expenseRepo.findByUserOrderByCategoryAscLabelAsc(user).stream()
+                .filter(e -> e.getAmount() != null)
+                .mapToDouble(e -> FrequencyEnum.ANNUAL == e.getFrequency()
+                        ? e.getAmount() / 12.0 : e.getAmount())
+                .sum();
+    }
+
+    private double computeSafetyNetTarget(User user) {
+        if (user.getSafetyNetMode() == null) return 0;
+        switch (user.getSafetyNetMode()) {
+            case FIXED_AMOUNT:
+                return user.getSafetyNetAmount() != null ? user.getSafetyNetAmount() : 0;
+            case MONTHS_EXPENSES:
+                return user.getSafetyNetMonths() != null ? user.getSafetyNetMonths() * monthlyExpenses(user) : 0;
+            case MONTHS_SALARY: {
+                Optional<SalaryContract> c = salaryRepo.findByUserAndEndDateIsNull(user);
+                double monthly = c.isPresent() && c.get().getAnnualGrossSalary() != null
+                        ? c.get().getAnnualGrossSalary().doubleValue() * 0.72 / 12 : 0;
+                return user.getSafetyNetMonths() != null ? user.getSafetyNetMonths() * monthly : 0;
+            }
+            default: return 0;
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
