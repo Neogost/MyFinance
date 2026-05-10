@@ -9,6 +9,7 @@ import com.myfinance.service.achievement.AchievementCatalog;
 import com.myfinance.service.achievement.AchievementDefinition;
 import com.myfinance.service.achievement.AchievementService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/achievements")
 @RequiredArgsConstructor
@@ -33,11 +35,18 @@ public class AchievementController {
     /**
      * Retourne tous les hauts faits avec l'état de déblocage de l'utilisateur.
      * Les badges secrets non débloqués sont masqués (nom et description cachés).
+     * Fallback silencieux sur SQLITE_BUSY_SNAPSHOT : retourne les badges existants
+     * sans évaluation plutôt qu'une 500.
      */
     @GetMapping("/me")
     public ResponseEntity<UserAchievementsDto> getMyAchievements(@AuthenticationPrincipal User user) {
-        // evaluateAndGetAll évalue + lit dans UNE SEULE transaction pour éviter SQLITE_BUSY_SNAPSHOT.
-        List<UserAchievement> confirmed = achievementService.evaluateAndGetAll(user);
+        List<UserAchievement> confirmed;
+        try {
+            confirmed = achievementService.evaluateAndGetAll(user);
+        } catch (org.springframework.dao.CannotAcquireLockException e) {
+            log.warn("[Achievements] BUSY_SNAPSHOT — évaluation ignorée, retour des badges existants pour user {}", user.getId());
+            confirmed = achievementService.getConfirmedForUser(user);
+        }
         long unseen = achievementService.countUnseen(user);
 
         // Indexation : code → max niveau confirmé + date
