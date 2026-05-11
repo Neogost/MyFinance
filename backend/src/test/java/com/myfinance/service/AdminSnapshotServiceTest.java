@@ -211,4 +211,187 @@ class AdminSnapshotServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.NOT_FOUND));
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels — branches non couvertes
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── findById ──────────────────────────────────────────────────────────────
+
+    @Test
+    void findById_retourneLeSnapshot() {
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(user).snapshotDate(LocalDate.of(2026, 4, 1))
+                .totalInvestedEur(new BigDecimal("3000"))
+                .totalCurrentValueEur(new BigDecimal("3500"))
+                .totalCapitalGainEur(new BigDecimal("500"))
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+
+        AdminSnapshotDetailDto result = adminSnapshotService.findById(5L);
+
+        assertThat(result.id()).isEqualTo(5L);
+        assertThat(result.totalCurrentValueEur()).isEqualByComparingTo("3500");
+    }
+
+    @Test
+    void findById_leve404_siSnapshotInexistant() {
+        when(portfolioSnapshotRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminSnapshotService.findById(999L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── update ────────────────────────────────────────────────────────────────
+
+    @Test
+    void update_metAJourLeSnapshot() {
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(user).snapshotDate(LocalDate.of(2026, 3, 1))
+                .totalInvestedEur(new BigDecimal("3000"))
+                .totalCurrentValueEur(new BigDecimal("3000"))
+                .totalCapitalGainEur(BigDecimal.ZERO)
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user))
+                .thenReturn(List.of(livret));
+        when(positionRepository.findById(10L)).thenReturn(Optional.of(livret));
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ManualSnapshotRequest req = new ManualSnapshotRequest(
+                1L, LocalDate.of(2026, 4, 15),
+                List.of(new ManualPositionSnapshotRequest(10L,
+                        new BigDecimal("3500"), new BigDecimal("3700"), null, null)));
+
+        AdminSnapshotDetailDto result = adminSnapshotService.update(5L, req);
+
+        assertThat(result.snapshotDate()).isEqualTo(LocalDate.of(2026, 4, 15));
+        assertThat(result.totalInvestedEur()).isEqualByComparingTo("3500");
+    }
+
+    @Test
+    void update_leve400_siUserDuRequestNeCorrespondPas() {
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(user).snapshotDate(LocalDate.of(2026, 3, 1))
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO)
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+        User autre = User.builder().id(99L).login("other").role(RoleEnum.USER).build();
+
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+        when(userRepository.findById(99L)).thenReturn(Optional.of(autre));
+
+        ManualSnapshotRequest req = new ManualSnapshotRequest(
+                99L, LocalDate.of(2026, 4, 1), List.of());
+
+        assertThatThrownBy(() -> adminSnapshotService.update(5L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("ne correspond pas");
+                });
+    }
+
+    @Test
+    void update_leve404_siSnapshotInexistant() {
+        when(portfolioSnapshotRepository.findById(999L)).thenReturn(Optional.empty());
+
+        ManualSnapshotRequest req = new ManualSnapshotRequest(
+                1L, LocalDate.of(2026, 4, 1), List.of());
+
+        assertThatThrownBy(() -> adminSnapshotService.update(999L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void update_excludeIdSurMemeMois_acceptee() {
+        // Update sur le même snapshot, le mois est déjà occupé par lui-même → OK (excludeId)
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(user).snapshotDate(LocalDate.of(2026, 4, 5))
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO)
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(any(), any(), any()))
+                .thenReturn(Optional.of(snap));  // même snapshot trouvé → excludeId match
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ManualSnapshotRequest req = new ManualSnapshotRequest(
+                1L, LocalDate.of(2026, 4, 20), List.of());
+
+        assertThatNoException().isThrownBy(() -> adminSnapshotService.update(5L, req));
+    }
+
+    @Test
+    void update_leve409_siAutreSnapshotMemeMois() {
+        // Update vers un mois où existe DÉJÀ un autre snapshot
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(user).snapshotDate(LocalDate.of(2026, 3, 1))
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO)
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+        PortfolioSnapshot autreSnap = PortfolioSnapshot.builder()
+                .id(99L).user(user).snapshotDate(LocalDate.of(2026, 4, 1))
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO).build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(any(), any(), any()))
+                .thenReturn(Optional.of(autreSnap));  // ID different → conflit
+
+        ManualSnapshotRequest req = new ManualSnapshotRequest(
+                1L, LocalDate.of(2026, 4, 15), List.of());
+
+        assertThatThrownBy(() -> adminSnapshotService.update(5L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    // ── computeTotals : aucune position investie → null ──────────────────────
+
+    @Test
+    void create_aucunInvestedAmount_totalInvestedNull() {
+        // Toutes les positions sont LIQUIDITE/IMMO sans investedAmountEur
+        ManualSnapshotRequest request = new ManualSnapshotRequest(
+                1L, LocalDate.of(2026, 4, 1),
+                List.of(new ManualPositionSnapshotRequest(20L, null,
+                        new BigDecimal("500"), null, null)));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user))
+                .thenReturn(List.of(liquidite));
+        when(positionRepository.findById(20L)).thenReturn(Optional.of(liquidite));
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> {
+            PortfolioSnapshot s = inv.getArgument(0);
+            s.setId(7L);
+            return s;
+        });
+
+        AdminSnapshotDetailDto result = adminSnapshotService.create(request);
+
+        assertThat(result.totalInvestedEur()).isNull();   // anyInvested = false
+        assertThat(result.totalCapitalGainEur()).isNull();
+        assertThat(result.totalCurrentValueEur()).isEqualByComparingTo("500");
+    }
+
+    // ── findById_inexistant ──────────────────────────────────────────────────
+    // (déjà couvert par delete_leve404 et update_leve404 pour getSnapshot helper)
 }

@@ -1,13 +1,16 @@
 package com.myfinance.service;
 
+import com.myfinance.domain.AssetCategory;
 import com.myfinance.domain.OtherIncome;
 import com.myfinance.domain.OtherIncomeTypeEnum;
+import com.myfinance.domain.Position;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
 import com.myfinance.dto.CreateOtherIncomeRequest;
 import com.myfinance.dto.OtherIncomeDto;
 import com.myfinance.dto.UpdateOtherIncomeRequest;
 import com.myfinance.repository.OtherIncomeRepository;
+import com.myfinance.repository.PositionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +32,7 @@ import static org.mockito.Mockito.*;
 class OtherIncomeServiceTest {
 
     @Mock OtherIncomeRepository otherIncomeRepository;
+    @Mock PositionRepository positionRepository;
     @InjectMocks OtherIncomeService otherIncomeService;
 
     User owner;
@@ -181,5 +185,206 @@ class OtherIncomeServiceTest {
         otherIncomeService.delete(1L, admin);
 
         verify(otherIncomeRepository).deleteById(1L);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels — branches validateContractFields + resolvePosition
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── validateContractFields ───────────────────────────────────────────────
+
+    @Test
+    void create_contractFields_periodStartSurAutreType_leve400() {
+        // periodStart fourni mais type DIVIDENDE → 400 (réservé LOCATIF)
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.DIVIDENDE, "Test", 100f, LocalDate.of(2025, 1, 1),
+                null, null, null, LocalDate.of(2025, 1, 1), null, 5);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("LOCATIF");
+                });
+    }
+
+    @Test
+    void create_contractFields_periodStartSansDayOfMonth_leve400() {
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 800f, null,
+                null, null, null, LocalDate.of(2025, 1, 1), null, null);  // dayOfMonth = null
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("dayOfMonth");
+                });
+    }
+
+    @Test
+    void create_contractFields_periodEndAvantPeriodStart_leve400() {
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 800f, null,
+                null, null, null,
+                LocalDate.of(2025, 6, 1), LocalDate.of(2025, 1, 1),  // end < start
+                5);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("postérieure");
+                });
+    }
+
+    @Test
+    void create_contractFields_periodEndEgaleAPeriodStart_leve400() {
+        // periodEnd == periodStart → invalide (doit être strictement après)
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 800f, null,
+                null, null, null,
+                LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 1),
+                5);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void create_saisiePonctuelle_sansDate_leve400() {
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.DIVIDENDE, "Div", 100f, null,
+                null, null, null, null, null, null);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("ponctuelle");
+                });
+    }
+
+    @Test
+    void create_saisiePonctuelle_avecDayOfMonth_leve400() {
+        // dayOfMonth fourni sans periodStart → 400
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Test", 100f, LocalDate.of(2025, 1, 1),
+                null, null, null, null, null, 5);  // dayOfMonth=5 sans periodStart
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void create_saisiePonctuelle_avecPeriodEnd_leve400() {
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Test", 100f, LocalDate.of(2025, 1, 1),
+                null, null, null, null, LocalDate.of(2025, 6, 1), null);  // periodEnd sans periodStart
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    // ── create avec contrat valide (LOCATIF + periodStart + dayOfMonth) ──────
+
+    @Test
+    void create_contratLocatif_valide_sauvegardeAvecDateEffective() {
+        when(otherIncomeRepository.save(any())).thenAnswer(inv -> {
+            OtherIncome i = inv.getArgument(0);
+            return OtherIncome.builder().id(10L).user(owner)
+                    .type(i.getType()).label(i.getLabel()).amount(i.getAmount())
+                    .date(i.getDate()).periodStart(i.getPeriodStart())
+                    .periodEnd(i.getPeriodEnd()).dayOfMonth(i.getDayOfMonth())
+                    .isTaxable(i.getIsTaxable()).build();
+        });
+
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer T2", 800f, null,
+                null, null, null,
+                LocalDate.of(2025, 1, 1), LocalDate.of(2025, 12, 31), 5);
+
+        OtherIncomeDto result = otherIncomeService.create(req, owner);
+
+        assertThat(result.id()).isEqualTo(10L);
+        // date effective = periodStart (pour les requêtes par plage)
+        assertThat(result.date()).isEqualTo(LocalDate.of(2025, 1, 1));
+        assertThat(result.dayOfMonth()).isEqualTo(5);
+    }
+
+    // ── resolvePosition ──────────────────────────────────────────────────────
+
+    @Test
+    void create_avecPositionId_typeNonLocatif_leve400() {
+        // positionId fourni mais type DIVIDENDE → 400 (réservé LOCATIF)
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.DIVIDENDE, "Div", 200f, LocalDate.of(2025, 1, 1),
+                null, null, 99L, null, null, null);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("LOCATIF");
+                });
+    }
+
+    @Test
+    void create_avecPositionId_positionIntrouvable_leve404() {
+        when(positionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 800f, null,
+                null, null, 99L,
+                LocalDate.of(2025, 1, 1), null, 5);
+
+        assertThatThrownBy(() -> otherIncomeService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void create_avecPositionId_valide_lieLaPosition() {
+        Position immo = Position.builder().id(99L).user(owner)
+                .category(AssetCategory.IMMO_PHYSIQUE).label("Appartement").build();
+        when(positionRepository.findById(99L)).thenReturn(Optional.of(immo));
+        when(otherIncomeRepository.save(any())).thenAnswer(inv -> {
+            OtherIncome i = inv.getArgument(0);
+            return OtherIncome.builder().id(10L).user(owner)
+                    .type(i.getType()).label(i.getLabel()).amount(i.getAmount())
+                    .date(i.getDate()).position(i.getPosition())
+                    .isTaxable(i.getIsTaxable()).build();
+        });
+
+        CreateOtherIncomeRequest req = new CreateOtherIncomeRequest(
+                OtherIncomeTypeEnum.LOCATIF, "Loyer", 800f, null,
+                null, null, 99L,
+                LocalDate.of(2025, 1, 1), null, 5);
+
+        OtherIncomeDto result = otherIncomeService.create(req, owner);
+
+        assertThat(result.positionId()).isEqualTo(99L);
+    }
+
+    // ── update avec isTaxable null → défaut à true ───────────────────────────
+
+    @Test
+    void update_isTaxableNull_defautATrue() {
+        when(otherIncomeRepository.findById(1L)).thenReturn(Optional.of(income));
+        when(otherIncomeRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateOtherIncomeRequest req = new UpdateOtherIncomeRequest(
+                OtherIncomeTypeEnum.DIVIDENDE, "Div", 100f, LocalDate.of(2025, 1, 1),
+                null, null, null, null, null, null);  // isTaxable null
+
+        OtherIncomeDto result = otherIncomeService.update(1L, req, owner);
+
+        assertThat(result.isTaxable()).isTrue();
     }
 }
