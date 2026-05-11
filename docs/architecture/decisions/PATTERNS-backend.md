@@ -708,32 +708,99 @@ Vérifier avec `./mvnw test` puis ouvrir `backend/target/site/jacoco/index.html`
 ### 9.7 Tests d'intégration (`@SpringBootTest`)
 
 Les tests unitaires (services mockés + controllers slicés) ne valident **pas** :
-- la chaîne sécurité réelle (filtres + handlers)
-- les requêtes JPA contre une vraie DB (limites de la mock)
+- la chaîne sécurité réelle (filtres + handlers + session)
+- les requêtes JPA contre une vraie DB (limites des mocks)
 - l'enchaînement scheduler → service → repo
-- la cohérence des migrations SQLite avec les entités
+- la cohérence des entités JPA avec un schéma SQL réel
+- le comportement de Bean Validation dans le pipeline complet
 
-**Cible :** au moins 1 test d'intégration par module critique (auth, patrimoine, dépenses), exécuté avec H2 en mémoire pour rester rapide :
+**Cible :** au moins 1 test d'intégration par module critique (auth, dépenses, dettes, snapshots, etc.).
+
+#### Référence canonique
+
+Voir [`OtherIncomeIntegrationTest.java`](../../../backend/src/test/java/com/myfinance/integration/OtherIncomeIntegrationTest.java) — exemple complet, sans aucun mock, qui sert de modèle pour tous les nouveaux tests d'intégration.
+
+#### Configuration
+
+- **Profil dédié** : `application-integration.properties` (cf. fichier existant) — SQLite in-memory + `cache=shared` + `ddl-auto=create-drop` + scheduler/CSRF/brute-force désactivés + admin password fixe
+- **Annotations** : `@SpringBootTest` + `@ActiveProfiles("integration")` + `@DirtiesContext(classMode = AFTER_CLASS)` (réinitialise le contexte Spring entre classes pour isoler les DBs in-memory)
+
+#### Squelette minimal
 
 ```java
 @SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional  // rollback systématique en fin de test
+@ActiveProfiles("integration")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class MonModuleIntegrationTest {
-    @Autowired MockMvc mockMvc;
+
+    @Autowired WebApplicationContext context;
+    @Autowired ObjectMapper objectMapper;
     @Autowired MonEntiteRepository repository;
 
+    private MockMvc buildMockMvc() {
+        return MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+    }
+
     @Test
-    void scenario_createReadDelete_chaine_complete() throws Exception {
-        // Création via API réelle (security + JPA + commit)
-        // Vérification via repository (état réel en DB)
-        // Cleanup automatique via @Transactional
+    void scenario_completCrud_chaineReelleSecuriteEtJpa() throws Exception {
+        MockMvc mvc = buildMockMvc();
+
+        // 1. Login admin → MockHttpSession
+        MvcResult login = mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", "admin")
+                        .param("password", "IntegrationTestAdminPass1!"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) login.getRequest().getSession(false);
+
+        // 2. Toutes les requêtes suivantes : .session(session)
+        mvc.perform(get("/api/mon-entite").session(session))
+                .andExpect(status().isOk());
+
+        // 3. Vérif directe en DB via le repository (pas un mock)
+        assertThat(repository.findById(id)).isPresent();
     }
 }
 ```
 
-Profil `test` : `application-test.properties` avec H2 + `spring.jpa.hibernate.ddl-auto=create-drop`.
+#### ⚠ Pièges à éviter (rencontrés en vrai)
+
+1. **`MockMvc` standard ne fait pas suivre les cookies de session.**
+   ❌ `loginResult.getResponse().getCookie("JSESSIONID")` → toujours `null`.
+   ✅ Récupérer la session via `loginResult.getRequest().getSession(false)` et la passer aux requêtes suivantes via `.session(session)`. C'est la `MockHttpSession` créée par Spring Security qui porte l'authentification.
+
+2. **`@AutoConfigureMockMvc` n'active pas `springSecurity()` sur la chaîne de filtres MockMvc.**
+   ❌ Le login retournera 200 mais la session n'aura pas de `SecurityContext`.
+   ✅ Construire MockMvc manuellement : `MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build()`.
+
+3. **SQLite in-memory simple = une DB par connexion.**
+   ❌ `jdbc:sqlite::memory:` → chaque connexion Hikari voit une DB vide.
+   ✅ `jdbc:sqlite:file::memory:?cache=shared` + `maximum-pool-size=1` (cohérent avec la prod SQLite).
+
+4. **`ddl-auto=create-drop` ne reproduit pas exactement le schéma de production.**
+   Les tests d'intégration valident la chaîne, **pas** la fidélité du schéma. Pour valider une migration SQLite spécifique, le scénario reste manuel ou demande un test dédié.
+
+5. **`@Transactional` sur la classe de test rollback **toutes** les écritures.**
+   ❌ Sur un test qui fait login (création de session) + CRUD, les inserts seront rollback avant la requête suivante → 401 ou liste vide intempestive.
+   ✅ Préférer `@DirtiesContext(classMode = AFTER_CLASS)` qui détruit le contexte (et donc la DB in-memory) une fois la classe terminée.
+
+6. **Brute-force protection bloque les tests qui enchaînent des login.**
+   ❌ Sans config, les tentatives répétées (même réussies) entrent dans le compteur.
+   ✅ Désactiver dans `application-integration.properties` : `security.login.max-attempts=999`, `base-lock-minutes=0`, `max-lock-minutes=0`.
+
+#### Couverture attendue par test
+
+Au minimum dans un test d'intégration de module CRUD :
+1. **401** sans authentification
+2. **Login** réel (form-urlencoded `username` + `password`)
+3. **Liste vide** au démarrage (DB fraîche)
+4. **POST** création + vérif en DB via repository
+5. **GET** liste après création (1 élément)
+6. **PUT** modification + vérif en DB
+7. **400** validation Bean Validation (Spring Boot pipeline complet)
+8. **DELETE** suppression + vérif en DB que l'entité est partie
+9. **Logout** (optionnel mais bonne hygiène)
 
 ### 9.8 Checklist tests backend
 
@@ -747,7 +814,7 @@ Profil `test` : `application-test.properties` avec H2 + `spring.jpa.hibernate.dd
 - [ ] Pour 3+ cas similaires sur une même méthode → utiliser `@ParameterizedTest`
 - [ ] Méthode > 40 lignes → extraire fixtures vers `@BeforeEach` ou helper
 - [ ] Avant commit : `./mvnw test` BUILD SUCCESS + branch coverage ≥ 70 % sur les nouvelles classes (vérifier dans `target/site/jacoco/`)
-- [ ] Module critique sans test d'intégration → en ajouter 1 (`@SpringBootTest` + H2)
+- [ ] Module critique sans test d'intégration → en ajouter 1 (cf. section 9.7, modèle : `OtherIncomeIntegrationTest`)
 
 ---
 
