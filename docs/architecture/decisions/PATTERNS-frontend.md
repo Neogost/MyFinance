@@ -442,20 +442,23 @@ Cette hiérarchie suit la philosophie Testing Library — privilégier ce que l'
 
 ### 8.2 Convention `data-testid` + `aria-label`
 
-Pour tout **bouton d'action répété** (lignes de tableau, items de liste, en-tête multi-actions), ajouter sur le composant production **les deux attributs en parallèle** :
+Pour tout **bouton d'action répété** (lignes de tableau, items de liste, en-tête multi-actions où le même texte apparaît plusieurs fois) :
 
 ```jsx
 <button
   onClick={...}
-  data-testid="add-instrument-button"   // ← cible test stable
-  aria-label="Ajouter un instrument"    // ← lecteurs d'écran distinguent les deux boutons "+ Ajouter"
+  data-testid={`edit-debt-${debt.id}`}                  // ← cible test unique
+  aria-label={`Modifier la dette ${debt.label}`}        // ← lecteurs d'écran distinguent les boutons identiques
   className="..."
 >
-  + Ajouter
+  Modifier
 </button>
 ```
 
-Convention de nommage `data-testid` : `<entité>-<action>-<élément>` en kebab-case (ex : `add-instrument-button`, `delete-debt-row`, `edit-position-link`).
+**⚠ N'ajouter `aria-label` que si le texte visible est ambigu.** L'`aria-label` **écrase** le nom accessible naturel — un test `getByRole('button', { name: 'Annuler' })` casse si on ajoute `aria-label="Annuler la suppression"`. Pour un bouton dont le texte est unique dans son contexte (ex : seul bouton "Annuler" d'une modale), n'ajouter qu'un `data-testid` sans `aria-label`.
+
+Convention de nommage `data-testid` : `<action>-<entité>[-<id>]` en kebab-case.
+Exemples : `add-instrument-button`, `edit-debt-${id}`, `delete-confirm-submit-button`, `toggle-amortization-${id}`.
 
 ### 8.3 Mock de la couche API
 

@@ -144,9 +144,9 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('ouvre le formulaire de création au clic sur "+ Ajouter"', async () => {
     mockFetchAll([])
     render(<DettePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-debt-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-debt-button'))
 
     expect(screen.getByTestId('debt-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('create')
@@ -155,9 +155,9 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('ouvre le formulaire d\'édition au clic sur "Modifier"', async () => {
     mockFetchAll()
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-debt-${DEBTS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-debt-${DEBTS[0].id}`))
 
     expect(screen.getByTestId('debt-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('edit')
@@ -166,9 +166,9 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('ferme le formulaire au clic sur Annuler', async () => {
     mockFetchAll([])
     render(<DettePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-debt-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-debt-button'))
     fireEvent.click(screen.getByTestId('form-cancel'))
 
     expect(screen.queryByTestId('debt-form')).not.toBeInTheDocument()
@@ -182,9 +182,9 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
     getDebts.mockResolvedValue([])
 
     render(<DettePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-debt-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-debt-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -201,9 +201,9 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
     getDebts.mockResolvedValue(DEBTS)
 
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-debt-${DEBTS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-debt-${DEBTS[0].id}`))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -217,13 +217,12 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('ouvre la DeleteConfirmModal au clic sur "Supprimer"', async () => {
     mockFetchAll()
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-debt-${DEBTS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
+    fireEvent.click(screen.getByTestId(`delete-debt-${DEBTS[0].id}`))
 
-    // La DeleteConfirmModal affiche "Supprimer définitivement" (pas confirm() natif)
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    // Le titre de la modal contient le label de la dette (peut être en double avec la liste)
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    // Le titre de la modal contient le label de la dette
     expect(screen.getAllByText(/Crédit appartement/).length).toBeGreaterThanOrEqual(1)
   })
 
@@ -234,10 +233,10 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
     getDebtsSummary.mockResolvedValue(SUMMARY)
 
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-debt-${DEBTS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    fireEvent.click(screen.getByText('Supprimer définitivement'))
+    fireEvent.click(screen.getByTestId(`delete-debt-${DEBTS[0].id}`))
+    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
 
     await waitFor(() => {
       expect(deleteDebt).toHaveBeenCalledWith(DEBTS[0].id)
@@ -248,15 +247,15 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('annule la suppression au clic sur "Annuler" dans la modal', async () => {
     mockFetchAll()
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-debt-${DEBTS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId(`delete-debt-${DEBTS[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByText('Annuler'))
+    fireEvent.click(screen.getByTestId('delete-confirm-cancel-button'))
 
     expect(deleteDebt).not.toHaveBeenCalled()
-    expect(screen.queryByText('Supprimer définitivement')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument()
   })
 
   // ── Filtrage ──────────────────────────────────────────────────────────────
@@ -290,14 +289,14 @@ describe('DettePage — pattern CRUD avec DeleteConfirmModal', () => {
   it('affiche/masque le tableau d\'amortissement au clic', async () => {
     mockFetchAll()
     render(<DettePage />)
-    await waitFor(() => expect(screen.getAllByText(/Tableau d'amortissement/)[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`toggle-amortization-${DEBTS[0].id}`)).toBeInTheDocument())
 
     expect(screen.queryByText('12 prochains mois')).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getAllByText(/Tableau d'amortissement/)[0])
+    fireEvent.click(screen.getByTestId(`toggle-amortization-${DEBTS[0].id}`))
     expect(screen.getByText('12 prochains mois')).toBeInTheDocument()
 
-    fireEvent.click(screen.getAllByText(/Tableau d'amortissement/)[0])
+    fireEvent.click(screen.getByTestId(`toggle-amortization-${DEBTS[0].id}`))
     expect(screen.queryByText('12 prochains mois')).not.toBeInTheDocument()
   })
 })

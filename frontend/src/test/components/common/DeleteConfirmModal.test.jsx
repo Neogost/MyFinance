@@ -65,9 +65,8 @@ describe('DeleteConfirmModal', () => {
 
   it('appelle onCancel au clic sur le backdrop', () => {
     const onCancel = vi.fn()
-    const { container } = render(<DeleteConfirmModal {...base} onCancel={onCancel} />)
-    const backdrop = container.querySelector('.bg-black\\/40')
-    fireEvent.click(backdrop)
+    render(<DeleteConfirmModal {...base} onCancel={onCancel} />)
+    fireEvent.click(screen.getByTestId('delete-confirm-backdrop'))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 

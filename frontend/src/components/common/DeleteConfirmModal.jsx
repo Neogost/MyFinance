@@ -1,7 +1,7 @@
 export default function DeleteConfirmModal({ title, description, warnings = [], onConfirm, onCancel, loading = false }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60" onClick={onCancel}>
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-6 z-10" onClick={e => e.stopPropagation()}>
+    <div data-testid="delete-confirm-backdrop" className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-60" onClick={onCancel}>
+      <div data-testid="delete-confirm-modal" className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-6 z-10" onClick={e => e.stopPropagation()}>
         <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
         {description && <p className="text-sm text-gray-500 mb-4">{description}</p>}
 
@@ -23,6 +23,7 @@ export default function DeleteConfirmModal({ title, description, warnings = [], 
           <button
             onClick={onCancel}
             disabled={loading}
+            data-testid="delete-confirm-cancel-button"
             className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg text-gray-600 hover:border-gray-400 transition"
           >
             Annuler
@@ -30,6 +31,7 @@ export default function DeleteConfirmModal({ title, description, warnings = [], 
           <button
             onClick={onConfirm}
             disabled={loading}
+            data-testid="delete-confirm-submit-button"
             className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50"
           >
             {loading ? 'Suppression…' : 'Supprimer définitivement'}

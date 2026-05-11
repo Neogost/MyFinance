@@ -227,6 +227,8 @@ function DebtRow({ debt, onEdit, onDelete, onUpdated }) {
         <div className="flex gap-2 mt-3 flex-wrap">
           <button
             onClick={() => setShowSchedule(v => !v)}
+            data-testid={`toggle-amortization-${debt.id}`}
+            aria-label={`${showSchedule ? 'Masquer' : 'Afficher'} le tableau d'amortissement de ${debt.label}`}
             className={`px-3 py-1 rounded-md text-xs transition border ${showSchedule ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600'}`}
           >
             {showSchedule ? '▲' : '▼'} Tableau d'amortissement
@@ -239,10 +241,14 @@ function DebtRow({ debt, onEdit, onDelete, onUpdated }) {
           </button>
           <div className="ml-auto flex gap-2">
             <button onClick={() => onEdit(debt)}
+              data-testid={`edit-debt-${debt.id}`}
+              aria-label={`Modifier la dette ${debt.label}`}
               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
               Modifier
             </button>
             <button onClick={() => onDelete(debt)}
+              data-testid={`delete-debt-${debt.id}`}
+              aria-label={`Supprimer la dette ${debt.label}`}
               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition">
               Supprimer
             </button>
@@ -311,6 +317,8 @@ export default function DettePage() {
         <h2 className="text-xl font-bold text-gray-900">Dettes & Emprunts</h2>
         <button
           onClick={() => { trackEvent('BUTTON_CLICK', 'debts.debt.open_form'); setFormTarget(null) }}
+          data-testid="add-debt-button"
+          aria-label="Ajouter une dette"
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter
