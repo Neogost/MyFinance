@@ -2,30 +2,18 @@
 
 Application web personnelle de gestion financière, hébergée sur NAS QNAP en réseau local.
 
-## Fonctionnalités
+## Modules
 
-| Domaine | Statut | Description |
-|---------|--------|-------------|
-| Authentification | ✅ | Login/logout session cookie, anti brute-force, historique des connexions |
-| Gestion des utilisateurs | ✅ | CRUD complet (admin), rôles ADMIN / USER, regroupement familial |
-| Revenus salariaux | ✅ | Contrats, projections super brut/net/mensuel, bulletins de paie, révisions salariales, primes, avantages en nature, astreintes/gardes |
-| Revenus complémentaires | ✅ | Locatif, dividendes, aides sociales, autres |
-| Dépenses récurrentes | ✅ | 9 catégories, fréquence mensuelle/annuelle, colocation, capacité d'épargne |
-| Patrimoine | ✅ | Positions, ordres, instruments (BOURSE/CRYPTO/IMMO/LIVRET…), taux de change, relevés, objectifs par catégorie |
-| Passifs | ✅ | Grandes possessions avec décote automatique par catégorie |
-| Dettes | ✅ | Amortissement automatique, suivi manuel du capital restant, tableau d'échéances |
-| Scoring patrimonial | ✅ | Score 0–105 pts en 6 axes, profil FRAGILE→OPTIMISE, widget tableau de bord |
-| Simulateur d'impôts | ✅ | IRPP avec revenus salariaux + complémentaires + astreintes |
-| Simulateur d'emprunt | ✅ | Calcul mensualités, coût total, tableau d'amortissement, section investissement locatif |
-| Simulateur de crédit Lombard | ✅ | Capacité d'emprunt selon LTV (3 scénarios + custom), effet de levier, sensibilité aux taux, stress test couplé |
-| Comparateur d'enveloppes fiscales | ✅ | PEA / CTO / Assurance-vie / PER — capital net après impôts, rendements différenciés, tooltips pédagogiques |
-| Simulateur retraite | ✅ | Régime Général (CNAV) + Agirc-Arrco + CNRACL/RAFP, comparaison 4 âges, bloc PER, tooltips pédagogiques |
-| Simulateur de crise | ✅ | Impact d'un choc de marché sur le patrimoine net (actifs, possessions, dettes) |
-| Simulateur d'intérêts composés | ✅ | Projection d'épargne avec versements périodiques et rendement cible |
-| Bilan financier | ✅ | Actif/passif, ratio de couverture patrimoniale, projection FIRE |
-| Déclaration de patrimoine | ✅ | Synthèse complète exportable en PDF (via impression navigateur) |
-| Tableau de bord | ✅ | Évolution patrimoine, widget FIRE, scoring, dettes, objectifs (Recharts) |
-| Mise à jour des cours | ✅ | Scheduler automatique mensuel (Boursorama + CoinGecko + ECB) + déclenchement manuel admin |
+- **Authentification & utilisateurs** — session cookie, anti brute-force, historique des connexions, regroupement familial
+- **Revenus** — contrats salariaux (privé + fonction publique), bulletins, primes, avantages, revenus complémentaires
+- **Dépenses & dettes** — dépenses récurrentes, budgets, calendrier des abonnements, dettes avec amortissement, grandes possessions
+- **Patrimoine** — positions / ordres (BOURSE, CRYPTO, IMMO, LIVRET, LIQUIDITE), allocations géo/sectorielles, snapshots, scoring 6 axes, fiscalité crypto (formulaire 2086)
+- **Outils** — simulateurs d'impôts, d'emprunt, de crédit Lombard, d'enveloppes fiscales, de retraite, de crise, d'intérêts composés, bilan financier, déclaration de patrimoine
+- **Tableau de bord & gamification** — widgets personnalisables (FIRE, scoring, dettes, cash flow Sankey, prochains prélèvements), 67 hauts faits débloquables
+- **Plateforme** — mode nuit, masquage des valeurs, PWA, pages d'erreur, analytics opt-in
+
+> **Détail exhaustif des features** (avec contexte technique) : [`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)
+> **Architecture** : [`docs/architecture/overview.md`](docs/architecture/overview.md)
 
 ## Stack technique
 

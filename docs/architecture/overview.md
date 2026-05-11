@@ -59,6 +59,8 @@ mindmap
         Répartition colocation (sharePercentage)
         Budgets par catégorie
         Capacité d'épargne
+        Calendrier des abonnements (vue grille + timeline mois)
+        Jour de prélèvement (paymentDay)
     Passifs
         Véhicule
         Informatique
@@ -87,6 +89,7 @@ mindmap
         Stratégie et objectifs par catégorie
         Scoring patrimonial
         Positionnement INSEE par décile
+        Fiscalité crypto (formulaire 2086)
     Outils
         Simulateur d'impôts IRPP
         Bilan financier personnel
@@ -97,6 +100,12 @@ mindmap
         Simulateur retraite (CNAV · Agirc-Arrco · CNRACL)
         Déclaration de patrimoine
         Simulateur de crise
+        Référentiel fiscal (barème kilométrique)
+    Hauts faits (gamification)
+        67 badges (V1 + V2 Trivial / Faible / Moyen / Plus lourd)
+        Évaluation déclenchée + batch nocturne
+        Badges secrets (easter eggs)
+        Indicateur "nouveaux" dans la navigation
     Administration
         Gestion des utilisateurs
         Demandes d'inscription
@@ -108,9 +117,13 @@ mindmap
         Gestion des groupes familiaux
         Mise à jour automatique des cours (scheduler)
         Version de l'application
-    Interface
+        Analytics (engagement, parcours, erreurs frontend)
+    Plateforme
         Mode nuit (dark mode)
         Masquage des valeurs
+        PWA (manifest, installation mobile)
+        Pages d'erreur HTTP (3xx / 4xx / 5xx + ErrorBoundary)
+        Tracking analytics (opt-out utilisateur)
 ```
 
 ---
@@ -180,7 +193,14 @@ Tout revenu hors salariat (locatif, dividendes, aides sociales, autre), utilisé
 
 ### 3.5 Dépenses récurrentes
 
-Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. Répartition en pourcentage pour les dépenses partagées (colocation). Budgets mensuels cibles par catégorie. La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
+Saisie des charges fixes ou périodiques en fréquence mensuelle ou annuelle. Répartition en pourcentage pour les dépenses partagées (colocation). Budgets mensuels cibles par catégorie (`/api/expense-budgets`). Champ optionnel `paymentDay` (1–28) pour situer la dépense dans le mois. La synthèse calcule la **capacité d'épargne mensuelle** (revenus nets − total dépenses).
+
+#### Calendrier des abonnements
+
+Visualisation dédiée des dépenses ayant un `paymentDay` renseigné, sous deux formes :
+- **Vue grille** : matrice jour × catégorie pour repérer les pics de prélèvement
+- **Vue timeline** : chronologie du mois avec montants cumulés par jour
+Aussi affichée comme widget compact "Prochains prélèvements" sur le tableau de bord.
 
 | Documentation | Lien |
 |---------------|------|
@@ -229,6 +249,10 @@ Objectifs cibles par catégorie persistés en base (`PatrimoineTarget`). Barres 
 #### Scoring patrimonial
 
 Score de cohérence calculé en 6 axes (Diversification, Matelas, Endettement, Épargne, Âge/risque, Progression) + bonus objectifs. Maximum 105 points. Profils : FRAGILE / PRUDENT / EQUILIBRE / DYNAMIQUE / OPTIMISE.
+
+#### Fiscalité crypto (formulaire 2086)
+
+Génération du formulaire fiscal annuel pour les cessions de crypto-actifs en France. Calcul automatique du **PTA** (prix total d'acquisition) et de la **valorisation portefeuille à la cession** ligne par ligne (méthode du formulaire 2086). Synthèse annuelle (cessions, plus-value nette, impôt PFU 30 % ou barème selon TMI). Confirmation par l'utilisateur de la complétude de l'historique crypto avant export. Export CSV téléchargeable. Endpoints : `GET /api/crypto-tax/{state,summary,cessions,form-2086.csv}` + `PUT /historical-data-confirmation`.
 
 | Documentation | Lien |
 |---------------|------|
@@ -279,6 +303,12 @@ Document officiel exportable en PDF synthétisant l'identité civile, le patrimo
 Applique les taux de chute historiques de crises majeures (2008, dot-com, COVID, 2022) au patrimoine actuel. Montre l'impact par catégorie, la couverture du matelas de sécurité post-crise et une estimation du temps de récupération selon le taux d'épargne.
 
 → [`docs/architecture/tools/crisis-simulator.md`](tools/crisis-simulator.md)
+
+#### Référentiel fiscal (barème kilométrique)
+
+Endpoint `GET /api/fiscal/bareme-kilometrique` exposant le barème officiel français en vigueur pour calculer les frais réels de déplacement (voitures). Réutilisable côté frontend depuis n'importe quel module concerné par les frais réels.
+
+→ API : [`docs/api/fiscal-referentiel.md`](../api/fiscal-referentiel.md)
 
 #### Simulateur de crédit Lombard
 
@@ -338,9 +368,30 @@ Consultation et modération des groupes familiaux (dissolution, retrait de membr
 
 ---
 
-### 3.10 Préférences d'interface
+### 3.10 Hauts faits (gamification)
 
-Deux préférences utilisateur persistées dans `localStorage`, activables depuis la barre de navigation (desktop et mobile).
+Système de **67 badges** déclinés en plusieurs sensibilités (Trivial / Faible / Moyen / Plus lourd) et axes (patrimonial, comportemental, exploratoire). Chaque badge est défini par un code, un emoji, une description et — pour les badges à paliers — jusqu'à 5 niveaux (Bronze à Diamant). Évaluation déclenchée à la demande lors de l'affichage de la page (transaction unique) et batch nocturne pour tous les utilisateurs. Indicateur de "nouveaux badges" dans la navigation (compteur depuis `lastAchievementSeenAt`). Badges secrets (easter eggs) masqués tant que non débloqués.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/achievements.md`](achievements.md) |
+| API | [`docs/api/achievements.md`](../api/achievements.md) |
+
+---
+
+### 3.11 Analytics & observabilité
+
+Tracking unifié comportement utilisateur + santé technique. Trois types d'événements : `PAGE_VIEW`, `FEATURE_USE`, `BUTTON_CLICK`, `FORM_SUBMIT`. Whitelist stricte sur les `metadata` (jamais de donnée financière). Opt-out utilisateur configurable (`PUT /api/profile/analytics-opt-out`). Côté admin : KPIs d'engagement, retention, top events, timeline, parcours par session, erreurs frontend groupées par fingerprint, dashboard santé. Purge des données antérieures à N jours.
+
+| Documentation | Lien |
+|---------------|------|
+| Architecture | [`docs/architecture/analytics.md`](analytics.md) |
+
+---
+
+### 3.12 Plateforme (UI, PWA, robustesse)
+
+Préférences utilisateur, installabilité PWA et gestion d'erreurs côté client.
 
 #### Mode nuit
 
@@ -349,6 +400,14 @@ Bascule l'ensemble de l'interface en thème sombre via une classe `dark` posée 
 #### Masquage des valeurs
 
 Classe `hide-values` sur le conteneur principal. Tous les éléments portant la classe `.amount` passent en `blur(6px)`, révélables au survol. Utilisé pour dissimuler les données financières à l'écran sans déconnecter.
+
+#### PWA (Progressive Web App)
+
+`manifest.json` permet l'installation de MyFinance comme application sur mobile (iOS / Android) et desktop. Icônes, nom court, couleurs de splash configurés pour s'aligner avec l'identité visuelle.
+
+#### Pages d'erreur HTTP
+
+Composant générique `ErrorPage` couvrant les familles 3xx / 4xx / 5xx avec icône, code, description et boutons d'action contextuels (Réessayer / Retour tableau de bord). Mode plein écran (`fullPage`) ou inline. Utilisé par `ErrorBoundary` (React error boundary) pour capturer toute exception non gérée et afficher une page d'erreur 500 propre au lieu d'un écran blanc.
 
 ---
 
@@ -365,44 +424,11 @@ Les décisions techniques structurantes sont documentées dans [`docs/architectu
 
 ---
 
-## 5. Statut des fonctionnalités
+## 5. Statut
 
-| Fonctionnalité | Statut |
-|----------------|--------|
-| Authentification (session cookie, BCrypt, login/logout/me, password change) | Implémenté |
-| Protection brute-force (blocage exponentiel, historique des connexions) | Implémenté |
-| Demandes d'inscription (public → validation ADMIN) | Implémenté |
-| Gestion des utilisateurs CRUD (ADMIN) | Implémenté |
-| Profil utilisateur (informations personnelles, profil fiscal, frais réels détaillés) | Implémenté |
-| Matelas de sécurité (FIXED_AMOUNT / MONTHS_EXPENSES / MONTHS_SALARY) | Implémenté |
-| Regroupement familial (invitations, mode foyer, modération admin) | Implémenté |
-| Tableau de bord (évolution salariale, patrimoine, FIRE, dettes, scoring) | Implémenté |
-| Contrats salariaux (projections 4 niveaux, révisions, bulletins, primes, avantages, astreintes) | Implémenté |
-| Contrats fonction publique (indice majoré, cotisations CNRACL, formulaire 2-step, révisions par indice) | Implémenté |
-| Revenus complémentaires (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE) | Implémenté |
-| Dépenses récurrentes (9 catégories, colocation, budgets) | Implémenté |
-| Passifs / possessions (7 catégories, décote automatique, override) | Implémenté |
-| Dettes (5 types, amortissement, override manuel, historique) | Implémenté |
-| Patrimoine — positions et ordres (6 catégories, 8 types d'ordres) | Implémenté |
-| Patrimoine — allocations géographiques et sectorielles | Implémenté |
-| Patrimoine — taux de change (ADMIN) | Implémenté |
-| Patrimoine — snapshots utilisateur et admin | Implémenté |
-| Patrimoine — stratégie & objectifs par catégorie | Implémenté |
-| Patrimoine — scoring (6 axes, 105 pts max) | Implémenté |
-| Patrimoine — positionnement INSEE par décile | Implémenté |
-| Mise à jour automatique des cours (Boursorama, CoinGecko, Frankfurter) | Implémenté |
-| Simulateur d'impôts IRPP | Implémenté |
-| Référentiel fiscal (barème kilométrique) | Implémenté |
-| Bilan financier personnel | Implémenté |
-| Simulateur d'intérêts composés | Implémenté |
-| Simulateur d'emprunt immobilier | Implémenté |
-| Déclaration de patrimoine (PDF) | Implémenté |
-| Simulateur de crise | Implémenté |
-| Simulateur de crédit Lombard (LTV, levier, stress test, sensibilité taux) | Implémenté |
-| Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER, rendements différenciés, tooltips) | Implémenté |
-| Simulateur retraite (CNAV, Agirc-Arrco, CNRACL/RAFP, comparaison âges, bloc PER, tooltips) | Implémenté |
-| Déploiement Docker (NAS QNAP, reverse proxy HTTPS) | Implémenté |
-| Simulations d'emprunt sauvegardées en base (GET/POST/DELETE `/api/loan-simulations`) | Implémenté |
-| Mode nuit (dark mode, `localStorage` + `prefers-color-scheme`) | Implémenté |
-| Masquage des valeurs financières (blur, révélable au survol) | Implémenté |
-| Performance patrimoniale (TWR / MWR, page dédiée) | Implémenté — ADMIN only, en travaux |
+✅ **V1.8 en production** sur NAS QNAP via Docker (HTTPS via reverse proxy myQNAPcloud).
+
+🚧 **En cours / restrictions actuelles** :
+- **Performance patrimoniale (TWR / MWR)** — page livrée mais restreinte au rôle ADMIN tant que les limites structurelles (catégorie mutable rétroactivement, granularité mensuelle, frais non tracés) ne sont pas levées. Bandeau "🚧 Fonctionnalité en cours de développement" visible en permanence.
+
+> **Détail exhaustif feature par feature** (avec contexte d'implémentation, dates, migrations, tests) : [`docs/PROJECT-STATUS.md`](../PROJECT-STATUS.md)
