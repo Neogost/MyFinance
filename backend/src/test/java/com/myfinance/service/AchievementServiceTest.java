@@ -1255,6 +1255,529 @@ class AchievementServiceTest {
                 .contains(AchievementCode.LE_CHASSEUR);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Lot 3 — eval méthodes complexes (drawdown, FIRE, immo LTV, score, etc.)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── evalPhenix : drawdown -20% puis recovery à 95% ATH ───────────────────
+
+    @Test
+    void evalPhenix_drawdownPlusRecovery_debloque() {
+        user.setAllTimeHighEur(new BigDecimal("100000"));
+        AchievementDefinition def = unique(AchievementCode.PHENIX);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(
+                        snapshot(96_000),    // courant : ≥95% ATH ✓
+                        snapshot(75_000),    // a déjà été <80% ATH ✓
+                        snapshot(90_000)));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void evalPhenix_jamaisEnDrawdownSignificatif_pasDeDeblocage() {
+        user.setAllTimeHighEur(new BigDecimal("100000"));
+        AchievementDefinition def = unique(AchievementCode.PHENIX);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshot(96_000), snapshot(94_000)));  // jamais <80k
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void evalPhenix_sansATH_pasDeDeblocage() {
+        AchievementDefinition def = unique(AchievementCode.PHENIX);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalDecollage : multiplier vs initial ────────────────────────────────
+
+    @Test
+    void evalDecollage_patrimoineTriple_debloqueArgent() {
+        user.setInitialNetWorthEur(new BigDecimal("10000"));
+        AchievementDefinition def = paliers(AchievementCode.DECOLLAGE,
+                AchievementLevel.of(1, "Bronze", "🥉", 2),
+                AchievementLevel.of(2, "Argent", "🥈", 3),
+                AchievementLevel.of(3, "Or", "🥇", 10));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshot(30_000)));  // ×3 → Argent
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(2);  // Bronze + Argent
+    }
+
+    @Test
+    void evalDecollage_sansInitialNetWorth_pasDeDeblocage() {
+        AchievementDefinition def = paliers(AchievementCode.DECOLLAGE,
+                AchievementLevel.of(1, "Bronze", "🥉", 2));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of(snapshot(100_000)));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalScoreMaximal : score patrimonial ─────────────────────────────────
+
+    @Test
+    void evalScoreMaximal_score95_debloqueBronze() {
+        AchievementDefinition def = paliers(AchievementCode.SCORE_MAXIMAL,
+                AchievementLevel.of(1, "Bronze", "🥉", 90),
+                AchievementLevel.of(2, "Argent", "🥈", 100));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(scoreService.computeScore(user))
+                .thenReturn(new com.myfinance.dto.PatrimoineScoreDto(
+                        95, 105, "Expert", null, null, List.of()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);  // Bronze (95 ≥ 90, < 100)
+    }
+
+    // ── evalGlobeTrotter : nb pays distincts via allocation ──────────────────
+
+    @Test
+    void evalGlobeTrotter_troisPaysDistincts_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.GLOBE_TROTTER,
+                AchievementLevel.of(1, "Bronze", "🥉", 3));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        Instrument instr = Instrument.builder().id(1L).build();
+        when(positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE))
+                .thenReturn(List.of(Position.builder().instrument(instr).build()));
+        when(allocationRepo.findByInstrumentInOrderByPercentageDesc(any()))
+                .thenReturn(List.of(
+                        InstrumentAllocation.builder().country("USA").build(),
+                        InstrumentAllocation.builder().country("Japan").build(),
+                        InstrumentAllocation.builder().country("Germany").build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void evalGlobeTrotter_aucunInstrument_pasDeDeblocage() {
+        AchievementDefinition def = paliers(AchievementCode.GLOBE_TROTTER,
+                AchievementLevel.of(1, "Bronze", "🥉", 3));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE))
+                .thenReturn(List.of(Position.builder().instrument(null).build()));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalInterSectoriel : nb secteurs distincts ───────────────────────────
+
+    @Test
+    void evalInterSectoriel_quatreSecteurs_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.L_INTER_SECTORIEL,
+                AchievementLevel.of(1, "Bronze", "🥉", 3));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        Instrument instr = Instrument.builder().id(1L).build();
+        when(positionRepo.findByUserAndStatusOrderByCreatedAtDesc(user, PositionStatus.ACTIVE))
+                .thenReturn(List.of(Position.builder().instrument(instr).build()));
+        when(sectorAllocationRepo.findByInstrumentInOrderByPercentageDesc(any()))
+                .thenReturn(List.of(
+                        InstrumentSectorAllocation.builder().sector("Tech").build(),
+                        InstrumentSectorAllocation.builder().sector("Finance").build(),
+                        InstrumentSectorAllocation.builder().sector("Energy").build(),
+                        InstrumentSectorAllocation.builder().sector("Health").build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    // ── evalDcaMaster : mois consécutifs d'achats BOURSE/CRYPTO ─────────────
+
+    @Test
+    void evalDcaMaster_quatreMoisConsecutifs_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.DCA_MASTER,
+                AchievementLevel.of(1, "Bronze", "🥉", 3));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        java.time.YearMonth current = java.time.YearMonth.now();
+        when(orderRepo.findBuyDatesForBourseOrCrypto(user))
+                .thenReturn(List.of(
+                        current.atDay(15),
+                        current.minusMonths(1).atDay(10),
+                        current.minusMonths(2).atDay(5),
+                        current.minusMonths(3).atDay(20)));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    // ── evalRetour : 30+ jours entre 2 logins ────────────────────────────────
+
+    @Test
+    void evalRetour_30JoursDInactivite_debloque() {
+        AchievementDefinition def = unique(AchievementCode.LE_RETOUR);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        LocalDate today = LocalDate.now();
+        when(loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin()))
+                .thenReturn(List.of(
+                        loginAt(today),
+                        loginAt(today.minusDays(45))));  // 45 jours d'écart
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void evalRetour_loginsRapproches_pasDeDeblocage() {
+        AchievementDefinition def = unique(AchievementCode.LE_RETOUR);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        LocalDate today = LocalDate.now();
+        when(loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin()))
+                .thenReturn(List.of(loginAt(today), loginAt(today.minusDays(5))));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalFidele : 12 mois consécutifs de logins ───────────────────────────
+
+    @Test
+    void evalFidele_12MoisConsecutifs_debloque() {
+        AchievementDefinition def = unique(AchievementCode.LE_FIDELE);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        LocalDate today = LocalDate.now();
+        // Login dans chacun des 12 derniers mois
+        List<LoginEvent> events = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            events.add(loginAt(today.minusMonths(i)));
+        }
+        when(loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin())).thenReturn(events);
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void evalFidele_unMoisManque_pasDeDeblocage() {
+        AchievementDefinition def = unique(AchievementCode.LE_FIDELE);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        LocalDate today = LocalDate.now();
+        List<LoginEvent> events = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            if (i == 5) continue;  // mois -5 manquant
+            events.add(loginAt(today.minusMonths(i)));
+        }
+        when(loginRepo.findSuccessfulByLoginOrderByTimestampDesc(user.getLogin())).thenReturn(events);
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalAnnaliste : années consécutives avec snapshot ────────────────────
+
+    @Test
+    void evalAnnaliste_troisAnneesConsecutives_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.L_ANNALISTE,
+                AchievementLevel.of(1, "Bronze", "🥉", 3));
+        when(catalog.all()).thenReturn(List.of(def));
+        int currentYear = LocalDate.now().getYear();
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(
+                        snapshotWithDate(50_000, LocalDate.of(currentYear, 6, 1)),
+                        snapshotWithDate(45_000, LocalDate.of(currentYear - 1, 6, 1)),
+                        snapshotWithDate(40_000, LocalDate.of(currentYear - 2, 6, 1))));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    // ── evalForteresseSécurité : matelas atteint via LIQUIDITE + LIVRET ──────
+
+    @Test
+    void evalForteresseSecurite_matelasAtteint_debloque() {
+        user.setSafetyNetMode(SafetyNetMode.FIXED_AMOUNT);
+        user.setSafetyNetAmount(5000.0);
+        AchievementDefinition def = unique(AchievementCode.FORTERESSE_SECURITE);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .totalCurrentValueEur(new BigDecimal("8000"))
+                .positionSnapshots(new ArrayList<>(List.of(
+                        PositionSnapshot.builder()
+                                .position(Position.builder().category(AssetCategory.LIQUIDITE).build())
+                                .currentValueEur(new BigDecimal("3000")).build(),
+                        PositionSnapshot.builder()
+                                .position(Position.builder().category(AssetCategory.LIVRET).build())
+                                .currentValueEur(new BigDecimal("3000")).build())))
+                .build();
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snap, snap, snap));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);  // 6000 liquide ≥ 5000 target
+    }
+
+    @Test
+    void evalForteresseSecurite_sansSafetyNetMode_pasDeDeblocage() {
+        AchievementDefinition def = unique(AchievementCode.FORTERESSE_SECURITE);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshotWithCategory(10_000, AssetCategory.LIQUIDITE, LocalDate.now())));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalDesendet : ratio dette/patrimoine ────────────────────────────────
+
+    @Test
+    void evalDesendet_aucuneDette_debloqueNiveauMax() {
+        AchievementDefinition def = paliers(AchievementCode.LE_DESENDET,
+                AchievementLevel.of(1, "Bronze", "🥉", 70),
+                AchievementLevel.of(2, "Argent", "🥈", 85),
+                AchievementLevel.of(3, "Or", "🥇", 95));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshot(100_000)));
+        when(debtRepo.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(3);  // niveaux 1-3 (= def.levels().size())
+    }
+
+    @Test
+    void evalDesendet_ratio20Pct_inverseRatio80_debloqueBronze() {
+        AchievementDefinition def = paliers(AchievementCode.LE_DESENDET,
+                AchievementLevel.of(1, "Bronze", "🥉", 70),  // dette < 30%
+                AchievementLevel.of(2, "Argent", "🥈", 85),  // dette < 15%
+                AchievementLevel.of(3, "Or", "🥇", 95));     // dette < 5%
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshot(100_000)));
+        when(debtRepo.findByUserOrderByTypeAscLabelAsc(user))
+                .thenReturn(List.of(Debt.builder().initialCapital(new BigDecimal("20000")).build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);  // inverseRatio = 80 → Bronze (≥70, <85)
+    }
+
+    // ── evalBouclier : mois de dépenses couverts par liquidités ──────────────
+
+    @Test
+    void evalBouclier_sixMoisCouverts_debloqueArgent() {
+        AchievementDefinition def = paliers(AchievementCode.LE_BOUCLIER,
+                AchievementLevel.of(1, "Bronze", "🥉", 3),
+                AchievementLevel.of(2, "Argent", "🥈", 6));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshotWithCategory(12_000, AssetCategory.LIQUIDITE, LocalDate.now())));
+        when(expenseRepo.findByUserOrderByCategoryAscLabelAsc(user)).thenReturn(List.of(
+                RecurringExpense.builder().amount(2000f).frequency(FrequencyEnum.MONTHLY).build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(2);  // 12000 / 2000 = 6 mois
+    }
+
+    // ── evalFireStarter : % de FIRE atteint ──────────────────────────────────
+
+    @Test
+    void evalFireStarter_30PctDeFire_debloqueBronze() {
+        AchievementDefinition def = paliers(AchievementCode.FIRE_STARTER,
+                AchievementLevel.of(1, "Bronze", "🥉", 25),
+                AchievementLevel.of(2, "Argent", "🥈", 50));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        // FIRE target = 2000 × 12 × 25 = 600_000 ; patrimoine = 200_000 → 33%
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshot(200_000)));
+        when(expenseRepo.findByUserOrderByCategoryAscLabelAsc(user)).thenReturn(List.of(
+                RecurringExpense.builder().amount(2000f).frequency(FrequencyEnum.MONTHLY).build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
+    // ── evalRentier : revenus passifs / salaire ──────────────────────────────
+
+    @Test
+    void evalRentier_passifs50PctDuSalaire_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.LE_RENTIER,
+                AchievementLevel.of(1, "Bronze", "🥉", 25),
+                AchievementLevel.of(2, "Argent", "🥈", 50));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        // Salaire mensuel net : 36000 × 0.72 / 12 = 2160 ; passifs : 1100 → 50.9%
+        when(salaryRepo.findByUserAndEndDateIsNull(user))
+                .thenReturn(Optional.of(SalaryContract.builder().annualGrossSalary(36_000f).build()));
+        when(otherIncomeRepo.findByUserOrderByDateDesc(user)).thenReturn(List.of(
+                OtherIncome.builder().type(OtherIncomeTypeEnum.LOCATIF).amount(800f).build(),
+                OtherIncome.builder().type(OtherIncomeTypeEnum.DIVIDENDE).amount(300f).build()));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(2);  // Bronze + Argent
+    }
+
+    @Test
+    void evalRentier_pasDeContratSalaire_pasDeDeblocage() {
+        AchievementDefinition def = paliers(AchievementCode.LE_RENTIER,
+                AchievementLevel.of(1, "Bronze", "🥉", 25));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(salaryRepo.findByUserAndEndDateIsNull(user)).thenReturn(Optional.empty());
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalPatriotePea : contributions nettes PEA ───────────────────────────
+
+    @Test
+    void evalPatriotePea_50000Net_debloque() {
+        AchievementDefinition def = paliers(AchievementCode.PATRIOTE_PEA,
+                AchievementLevel.of(1, "Bronze", "🥉", 1_000),
+                AchievementLevel.of(2, "Argent", "🥈", 50_000));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.BUY))
+                .thenReturn(new BigDecimal("80000"));
+        when(orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.SELL))
+                .thenReturn(new BigDecimal("20000"));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(2);  // Bronze + Argent (60k net)
+    }
+
+    @Test
+    void evalPatriotePea_ventesSuperieuresAchats_netZero_pasDeDeblocage() {
+        AchievementDefinition def = paliers(AchievementCode.PATRIOTE_PEA,
+                AchievementLevel.of(1, "Bronze", "🥉", 1_000));
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.BUY))
+                .thenReturn(new BigDecimal("10000"));
+        when(orderRepo.sumAmountByEnvelopeAndOrderType(user, FiscalEnvelope.PEA, OrderType.SELL))
+                .thenReturn(new BigDecimal("15000"));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();  // net = max(-5000, 0) = 0
+    }
+
+    // ── evalAccomplisseur : objectif catégorie atteint ───────────────────────
+
+    @Test
+    void evalAccomplisseur_objectifAtteint_debloque() {
+        AchievementDefinition def = unique(AchievementCode.L_ACCOMPLISSEUR);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        PatrimoineTarget target = PatrimoineTarget.builder()
+                .category("BOURSE").targetAmountEur(50_000.0).build();
+        when(targetRepo.findByUser(user)).thenReturn(List.of(target));
+        when(snapshotRepo.findTop3ByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(snapshotWithCategory(60_000, AssetCategory.BOURSE, LocalDate.now())));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);  // 60k ≥ 50k
+    }
+
+    @Test
+    void evalAccomplisseur_aucunObjectifDefini_pasDeDeblocage() {
+        AchievementDefinition def = unique(AchievementCode.L_ACCOMPLISSEUR);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(any())).thenReturn(List.of());
+        when(targetRepo.findByUser(user)).thenReturn(List.of());
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).isEmpty();
+    }
+
+    // ── evalComebackKid : drawdown -15% + recovery 95% ATH ───────────────────
+
+    @Test
+    void evalComebackKid_drawdownEtRecovery_debloque() {
+        user.setAllTimeHighEur(new BigDecimal("100000"));
+        AchievementDefinition def = unique(AchievementCode.COMEBACK_KID);
+        when(catalog.all()).thenReturn(List.of(def));
+        when(snapshotRepo.findByUserOrderBySnapshotDateDesc(user))
+                .thenReturn(List.of(
+                        snapshot(96_000),  // ≥95% ATH
+                        snapshot(80_000),  // a été <85% ATH
+                        snapshot(90_000)));
+        when(achievementRepo.findMaxConfirmedLevel(any(), any())).thenReturn(Optional.of(0));
+        when(achievementRepo.existsByUserAndAchievementCodeAndLevelAndConfirmedAtIsNotNull(any(), any(), anyInt())).thenReturn(false);
+        when(achievementRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<UserAchievement> result = service.evaluateAndPersist(user);
+        assertThat(result).hasSize(1);
+    }
+
     // ── Helpers tests ────────────────────────────────────────────────────────
 
     private AchievementDefinition unique(AchievementCode code) {
