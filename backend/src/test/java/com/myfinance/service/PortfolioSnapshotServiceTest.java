@@ -30,6 +30,7 @@ class PortfolioSnapshotServiceTest {
     @Mock PositionRepository positionRepository;
     @Mock PositionOrderRepository positionOrderRepository;
     @Mock ExchangeRateRepository exchangeRateRepository;
+    @Mock UserRepository userRepository;
     @InjectMocks PortfolioSnapshotService portfolioSnapshotService;
 
     User owner;
@@ -183,6 +184,167 @@ class PortfolioSnapshotServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
+        verify(portfolioSnapshotRepository, never()).save(any());
+    }
+
+    // ── findById : 404 ─────────────────────────────────────────
+
+    @Test
+    void findById_leve404_siSnapshotIntrouvable() {
+        when(portfolioSnapshotRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> portfolioSnapshotService.findById(99L, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void findById_admin_peutAccederAuxSnapshotsDesAutres() {
+        User admin = User.builder().id(99L).login("admin").role(RoleEnum.ADMIN).build();
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(owner).snapshotDate(LocalDate.now())
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO).build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+
+        assertThatNoException().isThrownBy(() -> portfolioSnapshotService.findById(5L, admin));
+    }
+
+    // ── recalculate ────────────────────────────────────────────
+
+    @Test
+    void recalculate_recreePositionSnapshotsEtMetAJourTotaux() {
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(owner).snapshotDate(LocalDate.of(2026, 4, 1))
+                .totalInvestedEur(new BigDecimal("1000")).totalCurrentValueEur(new BigDecimal("1100"))
+                .totalCapitalGainEur(new BigDecimal("100"))
+                .positionSnapshots(new java.util.ArrayList<>())
+                .build();
+
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE))
+                .thenReturn(List.of(livret));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(livret))
+                .thenReturn(List.of(PositionOrder.builder()
+                        .id(1L).position(livret).orderType(OrderType.DEPOSIT)
+                        .amount(new BigDecimal("3000")).amountEur(new BigDecimal("3000"))
+                        .orderDate(LocalDate.of(2025, 1, 1)).build()));
+        when(portfolioSnapshotRepository.save(any(PortfolioSnapshot.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        PortfolioSnapshotDto result = portfolioSnapshotService.recalculate(5L, owner);
+
+        assertThat(result.totalInvestedEur()).isEqualByComparingTo("3000.00");
+        verify(positionSnapshotRepository).deleteAll(any());
+    }
+
+    @Test
+    void recalculate_leve403_siAutreUtilisateur() {
+        PortfolioSnapshot snap = PortfolioSnapshot.builder()
+                .id(5L).user(owner).snapshotDate(LocalDate.now())
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO).build();
+        when(portfolioSnapshotRepository.findById(5L)).thenReturn(Optional.of(snap));
+
+        assertThatThrownBy(() -> portfolioSnapshotService.recalculate(5L, other))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    // ── createForAllUsers ──────────────────────────────────────
+
+    @Test
+    void createForAllUsers_creeUnSnapshotParUtilisateurSansDoublon() {
+        LocalDate snapshotDate = LocalDate.of(2026, 5, 15);
+        CreateSnapshotRequest request = new CreateSnapshotRequest(snapshotDate);
+        LocalDate start = LocalDate.of(2026, 5, 1);
+        LocalDate end = LocalDate.of(2026, 5, 31);
+
+        when(userRepository.findAll()).thenReturn(List.of(owner, other));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(owner, start, end))
+                .thenReturn(Optional.empty());
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(other, start, end))
+                .thenReturn(Optional.of(PortfolioSnapshot.builder()
+                        .id(1L).user(other).snapshotDate(start)
+                        .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                        .totalCapitalGainEur(BigDecimal.ZERO).build()));
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> {
+            PortfolioSnapshot s = inv.getArgument(0);
+            return PortfolioSnapshot.builder()
+                    .id(99L).user(s.getUser()).snapshotDate(s.getSnapshotDate())
+                    .totalInvestedEur(s.getTotalInvestedEur())
+                    .totalCurrentValueEur(s.getTotalCurrentValueEur())
+                    .totalCapitalGainEur(s.getTotalCapitalGainEur())
+                    .positionSnapshots(s.getPositionSnapshots()).build();
+        });
+
+        BulkSnapshotResultDto result = portfolioSnapshotService.createForAllUsers(request);
+
+        assertThat(result.created()).isEqualTo(1);   // owner
+        assertThat(result.skipped()).isEqualTo(1);   // other (déjà existant)
+        assertThat(result.failed()).isEqualTo(0);
+    }
+
+    @Test
+    void createForAllUsers_comptelesEchecsSansBloquerLeBatch() {
+        CreateSnapshotRequest request = new CreateSnapshotRequest(LocalDate.of(2026, 6, 15));
+        when(userRepository.findAll()).thenReturn(List.of(owner, other));
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        // owner échoue, other réussit
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE))
+                .thenThrow(new RuntimeException("DB error"));
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(other, PositionStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> {
+            PortfolioSnapshot s = inv.getArgument(0);
+            return PortfolioSnapshot.builder().id(1L).user(s.getUser()).snapshotDate(s.getSnapshotDate())
+                    .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                    .totalCapitalGainEur(BigDecimal.ZERO).positionSnapshots(s.getPositionSnapshots()).build();
+        });
+
+        BulkSnapshotResultDto result = portfolioSnapshotService.createForAllUsers(request);
+
+        assertThat(result.created()).isEqualTo(1);
+        assertThat(result.failed()).isEqualTo(1);
+        assertThat(result.skipped()).isEqualTo(0);
+    }
+
+    // ── createMonthlySnapshot (scheduler) ──────────────────────
+
+    @Test
+    void createMonthlySnapshot_creeSiAucunExistantCeMois() {
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(eq(owner), any(), any()))
+                .thenReturn(Optional.empty());
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE))
+                .thenReturn(List.of());
+        when(portfolioSnapshotRepository.save(any())).thenAnswer(inv -> {
+            PortfolioSnapshot s = inv.getArgument(0);
+            return PortfolioSnapshot.builder().id(1L).user(s.getUser()).snapshotDate(s.getSnapshotDate())
+                    .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                    .totalCapitalGainEur(BigDecimal.ZERO).positionSnapshots(s.getPositionSnapshots()).build();
+        });
+
+        portfolioSnapshotService.createMonthlySnapshot(owner);
+
+        verify(portfolioSnapshotRepository).save(any());
+    }
+
+    @Test
+    void createMonthlySnapshot_neCreeRienSiSnapshotMoisDejaPresent() {
+        PortfolioSnapshot existing = PortfolioSnapshot.builder()
+                .id(1L).user(owner).snapshotDate(LocalDate.now().withDayOfMonth(1))
+                .totalInvestedEur(BigDecimal.ZERO).totalCurrentValueEur(BigDecimal.ZERO)
+                .totalCapitalGainEur(BigDecimal.ZERO).build();
+        when(portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(eq(owner), any(), any()))
+                .thenReturn(Optional.of(existing));
+
+        portfolioSnapshotService.createMonthlySnapshot(owner);
+
         verify(portfolioSnapshotRepository, never()).save(any());
     }
 }

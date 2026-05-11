@@ -154,12 +154,11 @@ public class PortfolioSnapshotService {
         LocalDate today = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfMonth = today.plusMonths(1).minusDays(1);
 
-        // Ne pas créer si déjà existant
-        portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(user, today, endOfMonth)
-                .ifPresent(existing -> {
-                    // Snapshot déjà présent — on sort silencieusement
-                    return;
-                });
+        // Ne pas créer si déjà existant — le `return` dans .ifPresent() ne sortirait QUE du lambda,
+        // pas de la méthode. On utilise donc isPresent() + early return explicite.
+        if (portfolioSnapshotRepository.findByUserAndSnapshotDateBetween(user, today, endOfMonth).isPresent()) {
+            return;
+        }
 
         buildAndSaveSnapshot(user, today);
     }
