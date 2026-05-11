@@ -58,15 +58,14 @@ describe('CategoryStrategyBar', () => {
   // ── Barre de progression ──────────────────────────────────
 
   it('rend la barre de progression', () => {
-    const { container } = render(<CategoryStrategyBar currentValue={25000} target={50000} />)
-    const bar = container.querySelector('[style*="width"]')
-    expect(bar).not.toBeNull()
+    render(<CategoryStrategyBar currentValue={25000} target={50000} />)
+    const bar = screen.getByTestId('category-progress-bar')
+    expect(bar).toBeInTheDocument()
     expect(bar.style.width).toBe('50%')
   })
 
   it('plafonne la barre à 100 % si dépassé', () => {
-    const { container } = render(<CategoryStrategyBar currentValue={75000} target={50000} />)
-    const bar = container.querySelector('[style*="width"]')
-    expect(bar.style.width).toBe('100%')
+    render(<CategoryStrategyBar currentValue={75000} target={50000} />)
+    expect(screen.getByTestId('category-progress-bar').style.width).toBe('100%')
   })
 })

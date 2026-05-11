@@ -77,12 +77,11 @@ describe('ErrorBoundary', () => {
   })
 
   it('passe en mode fullPage pour l\'ErrorPage', () => {
-    const { container } = render(
+    render(
       <ErrorBoundary>
         <BombComponent shouldThrow={true} />
       </ErrorBoundary>
     )
-    // fullPage=true ajoute min-h-screen sur le wrapper
-    expect(container.querySelector('.min-h-screen')).toBeInTheDocument()
+    expect(screen.getByTestId('error-page-fullpage')).toBeInTheDocument()
   })
 })

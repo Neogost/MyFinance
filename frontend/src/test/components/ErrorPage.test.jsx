@@ -37,19 +37,19 @@ describe('ErrorPage', () => {
 
   // ── Familles HTTP ─────────────────────────────────────────────────────────
 
-  it('famille 4xx : badge ambre', () => {
-    const { container } = render(<ErrorPage status={403} />)
-    expect(container.querySelector('.bg-amber-100')).toBeInTheDocument()
+  it('famille 4xx : data-family=4', () => {
+    render(<ErrorPage status={403} />)
+    expect(screen.getByTestId('error-page')).toHaveAttribute('data-family', '4')
   })
 
-  it('famille 5xx : badge rouge', () => {
-    const { container } = render(<ErrorPage status={500} />)
-    expect(container.querySelector('.bg-red-100')).toBeInTheDocument()
+  it('famille 5xx : data-family=5', () => {
+    render(<ErrorPage status={500} />)
+    expect(screen.getByTestId('error-page')).toHaveAttribute('data-family', '5')
   })
 
-  it('famille 3xx : badge bleu', () => {
-    const { container } = render(<ErrorPage status={301} />)
-    expect(container.querySelector('.bg-blue-100')).toBeInTheDocument()
+  it('famille 3xx : data-family=3', () => {
+    render(<ErrorPage status={301} />)
+    expect(screen.getByTestId('error-page')).toHaveAttribute('data-family', '3')
   })
 
   // ── Message personnalisé ──────────────────────────────────────────────────
@@ -99,12 +99,12 @@ describe('ErrorPage', () => {
   // ── Mode fullPage ─────────────────────────────────────────────────────────
 
   it('occupe tout l\'écran si fullPage=true', () => {
-    const { container } = render(<ErrorPage status={500} fullPage />)
-    expect(container.querySelector('.min-h-screen')).toBeInTheDocument()
+    render(<ErrorPage status={500} fullPage />)
+    expect(screen.getByTestId('error-page-fullpage')).toBeInTheDocument()
   })
 
-  it("n'ajoute pas min-h-screen si fullPage=false (défaut)", () => {
-    const { container } = render(<ErrorPage status={500} />)
-    expect(container.querySelector('.min-h-screen')).not.toBeInTheDocument()
+  it("n'ajoute pas le wrapper fullPage si fullPage=false (défaut)", () => {
+    render(<ErrorPage status={500} />)
+    expect(screen.queryByTestId('error-page-fullpage')).not.toBeInTheDocument()
   })
 })

@@ -47,13 +47,13 @@ describe('KpiCard — pattern commun (3 pages)', () => {
   // ── Couleur ────────────────────────────────────────────────────────────────
 
   it('applique la classe de couleur fournie sur la valeur', () => {
-    const { container } = render(<KpiCard label="Montant" value={1000} color="text-red-600" />)
-    expect(container.querySelector('.text-red-600')).toBeInTheDocument()
+    render(<KpiCard label="Montant" value={1000} color="text-red-600" />)
+    expect(screen.getByTestId('kpi-value')).toHaveClass('text-red-600')
   })
 
   it('applique "text-gray-900" par défaut si aucune couleur fournie', () => {
-    const { container } = render(<KpiCard label="Montant" value={1000} />)
-    expect(container.querySelector('.text-gray-900')).toBeInTheDocument()
+    render(<KpiCard label="Montant" value={1000} />)
+    expect(screen.getByTestId('kpi-value')).toHaveClass('text-gray-900')
   })
 
   // ── Sous-texte ────────────────────────────────────────────────────────────
@@ -69,16 +69,14 @@ describe('KpiCard — pattern commun (3 pages)', () => {
   })
 
   it("n'affiche pas de sous-texte quand sub est une chaîne vide", () => {
-    const { container } = render(<KpiCard label="Montant" value={1000} sub="" />)
-    const subEls = container.querySelectorAll('.text-xs.text-gray-400')
-    // Seul le label est présent (pas de second élément pour sub vide)
-    expect(subEls.length).toBe(1)
+    render(<KpiCard label="Montant" value={1000} sub="" />)
+    expect(screen.queryByTestId('kpi-sub')).not.toBeInTheDocument()
   })
 
   // ── Structure DOM ──────────────────────────────────────────────────────────
 
   it('a la classe "amount" sur l\'élément de valeur', () => {
-    const { container } = render(<KpiCard label="Montant" value={500} />)
-    expect(container.querySelector('.amount')).toBeInTheDocument()
+    render(<KpiCard label="Montant" value={500} />)
+    expect(screen.getByTestId('kpi-value')).toHaveClass('amount')
   })
 })

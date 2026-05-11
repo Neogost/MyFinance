@@ -22,6 +22,7 @@ export default function CategoryStrategyBar({ currentValue, target }) {
     <div className="mt-2">
       <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
+          data-testid="category-progress-bar"
           className={`h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${pct}%` }}
         />

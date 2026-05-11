@@ -93,7 +93,7 @@ export default function ErrorPage({ status, message, fullPage = false, onRetry, 
   const desc  = message ?? detail?.desc ?? 'Une erreur inattendue s\'est produite.'
 
   const contenu = (
-    <div className={`rounded-2xl border ${theme.bg} ${theme.border} p-10 flex flex-col items-center text-center gap-5 max-w-lg w-full mx-auto`}>
+    <div data-testid="error-page" data-family={famille} className={`rounded-2xl border ${theme.bg} ${theme.border} p-10 flex flex-col items-center text-center gap-5 max-w-lg w-full mx-auto`}>
 
       {/* Icône + code */}
       <div className={`${theme.text} flex flex-col items-center gap-2`}>
@@ -141,7 +141,7 @@ export default function ErrorPage({ status, message, fullPage = false, onRetry, 
   if (!fullPage) return contenu
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+    <div data-testid="error-page-fullpage" className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
       {contenu}
     </div>
   )

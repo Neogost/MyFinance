@@ -14,10 +14,10 @@ export default function KpiCard({ label, value, unit = '€', color, sub, labelT
           </span>
         )}
       </p>
-      <p className={`text-xl md:text-2xl font-bold amount whitespace-nowrap ${color ?? 'text-gray-900'}`}>
+      <p data-testid="kpi-value" className={`text-xl md:text-2xl font-bold amount whitespace-nowrap ${color ?? 'text-gray-900'}`}>
         {value != null ? `${fmt(value)} ${unit}` : '—'}
       </p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+      {sub && <p data-testid="kpi-sub" className="text-xs text-gray-400">{sub}</p>}
     </div>
   )
 }
