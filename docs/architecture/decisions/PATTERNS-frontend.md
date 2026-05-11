@@ -421,13 +421,87 @@ aucune donnée persistée non plus.
 
 ---
 
-## 8. Checklist ajout d'un nouveau module
+## 8. Tests frontend (`src/test/components/`)
+
+Les tests s'exécutent avec **Vitest + Testing Library**. Convention : un fichier de test par composant, mock systématique de la couche API et des composants enfants non testés.
+
+### 8.1 Hiérarchie des sélecteurs (priorité descendante)
+
+Cette hiérarchie suit la philosophie Testing Library — privilégier ce que l'utilisateur perçoit (rôles, labels) avant les détails d'implémentation (testid, classes CSS).
+
+| Priorité | Sélecteur | Quand l'utiliser |
+|---|---|---|
+| 1 | `getByRole('button', { name: ... })` · `getByRole('heading', { name: ... })` | Défaut pour boutons, titres, liens, inputs typés. Aligné sur l'accessibilité. |
+| 2 | `getByLabelText(...)` · `getByPlaceholderText(...)` | Inputs et champs de formulaire (préférer le label si présent). |
+| 3 | `getByText(...)` | Texte pur **unique et stable** : titre de page, valeur d'un KPI, message d'erreur. |
+| 4 | `getByTestId(...)` | Quand 1-3 sont ambigus — typiquement boutons d'action répétés en liste (`Supprimer`, `Modifier`, `+ Ajouter`) ou éléments sans rôle ARIA distinctif. |
+
+**Bannis :**
+- `container.querySelector('.classCSS')` — couple le test à Tailwind, casse à chaque refonte de palette. Remplacer par un sélecteur sémantique ou un `data-testid`.
+- `getAllByText('label')[N]` indexé — révèle un libellé ambigu non couvert par un testid. Ajouter un `data-testid` au composant prod plutôt que d'indexer.
+
+### 8.2 Convention `data-testid` + `aria-label`
+
+Pour tout **bouton d'action répété** (lignes de tableau, items de liste, en-tête multi-actions), ajouter sur le composant production **les deux attributs en parallèle** :
+
+```jsx
+<button
+  onClick={...}
+  data-testid="add-instrument-button"   // ← cible test stable
+  aria-label="Ajouter un instrument"    // ← lecteurs d'écran distinguent les deux boutons "+ Ajouter"
+  className="..."
+>
+  + Ajouter
+</button>
+```
+
+Convention de nommage `data-testid` : `<entité>-<action>-<élément>` en kebab-case (ex : `add-instrument-button`, `delete-debt-row`, `edit-position-link`).
+
+### 8.3 Mock de la couche API
+
+`vi.mock('../../../api/<domaine>', () => ({...}))` **remplace tout le module** — toute fonction non listée devient `undefined` et plante au runtime (souvent silencieusement dans un `catch` global). Lister **toutes** les fonctions importées par le composant testé, même celles non appelées dans le scénario, en les initialisant avec `vi.fn()`.
+
+```jsx
+vi.mock('../../../api/patrimoine', () => ({
+  getInstruments:                vi.fn(),
+  getExchangeRates:              vi.fn().mockResolvedValue([]),  // si appelée au montage
+  // ... toutes les autres fonctions importées par le composant
+}))
+```
+
+### 8.4 Mock des composants enfants
+
+Mocker les sous-composants non testés (formulaires modaux, modales, charts complexes) avec un `data-testid` pour pouvoir vérifier leur ouverture/fermeture sans tester leur contenu :
+
+```jsx
+vi.mock('../../../components/admin/AdminInstrumentForm', () => ({
+  default: ({ onCancel }) => (
+    <div data-testid="instrument-form">
+      <button onClick={onCancel}>Annuler form</button>
+    </div>
+  ),
+}))
+```
+
+### 8.5 Checklist tests frontend
+
+- [ ] Un fichier de test par composant graphique (`src/test/components/<domaine>/<Composant>.test.jsx`)
+- [ ] Mock complet de la couche API (toutes les fonctions importées par le composant)
+- [ ] Mock des composants enfants non testés avec `data-testid`
+- [ ] Sélecteurs respectent la hiérarchie (Role > Label > Text > TestId), pas de `container.querySelector`, pas de `getAllByText[N]` indexé
+- [ ] Pour chaque bouton d'action répété ajouté en prod : `data-testid` + `aria-label` distincts
+- [ ] `npm test` retourne 0 échec et 0 unhandled rejection avant commit
+
+---
+
+## 9. Checklist ajout d'un nouveau module
 
 - [ ] `src/api/<domaine>.js` — couche API
 - [ ] `src/components/<domaine>/MaPage.jsx` — page principale
 - [ ] `src/components/<domaine>/MonForm.jsx` — formulaire modal
 - [ ] Import + route dans `App.jsx`
 - [ ] Bouton ou dropdown dans `Navigation.jsx`
+- [ ] **Tests** — `src/test/components/<domaine>/MaPage.test.jsx` (cf. section 8 pour la convention sélecteurs)
 - [ ] **Analytics** — `trackPageView('<module>.<feature>')` au montage de la page
 - [ ] **Analytics** — `trackEvent('FEATURE_USE', '<module>.<feature>.<action>')` sur chaque action métier (CRUD, simulation, export)
 - [ ] **Analytics** — `trackEvent('BUTTON_CLICK', '<module>.<feature>.<action>')` sur chaque bouton secondaire (ouverture de modal, toggle, navigation)
