@@ -20,6 +20,12 @@ vi.mock('../../../api/patrimoine', () => ({
   getPriceHistorySummary:        vi.fn().mockResolvedValue({}),
   backfillCryptoPrices:          vi.fn(),
   importBoursePrices:            vi.fn(),
+  getExchangeRates:              vi.fn().mockResolvedValue([]),
+  updateExchangeRates:           vi.fn(),
+  backfillExchangeRate:          vi.fn(),
+  getExchangeRateHistorySummary: vi.fn().mockResolvedValue([]),
+  getExchangeRateCurrencyUsage:  vi.fn(),
+  deleteExchangeRateCurrency:    vi.fn(),
 }))
 
 // Sous-modales mockées — on ne teste pas leur contenu ici
@@ -111,22 +117,22 @@ describe('AdminInstrumentPage', () => {
     getInstruments.mockResolvedValue([])
     render(<AdminInstrumentPage />)
     await waitFor(() => expect(screen.queryByText('Chargement…')).not.toBeInTheDocument())
-    expect(screen.getByText('+ Ajouter')).toBeInTheDocument()
+    expect(screen.getByTestId('add-instrument-button')).toBeInTheDocument()
   })
 
   it('ouvre le formulaire de création au clic sur "+ Ajouter"', async () => {
     getInstruments.mockResolvedValue([])
     render(<AdminInstrumentPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    await waitFor(() => expect(screen.getByTestId('add-instrument-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('add-instrument-button'))
     expect(screen.getByTestId('instrument-form')).toBeInTheDocument()
   })
 
   it('ferme le formulaire au clic sur Annuler', async () => {
     getInstruments.mockResolvedValue([])
     render(<AdminInstrumentPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    await waitFor(() => expect(screen.getByTestId('add-instrument-button')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('add-instrument-button'))
     fireEvent.click(screen.getByText('Annuler form'))
     expect(screen.queryByTestId('instrument-form')).not.toBeInTheDocument()
   })

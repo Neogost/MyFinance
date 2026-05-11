@@ -318,6 +318,8 @@ export default function AdminInstrumentPage() {
           </button>
           <button
             onClick={() => setFormTarget(null)}
+            data-testid="add-instrument-button"
+            aria-label="Ajouter un instrument"
             className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
           >
             + Ajouter
@@ -559,6 +561,8 @@ export default function AdminInstrumentPage() {
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">DEVISES</h3>
           <button
             onClick={() => { setShowAddRate(true); setAddRateCurrency(''); setAddRateValue(''); setAddRateError(null) }}
+            data-testid="add-currency-button"
+            aria-label="Ajouter une devise"
             className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition"
           >
             + Ajouter
