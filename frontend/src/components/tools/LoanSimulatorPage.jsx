@@ -412,10 +412,14 @@ export default function LoanSimulatorPage({ user }) {
                         </p>
                       </div>
                       <button onClick={() => handleLoad(sim)}
+                        data-testid={`load-loan-simulation-${sim.id}`}
+                        aria-label={`Charger la simulation ${sim.name}`}
                         className="shrink-0 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
                         Charger
                       </button>
                       <button onClick={() => handleDeleteSaved(sim.id)}
+                        data-testid={`delete-loan-simulation-${sim.id}`}
+                        aria-label={`Supprimer la simulation ${sim.name}`}
                         className="shrink-0 text-gray-300 hover:text-red-500 transition text-sm">✕</button>
                     </li>
                   ))}

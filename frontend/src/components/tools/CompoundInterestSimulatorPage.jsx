@@ -381,6 +381,8 @@ export default function CompoundInterestSimulatorPage() {
           <button
             key={v}
             onClick={() => setMode(v)}
+            data-testid={`compound-mode-${v}`}
+            aria-label={label}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${mode === v ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:border-indigo-400'}`}
           >
             <span className="hidden sm:inline">{label}</span>

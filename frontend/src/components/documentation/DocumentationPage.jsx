@@ -35,6 +35,8 @@ function SidebarNode({ node, selectedId, onSelect, depth = 0 }) {
       <div>
         <button
           onClick={() => setOpen(v => !v)}
+          data-testid={`doc-section-${node.id}`}
+          aria-label={`${open ? 'Replier' : 'Déplier'} la section ${node.label}`}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold transition
             ${depth === 0 ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-600 hover:bg-gray-100'}
           `}
@@ -64,6 +66,7 @@ function SidebarNode({ node, selectedId, onSelect, depth = 0 }) {
   return (
     <button
       onClick={() => onSelect(node)}
+      data-testid={`doc-leaf-${node.id}`}
       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition
         ${isSelected
           ? 'bg-indigo-50 text-indigo-700 font-semibold'
@@ -243,7 +246,8 @@ export default function DocumentationPage({ user = null }) {
     if (!node.load) return
     setSelectedNode(node)
     sessionStorage.setItem('doc-page', node.id)
-    document.getElementById('doc-content')?.scrollTo({ top: 0 })
+    const el = document.getElementById('doc-content')
+    if (typeof el?.scrollTo === 'function') el.scrollTo({ top: 0 })
   }
 
   return (

@@ -148,8 +148,8 @@ describe('AdminInstrumentPage', () => {
   it('ouvre la modale de confirmation de suppression', async () => {
     getInstruments.mockResolvedValue(INSTRUMENTS)
     render(<AdminInstrumentPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
+    await waitFor(() => expect(screen.getByTestId(`delete-instrument-${INSTRUMENTS[0].id}`)).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId(`delete-instrument-${INSTRUMENTS[0].id}`))
     // La modale affiche un texte de confirmation
     expect(screen.getByText(/Supprimer définitivement/)).toBeInTheDocument()
   })
@@ -158,8 +158,8 @@ describe('AdminInstrumentPage', () => {
     deleteInstrument.mockResolvedValue()
     getInstruments.mockResolvedValue(INSTRUMENTS)
     render(<AdminInstrumentPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
+    await waitFor(() => expect(screen.getByTestId(`delete-instrument-${INSTRUMENTS[0].id}`)).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId(`delete-instrument-${INSTRUMENTS[0].id}`))
     fireEvent.click(screen.getByText('Supprimer définitivement'))
     await waitFor(() => {
       expect(deleteInstrument).toHaveBeenCalledWith(INSTRUMENTS[0].id)

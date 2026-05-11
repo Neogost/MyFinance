@@ -132,8 +132,8 @@ describe('SnapshotPanel', () => {
     recalculateSnapshot.mockResolvedValue({})
     getSnapshots.mockResolvedValue(SNAPSHOTS)
     render(<SnapshotPanel onClose={vi.fn()} />)
-    await waitFor(() => expect(screen.getAllByText('Recalculer')[0]).toBeInTheDocument())
-    fireEvent.click(screen.getAllByText('Recalculer')[0])
+    await waitFor(() => expect(screen.getByTestId(`recalculate-snapshot-${SNAPSHOTS[0].id}`)).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId(`recalculate-snapshot-${SNAPSHOTS[0].id}`))
     await waitFor(() => {
       expect(recalculateSnapshot).toHaveBeenCalledWith(SNAPSHOTS[0].id)
     })

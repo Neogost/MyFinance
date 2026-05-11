@@ -66,15 +66,13 @@ describe('CompoundInterestSimulatorPage', () => {
 
   it('passe en mode inversé au clic', () => {
     render(<CompoundInterestSimulatorPage />)
-    // Cliquer sur le span desktop (labelMobile est le second)
-    fireEvent.click(screen.getAllByText(/Mode inversé/)[0].closest('button'))
-    const btn = screen.getAllByText(/Mode inversé/)[0].closest('button')
-    expect(btn).toHaveClass('bg-indigo-600')
+    fireEvent.click(screen.getByTestId('compound-mode-inverse'))
+    expect(screen.getByTestId('compound-mode-inverse')).toHaveClass('bg-indigo-600')
   })
 
   it('affiche le champ "Patrimoine cible" en mode inversé', () => {
     render(<CompoundInterestSimulatorPage />)
-    fireEvent.click(screen.getAllByText(/Mode inversé/)[0].closest('button'))
+    fireEvent.click(screen.getByTestId('compound-mode-inverse'))
     expect(screen.getByText('Patrimoine cible (€)')).toBeInTheDocument()
   })
 

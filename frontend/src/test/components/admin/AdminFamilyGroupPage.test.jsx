@@ -135,11 +135,11 @@ describe('AdminFamilyGroupPage', () => {
     adminDissolveGroup.mockResolvedValue()
     adminGetAllGroups.mockResolvedValue(GROUPS)
     render(<AdminFamilyGroupPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-family-group-${GROUPS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
+    fireEvent.click(screen.getByTestId(`delete-family-group-${GROUPS[0].id}`))
     await waitFor(() => {
-      expect(adminDissolveGroup).toHaveBeenCalledWith(1)
+      expect(adminDissolveGroup).toHaveBeenCalledWith(GROUPS[0].id)
       expect(screen.queryByText('Famille Dupont')).not.toBeInTheDocument()
     })
   })
@@ -148,9 +148,9 @@ describe('AdminFamilyGroupPage', () => {
     window.confirm = vi.fn(() => false)
     adminGetAllGroups.mockResolvedValue(GROUPS)
     render(<AdminFamilyGroupPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-family-group-${GROUPS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
+    fireEvent.click(screen.getByTestId(`delete-family-group-${GROUPS[0].id}`))
     expect(adminDissolveGroup).not.toHaveBeenCalled()
   })
 
@@ -163,11 +163,11 @@ describe('AdminFamilyGroupPage', () => {
     await waitFor(() => expect(screen.getByText('Famille Dupont')).toBeInTheDocument())
 
     fireEvent.click(screen.getByText('Famille Dupont'))
-    const retireButtons = screen.getAllByText('Retirer')
-    fireEvent.click(retireButtons[0])
+    // Retirer le premier membre (Jean Dupont, id=1) du groupe Dupont (id=1)
+    fireEvent.click(screen.getByTestId(`remove-family-member-${GROUPS[0].id}-${GROUPS[0].members[0].id}`))
 
     await waitFor(() => {
-      expect(adminRemoveMember).toHaveBeenCalledWith(1, expect.any(Number))
+      expect(adminRemoveMember).toHaveBeenCalledWith(GROUPS[0].id, GROUPS[0].members[0].id)
     })
   })
 })

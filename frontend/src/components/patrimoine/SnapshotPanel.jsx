@@ -169,6 +169,8 @@ export default function SnapshotPanel({ onClose }) {
                           <button
                             onClick={() => handleRecalculate(s.id)}
                             disabled={recalcId === s.id}
+                            data-testid={`recalculate-snapshot-${s.id}`}
+                            aria-label={`Recalculer le snapshot du ${s.snapshotDate}`}
                             className="px-2 py-1 border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition disabled:opacity-50">
                             {recalcId === s.id ? '…' : 'Recalculer'}
                           </button>

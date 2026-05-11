@@ -196,7 +196,7 @@ describe('LoanSimulatorPage — gestion des simulations sauvegardées', () => {
     fireEvent.click(screen.getByText('Mes simulations'))
     await waitFor(() => expect(screen.getByText('Appartement Paris')).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Charger')[0])
+    fireEvent.click(screen.getByTestId(`load-loan-simulation-${SIMULATIONS[0].id}`))
 
     expect(screen.queryByText('Simulations sauvegardées')).not.toBeInTheDocument()
   })

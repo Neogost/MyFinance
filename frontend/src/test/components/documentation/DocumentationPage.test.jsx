@@ -89,11 +89,11 @@ describe('DocumentationPage', () => {
     render(<DocumentationPage user={USER} />)
     await waitFor(() => expect(screen.getByTestId('markdown')).toBeInTheDocument())
 
-    // Déplier la section "Patrimoine" pour voir "Positions"
-    fireEvent.click(screen.getAllByText('Patrimoine')[0])
-    await waitFor(() => expect(screen.getByText('Positions')).toBeInTheDocument())
+    // Déplier la section "Patrimoine" pour voir le leaf "Positions"
+    fireEvent.click(screen.getByTestId('doc-section-patrimoine'))
+    await waitFor(() => expect(screen.getByTestId('doc-leaf-positions')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('Positions'))
+    fireEvent.click(screen.getByTestId('doc-leaf-positions'))
     await waitFor(() => {
       expect(screen.getByTestId('markdown')).toBeInTheDocument()
     })

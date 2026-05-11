@@ -111,6 +111,8 @@ export default function AdminFamilyGroupPage() {
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); handleDissolve(group) }}
+                  data-testid={`delete-family-group-${group.id}`}
+                  aria-label={`Supprimer le groupe ${group.name}`}
                   className="shrink-0 px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
                 >
                   Supprimer
@@ -137,6 +139,8 @@ export default function AdminFamilyGroupPage() {
                           </div>
                           <button
                             onClick={() => handleRemoveMember(group, m)}
+                            data-testid={`remove-family-member-${group.id}-${m.id}`}
+                            aria-label={`Retirer ${m.firstName} ${m.lastName} du groupe ${group.name}`}
                             className="px-2 py-1 border border-gray-300 rounded-md text-xs text-gray-500 hover:border-red-400 hover:text-red-600 transition"
                           >
                             Retirer

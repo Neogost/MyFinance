@@ -539,6 +539,8 @@ export default function AdminInstrumentPage() {
                             )}
                             <button
                               onClick={() => { setDeleteTarget(inst); setDeleteError(null) }}
+                              data-testid={`delete-instrument-${inst.id}`}
+                              aria-label={`Supprimer l'instrument ${inst.name}`}
                               className="hidden md:inline-flex px-3 py-1 border border-red-200 rounded-md text-xs text-red-400 hover:border-red-500 hover:text-red-700 hover:bg-red-50 transition"
                             >
                               Supprimer

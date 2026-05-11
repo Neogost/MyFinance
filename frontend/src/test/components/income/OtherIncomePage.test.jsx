@@ -223,8 +223,8 @@ describe('OtherIncomePage — pattern CRUD', () => {
     await waitFor(() => expect(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
     fireEvent.click(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`))
-    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Supprimer définitivement'))
 
     await waitFor(() => {
       expect(deleteOtherIncome).toHaveBeenCalledWith(INCOMES[0].id)
@@ -239,8 +239,8 @@ describe('OtherIncomePage — pattern CRUD', () => {
     await waitFor(() => expect(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
     fireEvent.click(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`))
-    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
-    fireEvent.click(screen.getByTestId('delete-confirm-cancel-button'))
+    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
 
     expect(deleteOtherIncome).not.toHaveBeenCalled()
     expect(screen.getByText('Loyer appartement T2')).toBeInTheDocument()
