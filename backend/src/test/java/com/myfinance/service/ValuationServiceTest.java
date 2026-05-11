@@ -15,6 +15,8 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ValuationServiceTest {
@@ -320,6 +322,265 @@ class ValuationServiceTest {
         assertThat(val).isNotNull();
         assertThat(val.doubleValue()).isCloseTo(expected, within(EPS_EUR));
         assertThat(warnings).isEmpty();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels pour augmenter la couverture branches
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── valuePortfolioAt : agrégation + exclusion des null ───────────────────
+
+    @Test
+    void valuePortfolioAt_sommeLesPositionsValorisablesEtIgnoreLesNull() {
+        Position livret = livretPosition(new BigDecimal("3.0"));
+        livret.setOrders(new ArrayList<>(List.of(
+                depositOrder(livret, LocalDate.of(2023, 1, 1), new BigDecimal("1000")))));
+
+        Position bourseSansHisto = boursePosition(2L, instrument(20L), "EUR");
+        bourseSansHisto.setOrders(new ArrayList<>(List.of(
+                buyOrder(bourseSansHisto, LocalDate.of(2023, 6, 1),
+                        new BigDecimal("100"), new BigDecimal("5000")))));
+        // priceMap vide → bourse retournera null (exclue) car achat antérieur à la date d'éval
+
+        List<String> warnings = new ArrayList<>();
+        BigDecimal total = service.valuePortfolioAt(
+                List.of(livret, bourseSansHisto),
+                LocalDate.of(2024, 1, 1),
+                Map.of(), Map.of(), Map.of(), warnings);
+
+        // Seul le livret est valorisé
+        assertThat(total.doubleValue()).isCloseTo(1030.0, within(1.0));
+        assertThat(warnings).isNotEmpty();  // bourse a généré un warning
+    }
+
+    @Test
+    void valuePortfolioAt_listeVide_retourneZero() {
+        BigDecimal total = service.valuePortfolioAt(
+                List.of(), LocalDate.now(),
+                Map.of(), Map.of(), Map.of(), new ArrayList<>());
+        assertThat(total).isEqualByComparingTo("0");
+    }
+
+    // ── loadSnapshotBatch ────────────────────────────────────────────────────
+
+    @Test
+    void loadSnapshotBatch_listeVide_retourneMapVide() {
+        Map<Long, NavigableMap<LocalDate, BigDecimal>> result = service.loadSnapshotBatch(List.of());
+
+        assertThat(result).isEmpty();
+        org.mockito.Mockito.verifyNoInteractions(positionSnapshotRepository);
+    }
+
+    @Test
+    void loadSnapshotBatch_aggregeLesSnapshotsParPosition() {
+        Position p1 = new Position(); p1.setId(1L);
+        Position p2 = new Position(); p2.setId(2L);
+
+        PortfolioSnapshot ps1 = PortfolioSnapshot.builder().snapshotDate(LocalDate.of(2024, 1, 1)).build();
+        PortfolioSnapshot ps2 = PortfolioSnapshot.builder().snapshotDate(LocalDate.of(2024, 6, 1)).build();
+        PositionSnapshot snap1 = PositionSnapshot.builder()
+                .position(p1).portfolioSnapshot(ps1).currentValueEur(new BigDecimal("10000")).build();
+        PositionSnapshot snap2 = PositionSnapshot.builder()
+                .position(p1).portfolioSnapshot(ps2).currentValueEur(new BigDecimal("11000")).build();
+        PositionSnapshot snap3 = PositionSnapshot.builder()
+                .position(p2).portfolioSnapshot(ps1).currentValueEur(new BigDecimal("5000")).build();
+
+        when(positionSnapshotRepository.findByPositionInOrderBySnapshotDateAsc(any()))
+                .thenReturn(List.of(snap1, snap2, snap3));
+
+        Map<Long, NavigableMap<LocalDate, BigDecimal>> result = service.loadSnapshotBatch(List.of(p1, p2));
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(1L)).hasSize(2)
+                .containsEntry(LocalDate.of(2024, 1, 1), new BigDecimal("10000"))
+                .containsEntry(LocalDate.of(2024, 6, 1), new BigDecimal("11000"));
+        assertThat(result.get(2L)).hasSize(1)
+                .containsEntry(LocalDate.of(2024, 1, 1), new BigDecimal("5000"));
+    }
+
+    // ── valueBourseCrypto : branches multiples ───────────────────────────────
+
+    @Test
+    void bourse_sansInstrument_retourneNull() {
+        Position p = boursePosition(1L, null, "EUR");
+        p.setOrders(new ArrayList<>());
+
+        BigDecimal val = service.valuePositionAt(p, LocalDate.now(),
+                Map.of(), Map.of(), Map.of(), new ArrayList<>());
+        assertThat(val).isNull();
+    }
+
+    @Test
+    void bourse_quantiteZero_retourneZero() {
+        // BUY 100 puis SELL 100 → quantité 0 → valeur 0 (sans appel au priceMap)
+        Instrument instr = instrument(10L);
+        Position p = boursePosition(1L, instr, "EUR");
+        PositionOrder buy = buyOrder(p, LocalDate.of(2024, 1, 1),
+                new BigDecimal("100"), new BigDecimal("5000"));
+        PositionOrder sell = new PositionOrder();
+        sell.setPosition(p); sell.setOrderType(OrderType.SELL);
+        sell.setQuantity(new BigDecimal("100"));
+        sell.setAmount(new BigDecimal("5500")); sell.setAmountEur(new BigDecimal("5500"));
+        sell.setOrderDate(LocalDate.of(2024, 6, 1));
+        p.setOrders(new ArrayList<>(List.of(buy, sell)));
+
+        BigDecimal val = service.valuePositionAt(p, LocalDate.of(2024, 12, 1),
+                Map.of(), Map.of(), Map.of(), new ArrayList<>());
+        assertThat(val).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void bourse_ordresApresDate_ignoresDansLeCalcul() {
+        // BUY 100 le 2024-06, BUY 50 le 2025-01 → au 2024-12 seul le 1er compte
+        Instrument instr = instrument(10L);
+        Position p = boursePosition(1L, instr, "EUR");
+        PositionOrder buy1 = buyOrder(p, LocalDate.of(2024, 6, 1),
+                new BigDecimal("100"), new BigDecimal("5000"));
+        PositionOrder buy2 = buyOrder(p, LocalDate.of(2025, 1, 1),
+                new BigDecimal("50"), new BigDecimal("3000"));
+        p.setOrders(new ArrayList<>(List.of(buy1, buy2)));
+
+        LocalDate evalDate = LocalDate.of(2024, 12, 1);
+        var priceMap = singlePriceMap(10L, evalDate, new BigDecimal("60"));
+
+        BigDecimal val = service.valuePositionAt(p, evalDate,
+                priceMap, Map.of(), Map.of(), new ArrayList<>());
+        // 100 × 60 = 6000 (le 2nd BUY est ignoré)
+        assertThat(val.doubleValue()).isCloseTo(6000.0, within(EPS_EUR));
+    }
+
+    @Test
+    void bourse_warningDedoubleParPosition_unSeulMessage() {
+        // Un même nom de position doit produire 1 seul warning même si valuePositionAt est appelé 2 fois
+        Instrument instr = instrument(10L);
+        Position p = boursePosition(1L, instr, "EUR");
+        p.setOrders(new ArrayList<>(List.of(
+                buyOrder(p, LocalDate.of(2024, 1, 1),
+                        new BigDecimal("100"), new BigDecimal("5000")))));
+
+        List<String> warnings = new ArrayList<>();
+        // priceMap vide → warning
+        service.valuePositionAt(p, LocalDate.of(2024, 6, 1),
+                Map.of(), Map.of(), Map.of(), warnings);
+        service.valuePositionAt(p, LocalDate.of(2024, 7, 1),
+                Map.of(), Map.of(), Map.of(), warnings);
+
+        assertThat(warnings).hasSize(1);  // pas 2
+    }
+
+    // ── valueLivret : branches additionnelles ────────────────────────────────
+
+    @Test
+    void livret_sansAnnualRate_retourneZero() {
+        Position p = livretPosition(null);
+        p.setOrders(new ArrayList<>(List.of(
+                depositOrder(p, LocalDate.of(2023, 1, 1), new BigDecimal("1000")))));
+
+        BigDecimal val = service.valueLivret(p, LocalDate.of(2024, 1, 1));
+        assertThat(val).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void livret_aucunOrdre_retourneZero() {
+        Position p = livretPosition(new BigDecimal("3.0"));
+        p.setOrders(new ArrayList<>());
+
+        BigDecimal val = service.valueLivret(p, LocalDate.of(2024, 1, 1));
+        assertThat(val).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void livret_avecRetrait_diminuLeSolde() {
+        Position p = livretPosition(new BigDecimal("3.0"));
+        PositionOrder dep = depositOrder(p, LocalDate.of(2023, 1, 1), new BigDecimal("2000"));
+        PositionOrder withdraw = new PositionOrder();
+        withdraw.setPosition(p); withdraw.setOrderType(OrderType.WITHDRAWAL);
+        withdraw.setAmount(new BigDecimal("500"));
+        withdraw.setAmountEur(new BigDecimal("500"));
+        withdraw.setOrderDate(LocalDate.of(2023, 7, 1));
+        p.setOrders(new ArrayList<>(List.of(dep, withdraw)));
+
+        BigDecimal val = service.valueLivret(p, LocalDate.of(2024, 1, 1));
+        // 2000€ capitalise 181j à 3% → ~2029.65, retrait 500€ → 1529.65,
+        // puis 184j de capitalisation → ~1552. Range de tolérance large.
+        assertThat(val.doubleValue()).isBetween(1540.0, 1565.0);
+    }
+
+    // ── valueImmoPapier : branches additionnelles ────────────────────────────
+
+    @Test
+    void immoPapier_sansSnapshotPourLaPosition_retourneNull_warningDedouble() {
+        Position p = new Position();
+        p.setId(99L);
+        p.setCategory(AssetCategory.IMMO_PAPIER);
+        p.setLabel("SCPI Test");
+        p.setStatus(PositionStatus.ACTIVE);
+        p.setIncludeInIncomeProjection(true);
+        p.setCreatedAt(LocalDateTime.now());
+        p.setOrders(new ArrayList<>());
+
+        List<String> warnings = new ArrayList<>();
+        BigDecimal val1 = service.valuePositionAt(p, LocalDate.now(),
+                Map.of(), Map.of(), Map.of(), warnings);
+        BigDecimal val2 = service.valuePositionAt(p, LocalDate.now().minusDays(30),
+                Map.of(), Map.of(), Map.of(), warnings);
+
+        assertThat(val1).isNull();
+        assertThat(val2).isNull();
+        assertThat(warnings).hasSize(1);  // déduplication par label
+    }
+
+    @Test
+    void immoPapier_dateAvantPremierSnapshot_retourneNull() {
+        Position p = new Position();
+        p.setId(99L); p.setCategory(AssetCategory.IMMO_PAPIER);
+        p.setLabel("SCPI"); p.setStatus(PositionStatus.ACTIVE);
+        p.setIncludeInIncomeProjection(true); p.setCreatedAt(LocalDateTime.now());
+        p.setOrders(new ArrayList<>());
+
+        NavigableMap<LocalDate, BigDecimal> snapshots = new TreeMap<>();
+        snapshots.put(LocalDate.of(2025, 1, 1), new BigDecimal("10000"));
+
+        List<String> warnings = new ArrayList<>();
+        BigDecimal val = service.valuePositionAt(p, LocalDate.of(2024, 6, 1),
+                Map.of(), Map.of(), Map.of(99L, snapshots), warnings);
+
+        assertThat(val).isNull();
+        assertThat(warnings).hasSize(1);
+    }
+
+    @Test
+    void immoPapier_unSeulSnapshotAnterieur_fallbackSurCetteValeur() {
+        Position p = new Position();
+        p.setId(99L); p.setCategory(AssetCategory.IMMO_PAPIER);
+        p.setLabel("SCPI"); p.setStatus(PositionStatus.ACTIVE);
+        p.setIncludeInIncomeProjection(true); p.setCreatedAt(LocalDateTime.now());
+        p.setOrders(new ArrayList<>());
+
+        NavigableMap<LocalDate, BigDecimal> snapshots = new TreeMap<>();
+        snapshots.put(LocalDate.of(2024, 1, 1), new BigDecimal("10000"));
+
+        BigDecimal val = service.valuePositionAt(p, LocalDate.of(2024, 6, 1),
+                Map.of(), Map.of(), Map.of(99L, snapshots), new ArrayList<>());
+
+        assertThat(val).isEqualByComparingTo("10000");  // pas d'extrapolation
+    }
+
+    // ── Position fermée : court-circuit ─────────────────────────────────────
+
+    @Test
+    void positionFermee_apresClosedDate_retourneZero() {
+        Instrument instr = instrument(10L);
+        Position p = boursePosition(1L, instr, "EUR");
+        p.setClosedDate(LocalDate.of(2024, 6, 1));
+        p.setStatus(PositionStatus.CLOSED);
+        p.setOrders(new ArrayList<>(List.of(
+                buyOrder(p, LocalDate.of(2023, 1, 1),
+                        new BigDecimal("100"), new BigDecimal("5000")))));
+
+        BigDecimal val = service.valuePositionAt(p, LocalDate.of(2024, 7, 1),
+                Map.of(), Map.of(), Map.of(), new ArrayList<>());
+        assertThat(val).isEqualByComparingTo("0");
     }
 
     // ── Catégories exclues ────────────────────────────────────────────────────
