@@ -6,9 +6,15 @@ import com.myfinance.dto.CreateInstrumentRequest;
 import com.myfinance.dto.InstrumentDto;
 import com.myfinance.dto.UpdateInstrumentPriceRequest;
 import com.myfinance.domain.Position;
+import com.myfinance.domain.User;
+import com.myfinance.domain.RoleEnum;
+import com.myfinance.domain.OrderType;
+import com.myfinance.domain.PositionOrder;
 import com.myfinance.repository.InstrumentAllocationRepository;
+import com.myfinance.repository.InstrumentPriceHistoryRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.InstrumentSectorAllocationRepository;
+import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.repository.PositionRepository;
 import com.myfinance.repository.PositionSnapshotRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +42,8 @@ class InstrumentServiceTest {
     @Mock InstrumentSectorAllocationRepository sectorAllocationRepository;
     @Mock PositionRepository                   positionRepository;
     @Mock PositionSnapshotRepository           positionSnapshotRepository;
+    @Mock InstrumentPriceHistoryRepository     priceHistoryRepository;
+    @Mock PositionOrderRepository              positionOrderRepository;
     @InjectMocks InstrumentService instrumentService;
 
     Instrument etf;
@@ -365,5 +373,268 @@ class InstrumentServiceTest {
         InstrumentDto result = instrumentService.update(1L, request);
 
         assertThat(result.name()).isEqualTo("Lyxor PEA Nasdaq-100 (MAJ)");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels — branches non couvertes
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── findAll : combinaisons de filtres ────────────────────────────────────
+
+    @Test
+    void findAll_avecQEtCategorie_delegueLaRechercheCombinee() {
+        when(instrumentRepository.searchByQueryAndCategory("nasd", AssetCategory.BOURSE))
+                .thenReturn(List.of(etf));
+
+        List<InstrumentDto> result = instrumentService.findAll("nasd", AssetCategory.BOURSE);
+
+        assertThat(result).hasSize(1);
+        verify(instrumentRepository, never()).searchByQuery(any());
+        verify(instrumentRepository, never()).findAll();
+    }
+
+    @Test
+    void findAll_qTropCourtAvecCategorie_filtreParCategorieSeule() {
+        when(instrumentRepository.findByCategoryOrderByNameAsc(AssetCategory.CRYPTO))
+                .thenReturn(List.of(bitcoin));
+
+        List<InstrumentDto> result = instrumentService.findAll("a", AssetCategory.CRYPTO);
+
+        assertThat(result).hasSize(1);
+        verify(instrumentRepository, never()).searchByQueryAndCategory(any(), any());
+    }
+
+    // ── findById : 404 ──────────────────────────────────────────────────────
+
+    @Test
+    void findById_leve404_siInstrumentIntrouvable() {
+        when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> instrumentService.findById(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── validateRequest : ISIN/ticker uniques + obligatoires ─────────────────
+
+    @Test
+    void create_bourseSansIsin_leve400() {
+        CreateInstrumentRequest req = new CreateInstrumentRequest(
+                AssetCategory.BOURSE, null, null, "Nom", "EUR", null, null, null, null);
+
+        assertThatThrownBy(() -> instrumentService.create(req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("ISIN");
+                });
+    }
+
+    @Test
+    void create_bourseIsinDejaExistant_leve409() {
+        CreateInstrumentRequest req = new CreateInstrumentRequest(
+                AssetCategory.BOURSE, "FR0010315770", null, "Nom", "EUR", null, null, null, null);
+        when(instrumentRepository.findByIsin("FR0010315770")).thenReturn(Optional.of(etf));
+
+        assertThatThrownBy(() -> instrumentService.create(req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void create_cryptoSansTicker_leve400() {
+        CreateInstrumentRequest req = new CreateInstrumentRequest(
+                AssetCategory.CRYPTO, null, null, "Nom", "USD", null, null, null, null);
+
+        assertThatThrownBy(() -> instrumentService.create(req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("ticker");
+                });
+    }
+
+    @Test
+    void create_cryptoTickerDejaExistant_leve409() {
+        CreateInstrumentRequest req = new CreateInstrumentRequest(
+                AssetCategory.CRYPTO, null, "BTC", "Nom", "USD", null, null, null, null);
+        when(instrumentRepository.findByTicker("BTC")).thenReturn(Optional.of(bitcoin));
+
+        assertThatThrownBy(() -> instrumentService.create(req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void update_isinExistantSurAutreInstrument_leve409() {
+        Instrument autre = Instrument.builder().id(99L).category(AssetCategory.BOURSE)
+                .isin("US1234567890").name("Autre").currency("USD").build();
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(instrumentRepository.findByIsin("US1234567890")).thenReturn(Optional.of(autre));
+
+        CreateInstrumentRequest req = new CreateInstrumentRequest(
+                AssetCategory.BOURSE, "US1234567890", null, "Nom", "EUR", null, null, null, null);
+
+        assertThatThrownBy(() -> instrumentService.update(1L, req))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    // ── updateAllocations / updateSectorAllocations ──────────────────────────
+
+    @Test
+    void updateAllocations_listeVide_supprimeToutEtRetourneVide() {
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+
+        var result = instrumentService.updateAllocations(1L, List.of());
+
+        assertThat(result).isEmpty();
+        verify(allocationRepository).deleteByInstrument(etf);
+        verify(allocationRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateAllocations_filtreLesPaysVides() {
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(allocationRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var entries = List.of(
+                new com.myfinance.dto.InstrumentAllocationDto("USA", new BigDecimal("60")),
+                new com.myfinance.dto.InstrumentAllocationDto(null, new BigDecimal("10")),
+                new com.myfinance.dto.InstrumentAllocationDto("", new BigDecimal("10")),
+                new com.myfinance.dto.InstrumentAllocationDto("   ", new BigDecimal("10")),
+                new com.myfinance.dto.InstrumentAllocationDto("Japan", new BigDecimal("20")));
+
+        var result = instrumentService.updateAllocations(1L, entries);
+
+        assertThat(result).hasSize(2);  // Seuls USA et Japan
+    }
+
+    @Test
+    void updateSectorAllocations_filtreLesSecteursVides() {
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(sectorAllocationRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var entries = List.of(
+                new com.myfinance.dto.InstrumentSectorAllocationDto("Tech", new BigDecimal("70")),
+                new com.myfinance.dto.InstrumentSectorAllocationDto(null, new BigDecimal("10")),
+                new com.myfinance.dto.InstrumentSectorAllocationDto("Finance", new BigDecimal("30")));
+
+        var result = instrumentService.updateSectorAllocations(1L, entries);
+
+        assertThat(result).hasSize(2);
+    }
+
+    // ── loadAllocationsForScore ──────────────────────────────────────────────
+
+    @Test
+    void loadAllocationsForScore_listeVide_retourneBundleVide() {
+        InstrumentService.AllocationsBundle bundle = instrumentService.loadAllocationsForScore(List.of());
+
+        assertThat(bundle.byCountry()).isEmpty();
+        assertThat(bundle.bySector()).isEmpty();
+        verifyNoInteractions(allocationRepository, sectorAllocationRepository);
+    }
+
+    // ── getPriceHistory : defaults ───────────────────────────────────────────
+
+    @Test
+    void getPriceHistory_sansDates_defautTroisAns() {
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(priceHistoryRepository.findByInstrumentAndPriceDateBetweenOrderByPriceDateAsc(
+                eq(etf), any(), any())).thenReturn(List.of());
+
+        var result = instrumentService.getPriceHistory(1L, null, null);
+
+        assertThat(result).isEmpty();
+        // Vérifie que les dates par défaut sont [today-3y, today]
+        verify(priceHistoryRepository).findByInstrumentAndPriceDateBetweenOrderByPriceDateAsc(
+                eq(etf),
+                argThat(d -> ((java.time.LocalDate) d).isBefore(java.time.LocalDate.now())),
+                any());
+    }
+
+    @Test
+    void getPriceHistory_instrumentIntrouvable_leve404() {
+        when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> instrumentService.getPriceHistory(99L, null, null))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── getOrderMarkers : filtrage par user + types ──────────────────────────
+
+    @Test
+    void getOrderMarkers_aucunePositionUtilisateur_retourneListeVide() {
+        User user = User.builder().id(1L).role(RoleEnum.USER).build();
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(positionRepository.findByInstrument(etf)).thenReturn(List.of());
+
+        var result = instrumentService.getOrderMarkers(1L, user);
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(positionOrderRepository);
+    }
+
+    @Test
+    void getOrderMarkers_filtrePositionDAutresUtilisateurs() {
+        User user = User.builder().id(1L).role(RoleEnum.USER).build();
+        User autre = User.builder().id(2L).role(RoleEnum.USER).build();
+        Position posUser = Position.builder().id(10L).user(user).instrument(etf).build();
+        Position posAutre = Position.builder().id(11L).user(autre).instrument(etf).build();
+
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(positionRepository.findByInstrument(etf)).thenReturn(List.of(posUser, posAutre));
+        PositionOrder buy = PositionOrder.builder()
+                .position(posUser).orderType(OrderType.BUY)
+                .orderDate(java.time.LocalDate.now()).build();
+        when(positionOrderRepository.findByPositionInOrderByOrderDateAsc(List.of(posUser)))
+                .thenReturn(List.of(buy));
+
+        var result = instrumentService.getOrderMarkers(1L, user);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void getOrderMarkers_filtreUniquementBuySellDividendInterest() {
+        User user = User.builder().id(1L).role(RoleEnum.USER).build();
+        Position pos = Position.builder().id(10L).user(user).instrument(etf).build();
+        when(instrumentRepository.findById(1L)).thenReturn(Optional.of(etf));
+        when(positionRepository.findByInstrument(etf)).thenReturn(List.of(pos));
+
+        when(positionOrderRepository.findByPositionInOrderByOrderDateAsc(any()))
+                .thenReturn(List.of(
+                        PositionOrder.builder().position(pos).orderType(OrderType.BUY)
+                                .orderDate(java.time.LocalDate.now()).build(),
+                        PositionOrder.builder().position(pos).orderType(OrderType.DEPOSIT)
+                                .orderDate(java.time.LocalDate.now()).build(),  // ← filtré
+                        PositionOrder.builder().position(pos).orderType(OrderType.SELL)
+                                .orderDate(java.time.LocalDate.now()).build(),
+                        PositionOrder.builder().position(pos).orderType(OrderType.DIVIDEND)
+                                .orderDate(java.time.LocalDate.now()).build()));
+
+        var result = instrumentService.getOrderMarkers(1L, user);
+
+        assertThat(result).hasSize(3);  // BUY + SELL + DIVIDEND (DEPOSIT filtré)
+    }
+
+    @Test
+    void getOrderMarkers_instrumentIntrouvable_leve404() {
+        User user = User.builder().id(1L).role(RoleEnum.USER).build();
+        when(instrumentRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> instrumentService.getOrderMarkers(99L, user))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
     }
 }
