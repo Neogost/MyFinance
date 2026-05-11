@@ -8,7 +8,9 @@ import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.TaxSimulationDto;
+import com.myfinance.domain.ContractBonus;
 import com.myfinance.domain.ContractOnCall;
+import com.myfinance.repository.ContractBonusRepository;
 import com.myfinance.repository.ContractOnCallRepository;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
@@ -42,6 +44,7 @@ class TaxSimulatorServiceTest {
     @Mock MonthlyPaySlipRepository monthlyPaySlipRepository;
     @Mock OtherIncomeRepository otherIncomeRepository;
     @Mock ContractOnCallRepository contractOnCallRepository;
+    @Mock ContractBonusRepository  contractBonusRepository;
     @InjectMocks TaxSimulatorService taxSimulatorService;
 
     User user;
@@ -103,6 +106,10 @@ class TaxSimulatorServiceTest {
                 .thenReturn(Optional.empty());
         // Aucune astreinte par défaut
         Mockito.lenient().when(contractOnCallRepository.findByContractOrderByIdAsc(any()))
+                .thenReturn(List.of());
+        // Aucune prime MENSUELLE par défaut
+        Mockito.lenient().when(contractBonusRepository
+                .findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(any()))
                 .thenReturn(List.of());
     }
 

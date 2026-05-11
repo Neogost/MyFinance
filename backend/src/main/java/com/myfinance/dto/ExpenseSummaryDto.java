@@ -14,5 +14,6 @@ public record ExpenseSummaryDto(
         Float breakdownNetImposable,
         Float breakdownEstimatedTax,    // PAS mensuel (null si profil fiscal incomplet)
         Float breakdownBenefits,        // avantages en nature (null si 0)
-        Float breakdownMealVoucherEmployer  // TR part employeur (null si 0)
+        Float breakdownMealVoucherEmployer,  // TR part employeur (null si 0)
+        Float breakdownMonthlyBonuses    // primes MENSUELLE actives nettes (null si 0)
 ) {}

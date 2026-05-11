@@ -208,7 +208,7 @@ class PatrimoineScoreServiceTest {
                 BigDecimal.valueOf(50), BigDecimal.valueOf(950), List.of()));
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3500f, "NET_AFTER_TAX", 2000f, 24000f, 1500f, 43f,
-                List.of(), null, null, null, null));
+                List.of(), null, null, null, null, null));
         when(portfolioSnapshotService.findAllByUser(user)).thenReturn(List.of(
                 new PortfolioSnapshotDto(2L, LocalDate.now().minusMonths(1),
                         BigDecimal.valueOf(200000), BigDecimal.valueOf(248000), BigDecimal.valueOf(48000), null),
@@ -231,7 +231,7 @@ class PatrimoineScoreServiceTest {
         when(debtService.getSummary(user)).thenReturn(new DebtSummaryDto(
                 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
-                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null));
+                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null, null));
         when(portfolioSnapshotService.findAllByUser(user)).thenReturn(List.of());
     }
 

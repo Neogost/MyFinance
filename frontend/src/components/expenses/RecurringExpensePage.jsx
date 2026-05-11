@@ -174,6 +174,12 @@ export default function RecurringExpensePage() {
                         <span className="font-medium amount">+{fmt(summary.breakdownMealVoucherEmployer)} €</span>
                       </div>
                     )}
+                    {summary.breakdownMonthlyBonuses != null && (
+                      <div className="flex justify-between gap-6 text-violet-300">
+                        <span>+ Primes mensuelles</span>
+                        <span className="font-medium amount">+{fmt(summary.breakdownMonthlyBonuses)} €</span>
+                      </div>
+                    )}
                     <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
                       <span>= Revenu net mensuel</span>
                       <span className="amount">{fmt(summary.monthlyNetIncome)} €</span>

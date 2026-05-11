@@ -6,6 +6,8 @@ import com.myfinance.domain.OtherIncome;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.TaxSimulationDto;
+import com.myfinance.domain.BonusTypeEnum;
+import com.myfinance.repository.ContractBonusRepository;
 import com.myfinance.repository.ContractOnCallRepository;
 import com.myfinance.repository.MonthlyPaySlipRepository;
 import com.myfinance.repository.OtherIncomeRepository;
@@ -33,6 +35,7 @@ public class TaxSimulatorService {
     private final MonthlyPaySlipRepository monthlyPaySlipRepository;
     private final OtherIncomeRepository otherIncomeRepository;
     private final ContractOnCallRepository contractOnCallRepository;
+    private final ContractBonusRepository  contractBonusRepository;
 
     public static final String SOURCE_PROJECTION = "PROJECTION_CONTRAT";
     public static final String SOURCE_BULLETINS   = "BULLETINS_REELS";
@@ -229,7 +232,17 @@ public class TaxSimulatorService {
                 .mapToDouble(oc -> oc.getWeeklyFlatRate() * oc.getEstimatedWeeksPerYear() * 0.75)
                 .sum();
 
-        return salaryNetImposable + onCallNetImposable;
+        // Primes MENSUELLE actives à la date de référence (net imposable ≈ 75 % du brut annualisé)
+        float bonusMensuelleNetImposable = (float) contractBonusRepository
+                .findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(contract)
+                .stream()
+                .filter(b -> b.getType() == BonusTypeEnum.MENSUELLE)
+                .filter(b -> b.getStartDate() != null && !b.getStartDate().isAfter(referenceDate))
+                .filter(b -> b.getEndDate() == null || !b.getEndDate().isBefore(referenceDate))
+                .mapToDouble(b -> b.getGrossAmount() != null ? b.getGrossAmount() * 12 * 0.75 : 0.0)
+                .sum();
+
+        return salaryNetImposable + onCallNetImposable + bonusMensuelleNetImposable;
     }
 
     // ── Calcul du nombre de mois d'un contrat dans une année ──

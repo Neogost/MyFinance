@@ -135,6 +135,7 @@ public class RecurringExpenseService {
         Float breakdownEstimatedTax = null;
         Float breakdownBenefits = null;
         Float breakdownMealVoucherEmployer = null;
+        Float breakdownMonthlyBonuses = null;
 
         if (active != null) {
             if (active.monthlyNetAfterTax() != null) {
@@ -143,6 +144,12 @@ public class RecurringExpenseService {
             } else if (active.monthlyNetImposable() != null) {
                 monthlyNetIncome = active.monthlyNetImposable();
                 incomeSource = "NET_IMPOSABLE";
+            }
+            // Primes MENSUELLE actives : approximation nette à 72 % du brut
+            if (active.monthlyActiveMensuelleGross() != null && active.monthlyActiveMensuelleGross() > 0) {
+                float bonusNet = active.monthlyActiveMensuelleGross() * 0.72f;
+                monthlyNetIncome = (monthlyNetIncome != null ? monthlyNetIncome : 0f) + bonusNet;
+                breakdownMonthlyBonuses = bonusNet;
             }
             breakdownNetImposable = active.monthlyNetImposable();
             breakdownEstimatedTax = active.monthlyEstimatedTax();
@@ -168,7 +175,8 @@ public class RecurringExpenseService {
                 breakdownNetImposable,
                 breakdownEstimatedTax,
                 breakdownBenefits,
-                breakdownMealVoucherEmployer
+                breakdownMealVoucherEmployer,
+                breakdownMonthlyBonuses
         );
     }
 
