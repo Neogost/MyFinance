@@ -73,3 +73,8 @@ security-audit*.md
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# =============================================================
+#  CLAUDE CODE — config locale (settings, skills, transcripts)
+# =============================================================
+.claude/
