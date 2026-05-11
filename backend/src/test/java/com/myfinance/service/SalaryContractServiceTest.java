@@ -87,6 +87,9 @@ class SalaryContractServiceTest {
         Mockito.lenient().when(taxParameters.getPass()).thenReturn(47100f);
         Mockito.lenient().when(taxParameters.getEmployerFlatRate()).thenReturn(0.45f);
         Mockito.lenient().when(taxParameters.getEmployeeContributions()).thenReturn(ec);
+        // Cotisations PUBLIC (utilisées uniquement par les tests sur contrats fonction publique)
+        Mockito.lenient().when(publicSectorParameters.getCotisations())
+                .thenReturn(new com.myfinance.config.PublicSectorParameters.Cotisations());
         // Pas de fiscalParts sur les users de test → estimerImpotSurSalaire retourne null
         Mockito.lenient().when(taxSimulatorService.estimerImpotSurSalaire(anyFloat(), any())).thenReturn(null);
         // Aucun avantage en nature par défaut
@@ -394,5 +397,235 @@ class SalaryContractServiceTest {
         // 100 % → pas de réduction
         assertThat(result.annualGrossSalary()).isEqualTo(45000f);
         assertThat(result.partTimePercentage()).isEqualTo(100f);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels — branches non couvertes
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── validateRequest : branches de validation ──────────────────────────────
+
+    @Test
+    void create_isPublicSansIndiceMajore_leve400() {
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                ContractTypeEnum.PUBLIC, null, com.myfinance.domain.PublicSubTypeEnum.TITULAIRE, null,
+                "Mairie", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        assertThatThrownBy(() -> salaryContractService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("indice majoré");
+                });
+        verify(salaryContractRepository, never()).save(any());
+    }
+
+    @Test
+    void create_isPublicSansSubType_leve400() {
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                ContractTypeEnum.PUBLIC, null, null, 500,
+                "Mairie", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        assertThatThrownBy(() -> salaryContractService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void create_isPrivateSansAnnualGrossSalary_leve400() {
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                ContractTypeEnum.PRIVATE, null, null, null,
+                "Conserto", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 9.5f, 50f, false, 0.012f, 100f);
+
+        assertThatThrownBy(() -> salaryContractService.create(req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                    ResponseStatusException rse = (ResponseStatusException) ex;
+                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(rse.getReason()).contains("salaire brut");
+                });
+    }
+
+    // ── create : contrat fonction publique ────────────────────────────────────
+
+    @Test
+    void create_contratPublic_calculeBrutDepuisIndiceMajore() {
+        // PointValueService renvoie 60.0 €/an du point → 500 × 60 = 30 000 €
+        when(pointValueService.computeAnnualGross(500, LocalDate.of(2024, 1, 1)))
+                .thenReturn(30_000f);
+        // toDto rappelle getAnnualValueAt pour le recalcul effectif
+        when(pointValueService.getAnnualValueAt(any())).thenReturn(60.0);
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> {
+            SalaryContract c = inv.getArgument(0);
+            // Set id pour le DTO
+            c = SalaryContract.builder()
+                    .id(99L).user(c.getUser()).contractType(c.getContractType())
+                    .indiceMajore(c.getIndiceMajore()).publicSubType(c.getPublicSubType())
+                    .startDate(c.getStartDate()).endDate(c.getEndDate())
+                    .annualGrossSalary(c.getAnnualGrossSalary())
+                    .partTimePercentage(c.getPartTimePercentage())
+                    .paidMonthsPerYear(c.getPaidMonthsPerYear())
+                    .weeklyHours(c.getWeeklyHours())
+                    .mealVoucherAmount(c.getMealVoucherAmount())
+                    .mealVoucherEmployeeRate(c.getMealVoucherEmployeeRate())
+                    .isCadre(c.getIsCadre()).build();
+            return c;
+        });
+
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                ContractTypeEnum.PUBLIC, null,
+                com.myfinance.domain.PublicSubTypeEnum.TITULAIRE, 500,
+                "Mairie", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        SalaryContractDto result = salaryContractService.create(req, owner);
+
+        assertThat(result.annualGrossSalary()).isEqualTo(30_000f);
+        assertThat(result.contractType()).isEqualTo(ContractTypeEnum.PUBLIC);
+        // Pour PUBLIC : isCadre forcé à false, paidMonthsPerYear forcé à 12
+        verify(salaryContractRepository).save(argThat(c ->
+                c.getPaidMonthsPerYear() == 12 && Boolean.FALSE.equals(c.getIsCadre())));
+    }
+
+    @Test
+    void create_contractTypeNull_defautPRIVATE() {
+        // contractType null → traité comme PRIVATE
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                null, 40_000f, null, null,
+                "Test", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 9.5f, 50f, true, 0.012f, 100f);
+
+        SalaryContractDto result = salaryContractService.create(req, owner);
+
+        assertThat(result.contractType()).isEqualTo(ContractTypeEnum.PRIVATE);
+    }
+
+    @Test
+    void create_avecPartTimePercentageNull_defaultA100() {
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        CreateSalaryContractRequest req = new CreateSalaryContractRequest(
+                ContractTypeEnum.PRIVATE, 50_000f, null, null,
+                "X", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, null, null);  // partTimePercentage = null
+
+        SalaryContractDto result = salaryContractService.create(req, owner);
+
+        assertThat(result.partTimePercentage()).isEqualTo(100f);
+    }
+
+    // ── update : contrat fonction publique ─────────────────────────────────────
+
+    @Test
+    void update_contratPublic_metAJourIndiceEtRecalculeBrut() {
+        SalaryContract publicContract = SalaryContract.builder()
+                .id(2L).user(owner).contractType(ContractTypeEnum.PUBLIC)
+                .startDate(LocalDate.of(2023, 1, 1)).endDate(null)
+                .indiceMajore(500).annualGrossSalary(30_000f)
+                .partTimePercentage(100f).paidMonthsPerYear(12)
+                .weeklyHours(35f).mealVoucherAmount(0f).mealVoucherEmployeeRate(50f)
+                .isCadre(false).build();
+        when(salaryContractRepository.findById(2L)).thenReturn(Optional.of(publicContract));
+        when(pointValueService.computeAnnualGross(550, LocalDate.of(2024, 1, 1)))
+                .thenReturn(33_000f);
+        when(pointValueService.getAnnualValueAt(any())).thenReturn(60.0);
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateSalaryContractRequest req = new UpdateSalaryContractRequest(
+                null, com.myfinance.domain.PublicSubTypeEnum.TITULAIRE, 550,
+                "Mairie", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        SalaryContractDto result = salaryContractService.update(2L, req, owner);
+
+        assertThat(result.indiceMajore()).isEqualTo(550);
+        assertThat(result.annualGrossSalary()).isEqualTo(33_000f);
+    }
+
+    @Test
+    void update_leve404_siContratIntrouvable() {
+        when(salaryContractRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateSalaryContractRequest req = new UpdateSalaryContractRequest(
+                40_000f, null, null, "X", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        assertThatThrownBy(() -> salaryContractService.update(99L, req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void update_admin_peutModifierContratDunAutre() {
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateSalaryContractRequest req = new UpdateSalaryContractRequest(
+                50_000f, null, null, "X", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, 100f);
+
+        assertThatNoException().isThrownBy(() -> salaryContractService.update(1L, req, admin));
+    }
+
+    @Test
+    void update_partTimePercentageNull_defautA100() {
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+        when(salaryContractRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        UpdateSalaryContractRequest req = new UpdateSalaryContractRequest(
+                50_000f, null, null, "X", LocalDate.of(2024, 1, 1), null,
+                12, 35f, 0f, 50f, false, 0.012f, null);
+
+        SalaryContractDto result = salaryContractService.update(1L, req, owner);
+
+        assertThat(result.partTimePercentage()).isEqualTo(100f);
+    }
+
+    // ── delete ──────────────────────────────────────────────────────────────
+
+    @Test
+    void delete_supprimeRevisionsEtContrat() {
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+
+        salaryContractService.delete(1L, owner);
+
+        verify(salaryRevisionRepository).deleteByContract(activeContract);
+        verify(salaryContractRepository).delete(activeContract);
+    }
+
+    @Test
+    void delete_leve403_siPasLeProprietaire() {
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+
+        assertThatThrownBy(() -> salaryContractService.delete(1L, otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+
+        verify(salaryRevisionRepository, never()).deleteByContract(any());
+        verify(salaryContractRepository, never()).delete(any(SalaryContract.class));
+    }
+
+    // ── findById : projection avec révision active ──────────────────────────
+
+    @Test
+    void findById_avecRevisionActive_utiliseSalaireDeLaRevision() {
+        SalaryRevision revision = SalaryRevision.builder()
+                .id(50L).effectiveDate(LocalDate.of(2024, 1, 1))
+                .annualGrossSalary(48_000f).build();
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
+        when(salaryRevisionRepository
+                .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(any(), any()))
+                .thenReturn(Optional.of(revision));
+
+        SalaryContractDto result = salaryContractService.findById(1L, owner);
+
+        assertThat(result.annualGrossSalary()).isEqualTo(48_000f);
+        assertThat(result.activeRevisionId()).isEqualTo(50L);
     }
 }
