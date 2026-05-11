@@ -615,7 +615,143 @@ class MonEntiteControllerTest {
 
 ---
 
-## 9. Checklist ajout d'un nouveau module
+## 9. Bonnes pratiques tests backend
+
+Convention figée après audit de qualité — ces règles tiennent compte du code existant et des choix d'architecture.
+
+### 9.1 Hiérarchie d'assertions et stubbing
+
+| Outil | Usage | Pourquoi |
+|---|---|---|
+| **AssertJ `assertThat(...)`** | défaut, exclusif | Lisible, fluent, messages d'échec riches. **Bannir** `assertEquals`, `assertTrue`, `assertNull` JUnit (0 occurrence dans le code actuel — on garde cette règle) |
+| **Mockito `when(...).thenReturn(...)`** | défaut | Style cohérent dans tout le projet. Ne pas mixer avec BDD `given().willReturn()` |
+| **`assertThatThrownBy(...).isInstanceOf(...).satisfies(ex -> ...)`** | exceptions | Préférer à `assertThrows` pour vérifier le `HttpStatus` en plus du type |
+| **`verify(repo).save(any())`** | side-effects | Pas de `times(1)` redondant (default) |
+| **`verify(repo, never()).save(any())`** | non-appel | Obligatoire dans les branches d'erreur |
+
+### 9.2 Convention de nommage des méthodes
+
+Format : `<méthodeTestée>_<action>_<condition>()` en français snake-case.
+
+```java
+@Test void findAllByUser_retourneListeVide_siAucunRevenu()
+@Test void update_leve404_siRevenuIntrouvable()
+@Test void create_leve400_siChampMontantManquant()
+@Test void delete_autorisePourAdmin()
+```
+
+Cette convention rend `@DisplayName` superflu — le rapport JUnit reste lisible. **Ne pas ajouter `@DisplayName`** (0 occurrence aujourd'hui — uniformité).
+
+### 9.3 Méthodes courtes — règle des 40 lignes
+
+Cible : médiane ≤ 15 lignes, **aucune méthode > 40 lignes** (état actuel : médiane 9, P90 17, max 39).
+
+Au-delà de 40 lignes : extraire les fixtures dans `@BeforeEach` ou des méthodes helper privées dans la classe de test. Si plusieurs méthodes ont la même fixture lourde, créer une classe `support/` (cf. `WithMockCustomUser`).
+
+### 9.4 `@ParameterizedTest` pour les cas dupliqués
+
+**Quand l'utiliser :** chaque fois que vous écrivez 3+ tests avec la même structure et un seul paramètre qui varie (typiquement validation 400, codes HTTP, types d'enum).
+
+```java
+// ❌ Avant — 4 tests quasi-identiques
+@Test void create_leve400_siLabelManquant()  { ... request avec label="" ... }
+@Test void create_leve400_siLabelTropLong()  { ... request avec label=300chars ... }
+@Test void create_leve400_siMontantNegatif() { ... request avec amount=-1 ... }
+@Test void create_leve400_siMontantNull()    { ... request avec amount=null ... }
+
+// ✅ Après
+@ParameterizedTest(name = "create_leve400 — {0}")
+@MethodSource("invalidRequests")
+void create_leve400_siRequetteInvalide(String desc, CreateRequest invalid) throws Exception {
+    mockMvc.perform(post("/api/mon-entite")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(invalid)))
+            .andExpect(status().isBadRequest());
+}
+
+static Stream<Arguments> invalidRequests() {
+    return Stream.of(
+        Arguments.of("label vide",     new CreateRequest("",     100f, ...)),
+        Arguments.of("label trop long",new CreateRequest("x".repeat(300), 100f, ...)),
+        Arguments.of("montant négatif",new CreateRequest("OK",   -1f,  ...)),
+        Arguments.of("montant null",   new CreateRequest("OK",   null, ...))
+    );
+}
+```
+
+Le nom `{0}` dans le rapport JUnit affiche la description — chaque cas reste identifiable individuellement.
+
+### 9.5 `@Nested` — uniquement si la classe dépasse 30 tests
+
+**Pas obligatoire.** À envisager pour les services à 30+ méthodes testées où le rapport plat devient illisible. Grouper alors par méthode SUT (System Under Test) :
+
+```java
+class PositionServiceTest {
+    @Nested class FindById { @Test void ... @Test void ... }
+    @Nested class CreateOrder { @Test void ... @Test void ... }
+}
+```
+
+Ne pas créer de `@Nested` artificiel pour 5-10 tests — surcoût de structure sans valeur.
+
+### 9.6 Couverture branches — cible ≥ 70 %
+
+Métrique JaCoCo `BRANCH` (et non `INSTRUCTION`). État actuel : **50 %** — chemins conditionnels (if/else, ternaires, switch, validation) souvent non couverts.
+
+Pour chaque service ou helper avec > 5 conditions :
+- 1 test par branche `true` ET `false`
+- 1 test par valeur limite (null, 0, vide, max)
+- 1 test par exception interceptable
+
+Vérifier avec `./mvnw test` puis ouvrir `backend/target/site/jacoco/index.html`. Trier par "Missed Branches" desc pour cibler les classes les moins couvertes.
+
+### 9.7 Tests d'intégration (`@SpringBootTest`)
+
+Les tests unitaires (services mockés + controllers slicés) ne valident **pas** :
+- la chaîne sécurité réelle (filtres + handlers)
+- les requêtes JPA contre une vraie DB (limites de la mock)
+- l'enchaînement scheduler → service → repo
+- la cohérence des migrations SQLite avec les entités
+
+**Cible :** au moins 1 test d'intégration par module critique (auth, patrimoine, dépenses), exécuté avec H2 en mémoire pour rester rapide :
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Transactional  // rollback systématique en fin de test
+class MonModuleIntegrationTest {
+    @Autowired MockMvc mockMvc;
+    @Autowired MonEntiteRepository repository;
+
+    @Test
+    void scenario_createReadDelete_chaine_complete() throws Exception {
+        // Création via API réelle (security + JPA + commit)
+        // Vérification via repository (état réel en DB)
+        // Cleanup automatique via @Transactional
+    }
+}
+```
+
+Profil `test` : `application-test.properties` avec H2 + `spring.jpa.hibernate.ddl-auto=create-drop`.
+
+### 9.8 Checklist tests backend
+
+- [ ] Service : `@ExtendWith(MockitoExtension.class)` + `@Mock` repos + `@InjectMocks`
+- [ ] Service : 3 utilisateurs en `@BeforeEach` (owner, otherUser, admin)
+- [ ] Service : tests des 4 codes d'erreur (404, 403, 409, 400) en plus du happy path
+- [ ] Service : `verify(..., never())` dans les branches d'erreur
+- [ ] Controller : `@WebMvcTest` + `@Import({SecurityConfig, PasswordEncoderConfig})` + `@TestPropertySource` + `@MockitoBean`
+- [ ] Controller : `@WithMockCustomUser` sur les endpoints authentifiés
+- [ ] Controller : 200/201/204 nominal + 401 sans auth + 403 ownership + 404 introuvable + 400 validation
+- [ ] Pour 3+ cas similaires sur une même méthode → utiliser `@ParameterizedTest`
+- [ ] Méthode > 40 lignes → extraire fixtures vers `@BeforeEach` ou helper
+- [ ] Avant commit : `./mvnw test` BUILD SUCCESS + branch coverage ≥ 70 % sur les nouvelles classes (vérifier dans `target/site/jacoco/`)
+- [ ] Module critique sans test d'intégration → en ajouter 1 (`@SpringBootTest` + H2)
+
+---
+
+## 10. Checklist ajout d'un nouveau module
 
 - [ ] Enum(s) dans `domain/`
 - [ ] Entité `@Entity` dans `domain/`
@@ -623,8 +759,9 @@ class MonEntiteControllerTest {
 - [ ] DTOs (réponse + create request + update request) dans `dto/`
 - [ ] Service dans `service/`
 - [ ] Controller dans `controller/`
-- [ ] Test service dans `test/.../service/`
-- [ ] Test controller dans `test/.../controller/`
+- [ ] Test service dans `test/.../service/` (cf. section 9 pour la convention)
+- [ ] Test controller dans `test/.../controller/` (cf. section 9)
+- [ ] Test d'intégration `@SpringBootTest` si module critique (cf. section 9.7)
 - [ ] Documentation API dans `docs/api/`
 - [ ] Référence dans `docs/architecture/overview.md`
 - [ ] Section endpoints dans `CLAUDE.md`
