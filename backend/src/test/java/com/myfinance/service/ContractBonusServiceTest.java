@@ -13,6 +13,9 @@ import com.myfinance.repository.SalaryContractRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -177,11 +181,9 @@ class ContractBonusServiceTest {
         assertThat(result.endDate()).isEqualTo(LocalDate.of(2024, 12, 31));
     }
 
-    @Test
-    void create_leve400_siAnnuelleSansPaymentMonth() {
-        CreateContractBonusRequest request = new CreateContractBonusRequest(
-                "13ème mois", 3750f, BonusTypeEnum.ANNUELLE, null, null, null, null);
-
+    @ParameterizedTest(name = "create_leve400 — {0}")
+    @MethodSource("invalidCreateRequests")
+    void create_leve400_siRequetteInvalide(String description, CreateContractBonusRequest request) {
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
 
         assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
@@ -192,50 +194,21 @@ class ContractBonusServiceTest {
         verify(contractBonusRepository, never()).save(any());
     }
 
-    @Test
-    void create_leve400_siExceptionnelleSansPaymentDate() {
-        CreateContractBonusRequest request = new CreateContractBonusRequest(
-                "Prime Macron", 1000f, BonusTypeEnum.EXCEPTIONNELLE, null, null, null, null);
-
-        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
-
-        assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
-
-        verify(contractBonusRepository, never()).save(any());
-    }
-
-    @Test
-    void create_leve400_siMensuelleSansStartDate() {
-        CreateContractBonusRequest request = new CreateContractBonusRequest(
-                "Prime transport", 50f, BonusTypeEnum.MENSUELLE, null, null, null, null);
-
-        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
-
-        assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
-
-        verify(contractBonusRepository, never()).save(any());
-    }
-
-    @Test
-    void create_leve400_siMensuelleDateFinAvantDateDebut() {
-        CreateContractBonusRequest request = new CreateContractBonusRequest(
-                "Prime transport", 50f, BonusTypeEnum.MENSUELLE,
-                null, null, LocalDate.of(2024, 6, 1), LocalDate.of(2024, 1, 1));
-
-        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
-
-        assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
-
-        verify(contractBonusRepository, never()).save(any());
+    static Stream<Arguments> invalidCreateRequests() {
+        return Stream.of(
+                Arguments.of("annuelle sans paymentMonth",
+                        new CreateContractBonusRequest("13ème mois", 3750f, BonusTypeEnum.ANNUELLE,
+                                null, null, null, null)),
+                Arguments.of("exceptionnelle sans paymentDate",
+                        new CreateContractBonusRequest("Prime Macron", 1000f, BonusTypeEnum.EXCEPTIONNELLE,
+                                null, null, null, null)),
+                Arguments.of("mensuelle sans startDate",
+                        new CreateContractBonusRequest("Prime transport", 50f, BonusTypeEnum.MENSUELLE,
+                                null, null, null, null)),
+                Arguments.of("mensuelle endDate avant startDate",
+                        new CreateContractBonusRequest("Prime transport", 50f, BonusTypeEnum.MENSUELLE,
+                                null, null, LocalDate.of(2024, 6, 1), LocalDate.of(2024, 1, 1)))
+        );
     }
 
     // ── update ─────────────────────────────────────────────────
