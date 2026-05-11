@@ -605,4 +605,268 @@ class PositionServiceTest {
         // Investi = uniquement l'achat (500€), pas l'abondement
         assertThat(result.computed().investedAmountEur()).isEqualByComparingTo("500.00");
     }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Tests additionnels — branches non couvertes
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // ── findAllByUser : combinaisons category × status ───────────────────────
+
+    @Test
+    void findAllByUser_avecStatusSeul_filtreParStatus() {
+        when(positionRepository.findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE))
+                .thenReturn(List.of(livret));
+
+        List<PositionDto> result = positionService.findAllByUser(owner, null, PositionStatus.ACTIVE);
+
+        assertThat(result).hasSize(1);
+        verify(positionRepository).findByUserAndStatusOrderByCreatedAtDesc(owner, PositionStatus.ACTIVE);
+        verify(positionRepository, never()).findByUserOrderByCreatedAtDesc(any());
+    }
+
+    @Test
+    void findAllByUser_avecCategorieEtStatus_filtreCombine() {
+        when(positionRepository.findByUserAndCategoryAndStatusOrderByCreatedAtDesc(
+                owner, AssetCategory.LIVRET, PositionStatus.ACTIVE))
+                .thenReturn(List.of(livret));
+
+        List<PositionDto> result = positionService.findAllByUser(owner, AssetCategory.LIVRET, PositionStatus.ACTIVE);
+
+        assertThat(result).hasSize(1);
+    }
+
+    // ── close ───────────────────────────────────────────────────────────────
+
+    @Test
+    void close_passeStatusEnClosedEtSetClosedDate() {
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(livret)).thenReturn(List.of());
+
+        PositionDto result = positionService.close(1L, owner);
+
+        assertThat(result.status()).isEqualTo(PositionStatus.CLOSED);
+        assertThat(result.closedDate()).isNotNull();
+    }
+
+    // ── update : closedDate modifiable uniquement si CLOSED ──────────────────
+
+    @Test
+    void update_positionFermee_metAJourClosedDate() {
+        livret.setStatus(PositionStatus.CLOSED);
+        livret.setClosedDate(LocalDate.of(2024, 1, 1));
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(any())).thenReturn(List.of());
+
+        UpdatePositionRequest req = new UpdatePositionRequest(
+                "BNP", "Livret A modifié", "EUR", FiscalEnvelope.NONE,
+                null, null, null, null, null, null, null, null,
+                null, new BigDecimal("3.5"), false, LocalDate.of(2024, 6, 1));
+
+        PositionDto result = positionService.update(1L, req, owner);
+
+        assertThat(result.closedDate()).isEqualTo(LocalDate.of(2024, 6, 1));
+    }
+
+    @Test
+    void update_positionActive_ignoreClosedDate() {
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(any())).thenReturn(List.of());
+
+        UpdatePositionRequest req = new UpdatePositionRequest(
+                "BNP", "Livret A", "EUR", FiscalEnvelope.NONE,
+                null, null, null, null, null, null, null, null,
+                null, new BigDecimal("3.5"), false, LocalDate.of(2024, 6, 1));
+
+        PositionDto result = positionService.update(1L, req, owner);
+
+        // Position ACTIVE : closedDate du request est ignoré
+        assertThat(result.closedDate()).isNull();
+    }
+
+    // ── computeAmountEur ─────────────────────────────────────────────────────
+
+    @Test
+    void createOrder_amountEur_eurReturnsAmountUnchanged() {
+        // Pour EUR, pas d'appel au service d'historique des taux
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CreatePositionOrderRequest req = new CreatePositionOrderRequest(
+                OrderType.DEPOSIT, null, null,
+                new BigDecimal("1000"), LocalDate.now(), null, null, null, null, null, null);
+
+        positionService.createOrder(1L, req, owner);
+
+        verify(positionOrderRepository).save(argThat(o ->
+                o.getAmountEur().compareTo(new BigDecimal("1000")) == 0));
+        verifyNoInteractions(exchangeRateHistoryService);
+    }
+
+    @Test
+    void createOrder_amountEur_usdAvecTauxHistorique_utiliseTauxDateOrdre() {
+        // Position USD, ordre 100 USD au 2024-06-01 avec taux 1.10 → 90.91 EUR
+        Position bourseUsd = Position.builder()
+                .id(20L).user(owner).category(AssetCategory.BOURSE).label("ETF US")
+                .currency("USD").instrument(instrument).status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now()).build();
+        when(positionRepository.findById(20L)).thenReturn(Optional.of(bourseUsd));
+        when(positionOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateHistoryService.getRateAt("USD", LocalDate.of(2024, 6, 1)))
+                .thenReturn(Optional.of(new BigDecimal("1.10")));
+
+        CreatePositionOrderRequest req = new CreatePositionOrderRequest(
+                OrderType.BUY, new BigDecimal("10"), new BigDecimal("10"),
+                new BigDecimal("100"), LocalDate.of(2024, 6, 1), null, null, null, null, null, null);
+
+        positionService.createOrder(20L, req, owner);
+
+        // 100 USD / 1.10 = 90.9091...
+        verify(positionOrderRepository).save(argThat(o ->
+                o.getAmountEur().compareTo(new BigDecimal("90.9091")) == 0));
+    }
+
+    @Test
+    void createOrder_amountEur_usdSansHistorique_fallbackTauxCourant() {
+        Position bourseUsd = Position.builder()
+                .id(20L).user(owner).category(AssetCategory.BOURSE).label("ETF US")
+                .currency("USD").instrument(instrument).status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now()).build();
+        when(positionRepository.findById(20L)).thenReturn(Optional.of(bourseUsd));
+        when(positionOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateHistoryService.getRateAt(any(), any())).thenReturn(Optional.empty());
+        when(exchangeRateRepository.findByCurrency("USD")).thenReturn(Optional.of(
+                com.myfinance.domain.ExchangeRate.builder().currency("USD")
+                        .rate(new BigDecimal("1.20")).build()));
+
+        CreatePositionOrderRequest req = new CreatePositionOrderRequest(
+                OrderType.BUY, new BigDecimal("10"), new BigDecimal("12"),
+                new BigDecimal("120"), LocalDate.of(2024, 6, 1), null, null, null, null, null, null);
+
+        positionService.createOrder(20L, req, owner);
+
+        // 120 / 1.20 = 100
+        verify(positionOrderRepository).save(argThat(o ->
+                o.getAmountEur().compareTo(new BigDecimal("100.0000")) == 0));
+    }
+
+    @Test
+    void createOrder_amountEur_aucunTaux_fallbackBigDecimalOne() {
+        Position bourseUsd = Position.builder()
+                .id(20L).user(owner).category(AssetCategory.BOURSE).label("ETF US")
+                .currency("USD").instrument(instrument).status(PositionStatus.ACTIVE)
+                .createdAt(LocalDateTime.now()).build();
+        when(positionRepository.findById(20L)).thenReturn(Optional.of(bourseUsd));
+        when(positionOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateHistoryService.getRateAt(any(), any())).thenReturn(Optional.empty());
+        when(exchangeRateRepository.findByCurrency("USD")).thenReturn(Optional.empty());
+
+        CreatePositionOrderRequest req = new CreatePositionOrderRequest(
+                OrderType.BUY, new BigDecimal("10"), new BigDecimal("10"),
+                new BigDecimal("100"), LocalDate.of(2024, 6, 1), null, null, null, null, null, null);
+
+        positionService.createOrder(20L, req, owner);
+
+        // 100 / 1 = 100 (fallback à 1.0)
+        verify(positionOrderRepository).save(argThat(o ->
+                o.getAmountEur().compareTo(new BigDecimal("100.0000")) == 0));
+    }
+
+    // ── updateOrder ──────────────────────────────────────────────────────────
+
+    @Test
+    void updateOrder_metAJourLesChamps() {
+        PositionOrder order = PositionOrder.builder()
+                .id(100L).position(livret).orderType(OrderType.DEPOSIT)
+                .amount(new BigDecimal("500")).amountEur(new BigDecimal("500"))
+                .orderDate(LocalDate.of(2024, 1, 1)).build();
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionOrderRepository.findById(100L)).thenReturn(Optional.of(order));
+        when(positionOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdatePositionOrderRequest req = new UpdatePositionOrderRequest(
+                OrderType.DEPOSIT, null, null, new BigDecimal("750"),
+                LocalDate.of(2024, 2, 1), "Note", null, null);
+
+        PositionOrderDto result = positionService.updateOrder(1L, 100L, req, owner);
+
+        assertThat(result.amount()).isEqualByComparingTo("750");
+    }
+
+    @Test
+    void updateOrder_bourseSansQuantite_leve400() {
+        PositionOrder order = PositionOrder.builder()
+                .id(100L).position(bourse).orderType(OrderType.BUY)
+                .quantity(new BigDecimal("10")).unitPrice(new BigDecimal("50"))
+                .amount(new BigDecimal("500")).amountEur(new BigDecimal("500"))
+                .orderDate(LocalDate.of(2024, 1, 1)).build();
+        when(positionRepository.findById(3L)).thenReturn(Optional.of(bourse));
+        when(positionOrderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        UpdatePositionOrderRequest req = new UpdatePositionOrderRequest(
+                OrderType.BUY, null, null, new BigDecimal("500"),  // quantité null
+                LocalDate.of(2024, 1, 1), null, null, null);
+
+        assertThatThrownBy(() -> positionService.updateOrder(3L, 100L, req, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    // ── getOrderBelongingToPosition ──────────────────────────────────────────
+
+    @Test
+    void deleteOrder_ordreIntrouvable_leve404() {
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionOrderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> positionService.deleteOrder(1L, 999L, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void deleteOrder_ordreAppartientAAutrePosition_leve404() {
+        PositionOrder order = PositionOrder.builder()
+                .id(100L).position(bourse)  // belongs to bourse, not livret
+                .orderType(OrderType.BUY)
+                .orderDate(LocalDate.of(2024, 1, 1)).build();
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionOrderRepository.findById(100L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> positionService.deleteOrder(1L, 100L, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ── findOrdersByPosition ─────────────────────────────────────────────────
+
+    @Test
+    void findOrdersByPosition_retourneOrdresAvecOwnershipCheck() {
+        PositionOrder order = PositionOrder.builder()
+                .id(100L).position(livret).orderType(OrderType.DEPOSIT)
+                .amount(new BigDecimal("500")).amountEur(new BigDecimal("500"))
+                .orderDate(LocalDate.of(2024, 1, 1)).build();
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+        when(positionOrderRepository.findByPositionOrderByOrderDateDesc(livret))
+                .thenReturn(List.of(order));
+
+        List<PositionOrderDto> result = positionService.findOrdersByPosition(1L, owner);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void findOrdersByPosition_leve403_siAutreUtilisateur() {
+        when(positionRepository.findById(1L)).thenReturn(Optional.of(livret));
+
+        assertThatThrownBy(() -> positionService.findOrdersByPosition(1L, otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
 }
