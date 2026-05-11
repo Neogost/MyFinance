@@ -824,3 +824,50 @@ Une ligne par mouvement (`PositionOrder`) de chaque position sélectionnée. Les
 Si `position.includeInIncomeProjection = true`, la projection mensuelle des intérêts de la position est rendue disponible pour alimenter le module **Revenus Complémentaires** (`OtherIncome`). Ce lien est optionnel et activable par position.
 
 La logique de projection (calcul à la volée, non persisté) est documentée dans la section [Règles de calcul](#règles-de-calcul-par-catégorie).
+
+---
+
+## Consultation des mouvements d'une position — `OrderPanel`
+
+Sur la page de détail d'une position, le panneau des ordres affiche tous les mouvements triés du plus récent au plus ancien.
+
+### Filtre par type de mouvement
+
+Au-dessus du tableau, des **chips de filtrage** permettent de réduire l'affichage à un type d'ordre précis :
+
+| Chip | Filtre |
+|---|---|
+| Tous | Aucun filtre (par défaut) |
+| Achat | `OrderType.BUY` uniquement |
+| Vente | `OrderType.SELL` uniquement |
+| Dividende | `OrderType.DIVIDENDE` uniquement |
+| Dépôt | `OrderType.DEPOT` uniquement |
+
+Le filtrage est entièrement **frontend** — aucun nouvel endpoint, pas de requête supplémentaire au serveur. Utile principalement sur les positions avec un historique d'ordres long (ex : ETF en DCA mensuel sur plusieurs années, livret avec dépôts réguliers).
+
+**Composant :** `frontend/src/components/patrimoine/OrderPanel.jsx`
+
+---
+
+## Graphique d'évolution du cours par position (BOURSE / CRYPTO)
+
+Sur chaque position BOURSE ou CRYPTO de la vue groupée, un bouton **📈 Évolution** ouvre une modale `max-w-4xl` affichant le graphique historique du cours de l'instrument sous-jacent.
+
+### Source de données
+
+- `GET /api/instruments/{id}/price-history?from=&to=` — historique quotidien des cours stocké dans `instrument_price_history` (alimenté par le scheduler Boursorama / CoinGecko et les imports manuels)
+
+### Affichage
+
+- **Sélecteur de plage** : 1 mois · 3 mois · 6 mois · 1 an · Tout l'historique
+- **Recharts `LineChart`** avec ligne du cours en indigo, tooltip affichant la valeur et la date au survol
+- **Stats en tête de modale** : cours actuel · variation sur la période sélectionnée (€ et %) · date du dernier cours connu
+- **Avertissement** si la position est sur un instrument avec `stablePrice = true` (pas d'historique pertinent)
+
+### Cas d'usage
+
+- Comprendre la performance d'une ligne précise indépendamment du DCA
+- Visualiser un drawdown ou un point d'entrée
+- Détecter des "trous" dans l'historique (lignes manquantes) — utile avant un calcul de performance TWR/MWR
+
+Le bouton n'est pas visible pour les positions LIQUIDITE, LIVRET, IMMO_PHYSIQUE ou IMMO_PAPIER (catégories sans historique de cours instrument).

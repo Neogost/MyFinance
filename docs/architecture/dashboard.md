@@ -595,3 +595,97 @@ App.jsx (handleNavigate)
 **Fichier :** `frontend/src/components/dashboard/DetteWidget.jsx`
 
 **Positionnement sur le dashboard :** 2 colonnes sur 3 dans la section Patrimoine (bas de page), aux côtés de `PatrimoineStrategyRadarChart` (1 colonne).
+
+---
+
+## 12. Flux des revenus — `CashFlowSankeyWidget`
+
+### Objectif
+
+Visualiser sous forme de **diagramme Sankey** le flux complet des revenus mensuels vers les postes de dépenses et la capacité d'épargne. Permet de voir d'un coup d'œil où part chaque euro et combien il en reste pour l'épargne.
+
+### Principe Sankey
+
+Les flèches du diagramme sont proportionnelles aux montants :
+
+```
+Salaire net      ─┐
+Locatif          ─┤
+Dividendes       ─┤   ┌─→ Logement
+Autres revenus   ─┘─→ Total ─┤─→ Transport
+                              ├─→ Abonnements
+                              ├─→ …
+                              └─→ Capacité d'épargne (résiduelle)
+```
+
+### Source de données
+
+- `GET /api/recurring-expenses/summary` → revenus de référence + totaux par catégorie de dépense
+- `GET /api/other-incomes` → décomposition des revenus complémentaires par type (LOCATIF, DIVIDENDE, AIDE_SOCIALE, AUTRE)
+- `GET /api/salary-contracts` → revenu salarial net après impôt du contrat actif
+
+### Règles d'affichage
+
+- Les flux nuls (catégories sans dépense) ne sont pas affichés
+- Capacité d'épargne en bleu/indigo, dépenses en couleurs catégorielles
+- Tooltip Recharts détaillant le montant exact de chaque flux
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/CashFlowSankeyWidget.jsx`
+
+**Toggle config :** `cashFlow` dans `DashboardCustomizePanel`.
+
+**Positionnement sur le dashboard :** dans la section "Revenus & Dépenses". Quand `upcomingExpenses` est activé, occupe 2/3 de la largeur avec le widget "Prochains prélèvements" à droite ; sinon pleine largeur.
+
+---
+
+## 13. Prochains prélèvements — `UpcomingExpensesWidget`
+
+### Objectif
+
+Lister les prochaines échéances de dépenses récurrentes afin d'anticiper les sorties d'argent. Particulièrement utile pour les **dépenses annuelles** qui surprennent l'utilisateur si oubliées.
+
+### Source de données
+
+- `GET /api/recurring-expenses` → liste des dépenses actives avec leurs dates de prélèvement (`paymentDay` pour MONTHLY, `startDate` pour ANNUAL)
+
+Aucun nouvel endpoint — tout le calcul se fait côté frontend.
+
+### Logique de filtrage
+
+Pour chaque dépense **active** (sans `endDate` ou avec `endDate >= aujourd'hui`) ayant une **date de prélèvement exploitable** :
+
+| Fréquence | Date utilisée | Fenêtre d'affichage |
+|---|---|---|
+| MONTHLY | prochain `paymentDay` à partir d'aujourd'hui | 14 jours |
+| ANNUAL | prochain anniversaire de `startDate` (jour + mois) | 60 jours |
+
+Les dépenses sans date sont ignorées. Résultat trié chronologiquement, **6 maximum**.
+
+### Fallback intelligent
+
+Si **aucune échéance** n'entre dans les fenêtres ci-dessus, le widget affiche la **prochaine dépense annuelle** quelle que soit la date — pour ne jamais rater une grosse échéance annuelle même en période calme.
+
+### Règles d'affichage
+
+- **Date relative** : "Aujourd'hui" · "Demain" · "Dans Xj" (≤ 7 jours) · "15 juin" (au-delà)
+- **Lignes urgentes** (≤ 3 jours) : fond orange pour attirer l'attention
+- **Badge "annuel"** en ambre sur les prélèvements annuels (les "surprises")
+- **Pastille de catégorie** colorée pour identification visuelle rapide
+- Lien *"Voir tout →"* vers le calendrier des abonnements
+- État vide avec lien direct vers *Mes dépenses* pour ajouter des dates
+
+### Props
+
+| Prop | Description |
+|---|---|
+| `onNavigate` | Callback pour la navigation (utilisé par les liens "Voir tout" et l'état vide) |
+
+### Composant frontend
+
+**Fichier :** `frontend/src/components/dashboard/UpcomingExpensesWidget.jsx`
+
+**Toggle config :** `upcomingExpenses` dans `DashboardCustomizePanel`.
+
+**Positionnement sur le dashboard :** à droite de `CashFlowSankeyWidget` (proportion 2/3 + 1/3). Si l'un des deux est désactivé, l'autre prend toute la largeur.

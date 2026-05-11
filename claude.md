@@ -180,6 +180,8 @@ frontend/src/
 - API échange-rates : `docs/api/exchange-rates.md`
 - Gestion des dettes (architecture) : `docs/architecture/dettes.md`
 - API dettes : `docs/api/debts.md`
+- Hauts faits (gamification, 67 badges) : `docs/architecture/achievements.md`
+- API hauts faits : `docs/api/achievements.md`
 
 ## Endpoints backend existants
 
@@ -403,6 +405,12 @@ frontend/src/
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
 | `GET` | `/api/dashboard/salary-evolution` | Authentifié | Évolution salariale (tous bulletins triés par période) |
+
+### Hauts faits (Achievements)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/achievements/me` | Authentifié | Catalogue complet avec état de déblocage par badge (niveau, date, flag `isNew`, badges secrets masqués si non débloqués) ; évalue les nouveaux badges et persiste en une transaction (fallback silencieux sur lock SQLite) |
+| `PUT` | `/api/achievements/me/seen` | Authentifié | Marque tous les badges comme "vus" (met à jour `lastAchievementSeenAt` — efface le compteur de nouveautés affiché dans la navigation) |
 
 ### Données de marché (admin)
 | Méthode | URL | Rôle requis | Description |
@@ -942,6 +950,69 @@ npm run dev
   - Migration SQL `018_add_crypto_tax_fields.sql` (backfill BUY→BUY_FIAT, SELL→SELL_FIAT sur positions CRYPTO)
   - Tests : 947 tests BUILD SUCCESS (CryptoTaxServiceTest +10, CryptoTaxControllerTest +7)
   - Documentation : `docs/architecture/tools/crypto-tax-helper.md`, `docs/api/crypto-tax.md`
+
+- **Hauts faits (gamification)** :
+  - **67 badges** au catalogue : 25 V1 (patrimoine, comportement, déclenchement immédiat, easter eggs) + 36 V2 (Trivial, Faible, Moyen) + 6 V2 Plus lourd
+  - 4 familles : 🟥 patrimoine (validation différée sur 3 snapshots consécutifs), 🟧 snapshot avec règles, 🟨 compteurs événementiels, 🟩 déclenchement immédiat, easter eggs secrets
+  - V2 Plus lourd : `BULL_RUN` (perf YTD BOURSE), `DIAMOND_HANDS` (position détenue N ans), `LE_SANG_FROID` (no sell durant repli > 10 %), `LE_REBALANCER` (sell+buy catégories différentes en 7 j), `L_ASCENSION` (décile INSEE), `LE_DISCIPLE` (taux d'épargne 12 mois)
+  - Évaluation hybride : batch nocturne (3 h) pour les badges sensibles + temps réel à l'ouverture de la page profil (transaction unique pour éviter `SQLITE_BUSY_SNAPSHOT`)
+  - Badges secrets masqués tant que non débloqués (nom, emoji, description, seuils cachés)
+  - `User.allTimeHighEur`, `User.initialNetWorthEur`, `User.lastAchievementSeenAt`, `User.lastKnownDecile` pour le suivi
+  - Frontend : `AchievementsPanel` sur la page profil, badge 🆕 dans la navigation, compteur de nouveautés effacé sur ouverture
+  - Endpoints : `GET /api/achievements/me`, `PUT /api/achievements/me/seen`
+  - Migrations : `020_add_achievements.sql`, `021_add_last_known_decile.sql`
+  - Documentation : `docs/architecture/achievements.md`, `docs/api/achievements.md`
+
+- **Calendrier des abonnements (Dépenses ▾ → Calendrier)** :
+  - Nouveau champ `paymentDay` (1–28) sur `RecurringExpense` pour les dépenses MONTHLY ; pour les ANNUAL, la date de prélèvement est déduite de `startDate` (jour + mois)
+  - Page accessible via le menu déroulant **Dépenses ▾** (desktop uniquement — pas d'accès mobile)
+  - **Vue grille mensuelle** : pastilles catégorie par jour, fond grisé sam/dim, légende contextuelle, bouton "Aujourd'hui", badge "annuel" en ambre, tooltip par dépense
+  - **Vue timeline annuelle** : 12 blocs mensuels triés chronologiquement, badge "dans Xj" / "aujourd'hui" sur les échéances à 7 jours
+  - Bandeau de synthèse : total annuel daté, coût moyen, mois le plus chargé, compteur de dépenses sans date avec lien "Compléter →"
+  - Tout en frontend — pas de nouvel endpoint (`GET /api/recurring-expenses` retourne `paymentDay`)
+  - Tests : validation `@Min(1) @Max(28)` sur `paymentDay`, `paymentDay` forcé à null si frequency = ANNUAL
+  - Migration : `022_add_payment_day_to_recurring_expenses.sql`
+  - Documentation : `docs/architecture/recurring-expenses.md` (section 10)
+
+- **Widget "Prochains prélèvements" (tableau de bord)** :
+  - Widget à droite du diagramme "Flux des revenus" (proportion 2/3 + 1/3)
+  - Liste les 6 prochaines échéances triées chronologiquement
+  - Fenêtres : MONTHLY dans les 14 jours · ANNUAL dans les 60 jours (focus sur les surprises annuelles)
+  - **Fallback** : si aucune échéance dans les fenêtres, affiche la prochaine dépense annuelle quelle que soit sa date
+  - Lignes urgentes (≤ 3 jours) en fond orange · badge "annuel" en ambre · lien "Voir tout →" vers le calendrier
+  - Configurable via le panneau de personnalisation du tableau de bord (`upcomingExpenses`)
+  - Composant : `frontend/src/components/dashboard/UpcomingExpensesWidget.jsx`
+  - Documentation : `docs/architecture/dashboard.md`
+
+- **Widget "Flux des revenus" (diagramme Sankey, tableau de bord)** :
+  - Diagramme Sankey visualisant le flux complet revenus → dépenses récurrentes → épargne
+  - Sources : salaire net, revenus complémentaires (locatif, dividendes, autres) → nœud central → catégories de dépenses + capacité d'épargne résiduelle
+  - Largeur des liens proportionnelle aux montants mensuels
+  - Configurable via `cashFlow` dans le panneau de personnalisation
+  - Composant : `frontend/src/components/dashboard/CashFlowSankeyWidget.jsx`
+  - Documentation : `docs/architecture/dashboard.md`
+
+- **Décote IRPP pour les bas revenus (simulateur d'impôts)** :
+  - Application de la décote (article 197 I-4 du CGI) sur l'impôt brut pour les contribuables juste au-dessus du seuil d'imposition
+  - Seuils différenciés selon le statut matrimonial : célibataire (< 1 929 €) · couple en imposition commune (< 3 191 €)
+  - Formule officielle : `décote = 0,4575 × (seuil − impôt brut)`
+  - Nouveau champ `User.jointTaxation` (boolean) — saisi dans le profil fiscal, par défaut `false`
+  - Le nombre de parts ne suffit pas (un célibataire avec 2 enfants a 2 parts mais reste "célibataire" pour la décote)
+  - Migration : `019_add_joint_taxation.sql`
+  - Documentation : `docs/architecture/tax-simulator.md`
+
+- **Graphique évolution du cours par position BOURSE/CRYPTO** :
+  - Bouton **📈 Évolution** sur chaque position BOURSE/CRYPTO ouvre une modale `max-w-4xl` avec graphique Recharts du cours historique
+  - Sélection de la plage : 1 mois / 3 mois / 6 mois / 1 an / Tout l'historique
+  - Tooltip avec valeur et date · affichage cours actuel, variation sur la période, date du dernier cours
+  - Alimenté par `instrument_price_history` (cf. PR2 performance)
+  - Documentation : `docs/architecture/patrimoine.md`
+
+- **Filtre par type d'ordre dans le panneau d'ordres (Patrimoine → consultation d'une position)** :
+  - Chips de filtrage au-dessus du tableau des ordres : Tous · Achat · Vente · Dividende · Dépôt
+  - Utile sur les positions avec un historique long (ETF DCA, livrets multi-flux)
+  - Filtrage purement frontend, aucun nouvel endpoint
+  - Composant : `frontend/src/components/patrimoine/OrderPanel.jsx`
 
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)
