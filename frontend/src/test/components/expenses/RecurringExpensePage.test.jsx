@@ -146,9 +146,9 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
   it('ouvre le formulaire de création au clic sur "+ Ajouter"', async () => {
     mockFetchAll([])
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-recurring-expense-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-recurring-expense-button'))
 
     expect(screen.getByTestId('expense-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('create')
@@ -157,9 +157,9 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
   it('ouvre le formulaire d\'édition au clic sur "Modifier"', async () => {
     mockFetchAll()
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-recurring-expense-${EXPENSES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-recurring-expense-${EXPENSES[0].id}`))
 
     expect(screen.getByTestId('expense-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('edit')
@@ -168,9 +168,9 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
   it('ferme le formulaire au clic sur Annuler', async () => {
     mockFetchAll([])
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-recurring-expense-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-recurring-expense-button'))
     fireEvent.click(screen.getByTestId('form-cancel'))
 
     expect(screen.queryByTestId('expense-form')).not.toBeInTheDocument()
@@ -189,9 +189,9 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
     getExpenseBudgets.mockResolvedValue({})
 
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-recurring-expense-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-recurring-expense-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -209,11 +209,11 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
     getExpenseSummary.mockResolvedValue(SUMMARY)
 
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-recurring-expense-${EXPENSES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Supprimer définitivement'))
+    fireEvent.click(screen.getByTestId(`delete-recurring-expense-${EXPENSES[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
 
     await waitFor(() => {
       expect(deleteExpense).toHaveBeenCalledWith(EXPENSES[0].id)
@@ -225,11 +225,11 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
     mockFetchAll()
 
     render(<RecurringExpensePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-recurring-expense-${EXPENSES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(screen.getByTestId(`delete-recurring-expense-${EXPENSES[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-cancel-button'))
 
     expect(deleteExpense).not.toHaveBeenCalled()
   })
@@ -242,8 +242,8 @@ describe('RecurringExpensePage — pattern CRUD avec budgets', () => {
     render(<RecurringExpensePage />)
     await waitFor(() => expect(screen.getByText('Loyer appartement')).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    fireEvent.click(screen.getByText('Supprimer définitivement'))
+    fireEvent.click(screen.getByTestId(`delete-recurring-expense-${EXPENSES[0].id}`))
+    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
 
     await waitFor(() => {
       expect(screen.queryByText('Loyer appartement')).not.toBeInTheDocument()

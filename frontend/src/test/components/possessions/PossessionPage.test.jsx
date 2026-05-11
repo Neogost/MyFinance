@@ -133,9 +133,9 @@ describe('PossessionPage — pattern CRUD', () => {
   it('ouvre le formulaire de création au clic sur "+ Ajouter"', async () => {
     mockFetchAll([])
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-possession-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-possession-button'))
 
     expect(screen.getByTestId('possession-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('create')
@@ -144,9 +144,9 @@ describe('PossessionPage — pattern CRUD', () => {
   it('ouvre le formulaire d\'édition au clic sur "Modifier"', async () => {
     mockFetchAll()
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-possession-${POSSESSIONS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-possession-${POSSESSIONS[0].id}`))
 
     expect(screen.getByTestId('possession-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('edit')
@@ -155,9 +155,9 @@ describe('PossessionPage — pattern CRUD', () => {
   it('ferme le formulaire au clic sur Annuler', async () => {
     mockFetchAll([])
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-possession-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-possession-button'))
     expect(screen.getByTestId('possession-form')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('form-cancel'))
@@ -174,12 +174,12 @@ describe('PossessionPage — pattern CRUD', () => {
     createPossession.mockResolvedValue(newPossession)
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-possession-button')).toBeInTheDocument())
 
     // Préparer le refetch pour retourner la nouvelle possession
     getPossessions.mockResolvedValue([newPossession])
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-possession-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -200,9 +200,9 @@ describe('PossessionPage — pattern CRUD', () => {
     getPossessions.mockResolvedValue([])
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-possession-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-possession-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -218,9 +218,9 @@ describe('PossessionPage — pattern CRUD', () => {
     getPossessions.mockResolvedValue(POSSESSIONS)
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-possession-${POSSESSIONS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-possession-${POSSESSIONS[0].id}`))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -240,11 +240,11 @@ describe('PossessionPage — pattern CRUD', () => {
     getPossessionsSummary.mockResolvedValue(SUMMARY)
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-possession-${POSSESSIONS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Supprimer définitivement'))
+    fireEvent.click(screen.getByTestId(`delete-possession-${POSSESSIONS[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
 
     await waitFor(() => {
       expect(deletePossession).toHaveBeenCalledWith(POSSESSIONS[0].id)
@@ -256,14 +256,14 @@ describe('PossessionPage — pattern CRUD', () => {
     mockFetchAll()
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-possession-${POSSESSIONS[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(screen.getByTestId(`delete-possession-${POSSESSIONS[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-cancel-button'))
 
     expect(deletePossession).not.toHaveBeenCalled()
-    expect(screen.queryByText('Supprimer définitivement')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('delete-confirm-modal')).not.toBeInTheDocument()
   })
 
   // ── Différence vs OtherIncomePage : pas d'optimistic update ──────────────
@@ -274,9 +274,9 @@ describe('PossessionPage — pattern CRUD', () => {
     getPossessions.mockResolvedValue(POSSESSIONS)
 
     render(<PossessionPage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-possession-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-possession-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {

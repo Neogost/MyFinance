@@ -119,9 +119,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
   it('ouvre le formulaire de création au clic sur "+ Ajouter"', async () => {
     getOtherIncomes.mockResolvedValue([])
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-other-income-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-other-income-button'))
 
     expect(screen.getByTestId('income-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('create')
@@ -130,9 +130,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
   it('ouvre le formulaire d\'édition au clic sur "Modifier"', async () => {
     getOtherIncomes.mockResolvedValue(INCOMES)
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-other-income-${INCOMES[0].id}`))
 
     expect(screen.getByTestId('income-form')).toBeInTheDocument()
     expect(screen.getByTestId('form-mode')).toHaveTextContent('edit')
@@ -141,9 +141,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
   it('ferme le formulaire au clic sur Annuler', async () => {
     getOtherIncomes.mockResolvedValue([])
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-other-income-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-other-income-button'))
     expect(screen.getByTestId('income-form')).toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('form-cancel'))
@@ -160,9 +160,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
       .mockResolvedValue([created])       // refetch après création
 
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-other-income-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-other-income-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -180,9 +180,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
     })
 
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getByText('+ Ajouter')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('add-other-income-button')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('+ Ajouter'))
+    fireEvent.click(screen.getByTestId('add-other-income-button'))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -200,9 +200,9 @@ describe('OtherIncomePage — pattern CRUD', () => {
       .mockResolvedValue([updated, INCOMES[1]]) // refetch après modification
 
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getAllByText('Modifier')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`edit-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Modifier')[0])
+    fireEvent.click(screen.getByTestId(`edit-other-income-${INCOMES[0].id}`))
     fireEvent.click(screen.getByTestId('form-submit'))
 
     await waitFor(() => {
@@ -220,11 +220,11 @@ describe('OtherIncomePage — pattern CRUD', () => {
       .mockResolvedValue(INCOMES.slice(1))   // refetch après suppression
 
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('Supprimer définitivement'))
+    fireEvent.click(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-submit-button'))
 
     await waitFor(() => {
       expect(deleteOtherIncome).toHaveBeenCalledWith(INCOMES[0].id)
@@ -236,11 +236,11 @@ describe('OtherIncomePage — pattern CRUD', () => {
     getOtherIncomes.mockResolvedValue(INCOMES)
 
     render(<OtherIncomePage />)
-    await waitFor(() => expect(screen.getAllByText('Supprimer')[0]).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`)).toBeInTheDocument())
 
-    fireEvent.click(screen.getAllByText('Supprimer')[0])
-    expect(screen.getByText('Supprimer définitivement')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }))
+    fireEvent.click(screen.getByTestId(`delete-other-income-${INCOMES[0].id}`))
+    expect(screen.getByTestId('delete-confirm-modal')).toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('delete-confirm-cancel-button'))
 
     expect(deleteOtherIncome).not.toHaveBeenCalled()
     expect(screen.getByText('Loyer appartement T2')).toBeInTheDocument()

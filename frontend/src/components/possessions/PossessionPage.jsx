@@ -59,6 +59,8 @@ export default function PossessionPage() {
         <h2 className="text-xl font-bold text-gray-900">Passifs — Grandes possessions</h2>
         <button
           onClick={() => { trackEvent('BUTTON_CLICK', 'possessions.possession.open_form'); setFormTarget(null) }}
+          data-testid="add-possession-button"
+          aria-label="Ajouter une possession"
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter
@@ -223,12 +225,16 @@ export default function PossessionPage() {
                           <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">
                             <button
                               onClick={() => setFormTarget(p)}
+                              data-testid={`edit-possession-${p.id}`}
+                              aria-label={`Modifier la possession ${p.label}`}
                               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
                             >
                               Modifier
                             </button>
                             <button
                               onClick={() => handleDelete(p)}
+                              data-testid={`delete-possession-${p.id}`}
+                              aria-label={`Supprimer la possession ${p.label}`}
                               className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
                             >
                               Supprimer

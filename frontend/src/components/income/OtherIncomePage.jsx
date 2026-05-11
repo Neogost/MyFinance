@@ -49,6 +49,8 @@ export default function OtherIncomePage() {
         <h2 className="text-xl font-bold text-gray-900">Revenus complémentaires</h2>
         <button
           onClick={() => setFormTarget(null)}
+          data-testid="add-other-income-button"
+          aria-label="Ajouter un revenu complémentaire"
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
         >
           + Ajouter
@@ -148,10 +150,20 @@ export default function OtherIncomePage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-end md:justify-end">
-                        <button onClick={() => setFormTarget(income)} className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
+                        <button
+                          onClick={() => setFormTarget(income)}
+                          data-testid={`edit-other-income-${income.id}`}
+                          aria-label={`Modifier le revenu ${income.label}`}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition"
+                        >
                           Modifier
                         </button>
-                        <button onClick={() => handleDelete(income)} className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition">
+                        <button
+                          onClick={() => handleDelete(income)}
+                          data-testid={`delete-other-income-${income.id}`}
+                          aria-label={`Supprimer le revenu ${income.label}`}
+                          className="px-3 py-1 border border-gray-300 rounded-md text-xs text-gray-600 hover:border-red-500 hover:text-red-600 transition"
+                        >
                           Supprimer
                         </button>
                       </div>
