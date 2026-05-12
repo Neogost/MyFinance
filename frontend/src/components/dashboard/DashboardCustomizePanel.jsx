@@ -76,10 +76,15 @@ export default function DashboardCustomizePanel({ config, onChange, onClose }) {
       {/* Panneau */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-60 flex flex-col">
 
-        {/* En-tête */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        {/* En-tête — pt-safe pour passer sous la dynamic island iOS sur mobile (le panneau est plein écran) */}
+        <div className="flex items-center justify-between px-5 pt-safe pb-4 sm:pt-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-800">Personnaliser le tableau de bord</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
+          <button
+            onClick={onClose}
+            data-testid="dashboard-customize-close-button"
+            aria-label="Fermer le panneau de personnalisation"
+            className="text-gray-400 hover:text-gray-600 transition p-1 -m-1"
+          >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
