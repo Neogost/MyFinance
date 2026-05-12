@@ -121,7 +121,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
       )}
 
       {familyMode && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium">
+        <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 dark:text-indigo-300 font-medium">
           <span>🏠</span>
           <span>Mode Foyer activé — les graphiques patrimoniaux agrègent les données de tous les membres du groupe.</span>
         </div>

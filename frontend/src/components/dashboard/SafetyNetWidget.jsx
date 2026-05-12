@@ -41,8 +41,8 @@ export default function SafetyNetWidget({ user }) {
 
   const border  = achieved ? 'border-emerald-100' : close ? 'border-amber-100' : 'border-indigo-100'
   const bg      = achieved ? 'bg-emerald-50'  : close ? 'bg-amber-50'  : 'bg-indigo-50'
-  const textH   = achieved ? 'text-emerald-800' : close ? 'text-amber-800' : 'text-indigo-800'
-  const textS   = achieved ? 'text-emerald-600' : close ? 'text-amber-600' : 'text-indigo-600'
+  const textH   = achieved ? 'text-emerald-800 dark:text-emerald-300' : close ? 'text-amber-800 dark:text-amber-300' : 'text-indigo-800 dark:text-indigo-300'
+  const textS   = achieved ? 'text-emerald-600 dark:text-emerald-400' : close ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'
   const bar     = achieved ? 'bg-emerald-500'   : close ? 'bg-amber-400'   : 'bg-indigo-500'
 
   const modeLabel = user.safetyNetMode === 'MONTHS_EXPENSES'
