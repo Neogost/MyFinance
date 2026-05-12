@@ -88,7 +88,7 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
-          <label className={`${labelCls} flex items-center`}>Date de naissance<FieldTooltip text="Utilisée pour calculer votre tranche d'âge et vous positionner par rapport aux déciles INSEE de patrimoine." /></label>
+          <label className={`${labelCls} flex items-center`}>Date de naissance<FieldTooltip text="Utilisée pour : votre tranche d'âge dans les déciles INSEE de patrimoine, votre âge de départ dans le simulateur de retraite, et le calcul des cycles de donation dans la Stratégie 15 ans (onglet Donation & succession)." /></label>
           <input name="birthDate" type="date" value={form.birthDate}
             onChange={handleChange}
             className={inputCls} />
