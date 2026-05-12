@@ -134,7 +134,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const isIncomePage     = currentPage === 'salary' || currentPage === 'other-incomes'
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
   const isExpensesPage   = currentPage === 'expenses' || currentPage === 'subscription-calendar'
-  const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement','tax-loss-harvesting'].includes(currentPage)
+  const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement','tax-loss-harvesting','estate-simulator'].includes(currentPage)
   const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
@@ -224,6 +224,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                     ['tax-simulator',          'Simulateur des impôts'],
                     ['crypto-tax',             'Fiscalité crypto (2086)'],
                     ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
+                    ['estate-simulator',       'Donation & succession'],
                     ['bilan-financier',        'Bilan financier'],
                     ['compound-interest',      'Intérêts composés'],
                     ['loan-simulator',         "Simulateur d'emprunt"],
@@ -402,6 +403,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               ['tax-simulator',          'Simulateur des impôts'],
               ['crypto-tax',             'Fiscalité crypto (2086)'],
               ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
+              ['estate-simulator',       'Donation & succession'],
               ['bilan-financier',        'Bilan financier'],
               ['compound-interest',      'Intérêts composés'],
               ['loan-simulator',         "Simulateur d'emprunt"],

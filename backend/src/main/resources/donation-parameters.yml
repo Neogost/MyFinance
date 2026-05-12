@@ -1,0 +1,102 @@
+## Barèmes donation et succession — loi de finances 2025
+## Modifier ce fichier et redémarrer l'application suffit (pas de recompilation).
+
+donation:
+
+  ## Abattements légaux par lien de parenté (art. 779 et s. CGI)
+  abattements:
+    CONJOINT:             80724
+    ENFANT:              100000
+    PETIT_ENFANT:         31865
+    ARRIERE_PETIT_ENFANT:  5310
+    FRERE_SOEUR:          15932
+    NEVEU_NIECE:           7967
+    AUTRE:                 1594
+
+  ## Bonus abattement pour personne handicapée (art. 779-II CGI)
+  handicap-bonus: 159325
+
+  ## Barème ligne directe — enfants, conjoints, descendants (art. 777 CGI)
+  ligne-directe:
+    - from: 0.0
+      to: 8072.0
+      rate: 0.05
+    - from: 8072.0
+      to: 12109.0
+      rate: 0.10
+    - from: 12109.0
+      to: 15932.0
+      rate: 0.15
+    - from: 15932.0
+      to: 552324.0
+      rate: 0.20
+    - from: 552324.0
+      to: 902838.0
+      rate: 0.30
+    - from: 902838.0
+      to: 1805677.0
+      rate: 0.40
+    - from: 1805677.0
+      rate: 0.45
+
+  ## Barème frères et sœurs (art. 777 CGI)
+  freres-soeurs:
+    - from: 0.0
+      to: 24430.0
+      rate: 0.35
+    - from: 24430.0
+      rate: 0.45
+
+  ## Barème autres liens / sans lien (art. 777 CGI)
+  autres:
+    - from: 0.0
+      rate: 0.60
+
+  ## Émoluments du notaire — acte de donation (décret tarifaire 2023)
+  ## Appliqués sur la valeur transmise (amountGivenEur), HT. À multiplier par 1.20 (TVA).
+  ## Minimum légal : 90 € HT.
+  emoluments-notaire:
+    - from: 0.0
+      to: 6500.0
+      rate: 0.03945
+    - from: 6500.0
+      to: 17000.0
+      rate: 0.01627
+    - from: 17000.0
+      to: 30000.0
+      rate: 0.01085
+    - from: 30000.0
+      rate: 0.00814
+
+  ## Frais de formalités forfaitaires (copies, formalités, débours courants)
+  frais-formalites: 300
+
+  ## Minimum émoluments HT avant TVA
+  emoluments-minimum: 90
+
+  ## Taxes additionnelles pour les biens IMMOBILIERS (sur la valeur transmise)
+  ## Taxe de publicité foncière (art. 1594 D et s. CGI)
+  taxe-publicite-fonciere: 0.006
+  ## Contribution de sécurité immobilière
+  contribution-securite-immobiliere: 0.001
+
+  ## Démembrement — nue-propriété selon l'âge de l'usufruitier (art. 669 CGI)
+  demembrement:
+    - age-max: 20
+      np-ratio: 0.10
+    - age-max: 30
+      np-ratio: 0.20
+    - age-max: 40
+      np-ratio: 0.30
+    - age-max: 50
+      np-ratio: 0.40
+    - age-max: 60
+      np-ratio: 0.50
+    - age-max: 70
+      np-ratio: 0.60
+    - age-max: 80
+      np-ratio: 0.70
+    - age-max: 90
+      np-ratio: 0.80
+    - age-max: 999
+      np-ratio: 0.90
