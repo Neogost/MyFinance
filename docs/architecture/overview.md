@@ -316,6 +316,12 @@ Simule un emprunt garanti par le portefeuille de titres financiers (sans vente d
 
 → [`docs/architecture/tools/lombard-credit-simulator.md`](tools/lombard-credit-simulator.md)
 
+#### Optimisation fiscale fin d'année (Tax-Loss Harvesting)
+
+Détecte en novembre-décembre les positions BOURSE/CRYPTO en moins-value latente compensables avec les plus-values réalisées sur l'année. Calcule l'économie potentielle sur le PFU (30 %). Deux baskets cloisonnés (CTO et CRYPTO, conformément aux règles CGI). Tri des candidats par impact, recommandation du nombre de parts à vendre. Bandeau saisonnier sur la page Patrimoine entre le 1ᵉʳ novembre et le 31 décembre.
+
+→ [`docs/architecture/tools/tax-loss-harvesting.md`](tools/tax-loss-harvesting.md) — API : [`docs/api/tax-loss-harvesting.md`](../api/tax-loss-harvesting.md)
+
 #### Comparateur d'enveloppes fiscales (PEA / CTO / AV / PER)
 
 Compare le rendement net après impôt de quatre enveloppes pour un même investissement. Rendements différenciés par enveloppe (sliders individuels) ou mode taux unique pour isoler l'impact fiscal pur. Fiscalité complète : PFU/barème CTO, exonération IR PEA après 5 ans, abattement AV après 8 ans, déduction TMI + taxation barème à la sortie PER. Réinvestissement de l'économie d'impôt PER dans un placement virtuel. Frais d'enveloppe paramétrables. Profil fiscal pré-rempli depuis le simulateur d'impôts. Tooltips pédagogiques sur chaque concept. Graphique d'évolution + bar chart jalons + tableau récapitulatif.

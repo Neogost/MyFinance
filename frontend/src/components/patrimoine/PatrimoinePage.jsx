@@ -26,6 +26,8 @@ import PatrimoineFilters from './PatrimoineFilters'
 import ExportCsvModal from './ExportCsvModal'
 import PriceHistoryModal from './PriceHistoryModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
+import TaxLossSeasonalBanner from '../tools/TaxLossSeasonalBanner'
+import { getTaxLossHarvesting } from '../../api/taxLoss'
 
 
 export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) {
@@ -63,11 +65,17 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
   const [debts, setDebts]                     = useState([])
   const [ytdSnapshotDetail, setYtdSnapshotDetail] = useState(null)
 
+  const [tlhSummary, setTlhSummary] = useState(null)
   const isAdmin = currentUser?.role === 'ADMIN'
 
   useEffect(() => {
     fetchPositions(); fetchSnapshots(); fetchReferentiel(); fetchTargets()
     getDebts().then(setDebts).catch(() => {})
+    // Charger le résumé TLH pour le bandeau saisonnier (Nov-Déc seulement)
+    const month = new Date().getMonth() + 1
+    if (month === 11 || month === 12) {
+      getTaxLossHarvesting().then(setTlhSummary).catch(() => {})
+    }
     const mode = currentUser?.safetyNetMode
     if (mode === 'MONTHS_EXPENSES') {
       getExpenseSummary().then(setSnExpensesSummary).catch(() => {})
@@ -347,9 +355,12 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{error}</p>
       )}
 
+      {/* ── Bandeau saisonnier Tax-Loss Harvesting (Nov-Déc) ── */}
+      <TaxLossSeasonalBanner summary={tlhSummary} onNavigate={onNavigate} />
+
       {/* ── Bannière Mode Foyer ── */}
       {familyMode && (
-        <div className="flex items-center gap-2 px-4 py-2 mb-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 font-medium">
+        <div className="flex items-center gap-2 px-4 py-2 mb-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 dark:text-indigo-300 font-medium">
           <span>🏠</span>
           <span>Mode Foyer — patrimoine agrégé du groupe ({familyMembers.length + 1} membres)</span>
         </div>

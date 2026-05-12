@@ -166,6 +166,8 @@ frontend/src/
 - API patrimoine — outils (score, objectifs, référentiel INSEE) : `docs/api/patrimoine-outils.md`
 - Performance patrimoniale (TWR / MWR — ADMIN only, en travaux) : `docs/architecture/patrimoine-performance.md`
 - Gestion des dépenses récurrentes (architecture) : `docs/architecture/recurring-expenses.md`
+- Optimisation fiscale fin d'année (architecture) : `docs/architecture/tools/tax-loss-harvesting.md`
+- API optimisation fiscale : `docs/api/tax-loss-harvesting.md`
 - Bilan financier personnel (architecture) : `docs/architecture/tools/bilan-financier.md`
 - Simulateur d'intérêts composés (architecture) : `docs/architecture/tools/compound-interest-simulator.md`
 - Simulateur de crédit Lombard (architecture) : `docs/architecture/tools/lombard-credit-simulator.md`
@@ -280,6 +282,11 @@ frontend/src/
 |---------|-----|-------------|-------------|
 | `GET` | `/api/tax-simulator` | Authentifié | Simulation IRPP pour l'utilisateur connecté |
 | `GET` | `/api/tax-simulator/users/{userId}` | ADMIN | Simulation IRPP pour un autre utilisateur |
+
+### Optimisation fiscale fin d'année (Tax-Loss Harvesting)
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/tax-loss-harvesting?year={year}` | Authentifié | Synthèse + candidats CTO + crypto pour l'année (défaut : année courante). Retourne `TaxLossSummaryDto`. |
 
 ### Fiscalité crypto (formulaire 2086)
 | Méthode | URL | Rôle requis | Description |
@@ -615,7 +622,7 @@ Modules livrés (vue à 10 000 m, sans détails) :
 | **Dépenses** | dépenses récurrentes · budgets par catégorie · calendrier des abonnements (paymentDay) |
 | **Patrimoine** | positions (BOURSE/CRYPTO/IMMO/LIVRET/LIQUIDITE) · ordres · snapshots · taux de change · graphique évolution cours par position · positionnement INSEE · plus-value YTD · export CSV |
 | **Dettes & passifs** | dettes avec amortissement · grandes possessions avec décote |
-| **Outils** | simulateur impôts · fiscalité crypto (2086) · bilan financier · intérêts composés · emprunt · Lombard · enveloppes fiscales · retraite · crise · déclaration patrimoine |
+| **Outils** | simulateur impôts · fiscalité crypto (2086) · **optimisation fiscale fin d'année (tax-loss harvesting)** · bilan financier · intérêts composés · emprunt · Lombard · enveloppes fiscales · retraite · crise · déclaration patrimoine |
 | **Stratégie** | objectifs par catégorie · diversification multi-dimensions BOURSE/CRYPTO/IMMO · KPI immo · scoring patrimonial · performance TWR/MWR |
 | **Dashboard** | personnalisable · cash flow Sankey · prochains prélèvements · FIRE · TWR YTD · widgets patrimoine · dette · score |
 | **Gamification** | 67 hauts faits (V1 + V2 Trivial/Faible/Moyen + Plus lourd) · easter eggs secrets |
