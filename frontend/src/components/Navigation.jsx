@@ -134,7 +134,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const isIncomePage     = currentPage === 'salary' || currentPage === 'other-incomes'
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
   const isExpensesPage   = currentPage === 'expenses' || currentPage === 'subscription-calendar'
-  const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement'].includes(currentPage)
+  const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement','tax-loss-harvesting'].includes(currentPage)
   const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
@@ -221,8 +221,9 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <div className="fixed inset-0 z-10" onClick={() => setToolsOpen(false)} />
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
                   {[
-                    ['tax-simulator',         'Simulateur des impôts'],
+                    ['tax-simulator',          'Simulateur des impôts'],
                     ['crypto-tax',             'Fiscalité crypto (2086)'],
+                    ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
                     ['bilan-financier',        'Bilan financier'],
                     ['compound-interest',      'Intérêts composés'],
                     ['loan-simulator',         "Simulateur d'emprunt"],
@@ -248,7 +249,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 onClick={() => { setAdminOpen(v => !v); setIncomeOpen(false); setToolsOpen(false) }}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isAdminPage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
               >
-                Administration <span className="text-xs">{adminOpen ? '▲' : '▼'}</span>
+                Admin <span className="text-xs">{adminOpen ? '▲' : '▼'}</span>
               </button>
               {adminOpen && (
                 <>
@@ -290,22 +291,22 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
         {/* ── Droite desktop ── */}
         <div className="hidden md:flex items-center gap-3 text-sm">
           <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_hide_values'); onToggleHideValues() }} title={hideValues ? 'Afficher les valeurs' : 'Masquer les valeurs'}
-            className={`p-1.5 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+            className={`p-1.5 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
           </button>
           <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_dark_mode'); onToggleDarkMode() }} title={darkMode ? 'Passer en mode clair' : 'Passer en mode nuit'}
-            className={`p-1.5 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+            className={`p-1.5 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
             <DarkModeIcon dark={darkMode} />
           </button>
           {user.familyGroupId && (
             <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_family_mode'); onToggleFamilyMode() }}
               title={familyMode ? 'Mode Foyer actif — cliquer pour désactiver' : 'Activer le Mode Foyer'}
-              className={`p-1.5 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
+              className={`p-1.5 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}>
               <HomeIcon />
             </button>
           )}
           <span className="text-gray-700">{user.firstName} {user.lastName}</span>
-          <span className="px-2 py-0.5 bg-violet-100 text-violet-800 rounded-full text-xs font-semibold">{user.role}</span>
+          <span className="px-2 py-0.5 bg-violet-100 text-violet-800 dark:text-violet-300 rounded-full text-xs font-semibold">{user.role}</span>
           <button onClick={onLogout} className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-600 hover:border-indigo-500 hover:text-indigo-600 transition">
             Déconnexion
           </button>
@@ -314,16 +315,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
         {/* ── Droite mobile ── */}
         <div className="flex md:hidden items-center gap-2">
           <button onClick={onToggleHideValues}
-            className={`p-2 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
+            className={`p-2 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
           </button>
           <button onClick={onToggleDarkMode}
-            className={`p-2 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
+            className={`p-2 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:bg-gray-100'}`}>
             <DarkModeIcon dark={darkMode} />
           </button>
           {user.familyGroupId && (
             <button onClick={() => { trackEvent('BUTTON_CLICK', 'app.ui.toggle_family_mode'); onToggleFamilyMode() }}
-              className={`p-2 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100'}`}>
+              className={`p-2 rounded-md transition ${familyMode ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:bg-gray-100'}`}>
               <HomeIcon />
             </button>
           )}
@@ -376,7 +377,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">{user.firstName} {user.lastName}</p>
-                <span className="text-xs text-violet-700 bg-violet-100 px-2 py-0.5 rounded-full">{user.role}</span>
+                <span className="text-xs text-violet-700 dark:text-violet-300 bg-violet-100 px-2 py-0.5 rounded-full">{user.role}</span>
               </div>
             </div>
 
@@ -398,8 +399,9 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {/* Outils */}
             <MobileSectionTitle>Outils</MobileSectionTitle>
             {[
-              ['tax-simulator',         'Simulateur des impôts'],
+              ['tax-simulator',          'Simulateur des impôts'],
               ['crypto-tax',             'Fiscalité crypto (2086)'],
+              ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
               ['bilan-financier',        'Bilan financier'],
               ['compound-interest',      'Intérêts composés'],
               ['loan-simulator',         "Simulateur d'emprunt"],
@@ -415,7 +417,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {/* Administration (ADMIN uniquement) */}
             {user.role === 'ADMIN' && (
               <>
-                <MobileSectionTitle>Administration</MobileSectionTitle>
+                <MobileSectionTitle>Admin</MobileSectionTitle>
                 <MobileMenuItem label="Utilisateurs"              page="users"               currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />

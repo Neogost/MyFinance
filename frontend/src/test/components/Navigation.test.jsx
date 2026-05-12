@@ -74,12 +74,12 @@ describe('Navigation', () => {
 
   it('affiche le menu Administration pour un ADMIN', () => {
     render(<Navigation {...DEFAULT_PROPS} user={ADMIN} />)
-    expect(screen.getByText('Administration')).toBeInTheDocument()
+    expect(screen.getByText('Admin')).toBeInTheDocument()
   })
 
   it('n\'affiche pas le menu Administration pour un USER', () => {
     render(<Navigation {...DEFAULT_PROPS} />)
-    expect(screen.queryByText('Administration')).not.toBeInTheDocument()
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 
   it('affiche le badge rouge si des inscriptions sont en attente (ADMIN)', () => {
