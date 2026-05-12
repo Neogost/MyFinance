@@ -599,7 +599,7 @@ class SalaryContractServiceTest {
     }
 
     @Test
-    void delete_leve403_siPasLeProprietaire() {
+    void delete_leve403_siPasLeProprietaire_verifieAucuneCascade() {
         when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(activeContract));
 
         assertThatThrownBy(() -> salaryContractService.delete(1L, otherUser))
