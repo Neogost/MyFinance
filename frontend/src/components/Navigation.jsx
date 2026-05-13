@@ -269,21 +269,35 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               {adminOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setAdminOpen(false)} />
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[220px] py-1">
                     {[
-                      ['users',                'Utilisateurs',               0],
-                      ['admin-snapshots',      'Gestion des relevés',        0],
-                      ['login-history',        'Historique des connexions',  0],
-                      ['admin-family-groups',  'Regroupements familiaux',    0],
-                      ['admin-instruments',    'Instruments financiers',     0],
-                      ['admin-registrations',  "Demandes d'inscription",     pendingRegistrations],
-                      ['admin-analytics',      'Analytics',                  0],
-                    ].map(([page, label, badge]) => (
-                      <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
-                        className={`w-full text-left px-4 py-2 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
-                        {label}
-                        {badge > 0 && <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>}
-                      </button>
+                      { group: 'Comptes', items: [
+                        ['users',               'Utilisateurs',          0],
+                        ['admin-registrations', "Demandes d'inscription", pendingRegistrations],
+                        ['admin-family-groups', 'Regroupements familiaux', 0],
+                      ]},
+                      { group: 'Marché & données', items: [
+                        ['admin-instruments', 'Instruments financiers', 0],
+                        ['admin-snapshots',   'Gestion des relevés',   0],
+                      ]},
+                      { group: 'Supervision', items: [
+                        ['admin-analytics', 'Analytics',                  0],
+                        ['login-history',   'Historique des connexions',  0],
+                      ]},
+                    ].map(({ group, items }, gi) => (
+                      <div key={group}>
+                        {gi > 0 && <div className="border-t border-gray-100 my-1" />}
+                        <div className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          {group}
+                        </div>
+                        {items.map(([page, label, badge]) => (
+                          <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
+                            className={`w-full text-left px-4 py-1.5 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            {label}
+                            {badge > 0 && <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>}
+                          </button>
+                        ))}
+                      </div>
                     ))}
                   </div>
                 </>
@@ -447,13 +461,16 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {user.role === 'ADMIN' && (
               <>
                 <MobileSectionTitle>Admin</MobileSectionTitle>
+                <div className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Comptes</div>
                 <MobileMenuItem label="Utilisateurs"              page="users"               currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Regroupements familiaux"   page="admin-family-groups" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Demandes d'inscription"    page="admin-registrations" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={pendingRegistrations} />
-                <MobileMenuItem label="Analytics"                  page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <MobileMenuItem label="Regroupements familiaux"   page="admin-family-groups" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Marché & données</div>
+                <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Supervision</div>
+                <MobileMenuItem label="Analytics"                 page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
               </>
             )}
 
