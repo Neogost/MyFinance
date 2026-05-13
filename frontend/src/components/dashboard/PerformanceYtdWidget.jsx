@@ -62,7 +62,7 @@ export default function PerformanceYtdWidget({ onNavigate }) {
 
       {/* TWR principal */}
       <div>
-        <div className={`text-3xl font-bold ${valueColor}`}>{fmtPct(twr)}</div>
+        <div className={`text-3xl font-bold amount ${valueColor}`}>{fmtPct(twr)}</div>
         <p className="text-xs text-gray-400 mt-1">TWR annualisé — performance pure des actifs</p>
       </div>
 
@@ -70,11 +70,11 @@ export default function PerformanceYtdWidget({ onNavigate }) {
       <div className="flex-1 grid grid-cols-2 gap-2 text-xs pt-2 border-t border-teal-100">
         <div>
           <div className="text-gray-500 mb-0.5">Valeur actuelle</div>
-          <div className="font-semibold text-gray-700">{fmtEur(value)}</div>
+          <div className="font-semibold text-gray-700 amount">{fmtEur(value)}</div>
         </div>
         <div>
           <div className="text-gray-500 mb-0.5">Plus-value</div>
-          <div className={`font-semibold ${gainColor}`}>{fmtSignedEur(gain)}</div>
+          <div className={`font-semibold amount ${gainColor}`}>{fmtSignedEur(gain)}</div>
         </div>
       </div>
 
