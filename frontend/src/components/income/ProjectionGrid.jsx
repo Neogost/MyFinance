@@ -163,7 +163,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
     </div>
   )
 
-  const makeNetAfterTaxTooltip = (netImposable, taxAmount, trAmount, benefitMultiplier, onCallNetAfterTax, onCallTax) => (
+  const makeNetAfterTaxTooltip = (netImposable, taxAmount, trAmount, benefitMultiplier, onCallNetAfterTax, onCallTax, bonusNet = 0) => (
     <div className="space-y-1">
       <div className="flex justify-between gap-4">
         <span className="text-gray-300">Net imposable salaire</span>
@@ -173,6 +173,12 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
         <span className="text-gray-300">Impôt sur salaire</span>
         <span className="font-semibold text-red-300 amount">−{fmt(taxAmount)}</span>
       </div>
+      {bonusNet > 0 && (
+        <div className="flex justify-between gap-4">
+          <span className="text-gray-300">Primes nettes (≈75 %)</span>
+          <span className="font-semibold text-blue-300 amount">+{fmt(bonusNet)}</span>
+        </div>
+      )}
       {onCallNetAfterTax > 0 && (
         <>
           <div className="border-t border-gray-600 my-1" />
@@ -234,7 +240,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           netAfterTax={netAfterTaxAnnual}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.annualGrossSalary, contract.annualSuperGross, 1)}
           netImposableTooltip={makeNetImposableTooltip(contract.annualNetImposable, totalAnnualBonuses * 0.75, totalAnnualOnCalls * 0.75)}
-          netAfterTaxTooltip={netAfterTaxAnnual != null ? makeNetAfterTaxTooltip(contract.annualNetImposable, estimatedTax, trAnnual, 12, onCallAnnualNetAfterTax, onCallAnnualTax) : null}
+          netAfterTaxTooltip={netAfterTaxAnnual != null ? makeNetAfterTaxTooltip(contract.annualNetImposable, estimatedTax, trAnnual, 12, onCallAnnualNetAfterTax, onCallAnnualTax, totalAnnualBonuses * 0.75) : null}
         />
         <Cell
           label="Mensuel"
@@ -243,7 +249,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           netAfterTax={netAfterTaxMonthly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.monthlyGrossSalary, contract.monthlySuperGross, paidMonths)}
           netImposableTooltip={makeNetImposableTooltip(contract.monthlyNetImposable, bonusPerMonth * 0.75, onCallPerMonth * 0.75)}
-          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / paidMonths, trMonthly, 1, onCallAnnualNetAfterTax / paidMonths, onCallAnnualTax / paidMonths) : null}
+          netAfterTaxTooltip={netAfterTaxMonthly != null ? makeNetAfterTaxTooltip(contract.monthlyNetImposable, estimatedTax / paidMonths, trMonthly, 1, onCallAnnualNetAfterTax / paidMonths, onCallAnnualTax / paidMonths, bonusPerMonth * 0.75) : null}
         />
         <Cell
           label="Journalier"
@@ -252,7 +258,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           netAfterTax={netAfterTaxDaily}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.dailyGrossSalary, contract.dailySuperGross, workingDays)}
           netImposableTooltip={makeNetImposableTooltip(contract.dailyNetImposable, bonusPerDay * 0.75, onCallPerDay * 0.75)}
-          netAfterTaxTooltip={netAfterTaxDaily != null ? makeNetAfterTaxTooltip(contract.dailyNetImposable, estimatedTax / workingDays, trDaily, 12 / workingDays, onCallAnnualNetAfterTax / workingDays, onCallAnnualTax / workingDays) : null}
+          netAfterTaxTooltip={netAfterTaxDaily != null ? makeNetAfterTaxTooltip(contract.dailyNetImposable, estimatedTax / workingDays, trDaily, 12 / workingDays, onCallAnnualNetAfterTax / workingDays, onCallAnnualTax / workingDays, bonusPerDay * 0.75) : null}
         />
         <Cell
           label="Horaire"
@@ -261,7 +267,7 @@ export default function ProjectionGrid({ contract, annualBonuses = [], benefits 
           netAfterTax={netAfterTaxHourly}
           grossTooltip={makeGrossTooltip('Salaire brut', contract.hourlyGrossSalary, contract.hourlySuperGross, workingDays * hoursPerDay)}
           netImposableTooltip={makeNetImposableTooltip(contract.hourlyNetImposable, bonusPerHour * 0.75, onCallPerHour * 0.75)}
-          netAfterTaxTooltip={netAfterTaxHourly != null ? makeNetAfterTaxTooltip(contract.hourlyNetImposable, estimatedTax / (workingDays * hoursPerDay), trHourly, 12 / workingDays / hoursPerDay, onCallAnnualNetAfterTax / (workingDays * hoursPerDay), onCallAnnualTax / (workingDays * hoursPerDay)) : null}
+          netAfterTaxTooltip={netAfterTaxHourly != null ? makeNetAfterTaxTooltip(contract.hourlyNetImposable, estimatedTax / (workingDays * hoursPerDay), trHourly, 12 / workingDays / hoursPerDay, onCallAnnualNetAfterTax / (workingDays * hoursPerDay), onCallAnnualTax / (workingDays * hoursPerDay), bonusPerHour * 0.75) : null}
         />
       </div>
 
