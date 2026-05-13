@@ -47,8 +47,10 @@
       <appender-ref ref="CONSOLE"/>
       <appender-ref ref="FILE"/>
     </root>
-    <logger name="com.myfinance"        level="INFO"/>
-    <logger name="org.springframework"  level="WARN"/>
+    <logger name="com.myfinance"                           level="INFO"/>
+    <logger name="org.springframework"                     level="WARN"/>
+    <!-- ClientAbortException = client a coupé la connexion, pas un bug serveur -->
+    <logger name="org.apache.catalina.connector"           level="OFF"/>
   </springProfile>
 
   <!-- ═══════════════════════════════════════════════════════
@@ -79,8 +81,10 @@
       <appender-ref ref="CONSOLE"/>
       <appender-ref ref="FILE"/>
     </root>
-    <logger name="com.myfinance"        level="INFO"/>
-    <logger name="org.springframework"  level="WARN"/>
+    <logger name="com.myfinance"                           level="INFO"/>
+    <logger name="org.springframework"                     level="WARN"/>
+    <!-- ClientAbortException = client a coupé la connexion, pas un bug serveur -->
+    <logger name="org.apache.catalina.connector"           level="OFF"/>
   </springProfile>
 
 </configuration>
