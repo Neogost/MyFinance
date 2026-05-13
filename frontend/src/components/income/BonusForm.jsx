@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { MONTHS_FR_LONG } from '../../utils/constants.js'
+import MonthInput from '../ui/MonthInput'
 
 const EMPTY = { type: 'ANNUELLE', label: '', grossAmount: '', paymentDate: '', paymentMonth: '', startDate: '', endDate: '' }
 
@@ -16,7 +17,7 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
         type:         bonus.type,
         label:        bonus.label,
         grossAmount:  bonus.grossAmount,
-        paymentDate:  bonus.paymentDate ? bonus.paymentDate.slice(0, 7) : '',
+        paymentDate:  bonus.paymentDate ?? '',
         paymentMonth: bonus.paymentMonth ?? '',
         startDate:    bonus.startDate ?? '',
         endDate:      bonus.endDate   ?? '',
@@ -39,7 +40,7 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
         type:         form.type,
         label:        form.label,
         grossAmount:  parseFloat(form.grossAmount),
-        paymentDate:  form.type === 'EXCEPTIONNELLE' ? `${form.paymentDate}-01` : null,
+        paymentDate:  form.type === 'EXCEPTIONNELLE' ? (form.paymentDate || null) : null,
         paymentMonth: form.type === 'ANNUELLE'       ? parseInt(form.paymentMonth) : null,
         startDate:    form.type === 'MENSUELLE'      ? form.startDate || null : null,
         endDate:      form.type === 'MENSUELLE'      ? (form.endDate || null) : null,
@@ -110,10 +111,11 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
           {form.type === 'EXCEPTIONNELLE' && (
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Mois de versement *</label>
-              <input
-                name="paymentDate" type="month" value={form.paymentDate}
-                onChange={handleChange} required
-                className={inputCls}
+              <MonthInput
+                name="paymentDate"
+                value={form.paymentDate}
+                onChange={val => setForm(f => ({ ...f, paymentDate: val }))}
+                required
               />
             </div>
           )}
