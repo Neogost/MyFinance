@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import DateInput from '../ui/DateInput'
 
 const CATEGORIES = [
   { value: 'LOGEMENT',    label: 'Logement' },
@@ -203,11 +204,19 @@ export default function RecurringExpenseForm({ expense, onSubmit, onCancel }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date de début <span className="font-normal text-gray-400">(optionnel)</span></label>
-              <input name="startDate" type="date" value={form.startDate} onChange={handleChange} className={inputCls} />
+              <DateInput
+                name="startDate" value={form.startDate}
+                onChange={val => setForm(f => ({ ...f, startDate: val }))}
+                className="w-full"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date de fin <span className="font-normal text-gray-400">(laisser vide si en cours)</span></label>
-              <input name="endDate" type="date" value={form.endDate} onChange={handleChange} className={inputCls} />
+              <DateInput
+                name="endDate" value={form.endDate}
+                onChange={val => setForm(f => ({ ...f, endDate: val }))}
+                className="w-full"
+              />
             </div>
           </div>
 

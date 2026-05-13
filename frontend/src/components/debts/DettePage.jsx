@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getDebts, getDebtsSummary, createDebt, updateDebt, deleteDebt, getBalanceEntries, addBalanceEntry, deleteBalanceEntry } from '../../api/debts'
+import DateInput from '../ui/DateInput'
 import { useCrud } from '../../hooks/useCrud'
 import DebtForm from './DebtForm'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
@@ -110,8 +111,7 @@ function BalanceHistoryPanel({ debtId, onUpdated }) {
         <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2 mb-3 sm:items-end flex-wrap">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Date</label>
-            <input type="date" value={form.entryDate} onChange={e => setForm(f => ({ ...f, entryDate: e.target.value }))}
-              className={inputCls} required />
+            <DateInput value={form.entryDate} onChange={val => setForm(f => ({ ...f, entryDate: val }))} required />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Capital restant (€)</label>

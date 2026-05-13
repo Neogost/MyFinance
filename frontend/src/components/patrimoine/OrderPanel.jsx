@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getOrders, createOrder, updateOrder, deleteOrder, getPositions } from '../../api/patrimoine'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import { MONTHS_FR_SHORT } from '../../utils/constants.js'
+import DateInput from '../ui/DateInput'
 
 const ORDER_TYPE_LABELS = {
   DEPOSIT:     { label: 'Dépôt',       color: 'bg-green-100 text-green-700'    },
@@ -266,8 +267,7 @@ function OrderForm({ order, category, onSubmit, onCancel }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date *</label>
-              <input name="orderDate" type="date" value={form.orderDate}
-                onChange={handleChange} required className={inputCls} />
+              <DateInput name="orderDate" value={form.orderDate} onChange={val => setForm(f => ({ ...f, orderDate: val }))} required />
             </div>
           </div>
 

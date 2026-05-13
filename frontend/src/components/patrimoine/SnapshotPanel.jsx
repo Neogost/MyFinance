@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getSnapshots, createSnapshot, createSnapshotForAll, recalculateSnapshot } from '../../api/patrimoine'
+import DateInput from '../ui/DateInput'
 
 function fmt(value) {
   if (value == null) return '—'
@@ -102,12 +103,7 @@ export default function SnapshotPanel({ onClose }) {
           <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-end gap-3 flex-wrap">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-indigo-700">Date du relevé</label>
-              <input
-                type="date"
-                value={snapshotDate}
-                onChange={e => setSnapshotDate(e.target.value)}
-                className="px-3 py-2 border border-indigo-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition bg-white"
-              />
+              <DateInput value={snapshotDate} onChange={setSnapshotDate} />
             </div>
             <button
               onClick={handleCreate}

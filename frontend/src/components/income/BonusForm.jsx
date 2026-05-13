@@ -140,23 +140,14 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Date de début *</label>
-                <input
-                  name="startDate" type="date" value={form.startDate}
-                  onChange={handleChange} required
-                  className={inputCls}
-                />
+                <DateInput name="startDate" value={form.startDate} onChange={val => setForm(f => ({ ...f, startDate: val }))} required />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>
                   Date de fin
                   <span className="text-gray-400 font-normal ml-1">— optionnelle (vide = indéfinie)</span>
                 </label>
-                <input
-                  name="endDate" type="date" value={form.endDate}
-                  onChange={handleChange}
-                  min={form.startDate || undefined}
-                  className={inputCls}
-                />
+                <DateInput name="endDate" value={form.endDate} onChange={val => setForm(f => ({ ...f, endDate: val }))} minDate={form.startDate || null} />
               </div>
             </div>
           )}

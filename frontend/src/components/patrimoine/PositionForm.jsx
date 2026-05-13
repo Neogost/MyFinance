@@ -3,6 +3,7 @@ import { getInstruments, createInstrument } from '../../api/patrimoine'
 import { CATEGORY_META, FISCAL_ENVELOPE_LABELS, FISCAL_ENVELOPES_BY_CATEGORY, ASSET_SUB_TYPES, OWNERSHIP_TYPES, PROPERTY_USAGE_TYPES } from './constants'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { useAnalytics } from '../../hooks/useAnalytics'
+import DateInput from '../ui/DateInput'
 
 const EMPTY_FORM = {
   partner: '', label: '', currency: 'EUR',
@@ -522,9 +523,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className={labelCls}>Date d'acquisition</label>
-                      <input name="acquisitionDate" type="date"
-                        value={form.acquisitionDate} onChange={handleChange}
-                        className={inputCls} />
+                      <DateInput name="acquisitionDate" value={form.acquisitionDate} onChange={val => setForm(f => ({ ...f, acquisitionDate: val }))} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className={labelCls}>Prix d'acquisition (€)</label>
@@ -553,9 +552,7 @@ export default function PositionForm({ position, onSubmit, onCancel }) {
                     Date de fermeture
                     <span className="ml-1 text-xs text-gray-400 font-normal">(correction rétroactive)</span>
                   </label>
-                  <input name="closedDate" type="date"
-                    value={form.closedDate} onChange={handleChange}
-                    className={inputCls} />
+                  <DateInput name="closedDate" value={form.closedDate} onChange={val => setForm(f => ({ ...f, closedDate: val }))} />
                 </div>
               )}
 

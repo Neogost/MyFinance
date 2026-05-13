@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import DateInput from '../ui/DateInput'
 
 const CATEGORIES = [
   { value: 'VEHICULE',       label: 'Véhicule',                 rate: 0.15, residual: 0.10 },
@@ -131,11 +132,7 @@ export default function PossessionForm({ possession, onSubmit, onCancel }) {
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date d'acquisition *</label>
-              <input
-                name="purchaseDate" type="date" value={form.purchaseDate}
-                onChange={handleChange} required className={inputCls}
-                max={new Date().toISOString().split('T')[0]}
-              />
+              <DateInput name="purchaseDate" value={form.purchaseDate} onChange={val => setForm(f => ({ ...f, purchaseDate: val }))} required maxDate={new Date().toISOString().split('T')[0]} />
             </div>
           </div>
 

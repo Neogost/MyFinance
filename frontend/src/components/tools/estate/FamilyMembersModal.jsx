@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from '../../../api/estate'
+import DateInput from '../../ui/DateInput'
 
 const RELATIONS = [
   { value: 'CONJOINT',             label: 'Conjoint / Partenaire PACS',   abattement: '80 724 €' },
@@ -132,7 +133,7 @@ function MemberForm({ item, onSave, onCancel }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <label className={labelCls}>Date de naissance</label>
-          <input type="date" name="birthDate" value={form.birthDate} onChange={ch} className={inputCls} />
+          <DateInput name="birthDate" value={form.birthDate} onChange={val => ch({ target: { name: 'birthDate', value: val } })} />
           <p className="text-xs text-gray-400">Nécessaire pour le démembrement</p>
         </div>
         <div className="flex items-center gap-2 pt-6">

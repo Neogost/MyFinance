@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { getPositions } from '../../api/patrimoine'
+import DateInput from '../ui/DateInput'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 const TYPES = [
@@ -120,11 +121,11 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Début du bail</label>
-                  <input name="periodStart" type="date" value={form.periodStart} onChange={handleChange} className={inputCls} />
+                  <DateInput name="periodStart" value={form.periodStart} onChange={val => setForm(f => ({ ...f, periodStart: val }))} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className={labelCls}>Fin du bail <span className="font-normal text-gray-400">(vide = en cours)</span></label>
-                  <input name="periodEnd" type="date" value={form.periodEnd} onChange={handleChange} className={inputCls} />
+                  <DateInput name="periodEnd" value={form.periodEnd} onChange={val => setForm(f => ({ ...f, periodEnd: val }))} />
                 </div>
               </div>
               {isContrat && (
@@ -186,7 +187,7 @@ export default function OtherIncomeForm({ income, onSubmit, onCancel }) {
             {!isContrat && (
               <div className="flex flex-col gap-1.5">
                 <label className={labelCls}>Date de perception *</label>
-                <input name="date" type="date" value={form.date} onChange={handleChange} required className={inputCls} />
+                <DateInput name="date" value={form.date} onChange={val => setForm(f => ({ ...f, date: val }))} required />
               </div>
             )}
           </div>

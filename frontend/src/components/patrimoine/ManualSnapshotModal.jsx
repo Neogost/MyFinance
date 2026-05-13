@@ -3,6 +3,7 @@ import {
   getAdminUserPositions, getAdminSnapshot,
   createAdminSnapshot, updateAdminSnapshot
 } from '../../api/patrimoine'
+import DateInput from '../ui/DateInput'
 
 const CATEGORY_LABELS = {
   BOURSE:        'Bourse',
@@ -168,12 +169,7 @@ export default function ManualSnapshotModal({ users, snapshot, initialUserId, on
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                 Date du relevé
               </label>
-              <input
-                type="date"
-                value={snapshotDate}
-                onChange={e => setSnapshotDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition"
-              />
+              <DateInput value={snapshotDate} onChange={setSnapshotDate} className="w-full" />
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 const MONTHS_FR = [
   'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
@@ -79,17 +80,23 @@ export default function DateInput({
   const parsed  = parseDate(value)
   const today   = new Date()
 
-  const [open, setOpen]         = useState(false)
-  const [viewYear, setViewYear] = useState((parsed ?? today).getFullYear())
+  const [open, setOpen]           = useState(false)
+  const [viewYear, setViewYear]   = useState((parsed ?? today).getFullYear())
   const [viewMonth, setViewMonth] = useState((parsed ?? today).getMonth())
-  const ref = useRef(null)
+  const [popPos, setPopPos]       = useState({ top: 0, left: 0 })
+  const triggerRef = useRef(null)
 
-  // Ferme le popover au clic extérieur
+  // Ferme le popover au clic extérieur ou au scroll
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    if (!open) return
+    const close = () => setOpen(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', close, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [open])
 
   // Synchronise la vue si la valeur change de l'extérieur
   useEffect(() => {
@@ -110,6 +117,18 @@ export default function DateInput({
 
   const days = buildDays(viewYear, viewMonth)
 
+  function openPicker() {
+    if (!triggerRef.current) return
+    const r = triggerRef.current.getBoundingClientRect()
+    setPopPos({
+      top:  r.bottom + window.scrollY + 6,
+      left: popoverAlign === 'right'
+        ? r.right + window.scrollX - 256
+        : r.left  + window.scrollX,
+    })
+    setOpen(v => !v)
+  }
+
   const triggerCls = [
     'flex items-center gap-2 text-sm border rounded-lg px-3 py-1.5 bg-white',
     'hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300',
@@ -119,12 +138,10 @@ export default function DateInput({
     className,
   ].join(' ')
 
-  const alignCls = popoverAlign === 'right' ? 'right-0' : 'left-0'
-
   return (
-    <div ref={ref} className="relative inline-block">
+    <div className="relative inline-block">
       {/* Champ déclencheur */}
-      <button type="button" onClick={() => setOpen(v => !v)} className={triggerCls}
+      <button ref={triggerRef} type="button" onClick={openPicker} className={triggerCls}
         aria-haspopup="dialog" aria-expanded={open} {...(name ? { name } : {})} {...(required ? { required } : {})}>
         <span className="flex-1 whitespace-nowrap">{value ? toFr(parsed) : placeholder}</span>
         <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24"
@@ -134,10 +151,11 @@ export default function DateInput({
         </svg>
       </button>
 
-      {/* Popover calendrier */}
-      {open && (
-        <div role="dialog"
-          className={`absolute top-full mt-1.5 ${alignCls} z-50 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-64 select-none`}>
+      {/* Popover calendrier — rendu via portail pour passer au-dessus des modales */}
+      {open && createPortal(
+        <div role="dialog" onMouseDown={e => e.stopPropagation()}
+          style={{ position: 'absolute', top: popPos.top, left: popPos.left, zIndex: 9999 }}
+          className="bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-64 select-none">
 
           {/* Navigation mois / année */}
           <div className="flex items-center justify-between mb-3">
@@ -203,7 +221,8 @@ export default function DateInput({
               Aujourd'hui
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

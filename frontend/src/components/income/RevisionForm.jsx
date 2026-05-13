@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { getPublicPointValue } from '../../api/income'
+import DateInput from '../ui/DateInput'
 
 const EMPTY_PRIVATE = { effectiveDate: '', annualGrossSalary: '', label: '' }
 const EMPTY_PUBLIC  = { effectiveDate: '', indiceMajore: '', label: '' }
@@ -78,10 +79,7 @@ export default function RevisionForm({ revision, contractType, onSubmit, onCance
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Date d'entrée en vigueur *</label>
-            <input
-              name="effectiveDate" type="date" value={form.effectiveDate} onChange={handleChange}
-              required className={inputCls}
-            />
+            <DateInput name="effectiveDate" value={form.effectiveDate} onChange={val => setForm(f => ({ ...f, effectiveDate: val }))} required />
           </div>
 
           {isPublic ? (

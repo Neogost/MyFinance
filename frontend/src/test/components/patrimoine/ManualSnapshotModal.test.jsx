@@ -111,8 +111,8 @@ describe('ManualSnapshotModal', () => {
     render(<ManualSnapshotModal users={USERS} snapshot={null} initialUserId={1} onClose={vi.fn()} onSaved={vi.fn()} />)
     await waitFor(() => expect(screen.getByText('ETF World')).toBeInTheDocument())
     // Date remplie mais aucune valeur de position → toujours disabled
-    const dateInputs = document.querySelectorAll('[type="date"]')
-    fireEvent.change(dateInputs[dateInputs.length - 1], { target: { value: '2026-04-01' } })
+    fireEvent.click(screen.getByRole('button', { name: /jj\/mm\/aaaa/i }))
+    fireEvent.click(screen.getAllByRole('button', { name: '1' })[0])
     expect(screen.getByRole('button', { name: /Créer le relevé/i })).toBeDisabled()
   })
 
@@ -126,7 +126,8 @@ describe('ManualSnapshotModal', () => {
     render(<ManualSnapshotModal users={USERS} snapshot={null} initialUserId={1} onClose={onClose} onSaved={onSaved} />)
     await waitFor(() => expect(screen.getByText('ETF World')).toBeInTheDocument())
 
-    fireEvent.change(document.querySelector('[type="date"]'), { target: { value: '2026-04-01' } })
+    fireEvent.click(screen.getByRole('button', { name: /jj\/mm\/aaaa/i }))
+    fireEvent.click(screen.getAllByRole('button', { name: '1' })[0])
     // Saisir une valeur pour la première position
     const inputs = screen.getAllByPlaceholderText('0.00')
     fireEvent.change(inputs[1], { target: { value: '25000' } }) // currentValueEur du premier

@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { getPriceHistory, upsertPriceHistory, deletePriceHistory } from '../../api/patrimoine'
 import DateRangeInput from '../ui/DateRangeInput'
+import DateInput from '../ui/DateInput'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -234,8 +235,7 @@ export default function PriceHistoryModal({ instrument, onClose }) {
           <div className="flex flex-wrap items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Date</label>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <DateInput value={newDate} onChange={setNewDate} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
+import DateInput from '../ui/DateInput'
 
 const EMPTY_FORM = {
   firstName: '', lastName: '', birthDate: '', login: '', password: '', role: 'USER',
@@ -132,7 +133,7 @@ export default function UserForm({ userToEdit, onSubmit, onCancel }) {
 
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Date de naissance</label>
-            <input name="birthDate" type="date" value={form.birthDate} onChange={handleChange} className={inputCls} />
+            <DateInput name="birthDate" value={form.birthDate} onChange={val => setForm(f => ({ ...f, birthDate: val }))} />
           </div>
 
           <div className="flex flex-col gap-1.5">

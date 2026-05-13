@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import DateInput from '../ui/DateInput'
 import {
   getCryptoTaxState,
   getCryptoTaxSummary,
@@ -338,8 +339,7 @@ function ManualOpForm({ op, onSave, onCancel }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Date *</label>
-              <input name="date" type="date" value={form.date}
-                onChange={handleChange} required className={inputCls} />
+              <DateInput name="date" value={form.date} onChange={val => setForm(f => ({ ...f, date: val }))} required />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={labelCls}>Type *</label>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import { updatePersonalInfo } from '../../api/auth'
 import { labelCls } from '../../components/common/formStyles.js'
+import DateInput from '../ui/DateInput'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 
@@ -89,9 +90,7 @@ export default function PersonalInfoPanel({ user, onUpdate }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div className="flex flex-col gap-1.5">
           <label className={`${labelCls} flex items-center`}>Date de naissance<FieldTooltip text="Utilisée pour : votre tranche d'âge dans les déciles INSEE de patrimoine, votre âge de départ dans le simulateur de retraite, et le calcul des cycles de donation dans la Stratégie 15 ans (onglet Donation & succession)." /></label>
-          <input name="birthDate" type="date" value={form.birthDate}
-            onChange={handleChange}
-            className={inputCls} />
+          <DateInput name="birthDate" value={form.birthDate} onChange={val => setForm(f => ({ ...f, birthDate: val }))} />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className={`${labelCls} flex items-center`}>Poste actuel<FieldTooltip text="Affiché dans votre profil et utilisé dans la déclaration de patrimoine." /></label>

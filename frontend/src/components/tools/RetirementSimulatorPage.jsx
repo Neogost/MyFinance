@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import DateInput from '../ui/DateInput'
 import {
   ComposedChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -382,8 +383,7 @@ export default function RetirementSimulatorPage({ user }) {
                 Date de naissance
                 <InfoTooltip text="Détermine votre génération, donc le nombre de trimestres requis pour le taux plein et votre âge légal minimum de départ. La réforme 2023 a porté l'âge légal à 64 ans pour les générations 1968+ et la durée à 172 trimestres (43 ans) pour 1965+." />
               </label>
-              <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-gray-100" />
+              <DateInput value={birthDate} onChange={setBirthDate} className="w-full" />
               {birthDate && <p className="text-xs text-gray-400 mt-0.5">Âge actuel : {CURRENT_YEAR - yearOfBirth} ans · Retraite en {yearOfBirth + retirementAge}</p>}
             </div>
             <div>

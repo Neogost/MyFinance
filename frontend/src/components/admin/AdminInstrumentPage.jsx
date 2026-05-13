@@ -7,6 +7,7 @@ import {
   getExchangeRateHistorySummary, getExchangeRateCurrencyUsage, deleteExchangeRateCurrency,
 } from '../../api/patrimoine'
 import AdminInstrumentForm from './AdminInstrumentForm'
+import DateInput from '../ui/DateInput'
 import AdminAllocationModal from './AdminAllocationModal'
 import AdminSectorAllocationModal from './AdminSectorAllocationModal'
 import PriceHistoryModal from './PriceHistoryModal'
@@ -646,12 +647,7 @@ export default function AdminInstrumentPage() {
                       <td className="px-2 md:px-4 py-3">
                         {rateBackfillCurrency === er.currency ? (
                           <div className="hidden md:flex items-center gap-2">
-                            <input
-                              type="date"
-                              value={rateBackfillDate}
-                              onChange={e => setRateBackfillDate(e.target.value)}
-                              className="border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                            />
+                            <DateInput value={rateBackfillDate} onChange={setRateBackfillDate} />
                             <button
                               onClick={() => handleRateBackfill(er.currency, rateBackfillDate || undefined)}
                               className="px-3 py-1 bg-indigo-600 text-white rounded-md text-xs font-semibold hover:bg-indigo-700 transition"

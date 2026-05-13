@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 const MONTHS_FR = [
   'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
@@ -44,13 +45,19 @@ export default function MonthInput({
 
   const [open,     setOpen]     = useState(false)
   const [viewYear, setViewYear] = useState(parsed?.year ?? now.getFullYear())
-  const ref = useRef(null)
+  const [popPos,   setPopPos]   = useState({ top: 0, left: 0 })
+  const triggerRef = useRef(null)
 
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    if (!open) return
+    const close = () => setOpen(false)
+    document.addEventListener('mousedown', close)
+    window.addEventListener('scroll', close, true)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      window.removeEventListener('scroll', close, true)
+    }
+  }, [open])
 
   useEffect(() => {
     if (parsed) setViewYear(parsed.year)
@@ -74,9 +81,16 @@ export default function MonthInput({
     className,
   ].join(' ')
 
+  function openPicker() {
+    if (!triggerRef.current) return
+    const r = triggerRef.current.getBoundingClientRect()
+    setPopPos({ top: r.bottom + window.scrollY + 6, left: r.left + window.scrollX })
+    setOpen(v => !v)
+  }
+
   return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen(v => !v)} className={triggerCls}
+    <div className="relative">
+      <button ref={triggerRef} type="button" onClick={openPicker} className={triggerCls}
         aria-haspopup="dialog" aria-expanded={open}
         {...(name ? { name } : {})} {...(required ? { required } : {})}>
         <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24"
@@ -87,9 +101,10 @@ export default function MonthInput({
         <span className="flex-1">{triggerLabel}</span>
       </button>
 
-      {open && (
-        <div role="dialog"
-          className="absolute top-full mt-1.5 left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-56 select-none">
+      {open && createPortal(
+        <div role="dialog" onMouseDown={e => e.stopPropagation()}
+          style={{ position: 'absolute', top: popPos.top, left: popPos.left, zIndex: 9999 }}
+          className="bg-white rounded-xl shadow-xl border border-gray-200 p-3 w-56 select-none">
 
           {/* Navigation année */}
           <div className="flex items-center justify-between mb-3">
@@ -128,7 +143,8 @@ export default function MonthInput({
               )
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

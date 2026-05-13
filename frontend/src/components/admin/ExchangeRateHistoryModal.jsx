@@ -4,6 +4,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { getExchangeRateHistory, upsertExchangeRateHistory, deleteExchangeRateHistory } from '../../api/patrimoine'
+import DateInput from '../ui/DateInput'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,15 +181,11 @@ export default function ExchangeRateHistoryModal({ currency, onClose }) {
             <div className="flex items-center gap-2">
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Début</label>
-                <input type="date" value={pending.from}
-                  onChange={e => setPending(p => ({ ...p, from: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                <DateInput value={pending.from} onChange={val => setPending(p => ({ ...p, from: val }))} />
               </div>
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Fin</label>
-                <input type="date" value={pending.to}
-                  onChange={e => setPending(p => ({ ...p, to: e.target.value }))}
-                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                <DateInput value={pending.to} onChange={val => setPending(p => ({ ...p, to: val }))} />
               </div>
             </div>
             <button onClick={handleLoad} disabled={loading}
@@ -245,8 +242,7 @@ export default function ExchangeRateHistoryModal({ currency, onClose }) {
           <div className="flex flex-wrap items-end gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Date</label>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              <DateInput value={newDate} onChange={setNewDate} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Taux (unités/{currency} pour 1 EUR)</label>
