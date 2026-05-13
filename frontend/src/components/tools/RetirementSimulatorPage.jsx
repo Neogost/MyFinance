@@ -740,6 +740,103 @@ export default function RetirementSimulatorPage({ user }) {
 
         </div>
       </div>
+      <RetirementExplainer />
+    </div>
+  )
+}
+
+function RetirementExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre la retraite et comment la préparer
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              La retraite, c'est le moment où tu <strong>arrêtes de travailler mais continues de vivre</strong>.
+              Ce simulateur t'aide à savoir combien tu recevras de l'État — et combien il te manquera
+              pour vivre comme tu veux. La différence, c'est ce que tu dois épargner toi-même.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Le système français : 2 étages</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+              <div className="bg-indigo-50 rounded-lg p-4">
+                <p className="font-semibold text-indigo-700 mb-2">1️⃣ Retraite de base (obligatoire)</p>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Calculée sur tes <strong>25 meilleures années</strong> de salaire (plafonnées au PASS).
+                  Taux plein de <strong>50 %</strong> si tu as le bon nombre de trimestres.
+                  Décote si tu pars trop tôt, surcote si tu prolonges.
+                </p>
+              </div>
+              <div className="bg-violet-50 rounded-lg p-4">
+                <p className="font-semibold text-violet-700 mb-2">2️⃣ Retraite complémentaire (Agirc-Arrco)</p>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Fonctionnement par <strong>points</strong> : tu en accumules tout au long de ta carrière.
+                  En 2025, 1 point = environ 1,4191 €/an. Ces points s'ajoutent à ta pension de base.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-3">
+              <strong>La réalité :</strong> en France, la pension moyenne est d'environ <strong>1 500 €/mois</strong> brut.
+              Si tu vivais avec plus, il te manquera de l'argent. D'où l'importance de l'épargne personnelle.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">🔥 La règle des 4 % — combien épargner pour être libre</p>
+            <p className="text-gray-600 leading-relaxed mb-3">
+              Selon des études sur les marchés historiques, un portefeuille peut supporter un retrait annuel
+              de <strong>4 % de sa valeur</strong> indéfiniment (les gains compensent les retraits).
+              C'est la base du mouvement <strong>FIRE</strong> (Financial Independence, Retire Early).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { besoin: '1 000 €/mois manquants', capital: '300 000 €', calcul: '12 000 / 4 %' },
+                { besoin: '2 000 €/mois manquants', capital: '600 000 €', calcul: '24 000 / 4 %' },
+                { besoin: '3 000 €/mois manquants', capital: '900 000 €', calcul: '36 000 / 4 %' },
+              ].map(({ besoin, capital, calcul }) => (
+                <div key={besoin} className="border border-gray-200 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">{besoin}</p>
+                  <p className="text-lg font-bold text-indigo-600 mt-1">{capital}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">= {calcul}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">⏰ Pourquoi commencer tôt est crucial</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-gray-700 mb-1">Commencer à 30 ans</p>
+                <p className="text-xs text-gray-500">200 €/mois · 35 ans · 6 %/an</p>
+                <p className="text-xl font-bold text-emerald-600 mt-2">284 000 €</p>
+                <p className="text-xs text-gray-400">pour 84 000 € versés</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-gray-700 mb-1">Commencer à 45 ans</p>
+                <p className="text-xs text-gray-500">200 €/mois · 20 ans · 6 %/an</p>
+                <p className="text-xl font-bold text-orange-500 mt-2">93 000 €</p>
+                <p className="text-xs text-gray-400">pour 48 000 € versés</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3 mt-3">
+              15 ans de différence, à peine 36 000 € de plus versés — mais <strong>3× plus de capital</strong>.
+              Le meilleur moment pour commencer à épargner pour la retraite, c'est aujourd'hui.
+            </p>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

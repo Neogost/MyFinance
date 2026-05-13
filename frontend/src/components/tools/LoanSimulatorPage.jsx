@@ -990,6 +990,91 @@ export default function LoanSimulatorPage({ user }) {
           ))}
         </ol>
       </div>
+      <LoanExplainer />
+    </div>
+  )
+}
+
+function LoanExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre un crédit immobilier
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Emprunter, c'est acheter <strong>maintenant</strong> avec l'argent de la banque, et rembourser
+              <strong> plus tard avec des intérêts</strong>. Chaque mensualité contient une part de capital
+              (ce que tu rembourses vraiment) et une part d'intérêts (le "loyer" que tu paies à la banque).
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Exemple concret : 200 000 € sur 20 ans à 3,5 %</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Mensualité</p>
+                <p className="text-2xl font-bold text-gray-800">1 160 €</p>
+                <p className="text-xs text-gray-400 mt-1">par mois pendant 20 ans</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-red-500 font-semibold uppercase tracking-wide mb-1">Coût total des intérêts</p>
+                <p className="text-2xl font-bold text-red-600">78 400 €</p>
+                <p className="text-xs text-gray-400 mt-1">le "prix" du crédit</p>
+              </div>
+              <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide mb-1">Coût total</p>
+                <p className="text-2xl font-bold text-indigo-700">278 400 €</p>
+                <p className="text-xs text-gray-400 mt-1">capital + intérêts</p>
+              </div>
+            </div>
+            <p className="text-gray-600 bg-amber-50 rounded-lg p-3 text-xs leading-relaxed">
+              <strong>Le piège des premières années :</strong> au début, ta mensualité est composée surtout
+              d'intérêts. Sur la 1ère mensualité de 1 160 €, environ <strong>583 € vont à la banque</strong>
+              (intérêts) et seulement 577 € remboursent réellement ton appartement. Ça s'inverse progressivement.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">📊 L'impact du taux — chaque 0,5 % compte énormément</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { taux: '3 %', mensualite: '1 109 €', cout: '66 200 €' },
+                { taux: '3,5 %', mensualite: '1 160 €', cout: '78 400 €' },
+                { taux: '4 %', mensualite: '1 212 €', cout: '90 900 €' },
+              ].map(({ taux, mensualite, cout }) => (
+                <div key={taux} className="border border-gray-200 rounded-lg p-3 text-center">
+                  <p className="font-semibold text-gray-700">Taux {taux}</p>
+                  <p className="text-base font-bold text-gray-800 mt-1">{mensualite}/mois</p>
+                  <p className="text-xs text-red-500 mt-0.5">{cout} d'intérêts</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-3 bg-gray-50 rounded-lg p-2">
+              Pour 200 000 € sur 20 ans : 1 % de taux en plus = <strong>24 700 € de plus</strong> à payer.
+              Négocier son taux vaut vraiment le coup.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-2">🏦 Les frais souvent oubliés</p>
+            <ul className="text-xs text-gray-600 space-y-1.5">
+              <li>• <strong>Frais de notaire</strong> : 7-8 % du prix dans l'ancien, 2-3 % dans le neuf</li>
+              <li>• <strong>Assurance emprunteur</strong> : 0,2 à 0,5 % du capital par an — souvent autant que les intérêts sur 20 ans</li>
+              <li>• <strong>Frais de dossier bancaire</strong> : 500 à 1 500 €</li>
+              <li>• <strong>Garantie</strong> (caution ou hypothèque) : 1 à 2 % du capital</li>
+            </ul>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

@@ -523,8 +523,98 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
           </div>
         )}
 
-
       </div>
+      <PatrimoineExplainer />
+    </div>
+  )
+}
+
+function PatrimoineExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre la déclaration de patrimoine
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              La déclaration de patrimoine, c'est faire <strong>l'inventaire complet</strong> de tout ce que tu
+              possèdes et de tout ce que tu dois — et le dater. Répété chaque année, c'est le meilleur moyen
+              de voir si tu progresses vraiment vers la liberté financière.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 À quoi ça sert concrètement ?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { titre: 'Suivre ta progression', desc: "Comparer ton patrimoine net d'une année sur l'autre : est-ce que tu t'enrichis vraiment ?", emoji: '📈' },
+                { titre: 'Préparer une succession', desc: "Connaître exactement ce que tu as permet à tes proches d'agir vite, sans chercher pendant des mois.", emoji: '🏛️' },
+                { titre: "Détecter l'IFI", desc: "Si ton immobilier net dépasse 1,3 M€, tu dois déclarer l'Impôt sur la Fortune Immobilière.", emoji: '⚖️' },
+              ].map(({ titre, desc, emoji }) => (
+                <div key={titre} className="border border-gray-200 rounded-lg p-4">
+                  <p className="text-xl mb-2">{emoji}</p>
+                  <p className="font-semibold text-gray-800 mb-1">{titre}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">⚖️ L'IFI — Impôt sur la Fortune Immobilière</p>
+            <p className="text-gray-600 leading-relaxed mb-3 text-xs">
+              Depuis 2018, seule <strong>l'immobilier</strong> entre dans le calcul de la fortune taxable
+              (l'ancienne ISF taxait tout). Si la valeur nette de tes biens immobiliers dépasse <strong>1,3 M€</strong>,
+              tu es assujetti à l'IFI — avec un barème progressif à partir de 800 000 €.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { tranche: "Jusqu'à 800 k€", taux: '0 %' },
+                { tranche: '800 k€ → 1,3 M€', taux: '0,5 %' },
+                { tranche: '1,3 M€ → 2,57 M€', taux: '0,7 %' },
+                { tranche: 'Au-delà de 2,57 M€', taux: '1,5 %' },
+              ].map(({ tranche, taux }) => (
+                <div key={tranche} className="border border-gray-200 rounded-lg p-2 text-center">
+                  <p className="text-xs text-gray-500">{tranche}</p>
+                  <p className="text-sm font-bold text-indigo-600 mt-1">{taux}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">La résidence principale bénéficie d'un abattement de 30 % pour le calcul de l'IFI.</p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">📋 Ce qu'on inclut (et ce qu'on exclut)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <p className="font-semibold text-emerald-700 mb-1">✅ À inclure dans l'actif</p>
+                <ul className="text-gray-600 space-y-0.5">
+                  <li>• Immobilier (résidence, investissement, SCPI)</li>
+                  <li>• Actions, ETF, fonds en bourse</li>
+                  <li>• Livrets, assurance-vie, PEA, PER</li>
+                  <li>• Voitures, bateaux, objets de valeur</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-red-600 mb-1">❌ À inclure dans le passif</p>
+                <ul className="text-gray-600 space-y-0.5">
+                  <li>• Capital restant dû sur les crédits immo</li>
+                  <li>• Crédits auto en cours</li>
+                  <li>• Dettes personnelles</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

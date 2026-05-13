@@ -1005,103 +1005,98 @@ export default function CryptoTaxPage() {
   )
 }
 
-// ── Exemple pédagogique ────────────────────────────────────────
+// ── Section éducative ─────────────────────────────────────────────────────────
 
 function PedagoExample() {
   const [open, setOpen] = useState(false)
   return (
-    <div className="mt-8 bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="mt-10 border-t border-gray-200 pt-6">
       <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left">
-        <span className="text-sm font-semibold text-gray-800">
-          🍬 Comment ça marche ? (explication simple)
-        </span>
-        <span className="text-gray-400">{open ? '▲' : '▼'}</span>
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre la fiscalité crypto (formulaire 2086)
       </button>
 
       {open && (
-        <div className="px-5 pb-6 text-sm text-gray-700 space-y-5 border-t border-gray-100 pt-4">
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
 
-          <p className="text-gray-500 text-xs italic">
-            Pas besoin d'être expert en fiscalité — voilà comment ça fonctionne avec des mots simples.
-          </p>
-
-          {/* Étape 1 */}
-          <div className="flex gap-3">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-sm font-bold flex items-center justify-center">1</span>
-            <div>
-              <p className="font-semibold text-gray-800">Tu achètes du Bitcoin avec 1 000 €</p>
-              <p className="text-gray-500 text-xs mt-0.5">
-                C'est ta <strong>base de coût</strong> (le fisc l'appelle PTA). C'est simplement l'argent que tu as mis.
-              </p>
-              <div className="mt-2 bg-blue-50 rounded-lg px-3 py-2 text-xs">
-                💰 PTA = <strong>1 000 €</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Étape 2 */}
-          <div className="flex gap-3">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-yellow-100 text-yellow-700 text-sm font-bold flex items-center justify-center">2</span>
-            <div>
-              <p className="font-semibold text-gray-800">Un an plus tard, ton Bitcoin a grimpé</p>
-              <p className="text-gray-500 text-xs mt-0.5">
-                Ton portefeuille vaut maintenant <strong>1 500 €</strong>. Tu n'as rien vendu donc tu ne paies pas encore d'impôt — les crypto ne sont taxées qu'à la vente en euros.
-              </p>
-              <div className="mt-2 bg-yellow-50 rounded-lg px-3 py-2 text-xs">
-                📈 Portefeuille = <strong>1 500 €</strong> (ton Bitcoin a pris +50 %)
-              </div>
-            </div>
-          </div>
-
-          {/* Étape 3 */}
-          <div className="flex gap-3">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-orange-100 text-orange-700 text-sm font-bold flex items-center justify-center">3</span>
-            <div>
-              <p className="font-semibold text-gray-800">Tu retires 1 000 €</p>
-              <p className="text-gray-500 text-xs mt-0.5">
-                Est-ce que tu as gagné 1 000 € ? <strong>Non !</strong> En France, le fisc ne regarde pas combien tu as retiré, mais quelle <em>proportion</em> de ton portefeuille tu as vendue.
-              </p>
-              <div className="mt-2 bg-orange-50 rounded-lg px-3 py-2 text-xs space-y-1">
-                <p>Tu vends <strong>1 000 €</strong> sur un portefeuille de <strong>1 500 €</strong> → tu vends <strong>2/3 de ton portefeuille</strong></p>
-                <p>Donc tu récupères aussi 2/3 de ta mise de départ : <strong>1 000 × 1 000 / 1 500 = 666,67 €</strong></p>
-                <p className="text-orange-700 font-semibold">Plus-value = 1 000 − 666,67 = <strong>333,33 €</strong> imposables</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Étape 4 */}
-          <div className="flex gap-3">
-            <span className="shrink-0 w-7 h-7 rounded-full bg-green-100 text-green-700 text-sm font-bold flex items-center justify-center">4</span>
-            <div>
-              <p className="font-semibold text-gray-800">Tu déclares et tu paies l'impôt</p>
-              <p className="text-gray-500 text-xs mt-0.5">
-                Avec la flat tax (PFU) à 31,4 % : <strong>333,33 × 31,4 % ≈ 104,67 €</strong> d'impôt.
-                Il te reste donc 900 € net dans la poche — pas 1 000.
-              </p>
-              <div className="mt-2 bg-green-50 rounded-lg px-3 py-2 text-xs space-y-1">
-                <p>✓ Argent de départ récupéré : 666,67 €</p>
-                <p>✓ Bénéfice net après impôt : 333,33 − 100 = 233,33 €</p>
-                <p className="font-semibold text-green-700">= 900 € en poche au total</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Résumé formule */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs">
-            <p className="font-semibold text-gray-700 mb-2">La formule officielle (art. 150 VH bis CGI)</p>
-            <div className="font-mono text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2 text-center">
-              Plus-value = Vente − (PTA × Vente ÷ Valeur du portefeuille)
-            </div>
-            <p className="text-gray-400 mt-2">
-              PTA = somme de tout ce que tu as investi depuis le début, réduit à chaque vente.
-              Le portefeuille = valeur de <strong>toutes</strong> tes cryptos au moment de la vente (pas seulement celle vendue).
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              En France, les cryptos ne sont <strong>taxées qu'au moment où tu vends en euros</strong>.
+              Mais le calcul est spécial : le fisc ne regarde pas combien tu as retiré,
+              il regarde quelle <strong>proportion de ton portefeuille total</strong> tu as vendue.
             </p>
           </div>
 
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Un exemple pas à pas — 1 000 € investis en Bitcoin</p>
+
+            <div className="space-y-4">
+              {[
+                {
+                  num: '1', color: 'bg-blue-100 text-blue-700',
+                  titre: "Tu achètes du Bitcoin avec 1 000 €",
+                  desc: "C'est ta base de coût — le fisc appelle ça le PTA (Prix Total d'Acquisition). C'est simplement l'argent que tu as mis.",
+                  badge: '💰 PTA = 1 000 €', badgeBg: 'bg-blue-50',
+                },
+                {
+                  num: '2', color: 'bg-yellow-100 text-yellow-700',
+                  titre: "Un an plus tard, ton Bitcoin vaut 1 500 €",
+                  desc: "Ton portefeuille a grimpé de 50 %. Mais tu n'as rien vendu → tu ne paies pas encore d'impôt. Les crypto ne sont taxées qu'à la vente en euros.",
+                  badge: '📈 Portefeuille = 1 500 € (+50 %)', badgeBg: 'bg-yellow-50',
+                },
+                {
+                  num: '3', color: 'bg-orange-100 text-orange-700',
+                  titre: "Tu retires 1 000 €",
+                  desc: "Tu vends 1 000 € sur un portefeuille de 1 500 € → tu vends 2/3 de ton portefeuille. Donc 2/3 de ta mise reviennent aussi : 1 000 × 1 000 / 1 500 = 666,67 €.",
+                  badge: '📊 Plus-value = 1 000 − 666,67 = 333,33 € imposables', badgeBg: 'bg-orange-50 text-orange-700 font-semibold',
+                },
+                {
+                  num: '4', color: 'bg-emerald-100 text-emerald-700',
+                  titre: "Tu déclares et tu paies 30 % (PFU)",
+                  desc: "Impôt = 333,33 × 30 % ≈ 100 €. Il te reste 900 € dans la poche — pas 1 000.",
+                  badge: '✓ 900 € en poche au total', badgeBg: 'bg-emerald-50 text-emerald-700 font-semibold',
+                },
+              ].map(({ num, color, titre, desc, badge, badgeBg }) => (
+                <div key={num} className="flex gap-3">
+                  <span className={`shrink-0 w-7 h-7 rounded-full ${color} text-sm font-bold flex items-center justify-center`}>{num}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-800">{titre}</p>
+                    <p className="text-gray-500 text-xs mt-0.5 leading-relaxed">{desc}</p>
+                    <div className={`mt-2 ${badgeBg} rounded-lg px-3 py-2 text-xs`}>{badge}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">🧮 La formule officielle (art. 150 VH bis CGI)</p>
+            <div className="font-mono text-indigo-700 bg-indigo-50 rounded-lg px-3 py-3 text-center text-sm mb-3">
+              Plus-value = Cession − (PTA × Cession ÷ Valeur du portefeuille)
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              <strong>PTA</strong> = somme de tout ce que tu as investi depuis le début, réduit à chaque vente.<br/>
+              <strong>Valeur du portefeuille</strong> = valeur de <em>toutes</em> tes cryptos au moment de la vente (pas seulement celle vendue).<br/>
+              C'est pourquoi il faut renseigner l'historique complet — un achat oublié fausse tout le calcul.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">⚠️ Les erreurs les plus courantes</p>
+            <ul className="text-xs text-amber-900 space-y-1.5">
+              <li>• <strong>Oublier des achats anciens</strong> : un achat non déclaré fait monter artificiellement la plus-value calculée</li>
+              <li>• <strong>Confondre crypto→crypto et crypto→euros</strong> : les échanges entre cryptos (BTC→ETH) sont imposables depuis 2020</li>
+              <li>• <strong>Ne pas déclarer parce que "c'est petit"</strong> : même 50 € de plus-value doivent être déclarés sur le formulaire 2086</li>
+              <li>• <strong>Croire que les pertes ne comptent pas</strong> : les moins-values compensent les plus-values de la même année</li>
+            </ul>
+          </div>
+
           <p className="text-xs text-gray-400 italic text-center">
-            Ce simulateur est indicatif. Pour votre déclaration officielle, utilisez le formulaire 2086 sur impots.gouv.fr.
+            Ce simulateur est indicatif. Pour la déclaration officielle, utilisez le formulaire 2086 sur impots.gouv.fr.
           </p>
+
         </div>
       )}
     </div>

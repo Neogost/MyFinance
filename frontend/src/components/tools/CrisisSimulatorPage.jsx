@@ -762,6 +762,88 @@ export default function CrisisSimulatorPage({ user }) {
         Les performances passées ne préjugent pas des performances futures.
         Cet outil est fourni à titre indicatif uniquement.
       </p>
+      <CrisisExplainer />
+    </div>
+  )
+}
+
+function CrisisExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre la simulation de crise
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Une crise, ça peut arriver à tout le monde : perte d'emploi, chute des marchés, dépense imprévue.
+              Ce simulateur te demande <strong>"Et si ça t'arrivait demain ?"</strong> pour voir si tu es
+              en capacité de résister — ou si tu dois préparer un filet de sécurité.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Les grandes crises historiques — ce qu'on a vécu</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              {[
+                { crise: 'Crise 2008', chute: '−57 %', duree: '17 mois de baisse', retour: '5 ans pour récupérer' },
+                { crise: 'Covid 2020', chute: '−34 %', duree: '1 mois de baisse', retour: '6 mois pour récupérer' },
+                { crise: 'Bulle internet 2000', chute: '−49 %', duree: '30 mois de baisse', retour: '7 ans pour récupérer' },
+              ].map(({ crise, chute, duree, retour }) => (
+                <div key={crise} className="bg-red-50 rounded-lg p-3">
+                  <p className="font-semibold text-red-700 text-sm">{crise}</p>
+                  <p className="text-2xl font-bold text-red-600 mt-1">{chute}</p>
+                  <p className="text-xs text-gray-500 mt-1">{duree}</p>
+                  <p className="text-xs text-emerald-600 mt-0.5">{retour}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-gray-600 bg-gray-50 rounded-lg p-3 text-xs leading-relaxed">
+              La bonne nouvelle : <strong>les marchés se sont toujours remis</strong>. Le danger n'est pas la baisse
+              elle-même, c'est d'être <em>forcé de vendre en bas</em> parce qu'on a besoin d'argent d'urgence.
+              D'où l'importance du matelas de sécurité.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">🛡️ Le matelas de sécurité — ton bouclier contre les crises</p>
+            <p className="text-gray-600 leading-relaxed mb-3">
+              La règle générale est d'avoir <strong>3 à 6 mois de dépenses</strong> sur un compte épargne
+              liquide (Livret A, Livret bancaire). Cet argent ne doit jamais être investi en bourse.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { profil: 'Salarié en CDI', mois: '3 mois', ex: '2 000 €/mois → 6 000 €' },
+                { profil: 'Freelance / CDD', mois: '6 mois', ex: '2 000 €/mois → 12 000 €' },
+                { profil: 'Famille avec enfants', mois: '6+ mois', ex: '3 500 €/mois → 21 000 €' },
+              ].map(({ profil, mois, ex }) => (
+                <div key={profil} className="border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-700">{profil}</p>
+                  <p className="text-lg font-bold text-indigo-600 mt-1">{mois}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{ex}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">📊 Comment lire ton score de résistance</p>
+            <p className="text-amber-900 text-xs leading-relaxed">
+              Le score combine : la couverture de tes dépenses par le matelas, la diversification de tes actifs,
+              et ta capacité à réduire les dépenses en urgence. Un score &gt; 70 signifie que tu peux absorber
+              la crise simulée sans vendre tes investissements en urgence. En-dessous de 40 : il est temps de
+              constituer ou renforcer ton matelas de sécurité.
+            </p>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

@@ -993,6 +993,94 @@ export default function CompoundInterestSimulatorPage() {
           ))}
         </ol>
       </div>
+      <CompoundExplainer />
+    </div>
+  )
+}
+
+function CompoundExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre les intérêts composés
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Les intérêts composés, c'est <strong>gagner des intérêts sur ses intérêts</strong>.
+              Au lieu de retirer les gains chaque année, on les laisse dans le pot — et l'année suivante,
+              on gagne des intérêts sur un pot plus gros. C'est l'<strong>effet boule de neige</strong>.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Un exemple très concret : 100 € par mois pendant 30 ans</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Ce que tu verses</p>
+                <p className="text-2xl font-bold text-gray-700">36 000 €</p>
+                <p className="text-xs text-gray-400 mt-1">100 € × 12 × 30 ans</p>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide mb-1">Avec 7 %/an</p>
+                <p className="text-2xl font-bold text-emerald-700">121 997 €</p>
+                <p className="text-xs text-gray-400 mt-1">au bout de 30 ans</p>
+              </div>
+              <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide mb-1">Intérêts générés</p>
+                <p className="text-2xl font-bold text-indigo-700">85 997 €</p>
+                <p className="text-xs text-gray-400 mt-1">l'argent qui travaille seul</p>
+              </div>
+            </div>
+            <p className="text-gray-600 bg-gray-50 rounded-lg p-3 leading-relaxed">
+              Tu verses <strong>36 000 €</strong> de ta poche — mais tu récupères <strong>121 997 €</strong>.
+              Les 85 997 € de différence ? Ce sont les intérêts qui ont eux-mêmes produit des intérêts.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">⏰ Commencer tôt change tout</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-gray-700 mb-1">Alice commence à 25 ans</p>
+                <p className="text-xs text-gray-500">100 €/mois · 40 ans · 7 %/an</p>
+                <p className="text-xl font-bold text-emerald-600 mt-2">262 481 €</p>
+                <p className="text-xs text-gray-400">pour 48 000 € versés</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <p className="font-semibold text-gray-700 mb-1">Bob commence à 35 ans</p>
+                <p className="text-xs text-gray-500">100 €/mois · 30 ans · 7 %/an</p>
+                <p className="text-xl font-bold text-orange-500 mt-2">121 997 €</p>
+                <p className="text-xs text-gray-400">pour 36 000 € versés</p>
+              </div>
+            </div>
+            <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-3 mt-3">
+              10 ans d'écart, 12 000 € de plus versés par Alice — mais <strong>2× plus de capital final</strong>.
+              Le temps est le seul ingrédient qu'on ne peut pas acheter.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-2">🔢 La règle des 72 — doubler son capital en un coup d'œil</p>
+            <p className="text-gray-600 mb-3">Divise <strong>72 par ton taux annuel</strong> pour savoir en combien d'années ton capital double.</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[['4 % (Livret)', '18 ans'], ['7 % (Bourse)', '10 ans'], ['12 % (Crypto)', '6 ans']].map(([taux, annees]) => (
+                <div key={taux} className="border border-gray-200 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">{taux}</p>
+                  <p className="text-sm font-bold text-indigo-600 mt-1">× 2 en {annees}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

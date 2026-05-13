@@ -744,6 +744,80 @@ export default function FiscalEnvelopeComparatorPage({ user }) {
 
       </div>
     </div>
+    <EnveloppeExplainer />
+    </div>
+  )
+}
+
+function EnveloppeExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre les enveloppes fiscales
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Le même ETF acheté dans un CTO ou dans un PEA ne rapporte <strong>pas la même chose</strong>
+              — parce que les règles fiscales sont différentes selon le "contenant". Choisir la bonne
+              enveloppe, c'est <strong>garder plus d'argent à la sortie sans rien changer à ton investissement</strong>.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Les 4 enveloppes et leurs règles clés</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { nom: 'CTO — Compte-titres ordinaire', emoji: '🗂️', regle: 'Gains taxés chaque année au PFU 30 %. Pas de plafond. Flexible.', couleur: 'border-gray-300 bg-gray-50' },
+                { nom: 'PEA — Plan d\'Épargne en Actions', emoji: '🇫🇷', regle: 'Exonération d\'impôt après 5 ans (seuls les prélèvements sociaux 17,2 % restent). Plafonné à 150 000 €. Actions européennes uniquement.', couleur: 'border-blue-200 bg-blue-50' },
+                { nom: 'AV — Assurance-vie', emoji: '🛡️', regle: 'Abattement annuel de 4 600 € (9 200 € en couple) sur les gains après 8 ans. Très flexible en succession. Pas de plafond.', couleur: 'border-emerald-200 bg-emerald-50' },
+                { nom: 'PER — Plan d\'Épargne Retraite', emoji: '🏖️', regle: 'Déduction fiscale à l\'entrée (selon ta tranche). Capital bloqué jusqu\'à la retraite sauf cas exceptionnels. Idéal si TMI élevée.', couleur: 'border-violet-200 bg-violet-50' },
+              ].map(({ nom, emoji, regle, couleur }) => (
+                <div key={nom} className={`border ${couleur} rounded-lg p-4`}>
+                  <p className="font-semibold text-gray-800 mb-1">{emoji} {nom}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{regle}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">💰 L'impact concret : 200 €/mois pendant 20 ans à 7 %/an</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { env: 'CTO', net: '93 560 €', impot: '20 640 €', color: 'text-gray-700' },
+                { env: 'PEA', net: '105 832 €', impot: '8 368 €', color: 'text-blue-700' },
+                { env: 'AV',  net: '100 200 €', impot: '14 000 €', color: 'text-emerald-700' },
+                { env: 'PER (TMI 30 %)', net: '114 000 €', impot: '0 € à l\'entrée*', color: 'text-violet-700' },
+              ].map(({ env, net, impot, color }) => (
+                <div key={env} className="border border-gray-200 rounded-lg p-3 text-center">
+                  <p className={`font-bold text-sm ${color}`}>{env}</p>
+                  <p className="text-lg font-bold text-gray-800 mt-1">{net}</p>
+                  <p className="text-xs text-red-500 mt-0.5">{impot}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-3">* Le PER bénéficie de la déduction à l'entrée mais est fiscalisé à la sortie. Avantageux si ta TMI baisse à la retraite. Valeurs indicatives.</p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">🎯 Quelle enveloppe choisir en priorité ?</p>
+            <ul className="text-xs text-amber-900 space-y-1.5">
+              <li>• <strong>Tu débutes</strong> : ouvre un PEA en priorité (exonération après 5 ans, clock démarre maintenant)</li>
+              <li>• <strong>Tu veux de la flexibilité</strong> : l'AV est idéale, surtout pour la transmission</li>
+              <li>• <strong>Tu paies beaucoup d'impôts</strong> : le PER est très efficace si tu es à 30 %+ de TMI</li>
+              <li>• <strong>Tu dépasses 150 000 €</strong> : déborde sur l'AV ou le CTO après avoir maxé le PEA</li>
+            </ul>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

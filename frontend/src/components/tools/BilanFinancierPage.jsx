@@ -616,6 +616,93 @@ export default function BilanFinancierPage({ user }) {
       <p className="text-xs text-gray-400 text-center pb-2">
         Les revenus d'actifs sont des projections (valeur actuelle × taux annuel / 12) — Bourse 7 %, Crypto 15 %, Immo papier 5 %, Livret 2,4 %.
       </p>
+      <BilanExplainer />
+    </div>
+  )
+}
+
+function BilanExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre son bilan financier personnel
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Ton bilan financier, c'est comme une <strong>photo de ta santé argent</strong> prise aujourd'hui.
+              D'un côté ce que tu possèdes (actifs), de l'autre ce que tu dois (passifs).
+              La différence, c'est ta <strong>valeur nette</strong> — le vrai indicateur de ta richesse.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Actif vs Passif — la distinction fondamentale</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="bg-emerald-50 rounded-lg p-4">
+                <p className="font-semibold text-emerald-700 mb-2">✅ Actifs — ce que tu possèdes</p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Compte bancaire : 5 000 €</li>
+                  <li>• Livret A : 15 000 €</li>
+                  <li>• Actions en bourse : 30 000 €</li>
+                  <li>• Appartement : 200 000 €</li>
+                </ul>
+                <p className="text-sm font-bold text-emerald-700 mt-2">= 250 000 €</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-4">
+                <p className="font-semibold text-red-700 mb-2">❌ Passifs — ce que tu dois</p>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• Crédit immobilier restant : 120 000 €</li>
+                  <li>• Crédit auto : 8 000 €</li>
+                </ul>
+                <p className="text-sm font-bold text-red-700 mt-2">= 128 000 €</p>
+              </div>
+            </div>
+            <div className="bg-indigo-50 rounded-lg p-3 text-center">
+              <p className="text-xs text-indigo-600 font-semibold mb-1">Valeur nette (patrimoine)</p>
+              <p className="text-2xl font-bold text-indigo-700">250 000 − 128 000 = 122 000 €</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">📈 Les revenus passifs — l'argent qui travaille à ta place</p>
+            <p className="text-gray-600 leading-relaxed mb-3">
+              Le bilan calcule aussi combien tes actifs <strong>rapportent chaque mois</strong> sans que tu travailles.
+              C'est le concept de <strong>liberté financière</strong> : le jour où tes revenus passifs couvrent
+              tes dépenses, tu n'es plus obligé de travailler.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: 'Bourse (7 %/an)', valeur: '30 000 €', mensuel: '175 €/mois' },
+                { label: 'Livret A (2,4 %/an)', valeur: '15 000 €', mensuel: '30 €/mois' },
+                { label: 'Immo papier (5 %/an)', valeur: '20 000 €', mensuel: '83 €/mois' },
+              ].map(({ label, valeur, mensuel }) => (
+                <div key={label} className="border border-gray-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-500 mb-1">{label}</p>
+                  <p className="text-xs text-gray-400">{valeur} placés</p>
+                  <p className="text-sm font-bold text-emerald-600 mt-1">{mensuel}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">⚠️ Le taux d'endettement — la limite à ne pas dépasser</p>
+            <p className="text-amber-900 leading-relaxed text-xs">
+              Les banques françaises appliquent la règle du <strong>35 %</strong> : tes remboursements mensuels
+              ne doivent pas dépasser 35 % de tes revenus. Au-delà, emprunter devient difficile et risqué.
+              Exemple : 3 000 €/mois de revenus → max 1 050 €/mois de crédits.
+            </p>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

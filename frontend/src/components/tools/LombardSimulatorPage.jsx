@@ -1044,6 +1044,87 @@ export default function LombardSimulatorPage() {
         Outil indicatif. Les LTV réels, taux d'intérêt et conditions varient selon l'établissement bancaire.
         Consultez un conseiller pour une simulation personnalisée.
       </p>
+      <LombardExplainer />
+    </div>
+  )
+}
+
+function LombardExplainer() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-10 border-t border-gray-200 pt-6">
+      <button onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left">
+        <span className="text-base">{open ? '▲' : '▼'}</span>
+        Comment ça marche ? Comprendre le crédit Lombard
+      </button>
+      {open && (
+        <div className="mt-6 space-y-6 text-sm text-gray-700">
+
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+            <p className="font-bold text-blue-800 dark:text-blue-300 text-base mb-3">💡 L'idée en une phrase</p>
+            <p className="text-blue-900 dark:text-blue-200 leading-relaxed">
+              Le crédit Lombard, c'est <strong>mettre ton portefeuille en garantie</strong> pour emprunter
+              sans le vendre. Tu gardes tes investissements (et leurs gains futurs), tu obtiens du cash,
+              et tu rembourses quand tu veux. C'est l'outil préféré des investisseurs patrimoniaux.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-4">📖 Un exemple concret : portefeuille de 100 000 €</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div className="bg-indigo-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide mb-1">Ton portefeuille</p>
+                <p className="text-2xl font-bold text-indigo-700">100 000 €</p>
+                <p className="text-xs text-gray-400 mt-1">mis en garantie</p>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide mb-1">Tu empruntes (LTV 60 %)</p>
+                <p className="text-2xl font-bold text-emerald-700">60 000 €</p>
+                <p className="text-xs text-gray-400 mt-1">sans vendre aucune action</p>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-amber-600 font-semibold uppercase tracking-wide mb-1">Intérêts annuels (4 %)</p>
+                <p className="text-2xl font-bold text-amber-700">2 400 €</p>
+                <p className="text-xs text-gray-400 mt-1">à payer chaque année</p>
+              </div>
+            </div>
+            <p className="text-gray-600 bg-gray-50 rounded-lg p-3 text-xs leading-relaxed">
+              Pourquoi ne pas vendre directement ? Si ton portefeuille est en plus-value, vendre = payer 30 % de PFU.
+              Avec le Lombard, tu évites cet impôt <strong>et</strong> tu continues de profiter de la hausse des marchés.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="font-bold text-gray-800 mb-3">⚠️ Le risque principal : l'appel de marge</p>
+            <p className="text-gray-600 leading-relaxed mb-3">
+              Si la valeur de ton portefeuille chute, la banque peut exiger que tu <strong>rembourses une partie
+              du prêt immédiatement</strong> (appel de marge). Si tu ne peux pas, elle vend tes actifs — au pire moment.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-emerald-50 rounded-lg p-3">
+                <p className="font-semibold text-emerald-700 text-xs mb-1">✅ Scénario favorable</p>
+                <p className="text-xs text-gray-600">Portefeuille monte à 130 000 €. Tu rembourses le prêt, tu as 70 000 € de gain net — sans avoir payé d'impôt pendant toute la période.</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3">
+                <p className="font-semibold text-red-700 text-xs mb-1">❌ Scénario défavorable</p>
+                <p className="text-xs text-gray-600">Portefeuille chute à 70 000 €. LTV dépasse 85 %. Appel de marge : tu dois rembourser 10 000 € ou la banque vend tes actions au plus bas.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
+            <p className="font-bold text-amber-800 mb-2">🎯 Pour qui est fait le crédit Lombard ?</p>
+            <ul className="text-xs text-amber-900 space-y-1">
+              <li>• Tu as un portefeuille &gt; 50 000 € et un besoin de liquidités ponctuel</li>
+              <li>• Tu veux financer un projet sans vendre tes investissements et déclencher la fiscalité</li>
+              <li>• Tu peux rembourser rapidement si les marchés baissent (ne pas te laisser coincer)</li>
+              <li>• ⛔ Non adapté si tu comptes sur la vente future pour rembourser — trop risqué</li>
+            </ul>
+          </div>
+
+        </div>
+      )}
     </div>
   )
 }

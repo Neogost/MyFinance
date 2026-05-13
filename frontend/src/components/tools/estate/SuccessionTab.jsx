@@ -2,6 +2,25 @@ import { useState, useEffect } from 'react'
 import { simulateSuccession } from '../../../api/estate'
 import { Tooltip } from '../../patrimoine/utils'
 
+function baremeProgressif(taxable) {
+  const tranches = [
+    { limite: 8072,     taux: 0.05 },
+    { limite: 12109,    taux: 0.10 },
+    { limite: 15932,    taux: 0.15 },
+    { limite: 552324,   taux: 0.20 },
+    { limite: 902838,   taux: 0.30 },
+    { limite: 1805677,  taux: 0.40 },
+    { limite: Infinity, taux: 0.45 },
+  ]
+  let droits = 0, prev = 0
+  for (const { limite, taux } of tranches) {
+    if (taxable <= prev) break
+    droits += (Math.min(taxable, limite) - prev) * taux
+    prev = limite
+  }
+  return Math.round(droits)
+}
+
 const RELATION_LABELS = {
   CONJOINT: 'Conjoint / PACS', ENFANT: 'Enfant', PETIT_ENFANT: 'Petit-enfant',
   ARRIERE_PETIT_ENFANT: 'Arrière-petit-enfant', FRERE_SOEUR: 'Frère/Sœur',
@@ -34,9 +53,11 @@ function Row({ label, value, color = 'text-gray-800', bold = false, indent = fal
 }
 
 export default function SuccessionTab() {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+  const [data,          setData]          = useState(null)
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState(null)
+  const [showTestament, setShowTestament] = useState(false)
+  const [testamentMode, setTestamentMode] = useState('legal')
 
   useEffect(() => { fetchData() }, [])
 
@@ -55,6 +76,37 @@ export default function SuccessionTab() {
   if (!data)   return null
 
   const totalDroits = parseFloat(data.totalDroitsEur ?? 0)
+
+  // Testament simulation
+  const masseSucc   = parseFloat(data.masseSuccessoraleEur ?? 0)
+  const reserve     = parseFloat(data.reserveHereditaireEur ?? 0)
+  const qd          = parseFloat(data.quotiteDisponibleEur ?? 0)
+  const partRegime  = parseFloat(data.partRegimeMatrimonialEur ?? 0)
+  const conjointHeir   = data.heirs.find(h => h.relation === 'CONJOINT')
+  const childrenHeirs  = data.heirs.filter(h => h.relation !== 'CONJOINT')
+  const canSimulateTestament = data.hasConjoint && childrenHeirs.length > 0
+
+  function computeTestamentScenario(mode) {
+    return data.heirs.map(h => {
+      if (h.relation === 'CONJOINT') {
+        const successoral = mode === 'conjointProtege' ? qd : 0
+        const part = partRegime + successoral
+        return { ...h, tPart: part, tDroits: 0, tNet: part }
+      }
+      const part = mode === 'conjointProtege'
+        ? reserve / childrenHeirs.length
+        : masseSucc / childrenHeirs.length
+      const abattResiduel = Math.max(0,
+        parseFloat(h.abattementBaseEur ?? 0) - parseFloat(h.abattementUsedEur ?? 0))
+      const taxable = Math.max(0, part - abattResiduel)
+      const droits  = baremeProgressif(taxable)
+      return { ...h, tPart: part, tDroits: droits, tNet: part - droits }
+    })
+  }
+
+  const testamentHeirs = testamentMode !== 'legal'
+    ? computeTestamentScenario(testamentMode)
+    : null
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -369,6 +421,129 @@ export default function SuccessionTab() {
               </div>
             </div>
           </>
+        )}
+
+        {/* Simulation testament */}
+        {canSimulateTestament && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-500">
+            <button
+              onClick={() => setShowTestament(v => !v)}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition w-full text-left"
+            >
+              <span className="text-base">{showTestament ? '▼' : '▶'}</span>
+              Simulation avec testament
+              <span className="ml-auto text-xs font-normal text-gray-400">redistribution de la quotité disponible</span>
+            </button>
+
+            {showTestament && (
+              <div className="mt-4">
+                <p className="text-xs text-gray-500 mb-3">
+                  La <strong>réserve héréditaire</strong> est intangible (elle revient toujours aux enfants).
+                  La <strong>quotité disponible</strong> ({fmt(qd)} €) peut être attribuée librement par testament.
+                </p>
+
+                {/* Sélecteur de scénario */}
+                <div className="flex gap-2 flex-wrap mb-4">
+                  {[
+                    { key: 'legal',          label: 'Légal (défaut)' },
+                    { key: 'conjointProtege', label: 'Conjoint protégé' },
+                    { key: 'enfantsFavorises', label: 'Enfants favorisés' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setTestamentMode(key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border ${
+                        testamentMode === key
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-indigo-400'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Description du scénario */}
+                {testamentMode === 'legal' && (
+                  <p className="text-xs text-gray-500 italic mb-3">
+                    Répartition légale par défaut : conjoint 1/4 PP + enfants partagent les 3/4.
+                    La quotité disponible est répartie selon les règles civiles sans testament spécifique.
+                  </p>
+                )}
+                {testamentMode === 'conjointProtege' && (
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mb-3">
+                    <strong>Testament "Conjoint protégé"</strong> — La totalité de la quotité disponible ({fmt(qd)} €)
+                    est attribuée au conjoint en pleine propriété. Les enfants reçoivent uniquement
+                    leur réserve héréditaire garantie ({fmt(reserve)} € au total).
+                    Le conjoint reste exonéré de droits.
+                  </p>
+                )}
+                {testamentMode === 'enfantsFavorises' && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-3">
+                    <strong>Testament "Enfants favorisés"</strong> — Le conjoint renonce à sa part
+                    successorale (conserve uniquement sa part de régime matrimonial : {fmt(partRegime)} €).
+                    La totalité de la masse successorale ({fmt(masseSucc)} €) est partagée entre les enfants.
+                  </p>
+                )}
+
+                {/* Tableau comparatif */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100 text-gray-600">
+                        <th className="text-left px-3 py-2 font-semibold">Héritier</th>
+                        <th className="text-right px-3 py-2 font-semibold">Part brute</th>
+                        <th className="text-right px-3 py-2 font-semibold">Droits</th>
+                        <th className="text-right px-3 py-2 font-semibold">Reçoit net</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {(testamentHeirs ?? data.heirs.map(h => ({
+                        ...h,
+                        tPart: parseFloat(h.partEur),
+                        tDroits: parseFloat(h.droitsEur ?? 0),
+                        tNet: parseFloat(h.netReceivedEur),
+                      }))).map(h => (
+                        <tr key={h.memberId} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 font-semibold text-gray-700">
+                            {h.firstName}
+                            <span className="font-normal text-gray-400 ml-1">
+                              — {RELATION_LABELS[h.relation]}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-right text-gray-700">{fmt(h.tPart)} €</td>
+                          <td className={`px-3 py-2 text-right font-semibold ${h.tDroits > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                            {h.tDroits > 0 ? `${fmt(h.tDroits)} €` : '0 €'}
+                          </td>
+                          <td className="px-3 py-2 text-right font-bold text-gray-800">{fmt(h.tNet)} €</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-gray-300 bg-gray-50">
+                        <td className="px-3 py-2 font-bold text-gray-700">Total</td>
+                        <td className="px-3 py-2 text-right font-semibold text-gray-700">
+                          {fmt((testamentHeirs ?? data.heirs).reduce((s, h) => s + (h.tPart ?? parseFloat(h.partEur)), 0))} €
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold text-red-600 dark:text-red-400">
+                          {fmt((testamentHeirs ?? data.heirs).reduce((s, h) => s + (h.tDroits ?? parseFloat(h.droitsEur ?? 0)), 0))} €
+                        </td>
+                        <td className="px-3 py-2 text-right font-bold text-emerald-700 dark:text-emerald-300">
+                          {fmt((testamentHeirs ?? data.heirs).reduce((s, h) => s + (h.tNet ?? parseFloat(h.netReceivedEur)), 0))} €
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {testamentMode !== 'legal' && (
+                  <p className="mt-2 text-gray-400 text-xs">
+                    Simulation indicative — consultez un notaire pour rédiger un testament adapté à votre situation.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Avertissements */}

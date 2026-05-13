@@ -219,25 +219,39 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {toolsOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setToolsOpen(false)} />
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[200px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[260px] py-1">
                   {[
-                    ['tax-simulator',          'Simulateur des impôts'],
-                    ['crypto-tax',             'Fiscalité crypto (2086)'],
-                    ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
-                    ['estate-simulator',       'Donation & succession'],
-                    ['bilan-financier',        'Bilan financier'],
-                    ['compound-interest',      'Intérêts composés'],
-                    ['loan-simulator',         "Simulateur d'emprunt"],
-                    ['lombard-simulator',      'Simulateur crédit Lombard'],
-                    ['fiscal-envelopes',       'Enveloppes fiscales'],
-                    ['retirement',             'Simulateur retraite'],
-                    ['patrimoine-declaration', 'Déclaration de patrimoine'],
-                    ['crisis-simulator',       'Simulation de crise'],
-                  ].map(([page, label]) => (
-                    <button key={page} onClick={() => { onNavigate(page); setToolsOpen(false) }}
-                      className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
-                      {label}
-                    </button>
+                    { group: 'Fiscalité', items: [
+                      ['tax-simulator',       'Simulateur des impôts'],
+                      ['crypto-tax',          'Crypto · Formulaire 2086'],
+                      ['tax-loss-harvesting', "Optimisation fin d'année"],
+                      ['fiscal-envelopes',    'Enveloppes fiscales'],
+                    ]},
+                    { group: 'Patrimoine', items: [
+                      ['bilan-financier',        'Bilan financier'],
+                      ['patrimoine-declaration', 'Déclaration de patrimoine'],
+                      ['estate-simulator',       'Donation & succession'],
+                    ]},
+                    { group: 'Simulateurs', items: [
+                      ['compound-interest',  'Intérêts composés'],
+                      ['loan-simulator',     'Emprunt'],
+                      ['lombard-simulator',  'Crédit Lombard'],
+                      ['retirement',         'Retraite'],
+                      ['crisis-simulator',   'Scénario de crise'],
+                    ]},
+                  ].map(({ group, items }, gi) => (
+                    <div key={group}>
+                      {gi > 0 && <div className="border-t border-gray-100 my-1" />}
+                      <div className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        {group}
+                      </div>
+                      {items.map(([page, label]) => (
+                        <button key={page} onClick={() => { onNavigate(page); setToolsOpen(false) }}
+                          className={`w-full text-left px-4 py-1.5 text-sm transition ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </>
@@ -400,20 +414,33 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {/* Outils */}
             <MobileSectionTitle>Outils</MobileSectionTitle>
             {[
-              ['tax-simulator',          'Simulateur des impôts'],
-              ['crypto-tax',             'Fiscalité crypto (2086)'],
-              ['tax-loss-harvesting',    'Optimisation fiscale fin d\'année'],
-              ['estate-simulator',       'Donation & succession'],
-              ['bilan-financier',        'Bilan financier'],
-              ['compound-interest',      'Intérêts composés'],
-              ['loan-simulator',         "Simulateur d'emprunt"],
-              ['lombard-simulator',      'Simulateur crédit Lombard'],
-              ['fiscal-envelopes',       'Enveloppes fiscales'],
-              ['retirement',             'Simulateur retraite'],
-              ['patrimoine-declaration', 'Déclaration de patrimoine'],
-              ['crisis-simulator',       'Simulation de crise'],
-            ].map(([page, label]) => (
-              <MobileMenuItem key={page} label={label} page={page} currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+              { group: 'Fiscalité', items: [
+                ['tax-simulator',       'Simulateur des impôts'],
+                ['crypto-tax',          'Crypto · Formulaire 2086'],
+                ['tax-loss-harvesting', "Optimisation fin d'année"],
+                ['fiscal-envelopes',    'Enveloppes fiscales'],
+              ]},
+              { group: 'Patrimoine', items: [
+                ['bilan-financier',        'Bilan financier'],
+                ['patrimoine-declaration', 'Déclaration de patrimoine'],
+                ['estate-simulator',       'Donation & succession'],
+              ]},
+              { group: 'Simulateurs', items: [
+                ['compound-interest', 'Intérêts composés'],
+                ['loan-simulator',    'Emprunt'],
+                ['lombard-simulator', 'Crédit Lombard'],
+                ['retirement',        'Retraite'],
+                ['crisis-simulator',  'Scénario de crise'],
+              ]},
+            ].map(({ group, items }) => (
+              <div key={group}>
+                <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  {group}
+                </div>
+                {items.map(([page, label]) => (
+                  <MobileMenuItem key={page} label={label} page={page} currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                ))}
+              </div>
             ))}
 
             {/* Administration (ADMIN uniquement) */}
