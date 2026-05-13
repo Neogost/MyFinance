@@ -50,6 +50,7 @@ const ThemeContext = createContext({
   tooltipArrow:  '#d1d5db',
   expenseColor:  '#cbd5e1',
   maxLabel:      22,
+  hideValues:    false,
 })
 
 // ── Data builder ───────────────────────────────────────────────
@@ -205,14 +206,22 @@ function CustomNode({ x, y, width, height, payload }) {
           <text x={lx} y={y + height / 2 - 5} textAnchor={anchor} dominantBaseline="middle"
             fontSize={10} fontWeight={500} fill={textPrimary}>{label}</text>
           <text x={lx} y={y + height / 2 + 7} textAnchor={anchor} dominantBaseline="middle"
-            fontSize={9} fill={textSecondary}>{amtLabel}</text>
+            fontSize={9} fill={textSecondary} className="amount">{amtLabel}</text>
         </>
       )}
-      {oneLine && (
+      {oneLine && !amtLabel && (
         <text x={lx} y={y + height / 2} textAnchor={anchor} dominantBaseline="middle"
           fontSize={9} fill={textPrimary}>
-          {amtLabel ? `${label} · ${amtLabel}` : label}
+          {label}
         </text>
+      )}
+      {oneLine && amtLabel && (
+        <>
+          <text x={lx} y={y + height / 2 - 4} textAnchor={anchor} dominantBaseline="middle"
+            fontSize={9} fill={textPrimary}>{label}</text>
+          <text x={lx} y={y + height / 2 + 5} textAnchor={anchor} dominantBaseline="middle"
+            fontSize={8} fill={textSecondary} className="amount">{amtLabel}</text>
+        </>
       )}
     </g>
   )
@@ -262,7 +271,7 @@ function CustomTooltip({ active, payload }) {
           </>
         )}
         {tgtName && <p className="font-semibold leading-tight mb-1.5">{tgtName}</p>}
-        {flow != null && <p className="font-bold text-indigo-400">{fmtEur(flow)}/mois</p>}
+        {flow != null && <p className="font-bold text-indigo-400 amount">{fmtEur(flow)}/mois</p>}
       </div>
     )
   }
@@ -282,7 +291,7 @@ function CustomTooltip({ active, payload }) {
           <span className="inline-block w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: nodeColor }} />
           <p className="font-semibold leading-tight">{d.name}</p>
         </div>
-        {amount != null && <p className="mt-1.5 font-bold text-indigo-400">{fmtEur(amount)}/mois</p>}
+        {amount != null && <p className="mt-1.5 font-bold text-indigo-400 amount">{fmtEur(amount)}/mois</p>}
       </div>
     )
   }
@@ -324,7 +333,7 @@ function MobileDivider({ label, amount, colorClass }) {
 
 // ── Main widget ────────────────────────────────────────────────
 
-export default function CashFlowSankeyWidget() {
+export default function CashFlowSankeyWidget({ hideValues = false }) {
   const [sankeyData, setSankeyData] = useState(null)
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(false)
@@ -369,6 +378,7 @@ export default function CashFlowSankeyWidget() {
     tooltipArrow:  isDark ? '#4b5563' : '#d1d5db',
     expenseColor:  isDark ? '#475569' : '#cbd5e1',
     maxLabel:      isMobile ? 14 : 22,
+    hideValues,
   }
 
   if (loading) return (

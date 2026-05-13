@@ -251,7 +251,7 @@ export default function DocumentationPage({ user = null }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Documentation</h1>
         <p className="text-sm text-gray-500 mt-1">Guide d'utilisation de MyFinance</p>
@@ -262,7 +262,7 @@ export default function DocumentationPage({ user = null }) {
 
       <div className="flex gap-6">
         {/* ── Sidebar desktop ── */}
-        <aside className="hidden md:block w-56 shrink-0">
+        <aside className="hidden md:block w-72 shrink-0">
           <div className="sticky top-24 bg-white rounded-xl border border-gray-200 p-3 space-y-0.5">
             {visibleTree.map(node => (
               <SidebarNode

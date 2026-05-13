@@ -42,7 +42,7 @@ function sumActive(positions) {
     .reduce((s, p) => s + parseFloat(p.computed?.currentValueEur ?? 0), 0)
 }
 
-export default function DashboardPage({ user, familyMode, onNavigate }) {
+export default function DashboardPage({ user, familyMode, onNavigate, hideValues = false }) {
   const { trackPageView } = useAnalytics()
   useEffect(() => { trackPageView('dashboard.main') }, [])
   const [familyPositions,  setFamilyPositions]  = useState(null)
@@ -144,7 +144,7 @@ export default function DashboardPage({ user, familyMode, onNavigate }) {
                 <p className="text-xs text-gray-400 mb-6">
                   De vos sources de revenus jusqu'à chaque dépense individuelle, par catégorie.
                 </p>
-                <CashFlowSankeyWidget />
+                <CashFlowSankeyWidget hideValues={hideValues} />
               </div>
             )}
 

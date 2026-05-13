@@ -302,7 +302,7 @@ export default function App() {
       />
 
       <main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
-        {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} onNavigate={handleNavigate} />}
+        {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} onNavigate={handleNavigate} hideValues={hideValues} />}
 
         {currentPage === 'patrimoine' && <PatrimoinePage currentUser={user} familyMode={familyMode} onNavigate={handleNavigate} />}
 

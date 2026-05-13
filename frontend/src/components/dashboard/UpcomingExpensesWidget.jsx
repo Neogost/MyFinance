@@ -81,7 +81,7 @@ function ExpenseRow({ e, isUrgent }) {
           {relativeDate(e.nextDate)}
         </p>
       </div>
-      <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink-0">
+      <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink-0 amount">
         {fmt(amount ?? 0)} €
         <span className="text-gray-400 font-normal">{e.frequency === 'ANNUAL' ? '/an' : '/m'}</span>
       </span>
@@ -104,7 +104,7 @@ function FallbackItem({ expense: e }) {
           {e.nextDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
         </p>
       </div>
-      <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink-0">
+      <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink-0 amount">
         {fmt(amount ?? 0)} €<span className="text-gray-400 font-normal">/an</span>
       </span>
     </div>
