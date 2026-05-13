@@ -149,6 +149,8 @@ describe('PaySlipForm', () => {
   it('appelle onSubmit avec les salaires parsés en Float', async () => {
     const onSubmit = vi.fn().mockResolvedValue()
     render(<PaySlipForm onSubmit={onSubmit} onCancel={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /mm\/aaaa/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mai' }))
     fireEvent.change(screen.getByPlaceholderText('3750.00'), { target: { value: '4000' } })
     fireEvent.change(screen.getByPlaceholderText('3000.00'), { target: { value: '3300' } })
     fireEvent.change(screen.getByPlaceholderText('2680.00'), { target: { value: '3000' } })

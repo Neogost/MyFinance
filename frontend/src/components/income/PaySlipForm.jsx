@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react'
 import { labelCls } from '../../components/common/formStyles.js'
+import MonthInput from '../ui/MonthInput'
 
 const EMPTY = { period: '', grossSalary: '', taxableNetSalary: '', netSalary: '', incomeTaxWithholding: '' }
+
+const ISO_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+function isValidDate(str) {
+  if (!ISO_DATE.test(str)) return false
+  const d = new Date(str)
+  return !isNaN(d.getTime())
+}
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition'
 
@@ -34,6 +42,10 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+    if (!isValidDate(form.period)) {
+      setError('Date de période invalide. Sélectionnez un mois dans le calendrier.')
+      return
+    }
     setLoading(true)
     try {
       await onSubmit({
@@ -72,12 +84,12 @@ export default function PaySlipForm({ slip, onSubmit, onCancel }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className={labelCls}>Période (mois) *</label>
-            <input
-              name="period" type="month" value={form.period?.slice(0, 7) ?? ''}
-              onChange={e => setForm(f => ({ ...f, period: e.target.value + '-01' }))}
-              required className={inputCls}
+            <MonthInput
+              name="period"
+              value={form.period}
+              onChange={val => setForm(f => ({ ...f, period: val }))}
+              required
             />
-            <p className="text-xs text-gray-400">Sélectionnez le mois concerné</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 items-end">
