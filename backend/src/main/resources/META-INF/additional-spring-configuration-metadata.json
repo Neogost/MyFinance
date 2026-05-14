@@ -45,6 +45,12 @@
       "type": "java.lang.Boolean",
       "description": "Active l'accès non-authentifié à Swagger UI (/swagger-ui.html, /v3/api-docs/**). À true en dev uniquement, false en docker/prod pour ne pas exposer la cartographie de l'API.",
       "defaultValue": false
+    },
+    {
+      "name": "myfinance.logs.directory",
+      "type": "java.lang.String",
+      "description": "Répertoire contenant les fichiers de logs Logback (ex : /logs en docker, logs en prod). Vide par défaut — en profil dev les logs sont uniquement en console et l'extraction est désactivée.",
+      "defaultValue": ""
     }
   ]
 }
