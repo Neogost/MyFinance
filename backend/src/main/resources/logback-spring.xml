@@ -12,8 +12,21 @@
       </encoder>
     </appender>
 
+    <!-- Fichier avec le même format horodaté que docker/prod — requis pour LogExcerptService -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <file>logs/myfinance.log</file>
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <fileNamePattern>logs/myfinance.%d{yyyy-MM-dd}.log</fileNamePattern>
+        <maxHistory>7</maxHistory>
+      </rollingPolicy>
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %-45logger{45} : %msg%n</pattern>
+      </encoder>
+    </appender>
+
     <root level="INFO">
       <appender-ref ref="CONSOLE"/>
+      <appender-ref ref="FILE"/>
     </root>
     <logger name="com.myfinance"                    level="DEBUG"/>
     <logger name="org.springframework.security"     level="INFO"/>

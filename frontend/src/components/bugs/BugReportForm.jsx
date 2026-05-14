@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createBugReport } from '../../api/bugReports'
+import DateTimeInput from '../ui/DateTimeInput'
 
 const IMPACTS = [
   { value: 'LOW',      label: 'Faible',    desc: 'Gêne mineure, contournement possible' },
@@ -33,7 +34,10 @@ export default function BugReportForm({ onClose, onSubmitted }) {
     try {
       await createBugReport({
         ...form,
-        approximateDateTime: form.approximateDateTime ? form.approximateDateTime + ':00' : null,
+        // Conversion heure locale → UTC pour correspondre aux timestamps des logs (Logback/Docker = UTC)
+        approximateDateTime: form.approximateDateTime
+          ? new Date(form.approximateDateTime).toISOString().slice(0, 19)
+          : null,
         sessionId: sessionStorage.getItem('analytics-session-id'),
       })
       setDone(true)
@@ -123,9 +127,9 @@ export default function BugReportForm({ onClose, onSubmitted }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date et heure approximatives</label>
-                <input type="datetime-local" value={form.approximateDateTime}
-                  onChange={e => set('approximateDateTime', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                <DateTimeInput
+                  value={form.approximateDateTime}
+                  onChange={v => set('approximateDateTime', v)}
                 />
               </div>
 

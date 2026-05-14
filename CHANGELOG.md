@@ -1,5 +1,19 @@
 # Notes de version
 
+## v1.9.1 — 14 mai 2026
+
+> Correction de l'extraction de logs dans les signalements de bugs, et amélioration du sélecteur de date/heure dans les formulaires.
+
+### 🔧 Améliorations
+
+- **Sélecteur date/heure** : les champs de date et heure dans le formulaire de création de bannière et dans le formulaire de signalement de bug utilisent désormais le composant calendrier custom (cohérent avec le reste de l'application), au lieu du sélecteur natif du navigateur.
+
+### 🐛 Corrections
+
+- **Extraction de logs** : l'heure saisie dans un signalement de bug est maintenant convertie en UTC avant envoi au backend. Docker/Logback horodatent les logs en UTC — la comparaison échouait systématiquement pour les utilisateurs en UTC+1/+2, retournant toujours 0 ligne.
+
+---
+
 ## v1.9.0 — 14 mai 2026 — Donation & succession, signalement de bugs, bannières et corrections
 
 > Deux nouveaux simulateurs (donation/succession, optimisation fiscale fin d'année), un système de remontée de bugs communautaire, des bannières d'information administrables et une vague de corrections dark mode.

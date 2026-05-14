@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createBanner, updateBanner } from '../../api/infoBanners'
 import InfoBannerItem from '../platform/InfoBannerItem'
+import DateTimeInput from '../ui/DateTimeInput'
 
 const TYPES = [
   { value: 'ALERT',       label: 'Alerte',       color: 'text-red-700 bg-red-50 border-red-300 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700' },
@@ -180,12 +181,10 @@ export default function InfoBannerForm({ banner, onClose, onSaved }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Début d'affichage *</label>
-              <input
-                type="datetime-local"
-                required
+              <DateTimeInput
                 value={form.startAt}
-                onChange={e => set('startAt', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                onChange={v => set('startAt', v)}
+                required
               />
             </div>
 
@@ -198,11 +197,9 @@ export default function InfoBannerForm({ banner, onClose, onSaved }) {
                 Sans expiration
               </label>
               {!form.noEnd && (
-                <input
-                  type="datetime-local"
+                <DateTimeInput
                   value={form.endAt}
-                  onChange={e => set('endAt', e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  onChange={v => set('endAt', v)}
                 />
               )}
             </div>
