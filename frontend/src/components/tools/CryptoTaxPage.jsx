@@ -193,19 +193,34 @@ function HypotheticalSimulator({ currentPta, taxOption, tmi }) {
         </p>
       )}
       {valid && !vgpTooLow && pv !== null && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { label: 'Partie récupération', value: pc - Math.max(0, pv), color: 'text-gray-700' },
-            { label: 'Plus-value imposable', value: Math.max(0, pv), color: pv > 0 ? 'text-red-600' : 'text-green-600' },
-            { label: 'Impôt estimé', value: tax, color: 'text-orange-700' },
-            { label: 'Net après impôt', value: pc - tax, color: 'text-indigo-700' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-lg p-3 border border-indigo-100">
-              <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
-              <p className={`text-base font-bold ${color}`}>{fmt(value)}</p>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: 'Partie récupération', value: pc - Math.max(0, pv), color: 'text-gray-700' },
+              { label: 'Plus-value imposable', value: Math.max(0, pv), color: pv > 0 ? 'text-red-600' : 'text-green-600' },
+              { label: 'Impôt estimé', value: tax, color: tax > 0 ? 'text-orange-700' : 'text-gray-700' },
+              { label: 'Net après impôt', value: pc - tax, color: 'text-indigo-700' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white rounded-lg p-3 border border-indigo-100">
+                <p className="text-[10px] text-gray-400 mb-0.5">{label}</p>
+                <p className={`text-base font-bold ${color}`}>{fmt(value)}</p>
+              </div>
+            ))}
+          </div>
+          <p className={`text-xs mt-2 px-3 py-2 rounded-lg border ${
+            pc <= 305
+              ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+              : tax > 0
+                ? 'text-red-700 bg-red-50 border-red-200'
+                : 'text-amber-700 bg-amber-50 border-amber-200'
+          }`}>
+            {pc <= 305
+              ? '✓ Cession ≤ 305 € — pas d\'obligation déclarative ni d\'impôt.'
+              : tax > 0
+                ? '✗ Cession > 305 € — déclaration 2086 requise et impôt à prévoir.'
+                : 'ℹ Cession > 305 € — déclaration 2086 requise, mais aucun impôt dû (PTA couvre la vente ou moins-value).'}
+          </p>
+        </>
       )}
       {!valid && (
         <p className="text-xs text-indigo-400 text-center py-2">
