@@ -417,5 +417,22 @@
   - Filtrage purement frontend, aucun nouvel endpoint
   - Composant : `frontend/src/components/patrimoine/OrderPanel.jsx`
 
+- **Bannières d'information** :
+  - Système de communication admin → utilisateurs diffusé en haut de toutes les pages
+  - 5 types : `ALERT` (rouge) · `WARNING` (orange) · `MAINTENANCE` (gris) · `INFO` (bleu) · `SUCCESS` (vert) — priorité décroissante en cas d'empilement
+  - Filtrage par audience : `ALL` / `USERS_ONLY` / `ADMIN_ONLY` — appliqué côté backend
+  - Plage temporelle avec heure de début/fin, fin optionnelle = sans expiration
+  - Message en Markdown rendu via `react-markdown` (sans HTML brut, pas d'images)
+  - Fermeture par l'utilisateur via croix → `sessionStorage["dismissedBannerIds"]` (réapparition à la prochaine connexion si toujours active)
+  - Sticky sous la navigation (bloc `sticky top-0 z-50` englobant Nav + InfoBannerStack dans `App.jsx`)
+  - Refetch à chaque navigation pour afficher les bannières créées en cours de session
+  - Page admin en 3 sections : Actives / Programmées / Expirées — statut calculé à la volée (`SCHEDULED` / `ACTIVE` / `EXPIRED`)
+  - Formulaire modal avec aperçu live du rendu Markdown avant publication
+  - Entités : `InfoBanner` · Enums : `InfoBannerType`, `InfoBannerAudience`, `InfoBannerStatus`
+  - Migration : `023_create_info_banners.sql`
+  - Endpoints : `GET /api/info-banners/active` (authentifié) + CRUD `/api/admin/info-banners` (ADMIN)
+  - Tests : 32 tests unitaires (service + 2 controllers) + 1 test d'intégration `@SpringBootTest` (15 étapes : auth, filtrage audience, validation, CRUD, 403/404)
+  - Documentation : `docs/architecture/info-banners.md` · `docs/api/info-banners.md`
+
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)

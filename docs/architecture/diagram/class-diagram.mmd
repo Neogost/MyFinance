@@ -684,6 +684,45 @@ classDiagram
         FORM_SUBMIT
     }
 
+    %% ── Bannières d'information ──────────────────────────────────
+
+    class InfoBanner {
+        <<entity>>
+        +Long id
+        +String title
+        +String message
+        +InfoBannerType type
+        +InfoBannerAudience audience
+        +LocalDateTime startAt
+        +LocalDateTime endAt
+        +LocalDateTime createdAt
+        +LocalDateTime updatedAt
+        +User createdBy
+    }
+
+    class InfoBannerType {
+        <<enumeration>>
+        ALERT
+        WARNING
+        MAINTENANCE
+        INFO
+        SUCCESS
+    }
+
+    class InfoBannerAudience {
+        <<enumeration>>
+        ALL
+        USERS_ONLY
+        ADMIN_ONLY
+    }
+
+    class InfoBannerStatus {
+        <<enumeration>>
+        SCHEDULED
+        ACTIVE
+        EXPIRED
+    }
+
     %% ══════════════════════════════════════════════════════════════
     %% Relations
     %% ══════════════════════════════════════════════════════════════
@@ -768,3 +807,8 @@ classDiagram
     User "0..1" o-- "0..*" AnalyticsEvent : events
     User "0..1" o-- "0..*" ErrorLog : errors
     AnalyticsEvent --> EventType : eventType
+
+    %% Bannières d'information
+    InfoBanner --> InfoBannerType : type
+    InfoBanner --> InfoBannerAudience : audience
+    User "0..1" o-- "0..*" InfoBanner : createdBy

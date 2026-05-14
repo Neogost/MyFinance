@@ -118,6 +118,7 @@ mindmap
         Mise à jour automatique des cours (scheduler)
         Version de l'application
         Analytics (engagement, parcours, erreurs frontend)
+        Bannières d'information (INFO, WARNING, ALERT, MAINTENANCE, SUCCESS)
     Plateforme
         Mode nuit (dark mode)
         Masquage des valeurs
@@ -371,6 +372,12 @@ Consultation paginée des événements de connexion (SUCCESS / FAILURE / BLOCKED
 Consultation et modération des groupes familiaux (dissolution, retrait de membres).
 
 → [`docs/architecture/family-group.md`](family-group.md) — API : [`docs/api/family-group.md`](../api/family-group.md)
+
+#### Bannières d'information
+
+Messages diffusés en haut de toutes les pages aux utilisateurs authentifiés. Cinq types : `ALERT` (rouge), `WARNING` (orange), `MAINTENANCE` (gris), `INFO` (bleu), `SUCCESS` (vert). Filtrage par audience (`ALL` / `USERS_ONLY` / `ADMIN_ONLY`), plage temporelle avec date de fin optionnelle, message en Markdown rendu via `react-markdown`. Fermeture par l'utilisateur persistée en sessionStorage (réapparition à la reconnexion si toujours active).
+
+→ [`docs/architecture/info-banners.md`](info-banners.md) — API : [`docs/api/info-banners.md`](../api/info-banners.md)
 
 ---
 

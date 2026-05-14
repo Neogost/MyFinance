@@ -366,6 +366,21 @@ erDiagram
         bigint    timestampMs
     }
 
+    %% ── Bannières d'information ──────────────────────────────────
+
+    info_banners {
+        bigint    id            PK
+        varchar   title         "nullable — max 120 caractères"
+        text      message       "Markdown — max 2000 caractères"
+        varchar   type          "ALERT | WARNING | MAINTENANCE | INFO | SUCCESS"
+        varchar   audience      "ALL | USERS_ONLY | ADMIN_ONLY"
+        timestamp start_at
+        timestamp end_at        "nullable — sans expiration si NULL"
+        timestamp created_at
+        timestamp updated_at
+        bigint    created_by    FK "nullable — ON DELETE SET NULL"
+    }
+
     %% ── Taux de change (référentiel partagé) ─────────────────────
 
     exchange_rates {
@@ -447,3 +462,6 @@ erDiagram
     %% Analytics
     analytics_events              }o--o|  users                     : "user (nullable)"
     error_logs                    }o--o|  users                     : "user (nullable)"
+
+    %% Bannières d'information
+    info_banners                  }o--o|  users                     : "createdBy (nullable)"

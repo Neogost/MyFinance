@@ -135,7 +135,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
   const isExpensesPage   = currentPage === 'expenses' || currentPage === 'subscription-calendar'
   const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement','tax-loss-harvesting','estate-simulator'].includes(currentPage)
-  const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics'].includes(currentPage)
+  const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','admin-banners'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setPatrimoineOpen(false); setExpensesOpen(false); setToolsOpen(false); setAdminOpen(false) }
@@ -279,6 +279,9 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       { group: 'Marché & données', items: [
                         ['admin-instruments', 'Instruments financiers', 0],
                         ['admin-snapshots',   'Gestion des relevés',   0],
+                      ]},
+                      { group: 'Communication', items: [
+                        ['admin-banners', 'Bannières d\'information', 0],
                       ]},
                       { group: 'Supervision', items: [
                         ['admin-analytics', 'Analytics',                  0],
@@ -468,6 +471,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Marché & données</div>
                 <MobileMenuItem label="Instruments financiers"    page="admin-instruments"   currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Communication</div>
+                <MobileMenuItem label="Bannières d'information"  page="admin-banners"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Supervision</div>
                 <MobileMenuItem label="Analytics"                 page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />

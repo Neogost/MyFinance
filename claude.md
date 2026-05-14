@@ -176,6 +176,8 @@ frontend/src/
 - API dépenses récurrentes : `docs/api/recurring-expenses.md`
 - Historique des connexions (architecture) : `docs/architecture/login-history.md`
 - API historique des connexions : `docs/api/login-history.md`
+- Bannières d'information (architecture) : `docs/architecture/info-banners.md`
+- API bannières d'information : `docs/api/info-banners.md`
 - Regroupement familial (architecture) : `docs/architecture/family-group.md`
 - API regroupement familial : `docs/api/family-group.md`
 - API demandes d'inscription : `docs/api/registration-requests.md`
@@ -445,6 +447,16 @@ frontend/src/
 | `GET` | `/api/admin/analytics/health` | ADMIN | Synthèse santé : KPIs + timeline erreurs/jour |
 | `DELETE` | `/api/admin/analytics/purge` | ADMIN | Supprimer les données antérieures à N jours |
 
+### Bannières d'information
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/info-banners/active` | Authentifié | Bannières actives pour l'utilisateur courant (filtrées par audience + dates, triées par priorité) |
+| `GET` | `/api/admin/info-banners` | ADMIN | Liste complète (avec statut SCHEDULED / ACTIVE / EXPIRED) |
+| `GET` | `/api/admin/info-banners/{id}` | ADMIN | Détail d'une bannière |
+| `POST` | `/api/admin/info-banners` | ADMIN | Créer une bannière |
+| `PUT` | `/api/admin/info-banners/{id}` | ADMIN | Modifier une bannière |
+| `DELETE` | `/api/admin/info-banners/{id}` | ADMIN | Supprimer une bannière |
+
 ### Version de l'application
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -626,7 +638,7 @@ Modules livrés (vue à 10 000 m, sans détails) :
 | **Stratégie** | objectifs par catégorie · diversification multi-dimensions BOURSE/CRYPTO/IMMO · KPI immo · scoring patrimonial · performance TWR/MWR |
 | **Dashboard** | personnalisable · cash flow Sankey · prochains prélèvements · FIRE · TWR YTD · widgets patrimoine · dette · score |
 | **Gamification** | 67 hauts faits (V1 + V2 Trivial/Faible/Moyen + Plus lourd) · easter eggs secrets |
-| **Admin** | instruments · taux de change · snapshots manuels · backfill historique · analytics |
+| **Admin** | instruments · taux de change · snapshots manuels · backfill historique · analytics · **bannières d'information** |
 | **Plateforme** | dark mode · responsive mobile · PWA · pages d'erreur · simulateurs publics sans connexion |
 
 > **Détail exhaustif par feature** (architecture, migrations, tests, dates) : [`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)
