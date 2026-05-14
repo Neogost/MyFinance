@@ -723,6 +723,62 @@ classDiagram
         EXPIRED
     }
 
+    %% ── Signalement de bugs ──────────────────────────────────────
+
+    class BugReport {
+        <<entity>>
+        +Long id
+        +String title
+        +String description
+        +String expectedResult
+        +String reproductionSteps
+        +LocalDateTime approximateDateTime
+        +BugSeverity userImpact
+        +BugSeverity priority
+        +BugStatus status
+        +String sessionId
+        +LocalDateTime createdAt
+        +LocalDateTime updatedAt
+    }
+
+    class BugVote {
+        <<entity>>
+        +Long id
+        +VoteType voteType
+        +LocalDateTime createdAt
+    }
+
+    class BugComment {
+        <<entity>>
+        +Long id
+        +String content
+        +LocalDateTime createdAt
+    }
+
+    class BugStatus {
+        <<enumeration>>
+        OPEN
+        IN_PROGRESS
+        FIXED
+        CLOSED
+        REJECTED
+        DUPLICATE
+    }
+
+    class BugSeverity {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        CRITICAL
+    }
+
+    class VoteType {
+        <<enumeration>>
+        UP
+        DOWN
+    }
+
     %% ══════════════════════════════════════════════════════════════
     %% Relations
     %% ══════════════════════════════════════════════════════════════
@@ -812,3 +868,14 @@ classDiagram
     InfoBanner --> InfoBannerType : type
     InfoBanner --> InfoBannerAudience : audience
     User "0..1" o-- "0..*" InfoBanner : createdBy
+
+    %% Signalement de bugs
+    BugReport --> BugStatus : status
+    BugReport --> BugSeverity : userImpact
+    BugReport --> BugSeverity : priority
+    BugReport --> User : reporter
+    BugVote --> BugReport : bugReport
+    BugVote --> User : voter
+    BugVote --> VoteType : voteType
+    BugComment --> BugReport : bugReport
+    BugComment --> User : author

@@ -122,7 +122,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, appVersion = null, onShowReleaseNotes }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, appVersion = null, onShowReleaseNotes, onOpenBugForm }) {
   const [incomeOpen,      setIncomeOpen]     = useState(false)
   const [patrimoineOpen,  setPatrimoineOpen] = useState(false)
   const [expensesOpen,    setExpensesOpen]   = useState(false)
@@ -135,7 +135,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
   const isPatrimoinePage = ['patrimoine', 'performance'].includes(currentPage)
   const isExpensesPage   = currentPage === 'expenses' || currentPage === 'subscription-calendar'
   const isToolsPage      = ['tax-simulator','crypto-tax','bilan-financier','compound-interest','loan-simulator','patrimoine-declaration','crisis-simulator','lombard-simulator','fiscal-envelopes','retirement','tax-loss-harvesting','estate-simulator'].includes(currentPage)
-  const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','admin-banners'].includes(currentPage)
+  const isAdminPage      = ['users','admin-snapshots','login-history','admin-family-groups','admin-instruments','admin-registrations','admin-analytics','admin-banners','admin-bugs'].includes(currentPage)
   const isDocPage    = currentPage === 'documentation'
 
   function closeAll() { setIncomeOpen(false); setPatrimoineOpen(false); setExpensesOpen(false); setToolsOpen(false); setAdminOpen(false) }
@@ -282,6 +282,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ]},
                       { group: 'Communication', items: [
                         ['admin-banners', 'Bannières d\'information', 0],
+                        ['admin-bugs',    'Signalements de bugs',     0],
                       ]},
                       { group: 'Supervision', items: [
                         ['admin-analytics', 'Analytics',                  0],
@@ -347,10 +348,12 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
         {/* ── Droite mobile ── */}
         <div className="flex md:hidden items-center gap-2">
           <button onClick={onToggleHideValues}
+            title={hideValues ? 'Afficher les valeurs' : 'Masquer les valeurs'}
             className={`p-2 rounded-md transition ${hideValues ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:bg-gray-100'}`}>
             <EyeIcon hidden={hideValues} />
           </button>
           <button onClick={onToggleDarkMode}
+            title={darkMode ? 'Passer en mode clair' : 'Passer en mode nuit'}
             className={`p-2 rounded-md transition ${darkMode ? 'bg-indigo-100 text-indigo-600 dark:text-indigo-300' : 'text-gray-400 hover:bg-gray-100'}`}>
             <DarkModeIcon dark={darkMode} />
           </button>
@@ -473,6 +476,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Communication</div>
                 <MobileMenuItem label="Bannières d'information"  page="admin-banners"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <MobileMenuItem label="Signalements de bugs"     page="admin-bugs"          currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Supervision</div>
                 <MobileMenuItem label="Analytics"                 page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
@@ -482,6 +486,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             {/* Documentation */}
             <MobileSectionTitle>Aide</MobileSectionTitle>
             <MobileMenuItem label="Documentation" page="documentation" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+            <MobileMenuItem label="Bugs connus" page="bugs" currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
 
             {/* Compte */}
             <MobileSectionTitle>Compte</MobileSectionTitle>

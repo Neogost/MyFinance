@@ -28,6 +28,9 @@ import LoginHistoryPage from './components/admin/LoginHistoryPage'
 import AdminFamilyGroupPage from './components/admin/AdminFamilyGroupPage'
 import InfoBannerAdminPage from './components/admin/InfoBannerAdminPage'
 import InfoBannerStack from './components/platform/InfoBannerStack'
+import AdminBugReportPage from './components/admin/AdminBugReportPage'
+import BugListPage from './components/bugs/BugListPage'
+import BugReportForm from './components/bugs/BugReportForm'
 import AdminInstrumentPage from './components/admin/AdminInstrumentPage'
 import RegistrationRequestPage from './components/admin/RegistrationRequestPage'
 import { getRegistrations } from './api/registrations'
@@ -62,6 +65,7 @@ export default function App() {
   const [appVersion,            setAppVersion]            = useState(null)
   const [showReleaseNotes,      setShowReleaseNotes]      = useState(false)
   const [unseenAchievements,    setUnseenAchievements]    = useState(0)
+  const [bugFormOpen,           setBugFormOpen]           = useState(false)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -147,7 +151,7 @@ export default function App() {
   }
 
   function handleNavigate(page) {
-    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics', 'admin-banners']
+    const adminPages = ['users', 'admin-snapshots', 'login-history', 'admin-family-groups', 'admin-instruments', 'admin-registrations', 'admin-analytics', 'admin-banners', 'admin-bugs']
     if (adminPages.includes(page) && user?.role !== 'ADMIN') return
     if (page === 'profile') setUnseenAchievements(0) // efface le compteur dès qu'on ouvre le profil
     window.location.hash = page
@@ -286,25 +290,24 @@ export default function App() {
   return (
     <ErrorBoundary>
     <div className={`min-h-screen bg-gray-100${hideValues ? ' hide-values' : ''}`}>
-      <div className="sticky top-0 z-50">
-        <Navigation
-          user={user}
-          currentPage={currentPage}
-          onNavigate={handleNavigate}
-          onLogout={handleLogout}
-          hideValues={hideValues}
-          onToggleHideValues={toggleHideValues}
-          darkMode={darkMode}
-          onToggleDarkMode={toggleDarkMode}
-          familyMode={familyMode}
-          onToggleFamilyMode={() => setFamilyMode(v => !v)}
-          pendingRegistrations={pendingRegistrations}
-          unseenAchievements={unseenAchievements}
-          appVersion={appVersion}
-          onShowReleaseNotes={() => setShowReleaseNotes(true)}
-        />
-        <InfoBannerStack currentPage={currentPage} />
-      </div>
+      <Navigation
+        user={user}
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        hideValues={hideValues}
+        onToggleHideValues={toggleHideValues}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
+        familyMode={familyMode}
+        onToggleFamilyMode={() => setFamilyMode(v => !v)}
+        pendingRegistrations={pendingRegistrations}
+        unseenAchievements={unseenAchievements}
+        appVersion={appVersion}
+        onShowReleaseNotes={() => setShowReleaseNotes(true)}
+        onOpenBugForm={() => setBugFormOpen(true)}
+      />
+      <InfoBannerStack currentPage={currentPage} />
       <main className="p-4 md:p-8 pb-24 md:pb-8 overflow-x-hidden">
         {currentPage === 'dashboard' && <DashboardPage user={user} familyMode={familyMode} onNavigate={handleNavigate} hideValues={hideValues} />}
 
@@ -358,6 +361,9 @@ export default function App() {
 
         {currentPage === 'admin-analytics' && user.role === 'ADMIN' && <AnalyticsPage />}
         {currentPage === 'admin-banners'   && user.role === 'ADMIN' && <InfoBannerAdminPage />}
+        {currentPage === 'admin-bugs'      && user.role === 'ADMIN' && <AdminBugReportPage onNavigate={handleNavigate} />}
+
+        {currentPage === 'bugs' && <BugListPage user={user} onOpenForm={() => setBugFormOpen(true)} />}
         {currentPage === 'performance'     && <PerformancePage />}
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
@@ -374,9 +380,24 @@ export default function App() {
         >
           Notes de version
         </button>
+        <span className="text-gray-300 mx-2">·</span>
+        <button
+          onClick={() => handleNavigate('bugs')}
+          className="text-gray-500 hover:text-indigo-600 transition underline decoration-dotted underline-offset-2"
+        >
+          Bugs connus
+        </button>
+        <span className="text-gray-300 mx-2">·</span>
+        <button
+          onClick={() => setBugFormOpen(true)}
+          className="text-gray-500 hover:text-red-500 transition underline decoration-dotted underline-offset-2"
+        >
+          Signaler un bug
+        </button>
       </footer>
 
       {showReleaseNotes && <ReleaseNotesModal onClose={() => setShowReleaseNotes(false)} />}
+      {bugFormOpen && <BugReportForm onClose={() => setBugFormOpen(false)} onSubmitted={() => setBugFormOpen(false)} />}
     </div>
     </ErrorBoundary>
   )

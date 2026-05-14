@@ -381,6 +381,40 @@ erDiagram
         bigint    created_by    FK "nullable — ON DELETE SET NULL"
     }
 
+    %% ── Signalement de bugs ─────────────────────────────────────
+
+    bug_reports {
+        integer   id                     PK
+        varchar   title                  "max 200 caractères — NOT NULL"
+        text      description            "NOT NULL"
+        text      expected_result        "nullable"
+        text      reproduction_steps     "nullable"
+        datetime  approximate_date_time  "nullable"
+        varchar   user_impact            "LOW/MEDIUM/HIGH/CRITICAL — NOT NULL"
+        varchar   priority               "LOW/MEDIUM/HIGH/CRITICAL — nullable, défini par admin"
+        varchar   status                 "OPEN/IN_PROGRESS/FIXED/CLOSED/REJECTED/DUPLICATE — NOT NULL"
+        varchar   session_id             "nullable — max 50 caractères"
+        integer   reporter_id            FK "NOT NULL"
+        datetime  created_at             "NOT NULL"
+        datetime  updated_at             "NOT NULL"
+    }
+
+    bug_votes {
+        integer   id              PK
+        integer   bug_report_id   FK "NOT NULL"
+        integer   voter_id        FK "NOT NULL"
+        varchar   vote_type       "UP | DOWN — NOT NULL"
+        datetime  created_at      "NOT NULL"
+    }
+
+    bug_comments {
+        integer   id              PK
+        integer   bug_report_id   FK "NOT NULL"
+        integer   author_id       FK "NOT NULL"
+        text      content         "NOT NULL"
+        datetime  created_at      "NOT NULL"
+    }
+
     %% ── Taux de change (référentiel partagé) ─────────────────────
 
     exchange_rates {
@@ -465,3 +499,10 @@ erDiagram
 
     %% Bannières d'information
     info_banners                  }o--o|  users                     : "createdBy (nullable)"
+
+    %% Signalement de bugs
+    bug_reports                   }o--||  users                     : "reporter"
+    bug_votes                     }o--||  bug_reports               : "bugReport"
+    bug_votes                     }o--||  users                     : "voter"
+    bug_comments                  }o--||  bug_reports               : "bugReport"
+    bug_comments                  }o--||  users                     : "author"

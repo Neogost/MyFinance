@@ -841,6 +841,16 @@ export default function AnalyticsPage() {
   const [period,           setPeriod]           = useState(7)
   const [journeySessionId, setJourneySessionId] = useState(null)
 
+  // Saut direct vers le parcours d'une session (ex : depuis un signalement de bug)
+  useEffect(() => {
+    const pending = sessionStorage.getItem('analytics-jump-session')
+    if (pending) {
+      sessionStorage.removeItem('analytics-jump-session')
+      setJourneySessionId(pending)
+      setTab('parcours')
+    }
+  }, [])
+
   function handleViewJourney(sessionId) {
     setJourneySessionId(sessionId)
     setTab('parcours')

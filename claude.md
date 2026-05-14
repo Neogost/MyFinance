@@ -178,6 +178,8 @@ frontend/src/
 - API historique des connexions : `docs/api/login-history.md`
 - Bannières d'information (architecture) : `docs/architecture/info-banners.md`
 - API bannières d'information : `docs/api/info-banners.md`
+- Signalement de bugs (architecture) : `docs/architecture/bug-reports.md`
+- API signalement de bugs : `docs/api/bug-reports.md`
 - Regroupement familial (architecture) : `docs/architecture/family-group.md`
 - API regroupement familial : `docs/api/family-group.md`
 - API demandes d'inscription : `docs/api/registration-requests.md`
@@ -457,6 +459,21 @@ frontend/src/
 | `PUT` | `/api/admin/info-banners/{id}` | ADMIN | Modifier une bannière |
 | `DELETE` | `/api/admin/info-banners/{id}` | ADMIN | Supprimer une bannière |
 
+### Signalement de bugs
+| Méthode | URL | Rôle requis | Description |
+|---------|-----|-------------|-------------|
+| `GET` | `/api/bug-reports` | Authentifié | Liste des bugs (triés par score desc, avec userVote et isReporter) |
+| `GET` | `/api/bug-reports/{id}` | Authentifié | Détail + commentaires + score + vote courant |
+| `POST` | `/api/bug-reports` | Authentifié | Signaler un bug (vote initial UP auto-créé, score=1) |
+| `PUT` | `/api/bug-reports/{id}/vote` | Authentifié | Voter UP ou DOWN (interdit sur son propre bug) |
+| `DELETE` | `/api/bug-reports/{id}/vote` | Authentifié | Retirer son vote |
+| `POST` | `/api/bug-reports/{id}/comments` | Authentifié | Commenter un bug |
+| `GET` | `/api/admin/bug-reports` | ADMIN | Liste complète (avec login reporter, priorité) |
+| `GET` | `/api/admin/bug-reports/{id}` | ADMIN | Détail admin (login+rôle commentateurs) |
+| `PATCH` | `/api/admin/bug-reports/{id}` | ADMIN | Modifier statut et/ou priorité |
+| `DELETE` | `/api/admin/bug-reports/{id}` | ADMIN | Supprimer un bug (cascade applicative) |
+| `GET` | `/api/admin/bug-reports/{id}/logs?window=1` | ADMIN | Extraire lignes de log autour de l'heure du bug (±window minutes) |
+
 ### Version de l'application
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
@@ -638,7 +655,7 @@ Modules livrés (vue à 10 000 m, sans détails) :
 | **Stratégie** | objectifs par catégorie · diversification multi-dimensions BOURSE/CRYPTO/IMMO · KPI immo · scoring patrimonial · performance TWR/MWR |
 | **Dashboard** | personnalisable · cash flow Sankey · prochains prélèvements · FIRE · TWR YTD · widgets patrimoine · dette · score |
 | **Gamification** | 67 hauts faits (V1 + V2 Trivial/Faible/Moyen + Plus lourd) · easter eggs secrets |
-| **Admin** | instruments · taux de change · snapshots manuels · backfill historique · analytics · **bannières d'information** |
+| **Admin** | instruments · taux de change · snapshots manuels · backfill historique · analytics · **bannières d'information** · **signalements de bugs** |
 | **Plateforme** | dark mode · responsive mobile · PWA · pages d'erreur · simulateurs publics sans connexion |
 
 > **Détail exhaustif par feature** (architecture, migrations, tests, dates) : [`docs/PROJECT-STATUS.md`](docs/PROJECT-STATUS.md)

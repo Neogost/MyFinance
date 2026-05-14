@@ -119,6 +119,7 @@ mindmap
         Version de l'application
         Analytics (engagement, parcours, erreurs frontend)
         Bannières d'information (INFO, WARNING, ALERT, MAINTENANCE, SUCCESS)
+        Signalements de bugs (votes, commentaires, logs)
     Plateforme
         Mode nuit (dark mode)
         Masquage des valeurs
@@ -378,6 +379,12 @@ Consultation et modération des groupes familiaux (dissolution, retrait de membr
 Messages diffusés en haut de toutes les pages aux utilisateurs authentifiés. Cinq types : `ALERT` (rouge), `WARNING` (orange), `MAINTENANCE` (gris), `INFO` (bleu), `SUCCESS` (vert). Filtrage par audience (`ALL` / `USERS_ONLY` / `ADMIN_ONLY`), plage temporelle avec date de fin optionnelle, message en Markdown rendu via `react-markdown`. Fermeture par l'utilisateur persistée en sessionStorage (réapparition à la reconnexion si toujours active).
 
 → [`docs/architecture/info-banners.md`](info-banners.md) — API : [`docs/api/info-banners.md`](../api/info-banners.md)
+
+#### Signalement de bugs
+
+Système de remontée de bugs par les utilisateurs. Chaque signalement (titre, description, résultat attendu, étapes de reproduction, date approximative, session ID, impact utilisateur) peut être voté UP ou DOWN par les autres utilisateurs (classement par score). Le reporter obtient un vote UP automatique à la création (score initial = 1) et ne peut pas re-voter son propre bug. Les commentaires affichent le prénom pour les utilisateurs et `login[ROLE]` pour l'admin. L'admin dispose d'une page de triage inline (statut + priorité), d'un lien vers Analytics (parcours session) et d'un endpoint d'extraction de logs serveur (±N minutes autour de `approximateDateTime`, profils `docker` et `prod` uniquement).
+
+→ [`docs/architecture/bug-reports.md`](bug-reports.md) — API : [`docs/api/bug-reports.md`](../api/bug-reports.md)
 
 ---
 

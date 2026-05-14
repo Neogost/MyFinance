@@ -434,5 +434,17 @@
   - Tests : 32 tests unitaires (service + 2 controllers) + 1 test d'intégration `@SpringBootTest` (15 étapes : auth, filtrage audience, validation, CRUD, 403/404)
   - Documentation : `docs/architecture/info-banners.md` · `docs/api/info-banners.md`
 
+- **Signalement de bugs** :
+  - 3 entités : `BugReport`, `BugVote`, `BugComment` — Enums : `BugStatus` (OPEN/IN_PROGRESS/FIXED/CLOSED/REJECTED/DUPLICATE), `BugSeverity` (LOW/MEDIUM/HIGH/CRITICAL), `VoteType` (UP/DOWN)
+  - Vote initial automatique au reporter à la création (score démarre à 1) ; le reporter ne peut pas re-voter son propre bug
+  - Filtrage audience : `userVote` et `isReporter` exposés dans la liste utilisateur
+  - Commentaires : prénom pour les utilisateurs, `login[ROLE]` pour l'admin
+  - Page admin : liste complète (avec login reporter, priorité) + panneau de triage inline (statut + priorité), lien vers Analytics (parcours session via `sessionId`)
+  - Extraction logs serveur via `LogExcerptService` : ±N minutes autour de `approximateDateTime` (profils `docker` et `prod` uniquement)
+  - Migration : `024_create_bug_reports.sql` ; `PRAGMA foreign_keys=ON` ajouté à tous les profils Spring
+  - Tests : 48 tests unitaires (BugReportServiceTest, BugReportControllerTest, AdminBugReportControllerTest, LogExcerptServiceTest) + 1 test d'intégration `@SpringBootTest`
+  - Endpoints : `GET/POST /api/bug-reports` · `GET /api/bug-reports/{id}` · `PUT/DELETE /api/bug-reports/{id}/vote` · `POST /api/bug-reports/{id}/comments` · CRUD admin `/api/admin/bug-reports` · `GET /api/admin/bug-reports/{id}/logs?window=1`
+  - Documentation : `docs/architecture/bug-reports.md` · `docs/api/bug-reports.md`
+
 **À venir :**
 - (aucune fonctionnalité en cours de développement — voir overview.md pour le statut complet)
