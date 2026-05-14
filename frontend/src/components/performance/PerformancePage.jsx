@@ -67,7 +67,7 @@ function PeriodSelector({ period, customFrom, customTo, onPeriodChange, onCustom
             onClick={() => onPeriodChange(p.id)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               period === p.id
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 text-[#fff]'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -141,10 +141,10 @@ function buildCmp(curr, prev, fmtFn, scale = 100, higherIsBetter = true) {
 // ── KPI card ──────────────────────────────────────────────────────────────────
 function KpiCard({ label, value, tooltip, color = 'indigo', subtitle, valueColor, comparison }) {
   const colors = {
-    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-    teal:   'bg-teal-50 border-teal-200 text-teal-700',
+    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:text-indigo-300',
+    teal:   'bg-teal-50 border-teal-200 text-teal-700 dark:text-teal-300',
     gray:   'bg-gray-50 border-gray-200 text-gray-700',
-    amber:  'bg-amber-50 border-amber-200 text-amber-700',
+    amber:  'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-300',
   }
   return (
     <div className={`border rounded-xl p-4 ${colors[color]}`}>
@@ -875,16 +875,16 @@ function ReturnDecomposition({ absoluteGainEur, totalDividendsEur, totalInvested
 // ── Section par catégorie ─────────────────────────────────────────────────
 
 const CARD_COLORS = {
-  BOURSE:     'bg-indigo-50 border-indigo-200 text-indigo-700',
-  CRYPTO:     'bg-violet-50 border-violet-200 text-violet-700',
-  LIVRET:     'bg-teal-50 border-teal-200 text-teal-700',
-  IMMO_PAPIER:'bg-amber-50 border-amber-200 text-amber-700',
+  BOURSE:     'bg-indigo-50 border-indigo-200 text-indigo-700 dark:text-indigo-300',
+  CRYPTO:     'bg-violet-50 border-violet-200 text-violet-700 dark:text-violet-300',
+  LIVRET:     'bg-teal-50 border-teal-200 text-teal-700 dark:text-teal-300',
+  IMMO_PAPIER:'bg-amber-50 border-amber-200 text-amber-700 dark:text-amber-300',
 }
 
 function CategoryCard({ cat }) {
   const meta     = CATEGORY_META[cat.category] ?? { label: cat.category, icon: '📊' }
   const colors   = CARD_COLORS[cat.category] ?? 'bg-gray-50 border-gray-200 text-gray-700'
-  const gainColor = cat.absoluteGainEur >= 0 ? 'text-emerald-700' : 'text-red-600'
+  const gainColor = cat.absoluteGainEur >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-400'
 
   return (
     <div className={`border rounded-xl p-4 ${colors}`}>
