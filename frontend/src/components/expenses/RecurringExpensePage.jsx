@@ -5,6 +5,7 @@ import { fmt } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
+import { useSavingsCapacity } from '../../hooks/useSavingsCapacity'
 
 const CATEGORY_META = {
   LOGEMENT:    { label: 'Logement',               color: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
@@ -34,6 +35,8 @@ export default function RecurringExpensePage() {
   const [budgetsSaving,     setBudgetsSaving]     = useState(false)
   const [showBudgetEditor,  setShowBudgetEditor]  = useState(false)
   const [deleteTarget,      setDeleteTarget]      = useState(null)
+
+  const { savingsCapacity, savingsRate } = useSavingsCapacity(summary?.totalMonthlyExpenses ?? null)
 
   function updateBudget(category, value) {
     const updated = { ...budgets }
@@ -116,8 +119,8 @@ export default function RecurringExpensePage() {
   if (loading) return <p className="text-gray-500">Chargement…</p>
   if (error)   return <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
 
-  const savingsColor = summary?.savingsCapacity != null
-    ? summary.savingsCapacity >= 0 ? 'text-green-600' : 'text-red-600'
+  const savingsColor = savingsCapacity != null
+    ? savingsCapacity >= 0 ? 'text-green-600' : 'text-red-600'
     : 'text-gray-900'
 
   return (
@@ -197,15 +200,15 @@ export default function RecurringExpensePage() {
             />
             <KpiCard
               label="Capacité d'épargne"
-              value={summary.savingsCapacity}
-              sub={summary.savingsRate != null ? `Taux d'épargne : ${summary.savingsRate.toFixed(1)} %` : null}
+              value={savingsCapacity}
+              sub={savingsRate != null ? `Taux d'épargne : ${savingsRate.toFixed(1)} %` : null}
               color={savingsColor}
             />
             <KpiCard
               label="Taux d'épargne"
-              value={summary.savingsRate != null ? summary.savingsRate.toFixed(1) : null}
+              value={savingsRate != null ? savingsRate.toFixed(1) : null}
               unit="%"
-              color={summary.savingsRate == null ? 'text-gray-900' : summary.savingsRate >= 30 ? 'text-green-600' : summary.savingsRate >= 10 ? 'text-orange-500' : 'text-red-600'}
+              color={savingsRate == null ? 'text-gray-900' : savingsRate >= 30 ? 'text-green-600' : savingsRate >= 10 ? 'text-orange-500' : 'text-red-600'}
             />
           </div>
 

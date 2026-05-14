@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { getExpenseSummary } from '../../api/expenses'
+import { useSavingsCapacity } from '../../hooks/useSavingsCapacity'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -55,11 +56,11 @@ export default function ExpensesByCategoryChart({ onHasData }) {
       .finally(() => setLoading(false))
   }, [])
 
+  const { savingsCapacity, savingsRate } = useSavingsCapacity(summary?.totalMonthlyExpenses ?? null)
+
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>
   if (!data.length) return null
-
-  const savingsRate = summary?.savingsRate ?? null
 
   return (
     <div className="flex flex-col gap-4">
@@ -117,7 +118,7 @@ export default function ExpensesByCategoryChart({ onHasData }) {
             <span className="text-xs text-gray-500">Capacité d'épargne</span>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`text-xs font-semibold tabular-nums amount ${savingsRate >= 0 ? 'text-teal-600' : 'text-red-500'}`}>
-                {fmtEur.format(summary?.savingsCapacity ?? 0)}
+                {fmtEur.format(savingsCapacity ?? 0)}
               </span>
               <span className={`text-xs tabular-nums ${savingsRate >= 0 ? 'text-teal-400' : 'text-red-400'}`}>
                 ({savingsRate.toFixed(1)} %)
