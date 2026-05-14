@@ -1,12 +1,11 @@
 import { useState } from 'react'
 
-/*function isSeasonalPeriod() {
+function isSeasonalPeriod() {
   const now = new Date()
   const month = now.getMonth() + 1 // 1-based
   return month === 11 || month === 12
-}*/
+}
 
-function isSeasonalPeriod() { return true }
 
 export default function TaxLossSeasonalBanner({ summary, onNavigate }) {
   const [dismissed, setDismissed] = useState(
