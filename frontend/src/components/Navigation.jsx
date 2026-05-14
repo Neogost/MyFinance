@@ -8,7 +8,7 @@ function NavBtn({ page, label, currentPage, onNavigate, onClose }) {
       onClick={() => { onNavigate(page); onClose() }}
       className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
         currentPage === page
-          ? 'bg-indigo-600 text-white'
+          ? 'bg-indigo-600 text-[#fff]'
           : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
       }`}
     >
@@ -112,7 +112,7 @@ function MobileMenuItem({ label, page, currentPage, onNavigate, onClose, badge }
     >
       <span>{label}</span>
       {badge > 0 && (
-        <span className="bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>
+        <span className="bg-red-500 text-[#fff] text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>
       )}
     </button>
   )
@@ -156,7 +156,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <div className="relative">
             <button
               onClick={() => { setPatrimoineOpen(v => !v); setIncomeOpen(false); setToolsOpen(false); setAdminOpen(false) }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isPatrimoinePage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isPatrimoinePage ? 'bg-indigo-600 text-[#fff]' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
             >
               Patrimoine <span className="text-xs">{patrimoineOpen ? '▲' : '▼'}</span>
             </button>
@@ -174,7 +174,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <div className="relative">
             <button
               onClick={() => { setIncomeOpen(v => !v); setToolsOpen(false) }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isIncomePage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isIncomePage ? 'bg-indigo-600 text-[#fff]' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
             >
               Revenus <span className="text-xs">{incomeOpen ? '▲' : '▼'}</span>
             </button>
@@ -192,7 +192,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <div className="relative">
             <button
               onClick={() => { setExpensesOpen(v => !v); setIncomeOpen(false); setPatrimoineOpen(false); setToolsOpen(false); setAdminOpen(false) }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isExpensesPage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isExpensesPage ? 'bg-indigo-600 text-[#fff]' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
             >
               Dépenses <span className="text-xs">{expensesOpen ? '▲' : '▼'}</span>
             </button>
@@ -212,7 +212,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <div className="relative">
             <button
               onClick={() => { setToolsOpen(v => !v); setIncomeOpen(false) }}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isToolsPage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isToolsPage ? 'bg-indigo-600 text-[#fff]' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
             >
               Outils <span className="text-xs">{toolsOpen ? '▲' : '▼'}</span>
             </button>
@@ -262,7 +262,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
             <div className="relative">
               <button
                 onClick={() => { setAdminOpen(v => !v); setIncomeOpen(false); setToolsOpen(false) }}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isAdminPage ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition flex items-center gap-1 ${isAdminPage ? 'bg-indigo-600 text-[#fff]' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
               >
                 Admin <span className="text-xs">{adminOpen ? '▲' : '▼'}</span>
               </button>
@@ -298,7 +298,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                           <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
                             className={`w-full text-left px-4 py-1.5 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
                             {label}
-                            {badge > 0 && <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>}
+                            {badge > 0 && <span className="ml-2 bg-red-500 text-[#fff] text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>}
                           </button>
                         ))}
                       </div>
@@ -314,7 +314,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
           <div className="relative inline-flex">
             <NavBtn page="profile" label="Mon profil" currentPage={currentPage} onNavigate={onNavigate} onClose={closeAll} />
             {unseenAchievements > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 pointer-events-none">
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-indigo-600 text-[#fff] text-[9px] font-bold rounded-full flex items-center justify-center px-1 pointer-events-none">
                 {unseenAchievements}
               </span>
             )}
