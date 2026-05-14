@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { inputCls, labelCls } from '../../components/common/formStyles.js'
 import { MONTHS_FR_LONG } from '../../utils/constants.js'
 import MonthInput from '../ui/MonthInput'
+import DateInput from '../ui/DateInput'
 
 const EMPTY = { type: 'ANNUELLE', label: '', grossAmount: '', paymentDate: '', paymentMonth: '', startDate: '', endDate: '' }
 
