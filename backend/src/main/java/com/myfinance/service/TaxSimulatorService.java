@@ -5,6 +5,7 @@ import com.myfinance.domain.MonthlyPaySlip;
 import com.myfinance.domain.OtherIncome;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
+import com.myfinance.dto.SalaryContractIncomeBreakdownDto;
 import com.myfinance.dto.TaxSimulationDto;
 import com.myfinance.domain.BonusTypeEnum;
 import com.myfinance.repository.ContractBonusRepository;
@@ -22,7 +23,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -40,6 +44,8 @@ public class TaxSimulatorService {
     public static final String SOURCE_PROJECTION = "PROJECTION_CONTRAT";
     public static final String SOURCE_BULLETINS   = "BULLETINS_REELS";
 
+    private record PaySlipResult(float income, List<SalaryContractIncomeBreakdownDto> breakdown) {}
+
     /**
      * Lance la simulation d'impôt pour un utilisateur.
      *
@@ -53,10 +59,14 @@ public class TaxSimulatorService {
         // ── Étape 1 : Revenus salariaux ────────────────────────
         float salaryIncome;
         String sourceLabel;
+        List<SalaryContractIncomeBreakdownDto> salaryBreakdown = null;
 
         if (SOURCE_BULLETINS.equals(salarySource)) {
-            salaryIncome = salaryIncomeFromPaySlips(user, year);
-            sourceLabel  = SOURCE_BULLETINS;
+            PaySlipResult result = buildPaySlipResult(user, year);
+            salaryIncome    = result.income();
+            // Décomposition exposée seulement quand plusieurs contrats sur l'année
+            salaryBreakdown = result.breakdown().size() > 1 ? result.breakdown() : null;
+            sourceLabel     = SOURCE_BULLETINS;
         } else {
             salaryIncome = salaryIncomeFromContract(user, year);
             sourceLabel  = SOURCE_PROJECTION;
@@ -158,7 +168,8 @@ public class TaxSimulatorService {
                 decoteAmount,
                 taxAfterDecote,
                 totalEstimatedTax,
-                Math.round(effectiveTaxRate * 100f) / 100f // arrondi 2 décimales
+                Math.round(effectiveTaxRate * 100f) / 100f, // arrondi 2 décimales
+                salaryBreakdown
         );
     }
 
@@ -183,7 +194,7 @@ public class TaxSimulatorService {
 
     // ── Revenus salariaux via bulletins réels ──────────────────
 
-    private float salaryIncomeFromPaySlips(User user, int year) {
+    private PaySlipResult buildPaySlipResult(User user, int year) {
         LocalDate start = LocalDate.of(year, 1, 1);
         LocalDate end   = LocalDate.of(year, 12, 31);
         List<MonthlyPaySlip> paySlips = monthlyPaySlipRepository.findByContractUserAndPeriodBetween(user, start, end);
@@ -193,9 +204,33 @@ public class TaxSimulatorService {
                     "Aucun bulletin de paie saisi pour l'année " + year + ". Utilisez la projection du contrat.");
         }
 
-        return (float) paySlips.stream()
-                .mapToDouble(s -> s.getTaxableNetSalary() != null ? s.getTaxableNetSalary() : 0.0)
-                .sum();
+        // Groupement par contrat pour construire la décomposition
+        Map<com.myfinance.domain.SalaryContract, List<MonthlyPaySlip>> byContract = paySlips.stream()
+                .collect(Collectors.groupingBy(MonthlyPaySlip::getContract));
+
+        List<SalaryContractIncomeBreakdownDto> breakdown = byContract.entrySet().stream()
+                .map(entry -> {
+                    com.myfinance.domain.SalaryContract contract = entry.getKey();
+                    List<MonthlyPaySlip> slips = entry.getValue();
+                    float income = (float) slips.stream()
+                            .mapToDouble(s -> s.getTaxableNetSalary() != null ? s.getTaxableNetSalary() : 0.0)
+                            .sum();
+                    return new SalaryContractIncomeBreakdownDto(
+                            contract.getId(),
+                            contract.getCompanyName(),
+                            contract.getStartDate(),
+                            contract.getEndDate(),
+                            slips.size(),
+                            income
+                    );
+                })
+                .sorted(Comparator.comparing(
+                        SalaryContractIncomeBreakdownDto::startDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        float total = (float) breakdown.stream().mapToDouble(SalaryContractIncomeBreakdownDto::taxableIncome).sum();
+        return new PaySlipResult(total, breakdown);
     }
 
     // ── Revenus salariaux via projection du contrat ────────────

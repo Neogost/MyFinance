@@ -194,6 +194,23 @@ export default function TaxSimulatorPage() {
                 value={SOURCE_OPTIONS.find(o => o.value === result.salaryIncomeSource)?.label ?? result.salaryIncomeSource}
               />
               <ResultRow label="Revenus salariaux" value={fmt(result.salaryIncome)} />
+              {result.salaryContractBreakdown?.length > 0 && result.salaryContractBreakdown.map(b => (
+                <tr key={b.contractId} className="border-t border-gray-50 bg-gray-50/60">
+                  <td className="py-1.5 pr-6 pl-6 text-xs text-gray-400 italic">
+                    {b.companyName ?? `Contrat #${b.contractId}`}
+                    {b.startDate && (
+                      <span className="ml-1 text-gray-300">
+                        ({new Date(b.startDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}
+                        {b.endDate
+                          ? ` – ${new Date(b.endDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}`
+                          : ' – en cours'})
+                      </span>
+                    )}
+                    <span className="ml-1 text-gray-300">· {b.paySlipCount} bulletin{b.paySlipCount > 1 ? 's' : ''}</span>
+                  </td>
+                  <td className="py-1.5 pr-1 text-right text-xs text-gray-400 amount">{fmt(b.taxableIncome)}</td>
+                </tr>
+              ))}
               <ResultRow label="Revenus complémentaires (barème)" value={fmt(result.otherIncomeInBareme)} />
               <ResultRow label="Revenus à taux fixe" value={fmt(result.otherIncomeSeparatelyTaxed)} />
               <ResultRow label="Revenu brut imposable" value={fmt(result.grossTaxableIncome)} highlight />

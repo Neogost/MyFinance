@@ -1,6 +1,7 @@
 package com.myfinance.service;
 
 import com.myfinance.config.TaxParameters;
+import java.time.LocalDate;
 import com.myfinance.domain.MonthlyPaySlip;
 import com.myfinance.domain.OtherIncome;
 import com.myfinance.domain.OtherIncomeTypeEnum;
@@ -158,8 +159,10 @@ class TaxSimulatorServiceTest {
 
     @Test
     void simulate_avecBulletins_utiliseLeNetImposableReel() {
-        MonthlyPaySlip slip1 = MonthlyPaySlip.builder().taxableNetSalary(2000f).build();
-        MonthlyPaySlip slip2 = MonthlyPaySlip.builder().taxableNetSalary(2000f).build();
+        SalaryContract contrat = SalaryContract.builder()
+                .id(1L).companyName("Entreprise A").startDate(LocalDate.of(2025, 1, 1)).build();
+        MonthlyPaySlip slip1 = MonthlyPaySlip.builder().contract(contrat).taxableNetSalary(2000f).build();
+        MonthlyPaySlip slip2 = MonthlyPaySlip.builder().contract(contrat).taxableNetSalary(2000f).build();
 
         when(monthlyPaySlipRepository.findByContractUserAndPeriodBetween(eq(user), any(), any()))
                 .thenReturn(List.of(slip1, slip2));
@@ -172,6 +175,40 @@ class TaxSimulatorServiceTest {
 
         assertThat(result.salaryIncomeSource()).isEqualTo(TaxSimulatorService.SOURCE_BULLETINS);
         assertThat(result.salaryIncome()).isEqualTo(4000f);
+        // Un seul contrat → pas de décomposition exposée
+        assertThat(result.salaryContractBreakdown()).isNull();
+    }
+
+    @Test
+    void simulate_avecBulletins_multiContrats_retourneLaDecomposition() {
+        SalaryContract contratA = SalaryContract.builder()
+                .id(1L).companyName("Entreprise A")
+                .startDate(LocalDate.of(2025, 1, 1)).endDate(LocalDate.of(2025, 6, 30)).build();
+        SalaryContract contratB = SalaryContract.builder()
+                .id(2L).companyName("Entreprise B")
+                .startDate(LocalDate.of(2025, 7, 1)).build();
+
+        MonthlyPaySlip slipA1 = MonthlyPaySlip.builder().contract(contratA).taxableNetSalary(1500f).build();
+        MonthlyPaySlip slipA2 = MonthlyPaySlip.builder().contract(contratA).taxableNetSalary(1500f).build();
+        MonthlyPaySlip slipB1 = MonthlyPaySlip.builder().contract(contratB).taxableNetSalary(2000f).build();
+
+        when(monthlyPaySlipRepository.findByContractUserAndPeriodBetween(eq(user), any(), any()))
+                .thenReturn(List.of(slipA1, slipA2, slipB1));
+        when(otherIncomeRepository.findByUserAndPeriodStartIsNullAndDateBetween(eq(user), any(), any()))
+                .thenReturn(List.of());
+        when(otherIncomeRepository.findContractsByUserOverlappingPeriod(eq(user), any(), any()))
+                .thenReturn(List.of());
+
+        TaxSimulationDto result = taxSimulatorService.simulate(user, 2025, TaxSimulatorService.SOURCE_BULLETINS, null);
+
+        assertThat(result.salaryIncome()).isEqualTo(5000f);
+        assertThat(result.salaryContractBreakdown()).isNotNull().hasSize(2);
+        assertThat(result.salaryContractBreakdown())
+                .extracting(b -> b.companyName())
+                .containsExactly("Entreprise A", "Entreprise B"); // trié par startDate
+        assertThat(result.salaryContractBreakdown())
+                .extracting(b -> b.taxableIncome())
+                .containsExactly(3000f, 2000f);
     }
 
     @Test

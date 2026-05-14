@@ -1,5 +1,7 @@
 package com.myfinance.dto;
 
+import java.util.List;
+
 /**
  * Résultat d'une simulation d'impôt sur le revenu (IRPP).
  * Calculé à la volée, jamais persisté en base.
@@ -21,5 +23,7 @@ public record TaxSimulationDto(
         float decoteAmount,               // Décote appliquée (€), 0 si non éligible
         float taxAfterDecote,             // baremeEstimatedTax − decoteAmount (€)
         float totalEstimatedTax,          // Impôt total estimé : taxAfterDecote + separateTaxAmount (€)
-        float effectiveTaxRate            // Taux effectif d'imposition (%)
+        float effectiveTaxRate,           // Taux effectif d'imposition (%)
+        // Décomposition par contrat — non null uniquement en mode BULLETINS_REELS avec ≥ 2 contrats
+        List<SalaryContractIncomeBreakdownDto> salaryContractBreakdown
 ) {}
