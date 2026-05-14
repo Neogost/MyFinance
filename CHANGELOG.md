@@ -1,5 +1,86 @@
 # Notes de version
 
+## v1.9.0 — 14 mai 2026 — Donation & succession, signalement de bugs, bannières et corrections
+
+> Deux nouveaux simulateurs (donation/succession, optimisation fiscale fin d'année), un système de remontée de bugs communautaire, des bannières d'information administrables et une vague de corrections dark mode.
+
+### ✨ Nouveautés
+
+#### Simulateur de donation & succession (Outils → Donation & succession)
+
+Planifiez la transmission de votre patrimoine avec le cadre fiscal français.
+
+- **Donation en pleine propriété** : abattements légaux par lien de parenté (enfant 100 K€, petit-enfant 31 865 €, neveu/nièce 7 967 €…), barème progressif, réserve héréditaire
+- **Donation en démembrement** : calcul de la valeur de l'usufruit selon l'âge du donateur (barème fiscal officiel), nue-propriété et économie d'imposition
+- **Simulation du don Sarkozy** (don familial exceptionnel 31 865 €) : conditions d'éligibilité
+- **Simulation successorale** : part taxable par héritier après abattements, impôt estimé, réserve héréditaire vs quotité disponible
+- **Stratégie 15 ans** : calcul de l'optimum de donation sur la durée en exploitant le renouvellement des abattements tous les 15 ans
+- **Simulation testament** : répartition libre de la quotité disponible entre plusieurs bénéficiaires avec calcul de la fiscalité par part
+
+---
+
+#### Optimisation fiscale fin d'année — Tax-loss harvesting (Outils → Optimisation fiscale)
+
+Disponible chaque année entre le **1er novembre et le 31 décembre**, ce module identifie automatiquement vos positions en moins-value latente compensables avec vos plus-values réalisées sur l'année.
+
+- **Deux paniers cloisonnés** (CTO et Crypto) conformément aux règles CGI — les enveloppes ne se compensent pas entre elles
+- **Détail par position** : moins-value latente, quantité recommandée à vendre, économie fiscale estimée (PFU 30 %)
+- **Synthèse globale** : total des plus-values réalisées, moins-values latentes compensables, économie PFU potentielle
+- Bandeau saisonnier affiché automatiquement sur la page Patrimoine en novembre-décembre
+
+---
+
+#### Bannières d'information (Administration → Bannières d'information)
+
+L'administrateur peut désormais diffuser des messages à tous les utilisateurs connectés, visibles en haut de chaque page.
+
+- **5 types** : Alerte (rouge), Avertissement (orange), Maintenance (gris), Information (bleu), Succès (vert) — affichées par ordre de priorité décroissante
+- **Ciblage** : tous les utilisateurs, utilisateurs uniquement, ou administrateurs uniquement
+- **Plage temporelle** : date et heure de début/fin, avec option "sans expiration"
+- **Message en Markdown** : gras, italique, liens — avec aperçu en temps réel dans le formulaire
+- **Fermeture par l'utilisateur** : la bannière disparaît pour la session en cours et réapparaît à la prochaine connexion si toujours active
+
+---
+
+#### Signalement de bugs (pied de page → Signaler un bug / Bugs connus)
+
+Un espace communautaire pour remonter et suivre les anomalies de l'application.
+
+- **Signalement** depuis le pied de page : titre, description, résultat attendu, étapes de reproduction, date approximative, niveau d'impact
+- **Votes** : chaque utilisateur peut confirmer (↑) ou infirmer (↓) un bug — le score agrège les retours de tous pour aider à la priorisation
+- **Commentaires** : échange ouvert entre utilisateurs et administrateur sur chaque ticket
+- **Vue "Bugs connus"** (pied de page) : liste triée par score, filtres par statut et par "Mes bugs"
+- **Interface admin** : triage (statut + priorité), commentaires internes, lien direct vers le parcours Analytics de la session concernée, extraction des lignes de logs serveur autour de l'heure du bug
+
+---
+
+### 🎨 Améliorations
+
+- **Menu Outils réorganisé** : sections thématiques (Impôts & fiscalité, Emprunt & crédit, Stratégie & retraite, Patrimoine) avec descriptions pédagogiques au survol de chaque outil
+- **Menu Admin** : regroupé en 3 catégories (Comptes, Marché & données, Communication) pour une navigation plus claire ; renommé "Admin" pour gagner de la place
+- **Documentation in-app enrichie** : 14 nouvelles pages de documentation utilisateur (Profil, Passifs, Tableau de bord, Revenus…) avec captures d'écran, navigation interne par ancres H2, mini-sommaire "Sur cette page" dans la barre latérale et blocs colorés selon le type de message
+- **Masquage des valeurs** : le mode 🙈 couvre désormais le widget Cash-flow Sankey, le widget Prochains prélèvements et le widget Performance YTD du tableau de bord
+- **Saisie de dates sur mobile** : les champs date et mois utilisent désormais un sélecteur stylisé cohérent sur tous les navigateurs, sans le sélecteur natif Android/iOS variable
+- **Primes dans le salaire** : le tooltip "Net d'impôt" des projections salariales affiche désormais la part des primes incluse dans le calcul
+- **Vue admin Signalements** : filtres par pills (statut + priorité) identiques à la vue utilisateur ; détail du bug en panneau latéral pleine largeur avec extraction des logs serveur
+
+
+### 🐛 Corrections
+
+- **Capacité d'épargne** : les primes de type "mensuelle" actives étaient exclues du calcul de capacité d'épargne et du simulateur d'emprunt — corrigé
+- **Tax-loss harvesting** : le bandeau saisonnier s'affichait toute l'année suite à un code de test oublié — il est maintenant restreint à novembre-décembre
+- **Saisie du mois de versement** (prime exceptionnelle) et **saisie des bulletins de paie** : le champ mois échouait sur certains navigateurs mobiles — corrigé avec le nouveau composant de saisie
+- **Snapshot mensuel** : correction d'un bug silencieux qui empêchait la création du relevé automatique dans certains cas
+- **Dark mode — contrastes** : nombreuses corrections de lisibilité dans la navigation (onglets actifs, sous-menus), la page Performance patrimoniale (cartes KPI, cartes par catégorie, bouton de période), la page Patrimoine (bouton Relevés) et le widget Mode Foyer / Matelas de sécurité
+- **iOS Dynamic Island** : le panneau de personnalisation du tableau de bord passait sous l'encoche — corrigé
+
+### 🛠 Sous le capot
+
+- Suite de tests portée à **1 391 tests** (services, controllers, intégration) avec une couverture de branches significativement améliorée sur les modules critiques (AchievementService, DashboardService, InstrumentService, PatrimoineScoreService…)
+- Tests d'intégration `@SpringBootTest` ajoutés sur les modules Info-bannières et Signalement de bugs (chaîne complète security + JPA)
+
+---
+
 ## v1.8.0 — 10 mai 2026
 
 > Gamification complète (67 hauts faits), fiscalité crypto (formulaire 2086), calendrier des abonnements, nouveaux widgets tableau de bord et améliorations patrimoniales.
