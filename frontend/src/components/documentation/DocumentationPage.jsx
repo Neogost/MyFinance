@@ -80,14 +80,41 @@ function SidebarNode({ node, selectedId, onSelect, depth = 0 }) {
   )
 }
 
+// ── Helpers ────────────────────────────────────────────────────────
+function slugify(text) {
+  return String(text)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
+function childrenToText(children) {
+  if (typeof children === 'string') return children
+  if (Array.isArray(children)) return children.map(childrenToText).join('')
+  if (children?.props?.children) return childrenToText(children.props.children)
+  return String(children ?? '')
+}
+
+function extractH2(markdown) {
+  if (!markdown) return []
+  return [...markdown.matchAll(/^## (.+)$/gm)].map(m => {
+    const text = m[1].trim()
+    return { text, id: slugify(text) }
+  })
+}
+
 // ── Composants Markdown personnalisés ─────────────────────────────
 const mdComponents = {
   h1: ({ children }) => (
     <h1 className="text-2xl font-bold text-gray-900 mb-4 pb-3 border-b border-gray-200">{children}</h1>
   ),
-  h2: ({ children }) => (
-    <h2 className="text-lg font-semibold text-gray-800 mt-8 mb-3">{children}</h2>
-  ),
+  h2: ({ children }) => {
+    const id = slugify(childrenToText(children))
+    return <h2 id={id} className="text-lg font-semibold text-gray-800 mt-8 mb-3">{children}</h2>
+  },
   h3: ({ children }) => (
     <h3 className="text-base font-semibold text-gray-700 mt-5 mb-2">{children}</h3>
   ),
@@ -130,12 +157,23 @@ const mdComponents = {
   td: ({ children }) => (
     <td className="border border-gray-200 px-3 py-2 text-gray-700">{children}</td>
   ),
-  blockquote: ({ children }) => (
-    <div className="my-3 flex gap-2 rounded-lg bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-800">
-      <span className="shrink-0 mt-0.5">📷</span>
-      <div className="leading-relaxed">{children}</div>
-    </div>
-  ),
+  blockquote: ({ children }) => {
+    const text = childrenToText(children)
+    const THEMES = {
+      '✅': { bg: 'bg-emerald-50', border: 'border-emerald-200', color: 'text-emerald-900' },
+      '💡': { bg: 'bg-emerald-50', border: 'border-emerald-200', color: 'text-emerald-900' },
+      '⚠️': { bg: 'bg-amber-50',   border: 'border-amber-200',   color: 'text-amber-900'   },
+      '❌': { bg: 'bg-red-50',     border: 'border-red-200',     color: 'text-red-900'     },
+      '📷': { bg: 'bg-sky-50',     border: 'border-sky-200',     color: 'text-sky-800'     },
+    }
+    const icon  = Object.keys(THEMES).find(e => text.trimStart().startsWith(e)) ?? '📷'
+    const theme = THEMES[icon]
+    return (
+      <div className={`my-3 rounded-lg ${theme.bg} border ${theme.border} px-4 py-3 text-sm ${theme.color} leading-relaxed`}>
+        {children}
+      </div>
+    )
+  },
   hr: () => <hr className="my-6 border-gray-200" />,
   a: ({ href, children }) => (
     <a href={href} className="text-indigo-600 hover:underline">{children}</a>
@@ -263,15 +301,41 @@ export default function DocumentationPage({ user = null }) {
       <div className="flex gap-6">
         {/* ── Sidebar desktop ── */}
         <aside className="hidden md:block w-72 shrink-0">
-          <div className="sticky top-24 bg-white rounded-xl border border-gray-200 p-3 space-y-0.5">
-            {visibleTree.map(node => (
-              <SidebarNode
-                key={node.id}
-                node={node}
-                selectedId={selectedNode?.id}
-                onSelect={handleSelect}
-              />
-            ))}
+          <div className="sticky top-24 space-y-3">
+            {/* Navigation principale */}
+            <div className="bg-white rounded-xl border border-gray-200 p-3 space-y-0.5">
+              {visibleTree.map(node => (
+                <SidebarNode
+                  key={node.id}
+                  node={node}
+                  selectedId={selectedNode?.id}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </div>
+
+            {/* Sur cette page */}
+            {extractH2(content).length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-2 mb-2">
+                  Sur cette page
+                </p>
+                <nav className="space-y-0.5">
+                  {extractH2(content).map(({ text, id }) => (
+                    <button
+                      key={id}
+                      onClick={() => {
+                        const el = document.getElementById(id)
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                      className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition leading-snug"
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            )}
           </div>
         </aside>
 
