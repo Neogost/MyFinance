@@ -260,6 +260,39 @@ class BugReportServiceTest {
         assertThat(result.priority()).isEqualTo(BugSeverity.HIGH);
     }
 
+    // ── adminUpdate ────────────────────────────────────────────────
+
+    @Test
+    void adminUpdate_modifieLeContenu() {
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+        when(bugReportRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(bugVoteRepository.calculateScore(bug)).thenReturn(1);
+        when(bugCommentRepository.findByBugReportOrderByCreatedAtAsc(bug)).thenReturn(List.of());
+
+        var request = new UpdateBugReportAdminRequest(
+                "Nouveau titre", "Nouvelle description.", null, null, null, BugSeverity.MEDIUM);
+
+        BugReportAdminDetailDto result = bugReportService.adminUpdate(1L, request);
+
+        assertThat(result.title()).isEqualTo("Nouveau titre");
+        assertThat(result.userImpact()).isEqualTo(BugSeverity.MEDIUM);
+        verify(bugReportRepository).save(argThat(b ->
+                b.getTitle().equals("Nouveau titre") && b.getUserImpact() == BugSeverity.MEDIUM));
+    }
+
+    @Test
+    void adminUpdate_leve404_siBugIntrouvable() {
+        when(bugReportRepository.findById(99L)).thenReturn(Optional.empty());
+
+        var request = new UpdateBugReportAdminRequest(
+                "Titre", "Description.", null, null, null, BugSeverity.LOW);
+
+        assertThatThrownBy(() -> bugReportService.adminUpdate(99L, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
     // ── delete ─────────────────────────────────────────────────────
 
     @Test

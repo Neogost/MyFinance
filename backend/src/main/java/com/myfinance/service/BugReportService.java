@@ -170,6 +170,19 @@ public class BugReportService {
         return findByIdAdmin(id);
     }
 
+    @Transactional
+    public BugReportAdminDetailDto adminUpdate(Long id, UpdateBugReportAdminRequest request) {
+        BugReport bug = getOrThrow(id);
+        bug.setTitle(request.title());
+        bug.setDescription(request.description());
+        bug.setExpectedResult(request.expectedResult());
+        bug.setReproductionSteps(request.reproductionSteps());
+        bug.setApproximateDateTime(request.approximateDateTime());
+        bug.setUserImpact(request.userImpact());
+        bugReportRepository.save(bug);
+        return findByIdAdmin(id);
+    }
+
     // ── Suppression admin ──────────────────────────────────────────
 
     @Transactional

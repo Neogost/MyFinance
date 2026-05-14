@@ -29,6 +29,9 @@ export const getAdminBugReport = (id) =>
 export const patchBugReport = (id, data) =>
   client.patch(`/api/admin/bug-reports/${id}`, data).then(r => r.data)
 
+export const updateAdminBugReport = (id, data) =>
+  client.put(`/api/admin/bug-reports/${id}`, data).then(r => r.data)
+
 export const deleteAdminBugReport = (id) =>
   client.delete(`/api/admin/bug-reports/${id}`)
 

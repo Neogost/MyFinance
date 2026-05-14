@@ -6,6 +6,8 @@ import com.myfinance.dto.BugReportAdminDetailDto;
 import com.myfinance.dto.BugReportAdminSummaryDto;
 import com.myfinance.dto.LogExcerptDto;
 import com.myfinance.dto.PatchBugReportRequest;
+import com.myfinance.dto.UpdateBugReportAdminRequest;
+import jakarta.validation.Valid;
 import com.myfinance.service.BugReportService;
 import com.myfinance.service.LogExcerptService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,16 @@ public class AdminBugReportController {
     @GetMapping("/{id}")
     public ResponseEntity<BugReportAdminDetailDto> findById(@PathVariable Long id) {
         return ResponseEntity.ok(bugReportService.findByIdAdmin(id));
+    }
+
+    @Operation(summary = "Modifier le contenu d'un bug (titre, description, impact…)")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = BugReportAdminDetailDto.class)))
+    @ApiResponse(responseCode = "404", description = "Bug introuvable")
+    @PutMapping("/{id}")
+    public ResponseEntity<BugReportAdminDetailDto> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateBugReportAdminRequest request) {
+        return ResponseEntity.ok(bugReportService.adminUpdate(id, request));
     }
 
     @Operation(summary = "Modifier le statut et/ou la priorité d'un bug")

@@ -139,6 +139,45 @@ class AdminBugReportControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // ── PUT /api/admin/bug-reports/{id} ───────────────────────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void update_retourne200() throws Exception {
+        when(bugReportService.adminUpdate(eq(1L), any())).thenReturn(adminDetail);
+
+        mockMvc.perform(put("/api/admin/bug-reports/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateBugReportAdminRequest(
+                                        "Nouveau titre", "Description mise à jour.",
+                                        null, null, null, BugSeverity.HIGH))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reporterLogin").value("alice.dupont"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void update_retourne400_siTitreVide() throws Exception {
+        mockMvc.perform(put("/api/admin/bug-reports/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateBugReportAdminRequest(
+                                        "", "Description.", null, null, null, BugSeverity.HIGH))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    void update_avecRoleUser_retourne403() throws Exception {
+        mockMvc.perform(put("/api/admin/bug-reports/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new UpdateBugReportAdminRequest(
+                                        "Titre", "Description.", null, null, null, BugSeverity.HIGH))))
+                .andExpect(status().isForbidden());
+    }
+
     // ── DELETE /api/admin/bug-reports/{id} ────────────────────────
 
     @Test
