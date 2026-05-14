@@ -2,8 +2,6 @@ package com.myfinance.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +23,6 @@ public class BugVote {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bug_report_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
     private BugReport bugReport;
 
     @ManyToOne(fetch = FetchType.LAZY)
