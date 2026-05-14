@@ -143,9 +143,12 @@ export default function BilanFinancierPage({ user }) {
   // ── Contrat actif ────────────────────────────────────────────────
   const activeContract = contracts.find(c => !c.endDate) ?? contracts[0] ?? null
   const hasFiscalProfile = activeContract?.monthlyNetAfterTax != null
-  const monthlySalary = activeContract?.monthlyNetAfterTax
+  const monthlyBonuses = activeContract?.monthlyActiveMensuelleGross > 0
+    ? activeContract.monthlyActiveMensuelleGross * 0.72
+    : 0
+  const monthlySalary = (activeContract?.monthlyNetAfterTax
     ?? activeContract?.monthlyNetImposable
-    ?? 0
+    ?? 0) + monthlyBonuses
 
   // ── Revenus complémentaires par type ────────────────────────────
   // OtherIncome.amount est mensuel (aucune notion de fréquence dans le DTO)
