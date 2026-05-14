@@ -14,7 +14,7 @@ export default function PatrimoineActionBar({
         {/* Boutons admin masqués sur mobile — features trop complexes pour un usage mobile */}
         {isAdmin && (
           <button onClick={onShowSnapshots}
-            className="hidden md:inline-flex px-4 py-2 border border-violet-300 text-violet-700 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">
+            className="hidden md:inline-flex px-4 py-2 border border-violet-300 text-violet-700 dark:text-violet-300 bg-violet-50 rounded-lg text-sm font-semibold hover:bg-violet-100 transition">
             Relevés de patrimoine
           </button>
         )}
