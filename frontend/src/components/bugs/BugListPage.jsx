@@ -30,15 +30,16 @@ function formatDate(iso) {
   return `${d.toLocaleDateString('fr-FR')}`
 }
 
-export default function BugListPage({ user, onOpenForm }) {
+export default function BugListPage({ user, onOpenForm, refetchTrigger = 0 }) {
   const { trackPageView } = useAnalytics()
   useEffect(() => { trackPageView('bugs.list') }, [])
 
-  const [bugs,       setBugs]       = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [bugs,         setBugs]         = useState([])
+  const [loading,      setLoading]      = useState(true)
+  const [error,        setError]        = useState(null)
   const [statusFilter, setStatusFilter] = useState('')
-  const [selectedId, setSelectedId] = useState(null)
+  const [myBugsOnly,   setMyBugsOnly]   = useState(false)
+  const [selectedId,   setSelectedId]   = useState(null)
 
   function handleScoreChange(id, newScore, newUserVote) {
     setBugs(bs => bs.map(b => b.id === id ? { ...b, score: newScore, userVote: newUserVote } : b))
@@ -51,7 +52,9 @@ export default function BugListPage({ user, onOpenForm }) {
       .then(setBugs)
       .catch(() => setError('Impossible de charger les bugs.'))
       .finally(() => setLoading(false))
-  }, [statusFilter])
+  }, [statusFilter, refetchTrigger])
+
+  const displayedBugs = myBugsOnly ? bugs.filter(b => b.isReporter) : bugs
 
   return (
     <div className="space-y-6">
@@ -72,7 +75,7 @@ export default function BugListPage({ user, onOpenForm }) {
         </button>
       </div>
 
-      {/* Filtres statut */}
+      {/* Filtres */}
       <div className="flex flex-wrap gap-2">
         {STATUSES.map(s => (
           <button
@@ -87,6 +90,16 @@ export default function BugListPage({ user, onOpenForm }) {
             {s.label}
           </button>
         ))}
+        <button
+          onClick={() => setMyBugsOnly(v => !v)}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            myBugsOnly
+              ? 'bg-indigo-100 text-indigo-700 border-indigo-400 dark:text-indigo-300'
+              : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600'
+          }`}
+        >
+          Mes bugs
+        </button>
       </div>
 
       {/* Liste */}
@@ -94,15 +107,15 @@ export default function BugListPage({ user, onOpenForm }) {
         <p className="text-gray-400 text-sm">Chargement…</p>
       ) : error ? (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-      ) : bugs.length === 0 ? (
+      ) : displayedBugs.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-400">
-          <p className="text-lg mb-1">Aucun bug signalé</p>
-          <p className="text-sm">Soyez le premier à en signaler un !</p>
+          <p className="text-lg mb-1">{myBugsOnly ? 'Aucun de vos bugs' : 'Aucun bug signalé'}</p>
+          <p className="text-sm">{myBugsOnly ? 'Vous n\'avez pas encore signalé de bug.' : 'Soyez le premier à en signaler un !'}</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-50">
-            {bugs.map(bug => (
+            {displayedBugs.map(bug => (
               <button
                 key={bug.id}
                 onClick={() => setSelectedId(bug.id)}
@@ -149,7 +162,7 @@ export default function BugListPage({ user, onOpenForm }) {
         <BugDetailModal
           bugId={selectedId}
           currentUserId={user?.id}
-          isReporter={bugs.find(b => b.id === selectedId)?.isReporter ?? false}
+          isReporter={displayedBugs.find(b => b.id === selectedId)?.isReporter ?? false}
           onClose={() => setSelectedId(null)}
           onScoreChange={handleScoreChange}
         />

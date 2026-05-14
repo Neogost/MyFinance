@@ -122,7 +122,7 @@ function MobileSectionTitle({ children }) {
   return <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">{children}</p>
 }
 
-export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, appVersion = null, onShowReleaseNotes, onOpenBugForm }) {
+export default function Navigation({ user, currentPage, onNavigate, onLogout, hideValues, onToggleHideValues, darkMode, onToggleDarkMode, familyMode, onToggleFamilyMode, pendingRegistrations = 0, unseenAchievements = 0, openBugsCount = 0, appVersion = null, onShowReleaseNotes, onOpenBugForm }) {
   const [incomeOpen,      setIncomeOpen]     = useState(false)
   const [patrimoineOpen,  setPatrimoineOpen] = useState(false)
   const [expensesOpen,    setExpensesOpen]   = useState(false)
@@ -282,7 +282,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       ]},
                       { group: 'Communication', items: [
                         ['admin-banners', 'Bannières d\'information', 0],
-                        ['admin-bugs',    'Signalements de bugs',     0],
+                        ['admin-bugs',    'Signalements de bugs',     openBugsCount],
                       ]},
                       { group: 'Supervision', items: [
                         ['admin-analytics', 'Analytics',                  0],
@@ -476,7 +476,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                 <MobileMenuItem label="Gestion des relevés"       page="admin-snapshots"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Communication</div>
                 <MobileMenuItem label="Bannières d'information"  page="admin-banners"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
-                <MobileMenuItem label="Signalements de bugs"     page="admin-bugs"          currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
+                <MobileMenuItem label="Signalements de bugs"     page="admin-bugs"          currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} badge={openBugsCount} />
                 <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Supervision</div>
                 <MobileMenuItem label="Analytics"                 page="admin-analytics"     currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />
                 <MobileMenuItem label="Historique des connexions" page="login-history"       currentPage={currentPage} onNavigate={onNavigate} onClose={closeMobile} />

@@ -34,6 +34,7 @@ import BugReportForm from './components/bugs/BugReportForm'
 import AdminInstrumentPage from './components/admin/AdminInstrumentPage'
 import RegistrationRequestPage from './components/admin/RegistrationRequestPage'
 import { getRegistrations } from './api/registrations'
+import { getAdminBugReports } from './api/bugReports'
 import RecurringExpensePage from './components/expenses/RecurringExpensePage'
 import SubscriptionCalendarPage from './components/expenses/SubscriptionCalendarPage'
 import PossessionPage from './components/possessions/PossessionPage'
@@ -66,6 +67,8 @@ export default function App() {
   const [showReleaseNotes,      setShowReleaseNotes]      = useState(false)
   const [unseenAchievements,    setUnseenAchievements]    = useState(0)
   const [bugFormOpen,           setBugFormOpen]           = useState(false)
+  const [openBugsCount,         setOpenBugsCount]         = useState(0)
+  const [bugListRefetch,        setBugListRefetch]        = useState(0)
 
   useEffect(() => {
     // Intercepteurs globaux Axios : 401 → login, 5xx → page d'erreur
@@ -97,6 +100,7 @@ export default function App() {
         getMyAchievements().then(d => setUnseenAchievements(d.unseenCount ?? 0)).catch(() => {})
         if (u?.role === 'ADMIN') {
           getRegistrations('PENDING').then(list => setPendingRegistrations(list.length)).catch(() => {})
+          getAdminBugReports({ status: 'OPEN' }).then(list => setOpenBugsCount(list.length)).catch(() => {})
         }
       })
       .catch(() => {}) // session expirée ou absente → affiche le login
@@ -303,6 +307,7 @@ export default function App() {
         onToggleFamilyMode={() => setFamilyMode(v => !v)}
         pendingRegistrations={pendingRegistrations}
         unseenAchievements={unseenAchievements}
+        openBugsCount={openBugsCount}
         appVersion={appVersion}
         onShowReleaseNotes={() => setShowReleaseNotes(true)}
         onOpenBugForm={() => setBugFormOpen(true)}
@@ -363,7 +368,7 @@ export default function App() {
         {currentPage === 'admin-banners'   && user.role === 'ADMIN' && <InfoBannerAdminPage />}
         {currentPage === 'admin-bugs'      && user.role === 'ADMIN' && <AdminBugReportPage onNavigate={handleNavigate} />}
 
-        {currentPage === 'bugs' && <BugListPage user={user} onOpenForm={() => setBugFormOpen(true)} />}
+        {currentPage === 'bugs' && <BugListPage user={user} onOpenForm={() => setBugFormOpen(true)} refetchTrigger={bugListRefetch} />}
         {currentPage === 'performance'     && <PerformancePage />}
 
         {currentPage === 'documentation' && <DocumentationPage user={user} />}
@@ -397,7 +402,11 @@ export default function App() {
       </footer>
 
       {showReleaseNotes && <ReleaseNotesModal onClose={() => setShowReleaseNotes(false)} />}
-      {bugFormOpen && <BugReportForm onClose={() => setBugFormOpen(false)} onSubmitted={() => setBugFormOpen(false)} />}
+      {bugFormOpen && <BugReportForm onClose={() => setBugFormOpen(false)} onSubmitted={() => {
+        setBugFormOpen(false)
+        setBugListRefetch(n => n + 1)
+        if (user?.role === 'ADMIN') getAdminBugReports({ status: 'OPEN' }).then(list => setOpenBugsCount(list.length)).catch(() => {})
+      }} />}
     </div>
     </ErrorBoundary>
   )
