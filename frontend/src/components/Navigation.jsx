@@ -107,7 +107,7 @@ function MobileMenuItem({ label, page, currentPage, onNavigate, onClose, badge }
     <button
       onClick={() => { onNavigate(page); onClose() }}
       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition ${
-        currentPage === page ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+        currentPage === page ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300' : 'text-gray-700 hover:bg-gray-50'
       }`}
     >
       <span>{label}</span>
@@ -164,8 +164,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setPatrimoineOpen(false)} />
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[160px] py-1">
-                  <button onClick={() => { onNavigate('patrimoine'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'patrimoine' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Positions</button>
-                  <button onClick={() => { onNavigate('performance'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'performance' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Performance</button>
+                  <button onClick={() => { onNavigate('patrimoine'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'patrimoine' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Positions</button>
+                  <button onClick={() => { onNavigate('performance'); setPatrimoineOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'performance' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Performance</button>
                 </div>
               </>
             )}
@@ -182,8 +182,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIncomeOpen(false)} />
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[180px] py-1">
-                  <button onClick={() => { onNavigate('salary'); setIncomeOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'salary' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Salariat</button>
-                  <button onClick={() => { onNavigate('other-incomes'); setIncomeOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'other-incomes' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Complémentaires</button>
+                  <button onClick={() => { onNavigate('salary'); setIncomeOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'salary' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Salariat</button>
+                  <button onClick={() => { onNavigate('other-incomes'); setIncomeOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'other-incomes' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Complémentaires</button>
                 </div>
               </>
             )}
@@ -200,8 +200,8 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setExpensesOpen(false)} />
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[180px] py-1">
-                  <button onClick={() => { onNavigate('expenses'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'expenses' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Mes dépenses</button>
-                  <button onClick={() => { onNavigate('subscription-calendar'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'subscription-calendar' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Calendrier</button>
+                  <button onClick={() => { onNavigate('expenses'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'expenses' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Mes dépenses</button>
+                  <button onClick={() => { onNavigate('subscription-calendar'); setExpensesOpen(false) }} className={`w-full text-left px-4 py-2 text-sm transition ${currentPage === 'subscription-calendar' ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>Calendrier</button>
                 </div>
               </>
             )}
@@ -247,7 +247,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                       </div>
                       {items.map(([page, label]) => (
                         <button key={page} onClick={() => { onNavigate(page); setToolsOpen(false) }}
-                          className={`w-full text-left px-4 py-1.5 text-sm transition ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                          className={`w-full text-left px-4 py-1.5 text-sm transition ${currentPage === page ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
                           {label}
                         </button>
                       ))}
@@ -296,7 +296,7 @@ export default function Navigation({ user, currentPage, onNavigate, onLogout, hi
                         </div>
                         {items.map(([page, label, badge]) => (
                           <button key={page} onClick={() => { onNavigate(page); setAdminOpen(false) }}
-                            className={`w-full text-left px-4 py-1.5 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                            className={`w-full text-left px-4 py-1.5 text-sm transition flex items-center justify-between ${currentPage === page ? 'bg-indigo-50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
                             {label}
                             {badge > 0 && <span className="ml-2 bg-red-500 text-[#fff] text-xs font-bold rounded-full px-1.5 py-0.5 leading-none">{badge}</span>}
                           </button>
