@@ -287,18 +287,38 @@ export default function AdminBugReportPage({ onNavigate }) {
         </div>
       </div>
 
-      {/* Filtres */}
-      <div className="flex flex-wrap gap-3">
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option value="">Tous les statuts</option>
-          {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-        </select>
-        <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option value="">Toutes les priorités</option>
-          {SEVERITIES.map(s => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
-        </select>
+      {/* Filtres — statuts */}
+      <div className="flex flex-wrap gap-2">
+        {[{ value: '', label: 'Tous' }, ...STATUSES.map(s => ({ value: s, label: STATUS_LABEL[s] }))].map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setStatusFilter(value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              statusFilter === value
+                ? 'bg-indigo-600 text-[#fff] border-indigo-600'
+                : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filtres — priorités */}
+      <div className="flex flex-wrap gap-2">
+        {[{ value: '', label: 'Toutes priorités' }, ...SEVERITIES.map(s => ({ value: s, label: SEVERITY_LABEL[s] }))].map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setPriorityFilter(value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              priorityFilter === value
+                ? 'bg-indigo-600 text-[#fff] border-indigo-600'
+                : 'border-gray-200 text-gray-600 hover:border-indigo-400 hover:text-indigo-600'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
