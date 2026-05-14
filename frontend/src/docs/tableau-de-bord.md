@@ -101,10 +101,3 @@ Radar affichant l'avancement par catégorie d'actifs par rapport aux objectifs q
 
 > ![Widget objectifs](/docs/tableau-de-bord/widget-objectifs.png) — Graphique radar avec les cibles en pointillés et la répartition actuelle en plein
 
----
-
-## Hauts faits
-
-En haut à droite de la navigation, un badge indique les hauts faits récemment débloqués. Cliquez dessus pour consulter votre catalogue complet de badges (67 disponibles) répartis en catégories : patrimoine, épargne, discipline, milestones...
-
-> ![Hauts faits](/docs/tableau-de-bord/hauts-faits.png) — Panneau des hauts faits avec les badges débloqués (couleur) et verrouillés (gris)
