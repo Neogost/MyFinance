@@ -14,11 +14,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/crypto-tax")
 @RequiredArgsConstructor
+@Validated
 @Tag(name = "Fiscalité crypto", description = "Calcul des plus-values et export 2086 (article 150 VH bis CGI)")
 public class CryptoTaxController {
 
@@ -44,11 +51,15 @@ public class CryptoTaxController {
     @GetMapping("/summary")
     public ResponseEntity<CryptoTaxSummaryDto> getSummary(
             @Parameter(description = "Année fiscale (défaut : année en cours)")
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
+            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}")
+            @Min(1900) @Max(2200) int year,
             @Parameter(description = "Option d'imposition : PFU (défaut) ou BAREME")
-            @RequestParam(defaultValue = "PFU") String taxOption,
+            @RequestParam(defaultValue = "PFU")
+            @Pattern(regexp = "^(PFU|BAREME)$", message = "taxOption doit être PFU ou BAREME")
+            String taxOption,
             @Parameter(description = "TMI en % pour l'option BAREME (ex : 30.0)")
-            @RequestParam(required = false) Float tmi,
+            @RequestParam(required = false)
+            @DecimalMin("0") @DecimalMax("100") Float tmi,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(cryptoTaxService.getSummary(currentUser, year, taxOption, tmi));
     }
@@ -59,7 +70,8 @@ public class CryptoTaxController {
     @GetMapping("/cessions")
     public ResponseEntity<List<CryptoCessionDto>> getCessions(
             @Parameter(description = "Année fiscale (défaut : année en cours)")
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
+            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}")
+            @Min(1900) @Max(2200) int year,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(cryptoTaxService.getCessions(currentUser, year));
     }
@@ -69,7 +81,8 @@ public class CryptoTaxController {
     @GetMapping("/form-2086.csv")
     public ResponseEntity<String> exportCsv(
             @Parameter(description = "Année fiscale (défaut : année en cours)")
-            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
+            @RequestParam(defaultValue = "#{T(java.time.LocalDate).now().getYear()}")
+            @Min(1900) @Max(2200) int year,
             @AuthenticationPrincipal User currentUser) {
         String csv = cryptoTaxService.exportCsv(currentUser, year);
         String filename = "fiscalite-crypto-2086-" + year + ".csv";

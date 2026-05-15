@@ -158,4 +158,41 @@ class CryptoTaxControllerTest {
                         .content("{\"confirmed\": null}"))
                 .andExpect(status().isBadRequest());
     }
+
+    // ── Validation des @RequestParam ─────────────────────────────
+
+    @Test
+    @WithMockCustomUser
+    void getSummary_yearHorsBornes_retourne400() throws Exception {
+        mockMvc.perform(get("/api/crypto-tax/summary").param("year", "1500"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/crypto-tax/summary").param("year", "9999"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(cryptoTaxService);
+    }
+
+    @Test
+    @WithMockCustomUser
+    void getSummary_taxOptionInvalide_retourne400() throws Exception {
+        mockMvc.perform(get("/api/crypto-tax/summary").param("taxOption", "OTHER"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(cryptoTaxService);
+    }
+
+    @Test
+    @WithMockCustomUser
+    void getSummary_tmiNegatifOuTropGrand_retourne400() throws Exception {
+        mockMvc.perform(get("/api/crypto-tax/summary").param("tmi", "-1"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/crypto-tax/summary").param("tmi", "150"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void getCessions_yearHorsBornes_retourne400() throws Exception {
+        mockMvc.perform(get("/api/crypto-tax/cessions").param("year", "0"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(cryptoTaxService);
+    }
 }
