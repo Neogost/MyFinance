@@ -87,7 +87,7 @@ public class UserController {
             @Parameter(description = "Identifiant de l'utilisateur") @PathVariable Long id,
             Authentication authentication) {
         log.info("[admin:{}] Suppression utilisateur #{}", authentication.getName(), id);
-        userService.delete(id);
+        userService.delete(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

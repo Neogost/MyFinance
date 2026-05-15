@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -189,7 +190,7 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void delete_introuvable_retourne404() throws Exception {
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND))
-                .when(userService).delete(99L);
+                .when(userService).delete(eq(99L), anyString());
 
         mockMvc.perform(delete("/api/users/99"))
                 .andExpect(status().isNotFound());

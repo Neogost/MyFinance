@@ -193,10 +193,22 @@ public class UserService implements UserDetailsService {
     // ── Suppression ────────────────────────────────────────────
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, String callingLogin) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Utilisateur introuvable : " + id));
+
+        // Garde-fous anti-lockout (cf. finding N16) :
+        //   - un admin ne peut pas se supprimer lui-même par mégarde (ou pour effacer ses traces).
+        //   - on ne peut pas supprimer le dernier admin restant — sinon plus aucun accès admin.
+        if (user.getLogin().equals(callingLogin)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Un administrateur ne peut pas se supprimer lui-même.");
+        }
+        if (user.getRole() == RoleEnum.ADMIN && userRepository.countByRole(RoleEnum.ADMIN) <= 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Impossible de supprimer le dernier administrateur.");
+        }
 
         // 1. Groupe familial : dissoudre si owner, quitter si membre
         familyGroupRepository.findByOwner(user).ifPresent(group -> {

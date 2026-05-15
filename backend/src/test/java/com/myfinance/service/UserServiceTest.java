@@ -283,7 +283,7 @@ class UserServiceTest {
         when(bugReportRepository.findByReporter(user)).thenReturn(List.of());
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        userService.delete(1L);
+        userService.delete(1L, "admin");
 
         verify(familyGroupInvitationRepository).deleteByInvitedUser(user);
         verify(bugCommentRepository).deleteByAuthor(user);
@@ -315,7 +315,7 @@ class UserServiceTest {
         when(bugReportRepository.findByReporter(user)).thenReturn(List.of(reported));
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        userService.delete(1L);
+        userService.delete(1L, "admin");
 
         // Les enfants du bug reporté sont nettoyés AVANT le bug
         var inOrder = org.mockito.Mockito.inOrder(bugCommentRepository, bugVoteRepository, bugReportRepository);
@@ -333,12 +333,55 @@ class UserServiceTest {
     void delete_leve404_siIntrouvable() {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userService.delete(99L))
+        assertThatThrownBy(() -> userService.delete(99L, "admin"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
                         .isEqualTo(HttpStatus.NOT_FOUND));
 
         verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void delete_autoSuppressionAdmin_leve400() {
+        User admin = User.builder().id(7L).login("admin").role(RoleEnum.ADMIN).build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(admin));
+
+        assertThatThrownBy(() -> userService.delete(7L, "admin"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("lui-même");
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void delete_dernierAdmin_leve400() {
+        User onlyAdmin = User.builder().id(7L).login("admin").role(RoleEnum.ADMIN).build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(onlyAdmin));
+        when(userRepository.countByRole(RoleEnum.ADMIN)).thenReturn(1L);
+
+        assertThatThrownBy(() -> userService.delete(7L, "autre.admin"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("dernier administrateur");
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void delete_userNonAdmin_aucunCheckCountByRole() {
+        // user (USER role) supprimé par admin → on ne consulte pas countByRole
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(familyGroupRepository.findByOwner(user)).thenReturn(Optional.empty());
+        when(portfolioSnapshotRepository.findByUserOrderBySnapshotDateDesc(user)).thenReturn(List.of());
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
+        when(salaryContractRepository.findByUserOrderByStartDateDesc(user)).thenReturn(List.of());
+        when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
+        when(bugReportRepository.findByReporter(user)).thenReturn(List.of());
+        when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
+
+        userService.delete(1L, "admin");
+
+        verify(userRepository, never()).countByRole(any());
+        verify(userRepository).delete(user);
     }
 
     // ── loadUserByUsername ─────────────────────────────────────
