@@ -596,6 +596,7 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
       {viewMode === 'grouped' ? (
         <PatrimoineGroupedView
           positions={filtered}
+          debtsByPositionId={debtsByPositionId}
           onEdit={setFormTarget}
           onDelete={handleDelete}
           onClose={handleClose}

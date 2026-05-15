@@ -281,7 +281,7 @@ function PositionRow({ position, onEdit, onDelete, onClose, onUpdateBalance, onU
   )
 }
 
-export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, readOnly = false }) {
+export default function PatrimoineGroupedView({ positions, debtsByPositionId = {}, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, readOnly = false }) {
   const [collapsed, setCollapsed] = useState(new Set())
 
   const toggle = (partner) => setCollapsed(prev => {
@@ -394,22 +394,70 @@ export default function PatrimoineGroupedView({ positions, onEdit, onDelete, onC
                           </td>
                         </tr>
 
-                        {ps.map(position => (
-                          <PositionRow
-                            key={position.id}
-                            position={position}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onClose={onClose}
-                            onUpdateBalance={onUpdateBalance}
-                            onUpdateEstimatedValue={onUpdateEstimatedValue}
-                            onViewOrders={onViewOrders}
-                            onViewHistory={onViewHistory}
-                            readOnly={readOnly}
-                            showTaux={hasTaux && position.category === 'LIVRET'}
-                            hasTaux={hasTaux}
-                          />
-                        ))}
+                        {ps.map(position => {
+                          const linkedDebts = position.category === 'IMMO_PHYSIQUE'
+                            ? (debtsByPositionId[position.id] ?? [])
+                            : []
+                          const totalDebt = linkedDebts.reduce((s, d) => s + parseFloat(d.remainingCapital ?? 0), 0)
+                          const netValue  = parseFloat(position.computed?.currentValueEur ?? 0) - totalDebt
+                          const colSpan   = hasTaux ? 7 : 6
+
+                          return (
+                            <Fragment key={position.id}>
+                              <PositionRow
+                                position={position}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onClose={onClose}
+                                onUpdateBalance={onUpdateBalance}
+                                onUpdateEstimatedValue={onUpdateEstimatedValue}
+                                onViewOrders={onViewOrders}
+                                onViewHistory={onViewHistory}
+                                readOnly={readOnly}
+                                showTaux={hasTaux && position.category === 'LIVRET'}
+                                hasTaux={hasTaux}
+                              />
+
+                              {/* Sous-lignes crédits liés (IMMO_PHYSIQUE uniquement) */}
+                              {linkedDebts.map(debt => (
+                                <tr key={`debt-${debt.id}`} className="border-b border-red-50 bg-red-50/40">
+                                  <td className="py-1.5 pl-10 pr-2">
+                                    <span className="text-xs text-red-400">└ {debt.label}</span>
+                                  </td>
+                                  <td className="hidden md:table-cell py-1.5 px-2">
+                                    <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:text-red-300">Crédit</span>
+                                  </td>
+                                  <td className="py-1.5 px-2 text-right">
+                                    <span className="text-sm font-semibold text-red-600 amount">− <Amount value={debt.remainingCapital} /></span>
+                                  </td>
+                                  <td className="hidden md:table-cell py-1.5 px-2" />
+                                  <td className="py-1.5 px-2" />
+                                  {hasTaux && <td className="hidden md:table-cell py-1.5 px-2" />}
+                                  <td className="py-1.5 pl-2 pr-3" />
+                                </tr>
+                              ))}
+
+                              {/* Ligne valeur nette après tous les crédits */}
+                              {linkedDebts.length > 0 && (
+                                <tr className="border-b border-red-100 bg-red-50/60">
+                                  <td className="py-1.5 pl-10 pr-2">
+                                    <span className="text-xs font-semibold text-gray-600">Valeur nette</span>
+                                  </td>
+                                  <td className="hidden md:table-cell py-1.5 px-2" />
+                                  <td className="py-1.5 px-2 text-right">
+                                    <span className={`text-sm font-bold amount ${netValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                                      <Amount value={netValue} />
+                                    </span>
+                                  </td>
+                                  <td className="hidden md:table-cell py-1.5 px-2" />
+                                  <td className="py-1.5 px-2" />
+                                  {hasTaux && <td className="hidden md:table-cell py-1.5 px-2" />}
+                                  <td className="py-1.5 pl-2 pr-3" />
+                                </tr>
+                              )}
+                            </Fragment>
+                          )
+                        })}
                       </Fragment>
                     )
                   })}
