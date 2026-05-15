@@ -37,7 +37,7 @@ export default function BugListPage({ user, onOpenForm, refetchTrigger = 0 }) {
   const [bugs,         setBugs]         = useState([])
   const [loading,      setLoading]      = useState(true)
   const [error,        setError]        = useState(null)
-  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('OPEN')
   const [myBugsOnly,   setMyBugsOnly]   = useState(false)
   const [selectedId,   setSelectedId]   = useState(null)
 
