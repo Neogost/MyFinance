@@ -4,8 +4,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -15,7 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @Order(10)
+@Slf4j
 public class AnalyticsRateLimitFilter extends OncePerRequestFilter {
+
+    // Une entrée est considérée expirée si sa fenêtre d'1 minute est terminée depuis
+    // au moins ce délai supplémentaire — laisse une marge avant la purge pour éviter
+    // de re-créer le bucket d'un client juste après l'avoir éjecté.
+    private static final long EVICTION_GRACE_SECONDS = 120;
 
     private final int maxEventsPerMinute;
 
@@ -60,5 +68,22 @@ public class AnalyticsRateLimitFilter extends OncePerRequestFilter {
         return request.getUserPrincipal() != null
                 ? request.getUserPrincipal().getName()
                 : request.getRemoteAddr();
+    }
+
+    /**
+     * Purge les entrées dont la fenêtre est expirée depuis plus de {@link #EVICTION_GRACE_SECONDS}.
+     * Sans cette purge, la map croit indéfiniment au fil des IPs/utilisateurs distincts qui frappent
+     * /api/analytics/* — un attaquant rotant les IPs pouvait gonfler la heap. Tourne toutes les 5 min.
+     */
+    @Scheduled(fixedDelay = 5 * 60 * 1000L)
+    void evictStaleEntries() {
+        long now = Instant.now().getEpochSecond();
+        int sizeBefore = counters.size();
+        counters.entrySet().removeIf(e -> now - e.getValue()[1] >= 60 + EVICTION_GRACE_SECONDS);
+        int evicted = sizeBefore - counters.size();
+        if (evicted > 0) {
+            log.info("[AnalyticsRateLimit] {} entrée(s) expirée(s) purgée(s), {} restante(s)",
+                    evicted, counters.size());
+        }
     }
 }
