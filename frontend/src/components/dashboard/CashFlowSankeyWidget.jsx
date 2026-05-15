@@ -25,6 +25,12 @@ const OTHER_INCOME_LABELS = {
   AUTRE:        'Autres revenus',
 }
 
+// Seuls les types récurrents mensuels comptent dans le flux de trésorerie mensuel —
+// même contrat que côté backend (ExpenseSummaryDto.monthlyNetIncome). DIVIDENDE et
+// AUTRE sont ponctuels (champ "Date de perception" dans le formulaire), les inclure
+// au titre d'un mois donné gonfle artificiellement le flux.
+const RECURRING_INCOME_TYPES = new Set(['LOCATIF', 'AIDE_SOCIALE'])
+
 const TYPE_LABEL = {
   income:    'Revenu',
   aggregate: 'Total revenus',
@@ -70,9 +76,12 @@ function buildSankeyData(contracts, otherIncomes, expenses, annualBonuses = []) 
     const monthlyBenefits = hasAfterTax ? (activeContract.monthlyBenefits ?? 0) : 0
     const monthlyTR       = activeContract.employerMonthlyMealVoucherCost ?? 0
     const totalAvantages  = monthlyBenefits + monthlyTR
-    const netRatio        = (activeContract.monthlyGrossSalary ?? 0) > 0
-      ? (activeContract.monthlyNetImposable ?? 0) / activeContract.monthlyGrossSalary
-      : 0.75
+    // Ratio brut→net après PAS, utilisé pour les primes brutes. On prend le ratio « après PAS »
+    // pour rester cohérent avec le reste du Sankey (qui est en net après PAS).
+    // Fallback à 0.72 si on n'a pas de monthlyNetAfterTax (profil fiscal incomplet).
+    const netRatio        = hasAfterTax && (activeContract.monthlyGrossSalary ?? 0) > 0
+      ? activeContract.monthlyNetAfterTax / activeContract.monthlyGrossSalary
+      : 0.72
     const annualBonusGrossMonthly = annualBonuses
       .filter(b => b.type === 'ANNUELLE' && (b.grossAmount ?? 0) > 0)
       .reduce((s, b) => s + b.grossAmount / 12, 0)
@@ -87,11 +96,14 @@ function buildSankeyData(contracts, otherIncomes, expenses, annualBonuses = []) 
   }
 
   const currentOtherIncomes = otherIncomes.filter(oi => {
+    if (!RECURRING_INCOME_TYPES.has(oi.type)) return false
     if (oi.periodStart) {
       if (new Date(oi.periodStart) > today) return false
       if (oi.periodEnd && new Date(oi.periodEnd) < today) return false
       return true
     }
+    // Fallback : pas de période renseignée — on considère le revenu actif s'il
+    // a été saisi dans l'année courante (sécurité pour les aides ponctuelles).
     if (oi.date) return new Date(oi.date).getFullYear() === currentYear
     return false
   })

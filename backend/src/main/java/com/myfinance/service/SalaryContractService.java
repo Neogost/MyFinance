@@ -212,6 +212,16 @@ public class SalaryContractService {
                 .mapToDouble(b -> b.getGrossAmount() != null ? b.getGrossAmount() : 0.0)
                 .sum();
 
+        // Primes ANNUELLE actives : on étale leur montant brut sur 12 mois.
+        // Permet d'inclure le 13e mois et autres bonus annuels dans le flux de trésorerie mensuel.
+        float monthlyActiveAnnuelleGrossPerMonth = (float) contractBonusRepository
+                .findByContractOrderByTypeAscPaymentMonthAscPaymentDateDescStartDateAsc(contract)
+                .stream()
+                .filter(b -> b.getType() == BonusTypeEnum.ANNUELLE)
+                .filter(b -> b.getGrossAmount() != null && b.getGrossAmount() > 0)
+                .mapToDouble(b -> b.getGrossAmount() / 12.0)
+                .sum();
+
         Optional<SalaryRevision> activeRevision = salaryRevisionRepository
                 .findFirstByContractAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
                         contract, LocalDate.now());
@@ -252,6 +262,6 @@ public class SalaryContractService {
         return SalaryContractDto.from(contract, taxParameters, publicSectorParameters,
                 contractOwner, taxSimulatorService, annualBenefits,
                 activeRevisionId, effectiveSalary, pointValueUsed,
-                monthlyActiveMensuelleGross);
+                monthlyActiveMensuelleGross, monthlyActiveAnnuelleGrossPerMonth);
     }
 }

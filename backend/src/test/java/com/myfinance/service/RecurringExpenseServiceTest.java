@@ -385,7 +385,7 @@ class RecurringExpenseServiceTest {
                 monthlyNetAfterTax != null ? monthlyNetAfterTax / 20f : null,
                 monthlyNetAfterTax != null ? monthlyNetAfterTax / 151.67f : null,
                 null, 0f,
-                46800f, 3900f, 195f, 30f, 0f
+                46800f, 3900f, 195f, 30f, 0f, 0f
         );
     }
 

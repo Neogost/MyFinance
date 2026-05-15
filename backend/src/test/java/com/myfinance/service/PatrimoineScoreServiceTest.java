@@ -275,7 +275,7 @@ class PatrimoineScoreServiceTest {
         stubDataBase();
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 1500f, "NET_AFTER_TAX", 0f, 0f, 1500f, 30f,
-                List.of(), null, null, null, null, null, null));  // monthlyNetIncome=1500
+                List.of(), null, null, null, null, null, null, null));  // monthlyNetIncome=1500
         // Target = 1500 × 3 = 4500 ; on met 5000 en liquide pour atteindre 100%
         when(positionService.findAllByUser(eq(user), any(), eq(PositionStatus.ACTIVE)))
                 .thenReturn(List.of(buildPosition("LIQUIDITE", computedOf(5_000))));
@@ -356,7 +356,7 @@ class PatrimoineScoreServiceTest {
         // monthlyNetIncome = 5000, monthlyCost = 800 → 16% < 20% → +16 pts
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 5000f, "NET_AFTER_TAX", 2000f, 24_000f, 3_000f, null,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "ENDETTEMENT");
         // 16 (debtRate <20%) + 4 (ratio dette/patrimoine 50k/300k = 17% < 30%) = 20
@@ -374,7 +374,7 @@ class PatrimoineScoreServiceTest {
         // monthlyNetIncome = 3000, monthlyCost = 1100 → 36.67% → tier 33-40% → +5 pts
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 2000f, 24_000f, 1_000f, null,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "ENDETTEMENT");
         // 5 (33-40%) + 2 (ratio 80k/200k = 40%, < 60% → +2) = 7
@@ -392,7 +392,7 @@ class PatrimoineScoreServiceTest {
         // monthlyNetIncome = 3000, monthlyCost = 2000 → 66% → 0 pts
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 500f, 6000f, 1_000f, null,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "ENDETTEMENT");
         // 0 (debtRate trop élevé) + 0 (ratio 60k/50k = 120% > 60%) = 0
@@ -409,7 +409,7 @@ class PatrimoineScoreServiceTest {
                 BigDecimal.ZERO, BigDecimal.valueOf(800), List.of()));
         // monthlyNetIncome null (premier champ)
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
-                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null, null, null));
+                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "ENDETTEMENT");
         assertThat(axe.missingData()).isTrue();
@@ -424,7 +424,7 @@ class PatrimoineScoreServiceTest {
         stubDataBase();
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 2000f, 24000f, 500f, 25f,  // savingsRate=25
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "EPARGNE");
         assertThat(axe.score()).isEqualTo(20);
@@ -435,7 +435,7 @@ class PatrimoineScoreServiceTest {
         stubDataBase();
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 2000f, 24000f, 500f, 15f,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "EPARGNE");
         assertThat(axe.score()).isEqualTo(14);
@@ -446,7 +446,7 @@ class PatrimoineScoreServiceTest {
         stubDataBase();
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 2000f, 24000f, 500f, 7f,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "EPARGNE");
         assertThat(axe.score()).isEqualTo(8);
@@ -457,7 +457,7 @@ class PatrimoineScoreServiceTest {
         stubDataBase();
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 2000f, 24000f, 500f, 3f,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
 
         PatrimoineScoreDto.AxeScoreDto axe = axeOf(service.computeScore(user), "EPARGNE");
         assertThat(axe.score()).isZero();
@@ -643,7 +643,7 @@ class PatrimoineScoreServiceTest {
                 BigDecimal.valueOf(50), BigDecimal.valueOf(950), List.of()));
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
                 3500f, "NET_AFTER_TAX", 2000f, 24000f, 1500f, 43f,
-                List.of(), null, null, null, null, null, null));
+                List.of(), null, null, null, null, null, null, null));
         when(portfolioSnapshotService.findAllByUser(user)).thenReturn(List.of(
                 new PortfolioSnapshotDto(2L, LocalDate.now().minusMonths(1),
                         BigDecimal.valueOf(200000), BigDecimal.valueOf(248000), BigDecimal.valueOf(48000), null),
@@ -666,7 +666,7 @@ class PatrimoineScoreServiceTest {
         when(debtService.getSummary(user)).thenReturn(new DebtSummaryDto(
                 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of()));
         when(recurringExpenseService.getSummary(user)).thenReturn(new ExpenseSummaryDto(
-                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null, null, null));
+                null, "NONE", 0f, 0f, null, null, List.of(), null, null, null, null, null, null, null));
         when(portfolioSnapshotService.findAllByUser(user)).thenReturn(List.of());
     }
 

@@ -145,28 +145,55 @@ public class RecurringExpenseService {
         Float breakdownBenefits = null;
         Float breakdownMealVoucherEmployer = null;
         Float breakdownMonthlyBonuses = null;
+        Float breakdownAnnualBonuses = null;
 
         if (active != null) {
+            // Calculs intermédiaires en double pour rester précis avec le frontend JS (qui utilise
+            // des doubles 64 bits) — sinon les multiplications float accumulent ~3 € d'écart sur
+            // 4000 € entre la Capacité d'épargne ici et le total du Sankey.
+            double net = 0.0;
             if (active.monthlyNetAfterTax() != null) {
-                monthlyNetIncome = active.monthlyNetAfterTax();
+                // monthlyNetAfterTax = net imposable − PAS + avantages nature (cf. SalaryContractDto.from)
+                net = active.monthlyNetAfterTax();
                 incomeSource = "NET_AFTER_TAX";
             } else if (active.monthlyNetImposable() != null) {
-                monthlyNetIncome = active.monthlyNetImposable();
+                net = active.monthlyNetImposable();
                 incomeSource = "NET_IMPOSABLE";
             }
-            // Primes MENSUELLE actives : approximation nette à 72 % du brut
+
+            // Ratio brut→net après PAS, calculé sur le salaire de base. Sert à convertir les primes
+            // brutes en net cohérent avec le reste. Fallback 0.72 si profil fiscal incomplet.
+            double netRatio = active.monthlyNetAfterTax() != null && active.monthlyGrossSalary() > 0
+                    ? active.monthlyNetAfterTax() / (double) active.monthlyGrossSalary()
+                    : 0.72;
+
             if (active.monthlyActiveMensuelleGross() != null && active.monthlyActiveMensuelleGross() > 0) {
-                float bonusNet = active.monthlyActiveMensuelleGross() * 0.72f;
-                monthlyNetIncome = (monthlyNetIncome != null ? monthlyNetIncome : 0f) + bonusNet;
-                breakdownMonthlyBonuses = bonusNet;
+                double bonusNet = active.monthlyActiveMensuelleGross() * netRatio;
+                net += bonusNet;
+                breakdownMonthlyBonuses = (float) bonusNet;
             }
+            if (active.monthlyActiveAnnuelleGrossPerMonth() != null
+                    && active.monthlyActiveAnnuelleGrossPerMonth() > 0) {
+                double bonusNet = active.monthlyActiveAnnuelleGrossPerMonth() * netRatio;
+                net += bonusNet;
+                breakdownAnnualBonuses = (float) bonusNet;
+            }
+
+            // TR part employeur : c'est du cash effectivement reçu en plus du net imposable.
+            if (active.employerMonthlyMealVoucherCost() != null
+                    && active.employerMonthlyMealVoucherCost() > 0) {
+                net += active.employerMonthlyMealVoucherCost();
+                breakdownMealVoucherEmployer = active.employerMonthlyMealVoucherCost();
+            }
+
+            monthlyNetIncome = (float) net;
+
             breakdownNetImposable = active.monthlyNetImposable();
             breakdownEstimatedTax = active.monthlyEstimatedTax();
+            // Avantages nature : affichés pour transparence mais déjà inclus dans monthlyNetAfterTax
+            // côté SalaryContractDto.from() — on ne les rajoute pas au total.
             breakdownBenefits = active.monthlyBenefits() != null && active.monthlyBenefits() > 0
                     ? active.monthlyBenefits() : null;
-            breakdownMealVoucherEmployer = active.employerMonthlyMealVoucherCost() != null
-                    && active.employerMonthlyMealVoucherCost() > 0
-                    ? active.employerMonthlyMealVoucherCost() : null;
         }
 
         // Autres revenus mensuels récurrents (loyers, aides sociales)
@@ -201,6 +228,7 @@ public class RecurringExpenseService {
                 breakdownBenefits,
                 breakdownMealVoucherEmployer,
                 breakdownMonthlyBonuses,
+                breakdownAnnualBonuses,
                 breakdownOtherIncome
         );
     }

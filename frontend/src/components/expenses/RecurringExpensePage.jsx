@@ -187,6 +187,12 @@ export default function RecurringExpensePage() {
                         <span className="font-medium amount">+{fmt(summary.breakdownMonthlyBonuses)} €</span>
                       </div>
                     )}
+                    {summary.breakdownAnnualBonuses != null && (
+                      <div className="flex justify-between gap-6 text-violet-300">
+                        <span>+ Primes annuelles / 12</span>
+                        <span className="font-medium amount">+{fmt(summary.breakdownAnnualBonuses)} €</span>
+                      </div>
+                    )}
                     {summary.breakdownOtherIncome != null && (
                       <div className="flex justify-between gap-6 text-emerald-300">
                         <span>+ Autres revenus (locatif, aides)</span>
