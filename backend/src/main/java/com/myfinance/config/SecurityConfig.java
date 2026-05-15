@@ -161,9 +161,7 @@ public class SecurityConfig {
                                 request.getHeader("User-Agent"));
                     }
                     User user = (User) authentication.getPrincipal();
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(), UserDto.from(user));
+                    writeJson(response, HttpServletResponse.SC_OK, UserDto.from(user));
                 })
                 .failureHandler((request, response, exception) -> {
                     String login = request.getParameter("username");
@@ -192,9 +190,7 @@ public class SecurityConfig {
                     // immédiatement (sans attendre la requête suivante).
                     if (loginIpAttemptService != null && loginIpAttemptService.estBloque(ip)) {
                         long secondes = loginIpAttemptService.secondesRestantes(ip);
-                        response.setStatus(429);
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                        objectMapper.writeValue(response.getWriter(), Map.of(
+                        writeJson(response, 429, Map.of(
                                 "message", "Trop de tentatives depuis votre connexion. Réessayez dans "
                                            + formaterDuree(secondes) + ".",
                                 "secondesRestantes", secondes
@@ -202,18 +198,14 @@ public class SecurityConfig {
                         return;
                     }
 
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(),
+                    writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
                             Map.of("message", "Identifiants incorrects"));
                 })
             )
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
                 .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(),
+                    writeJson(response, HttpServletResponse.SC_OK,
                             Map.of("message", "Déconnexion réussie"));
                 })
             )
@@ -228,9 +220,7 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex
                 // Retourne 401 JSON au lieu d'une redirection vers /login
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    objectMapper.writeValue(response.getWriter(),
+                    writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
                             Map.of("message", "Non authentifié"));
                 })
             );
@@ -242,5 +232,17 @@ public class SecurityConfig {
         if (secondes >= 3600) return (secondes / 3600) + " h";
         if (secondes >= 60) return (secondes / 60) + " min";
         return secondes + " s";
+    }
+
+    /**
+     * Écrit une réponse JSON avec encodage UTF-8 forcé. Sans setCharacterEncoding,
+     * response.getWriter() retombe sur l'ISO-8859-1 par défaut de Tomcat et les caractères
+     * accentués sortent mojibakés ("Non authentifié" → "Non authentifi\xe9").
+     */
+    private void writeJson(HttpServletResponse response, int status, Object body) throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getWriter(), body);
     }
 }
