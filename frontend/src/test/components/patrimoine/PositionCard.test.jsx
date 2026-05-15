@@ -99,14 +99,14 @@ describe('PositionCard', () => {
     expect(screen.getByRole('button', { name: /Màj solde/ })).toBeInTheDocument()
   })
 
-  it('affiche "Crédit lié" quand linkedDebt est fourni', () => {
+  it('affiche "Crédit lié" quand linkedDebts est fourni', () => {
     const linkedDebt = { id: 10, label: 'Crédit immobilier', remainingCapital: 180000 }
-    render(<PositionCard position={IMMO_POSITION} {...callbacks} linkedDebt={linkedDebt} />)
+    render(<PositionCard position={IMMO_POSITION} {...callbacks} linkedDebts={[linkedDebt]} />)
     expect(screen.getByText(/Crédit lié/)).toBeInTheDocument()
     expect(screen.getByText(/Crédit immobilier/)).toBeInTheDocument()
   })
 
-  it('n\'affiche pas "Crédit lié" sans linkedDebt', () => {
+  it('n\'affiche pas "Crédit lié" sans linkedDebts', () => {
     render(<PositionCard position={IMMO_POSITION} {...callbacks} />)
     expect(screen.queryByText(/Crédit lié/)).not.toBeInTheDocument()
   })

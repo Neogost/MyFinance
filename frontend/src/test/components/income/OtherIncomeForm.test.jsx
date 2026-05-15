@@ -80,9 +80,11 @@ describe('OtherIncomeForm', () => {
     fireEvent.change(screen.getByPlaceholderText('750.00'), {
       target: { value: '1200' },
     })
-    fireEvent.change(screen.getByRole('textbox', { name: '' }), {
-      target: { value: '2025-06-01' },
-    })
+    // DateInput accepte une saisie texte jj/mm/aaaa convertie en ISO en interne.
+    // Trois DateInput présents (periodStart, periodEnd, date) — on cible "date" via son name.
+    const dateInput = document.querySelector('input[name="date"]')
+    fireEvent.change(dateInput, { target: { value: '01/06/2025' } })
+    fireEvent.blur(dateInput)
 
     const form = document.querySelector('form')
     fireEvent.submit(form)

@@ -110,9 +110,10 @@ describe('ManualSnapshotModal', () => {
     getAdminUserPositions.mockResolvedValue(POSITIONS)
     render(<ManualSnapshotModal users={USERS} snapshot={null} initialUserId={1} onClose={vi.fn()} onSaved={vi.fn()} />)
     await waitFor(() => expect(screen.getByText('ETF World')).toBeInTheDocument())
-    // Date remplie mais aucune valeur de position → toujours disabled
-    fireEvent.click(screen.getByRole('button', { name: /jj\/mm\/aaaa/i }))
-    fireEvent.click(screen.getAllByRole('button', { name: '1' })[0])
+    // Date remplie via saisie directe (DateInput accepte jj/mm/aaaa) mais aucune valeur → toujours disabled
+    const dateInput = screen.getByPlaceholderText(/jj\/mm\/aaaa/i)
+    fireEvent.change(dateInput, { target: { value: '01/01/2026' } })
+    fireEvent.blur(dateInput)
     expect(screen.getByRole('button', { name: /Créer le relevé/i })).toBeDisabled()
   })
 
@@ -126,8 +127,9 @@ describe('ManualSnapshotModal', () => {
     render(<ManualSnapshotModal users={USERS} snapshot={null} initialUserId={1} onClose={onClose} onSaved={onSaved} />)
     await waitFor(() => expect(screen.getByText('ETF World')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: /jj\/mm\/aaaa/i }))
-    fireEvent.click(screen.getAllByRole('button', { name: '1' })[0])
+    const dateInput = screen.getByPlaceholderText(/jj\/mm\/aaaa/i)
+    fireEvent.change(dateInput, { target: { value: '01/01/2026' } })
+    fireEvent.blur(dateInput)
     // Saisir une valeur pour la première position
     const inputs = screen.getAllByPlaceholderText('0.00')
     fireEvent.change(inputs[1], { target: { value: '25000' } }) // currentValueEur du premier
