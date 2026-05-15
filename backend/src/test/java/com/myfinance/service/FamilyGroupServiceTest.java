@@ -277,6 +277,35 @@ class FamilyGroupServiceTest {
         verify(invitationRepository).save(any());
     }
 
+    @Test
+    void sendInvitation_tropDePendingExistantes_leve429() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(invitationRepository.countByGroupAndStatus(group, InvitationStatus.PENDING))
+                .thenReturn(10L);
+
+        assertThatThrownBy(() -> familyGroupService.sendInvitation(
+                new SendInvitationRequest("marc"), owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.TOO_MANY_REQUESTS);
+        verify(invitationRepository, never()).save(any());
+        verify(userRepository, never()).findByLogin(any()); // anti-énum : pas de lookup
+    }
+
+    @Test
+    void sendInvitation_tropDInvitationsDansLaDerniereHeure_leve429() {
+        when(familyGroupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(invitationRepository.countByGroupAndStatus(group, InvitationStatus.PENDING))
+                .thenReturn(2L);
+        when(invitationRepository.countByGroupAndCreatedAtAfter(eq(group), any()))
+                .thenReturn(5L);
+
+        assertThatThrownBy(() -> familyGroupService.sendInvitation(
+                new SendInvitationRequest("marc"), owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.TOO_MANY_REQUESTS);
+        verify(invitationRepository, never()).save(any());
+    }
+
     // ── acceptInvitation ───────────────────────────────────────
 
     @Test

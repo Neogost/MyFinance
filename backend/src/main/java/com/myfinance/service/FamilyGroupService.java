@@ -21,6 +21,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class FamilyGroupService {
 
+    // Bornes anti-spam d'invitations (cf. finding N15). L'owner ne peut avoir qu'un
+    // nombre limité d'invitations en attente ET ne peut pas en envoyer trop vite.
+    private static final int MAX_PENDING_INVITATIONS_PER_GROUP = 10;
+    private static final int MAX_INVITATIONS_PER_GROUP_PER_HOUR = 5;
+
     private final FamilyGroupRepository familyGroupRepository;
     private final FamilyGroupInvitationRepository invitationRepository;
     private final UserRepository userRepository;
@@ -179,6 +184,23 @@ public class FamilyGroupService {
     @Transactional
     public void sendInvitation(SendInvitationRequest request, User owner) {
         FamilyGroup group = requireOwner(owner);
+
+        // Borne dure : 10 invitations PENDING simultanées par groupe (UX cible saturée).
+        // Le check ne dépend pas du target → pas de fuite d'info via anti-énumération M15.
+        if (invitationRepository.countByGroupAndStatus(group, InvitationStatus.PENDING)
+                >= MAX_PENDING_INVITATIONS_PER_GROUP) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Limite d'invitations en attente atteinte (" + MAX_PENDING_INVITATIONS_PER_GROUP
+                  + "). Attendez qu'elles soient acceptées/refusées avant d'en envoyer d'autres.");
+        }
+
+        // Rate-limit horaire pour empêcher un owner malveillant d'inonder.
+        long recent = invitationRepository.countByGroupAndCreatedAtAfter(group,
+                LocalDateTime.now().minusHours(1));
+        if (recent >= MAX_INVITATIONS_PER_GROUP_PER_HOUR) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Trop d'invitations envoyées dans la dernière heure — réessayez plus tard.");
+        }
 
         Optional<User> targetOpt = userRepository.findByLogin(request.login());
         if (targetOpt.isEmpty()) {
