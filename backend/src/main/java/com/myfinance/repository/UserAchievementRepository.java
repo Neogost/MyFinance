@@ -29,4 +29,6 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
 
     /** Nombre de badges confirmés pour un utilisateur. */
     long countByUserAndConfirmedAtIsNotNull(User user);
+
+    void deleteByUser(User user);
 }

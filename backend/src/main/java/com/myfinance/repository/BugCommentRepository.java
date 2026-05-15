@@ -2,6 +2,7 @@ package com.myfinance.repository;
 
 import com.myfinance.domain.BugComment;
 import com.myfinance.domain.BugReport;
+import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,6 +15,8 @@ public interface BugCommentRepository extends JpaRepository<BugComment, Long> {
     int countByBugReport(BugReport bugReport);
 
     void deleteByBugReport(BugReport bugReport);
+
+    void deleteByAuthor(User author);
 
     Optional<BugComment> findByIdAndBugReportId(Long id, Long bugReportId);
 }

@@ -1,6 +1,7 @@
 package com.myfinance.repository;
 
 import com.myfinance.domain.ErrorLog;
+import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +18,8 @@ public interface ErrorLogRepository extends JpaRepository<ErrorLog, Long> {
     @Transactional
     @Query(value = "DELETE FROM error_logs WHERE created_at < :cutoffMs", nativeQuery = true)
     int deleteByCreatedAtBeforeMs(@Param("cutoffMs") long cutoffMs);
+
+    void deleteByUser(User user);
 
     @Query(value = """
         SELECT e.fingerprint, e.error_type, e.source, e.level, e.message,

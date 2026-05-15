@@ -12,4 +12,6 @@ public interface FamilyMemberRepository extends JpaRepository<FamilyMember, Long
     List<FamilyMember> findByUserOrderByRelationAscFirstNameAsc(User user);
 
     Optional<FamilyMember> findByIdAndUser(Long id, User user);
+
+    void deleteByUser(User user);
 }

@@ -16,21 +16,30 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class ProfileDataService {
 
-    private final SalaryContractRepository   salaryContractRepository;
-    private final OtherIncomeRepository      otherIncomeRepository;
-    private final RecurringExpenseRepository recurringExpenseRepository;
-    private final PositionRepository         positionRepository;
-    private final PortfolioSnapshotRepository portfolioSnapshotRepository;
-    private final DebtRepository             debtRepository;
-    private final DebtBalanceEntryRepository debtBalanceEntryRepository;
-    private final PossessionRepository       possessionRepository;
-    private final PatrimoineTargetRepository patrimoineTargetRepository;
-    private final LoanSimulationRepository   loanSimulationRepository;
-    private final UserBudgetRepository       userBudgetRepository;
-    private final AnalyticsEventRepository   analyticsEventRepository;
-    private final FamilyGroupRepository      familyGroupRepository;
-    private final UserRepository             userRepository;
-    private final PasswordEncoder            passwordEncoder;
+    private final SalaryContractRepository       salaryContractRepository;
+    private final OtherIncomeRepository          otherIncomeRepository;
+    private final RecurringExpenseRepository     recurringExpenseRepository;
+    private final PositionRepository             positionRepository;
+    private final PortfolioSnapshotRepository    portfolioSnapshotRepository;
+    private final DebtRepository                 debtRepository;
+    private final DebtBalanceEntryRepository     debtBalanceEntryRepository;
+    private final PossessionRepository           possessionRepository;
+    private final PatrimoineTargetRepository     patrimoineTargetRepository;
+    private final LoanSimulationRepository       loanSimulationRepository;
+    private final UserBudgetRepository           userBudgetRepository;
+    private final AnalyticsEventRepository       analyticsEventRepository;
+    private final FamilyGroupRepository          familyGroupRepository;
+    private final FamilyGroupInvitationRepository familyGroupInvitationRepository;
+    private final BugReportRepository            bugReportRepository;
+    private final BugVoteRepository              bugVoteRepository;
+    private final BugCommentRepository           bugCommentRepository;
+    private final FamilyMemberRepository         familyMemberRepository;
+    private final UserAchievementRepository      userAchievementRepository;
+    private final PatrimoineKpiTargetRepository  patrimoineKpiTargetRepository;
+    private final ErrorLogRepository             errorLogRepository;
+    private final PastDonationRepository         pastDonationRepository;
+    private final UserRepository                 userRepository;
+    private final PasswordEncoder                passwordEncoder;
 
     public DataSummaryDto getSummary(User user) {
         return new DataSummaryDto(
@@ -70,31 +79,50 @@ public class ProfileDataService {
                 debtBalanceEntryRepository.findByDebtOrderByEntryDateDesc(d)));
         debtRepository.deleteAll(debts);
 
-        // 5. Données simples à portée deleteByUser
+        // 5. Bug reports signalés (commentaires/votes enfants d'abord) puis votes/commentaires
+        //    faits par l'utilisateur sur les bugs d'autres
+        var reportedBugs = bugReportRepository.findByReporter(user);
+        reportedBugs.forEach(b -> {
+            bugCommentRepository.deleteByBugReport(b);
+            bugVoteRepository.deleteByBugReport(b);
+        });
+        bugReportRepository.deleteAll(reportedBugs);
+        bugCommentRepository.deleteByAuthor(user);
+        bugVoteRepository.deleteByVoter(user);
+
+        // 6. Donations passées (donor=user) avant les FamilyMember (recipient_id NOT NULL)
+        pastDonationRepository.deleteByDonor(user);
+
+        // 7. Données simples à portée deleteByUser
         otherIncomeRepository.deleteByUser(user);
         recurringExpenseRepository.deleteByUser(user);
         possessionRepository.deleteByUser(user);
         patrimoineTargetRepository.deleteByUser(user);
         userBudgetRepository.deleteByUser(user);
+        familyMemberRepository.deleteByUser(user);
+        userAchievementRepository.deleteByUser(user);
+        patrimoineKpiTargetRepository.deleteByUser(user);
+        errorLogRepository.deleteByUser(user);
 
-        // 6. Simulations d'emprunt
+        // 8. Simulations d'emprunt
         loanSimulationRepository.deleteAll(
                 loanSimulationRepository.findByUserOrderBySavedAtDesc(user));
 
-        // 7. Analytics events (suppression complète des traces comportementales)
+        // 9. Analytics events (suppression complète des traces comportementales)
         analyticsEventRepository.deleteByUser(user);
 
-        // 8. Retrait du groupe familial (sans supprimer le groupe si d'autres membres)
+        // 10. Invitations au groupe familial (où l'utilisateur est la cible)
+        familyGroupInvitationRepository.deleteByInvitedUser(user);
+
+        // 11. Retrait du groupe familial (dissolution si owner)
         var group = user.getFamilyGroup();
-        if (group != null) {
-            if (group.getOwner() != null && group.getOwner().getId().equals(user.getId())) {
-                // Owner → dissolution du groupe (les membres sont retirés côté DB via FK)
-                familyGroupRepository.delete(group);
-            }
-            // Dans tous les cas, on détache l'utilisateur du groupe avant suppression
+        if (group != null && group.getOwner() != null
+                && group.getOwner().getId().equals(user.getId())) {
+            familyGroupInvitationRepository.deleteByGroup(group);
+            familyGroupRepository.delete(group);
         }
 
-        // 9. Suppression du compte utilisateur
+        // 12. Suppression du compte utilisateur
         userRepository.delete(user);
 
         log.info("[ProfileData] Compte {} supprimé avec toutes ses données", user.getLogin());
@@ -117,11 +145,16 @@ public class ProfileDataService {
                 debtBalanceEntryRepository.findByDebtOrderByEntryDateDesc(d)));
         debtRepository.deleteAll(debts);
 
+        // Données patrimoniales/financières uniquement — le compte (et donc badges,
+        // contributions communautaires) reste intact.
+        pastDonationRepository.deleteByDonor(user);
         otherIncomeRepository.deleteByUser(user);
         recurringExpenseRepository.deleteByUser(user);
         possessionRepository.deleteByUser(user);
         patrimoineTargetRepository.deleteByUser(user);
         userBudgetRepository.deleteByUser(user);
+        familyMemberRepository.deleteByUser(user);
+        patrimoineKpiTargetRepository.deleteByUser(user);
 
         loanSimulationRepository.deleteAll(
                 loanSimulationRepository.findByUserOrderBySavedAtDesc(user));

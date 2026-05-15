@@ -26,4 +26,6 @@ public interface BugVoteRepository extends JpaRepository<BugVote, Long> {
     void deleteByBugReportAndVoter(BugReport bugReport, User voter);
 
     void deleteByBugReport(BugReport bugReport);
+
+    void deleteByVoter(User voter);
 }

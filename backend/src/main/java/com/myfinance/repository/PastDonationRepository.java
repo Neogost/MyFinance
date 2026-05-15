@@ -24,4 +24,6 @@ public interface PastDonationRepository extends JpaRepository<PastDonation, Long
             @Param("donor") User donor,
             @Param("recipient") FamilyMember recipient,
             @Param("since") LocalDate since);
+
+    void deleteByDonor(User donor);
 }

@@ -46,6 +46,16 @@ class UserServiceTest {
     @Mock PossessionRepository            possessionRepository;
     @Mock PatrimoineTargetRepository      patrimoineTargetRepository;
     @Mock UserBudgetRepository            userBudgetRepository;
+    @Mock BugReportRepository             bugReportRepository;
+    @Mock BugVoteRepository               bugVoteRepository;
+    @Mock BugCommentRepository            bugCommentRepository;
+    @Mock FamilyMemberRepository          familyMemberRepository;
+    @Mock UserAchievementRepository       userAchievementRepository;
+    @Mock PatrimoineKpiTargetRepository   patrimoineKpiTargetRepository;
+    @Mock ErrorLogRepository              errorLogRepository;
+    @Mock AnalyticsEventRepository        analyticsEventRepository;
+    @Mock PastDonationRepository          pastDonationRepository;
+    @Mock LoanSimulationRepository        loanSimulationRepository;
     @InjectMocks UserService userService;
 
     User user;
@@ -270,16 +280,53 @@ class UserServiceTest {
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
         when(salaryContractRepository.findByUserOrderByStartDateDesc(user)).thenReturn(List.of());
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
+        when(bugReportRepository.findByReporter(user)).thenReturn(List.of());
+        when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
         userService.delete(1L);
 
         verify(familyGroupInvitationRepository).deleteByInvitedUser(user);
+        verify(bugCommentRepository).deleteByAuthor(user);
+        verify(bugVoteRepository).deleteByVoter(user);
+        verify(pastDonationRepository).deleteByDonor(user);
         verify(otherIncomeRepository).deleteByUser(user);
         verify(recurringExpenseRepository).deleteByUser(user);
         verify(possessionRepository).deleteByUser(user);
         verify(patrimoineTargetRepository).deleteByUser(user);
         verify(userBudgetRepository).deleteByUser(user);
+        verify(familyMemberRepository).deleteByUser(user);
+        verify(userAchievementRepository).deleteByUser(user);
+        verify(patrimoineKpiTargetRepository).deleteByUser(user);
+        verify(errorLogRepository).deleteByUser(user);
+        verify(analyticsEventRepository).deleteByUser(user);
+        verify(loanSimulationRepository).deleteAll(any());
         verify(userRepository).delete(user);
+    }
+
+    @Test
+    void delete_avecBugsSignalesEtFamilyMembers_nettoieDansLeBonOrdre() {
+        BugReport reported = BugReport.builder().id(7L).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(familyGroupRepository.findByOwner(user)).thenReturn(Optional.empty());
+        when(portfolioSnapshotRepository.findByUserOrderBySnapshotDateDesc(user)).thenReturn(List.of());
+        when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of());
+        when(salaryContractRepository.findByUserOrderByStartDateDesc(user)).thenReturn(List.of());
+        when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
+        when(bugReportRepository.findByReporter(user)).thenReturn(List.of(reported));
+        when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
+
+        userService.delete(1L);
+
+        // Les enfants du bug reporté sont nettoyés AVANT le bug
+        var inOrder = org.mockito.Mockito.inOrder(bugCommentRepository, bugVoteRepository, bugReportRepository);
+        inOrder.verify(bugCommentRepository).deleteByBugReport(reported);
+        inOrder.verify(bugVoteRepository).deleteByBugReport(reported);
+        inOrder.verify(bugReportRepository).deleteAll(any());
+
+        // Les donations sont nettoyées AVANT les FamilyMember (recipient_id NOT NULL)
+        var donationsOrder = org.mockito.Mockito.inOrder(pastDonationRepository, familyMemberRepository);
+        donationsOrder.verify(pastDonationRepository).deleteByDonor(user);
+        donationsOrder.verify(familyMemberRepository).deleteByUser(user);
     }
 
     @Test

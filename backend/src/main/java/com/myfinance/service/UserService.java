@@ -42,6 +42,16 @@ public class UserService implements UserDetailsService {
     private final PossessionRepository           possessionRepository;
     private final PatrimoineTargetRepository     patrimoineTargetRepository;
     private final UserBudgetRepository           userBudgetRepository;
+    private final BugReportRepository            bugReportRepository;
+    private final BugVoteRepository              bugVoteRepository;
+    private final BugCommentRepository           bugCommentRepository;
+    private final FamilyMemberRepository         familyMemberRepository;
+    private final UserAchievementRepository      userAchievementRepository;
+    private final PatrimoineKpiTargetRepository  patrimoineKpiTargetRepository;
+    private final ErrorLogRepository             errorLogRepository;
+    private final AnalyticsEventRepository       analyticsEventRepository;
+    private final PastDonationRepository         pastDonationRepository;
+    private final LoanSimulationRepository       loanSimulationRepository;
 
     // ── Spring Security ────────────────────────────────────────
 
@@ -222,14 +232,35 @@ public class UserService implements UserDetailsService {
         debts.forEach(d -> debtBalanceEntryRepository.deleteByDebt(d));
         debtRepository.deleteAll(debts);
 
-        // 6. Entités simples
+        // 6. Bug reports signalés par l'utilisateur (commentaires/votes enfants d'abord)
+        List<BugReport> reportedBugs = bugReportRepository.findByReporter(user);
+        reportedBugs.forEach(b -> {
+            bugCommentRepository.deleteByBugReport(b);
+            bugVoteRepository.deleteByBugReport(b);
+        });
+        bugReportRepository.deleteAll(reportedBugs);
+        // Votes/commentaires faits par l'utilisateur sur les bugs d'autres
+        bugCommentRepository.deleteByAuthor(user);
+        bugVoteRepository.deleteByVoter(user);
+
+        // 7. Donations passées (donor=user) — avant FamilyMember (recipient_id NOT NULL)
+        pastDonationRepository.deleteByDonor(user);
+
+        // 8. Entités simples liées à l'utilisateur
         otherIncomeRepository.deleteByUser(user);
         recurringExpenseRepository.deleteByUser(user);
         possessionRepository.deleteByUser(user);
         patrimoineTargetRepository.deleteByUser(user);
         userBudgetRepository.deleteByUser(user);
+        familyMemberRepository.deleteByUser(user);
+        userAchievementRepository.deleteByUser(user);
+        patrimoineKpiTargetRepository.deleteByUser(user);
+        errorLogRepository.deleteByUser(user);
+        analyticsEventRepository.deleteByUser(user);
+        loanSimulationRepository.deleteAll(
+                loanSimulationRepository.findByUserOrderBySavedAtDesc(user));
 
-        // 7. Suppression effective
+        // 9. Suppression effective
         userRepository.delete(user);
         log.info("[system] Utilisateur supprimé #{} (données en cascade supprimées)", id);
     }

@@ -36,6 +36,15 @@ class ProfileDataServiceTest {
     @Mock UserBudgetRepository userBudgetRepository;
     @Mock AnalyticsEventRepository analyticsEventRepository;
     @Mock FamilyGroupRepository familyGroupRepository;
+    @Mock FamilyGroupInvitationRepository familyGroupInvitationRepository;
+    @Mock BugReportRepository bugReportRepository;
+    @Mock BugVoteRepository bugVoteRepository;
+    @Mock BugCommentRepository bugCommentRepository;
+    @Mock FamilyMemberRepository familyMemberRepository;
+    @Mock UserAchievementRepository userAchievementRepository;
+    @Mock PatrimoineKpiTargetRepository patrimoineKpiTargetRepository;
+    @Mock ErrorLogRepository errorLogRepository;
+    @Mock PastDonationRepository pastDonationRepository;
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
 
@@ -102,12 +111,14 @@ class ProfileDataServiceTest {
     @Test
     void deleteAllData_supprimeToutesLesEntitesEtLeCompte() {
         Debt debt = Debt.builder().id(1L).build();
+        BugReport reported = BugReport.builder().id(1L).build();
         when(portfolioSnapshotRepository.findByUserOrderBySnapshotDateDesc(user)).thenReturn(List.of(new PortfolioSnapshot()));
         when(positionRepository.findByUserOrderByCreatedAtDesc(user)).thenReturn(List.of(new Position()));
         when(salaryContractRepository.findByUserOrderByStartDateDesc(user)).thenReturn(List.of(new SalaryContract()));
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of(debt));
         when(debtBalanceEntryRepository.findByDebtOrderByEntryDateDesc(debt))
                 .thenReturn(List.of(new DebtBalanceEntry()));
+        when(bugReportRepository.findByReporter(user)).thenReturn(List.of(reported));
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
         service.deleteAllData(user, "good-password");
@@ -117,13 +128,28 @@ class ProfileDataServiceTest {
         verify(salaryContractRepository).deleteAll(any());
         verify(debtBalanceEntryRepository).deleteAll(any());
         verify(debtRepository).deleteAll(any());
+        // Bugs reportés + leurs enfants
+        verify(bugCommentRepository).deleteByBugReport(reported);
+        verify(bugVoteRepository).deleteByBugReport(reported);
+        verify(bugReportRepository).deleteAll(any());
+        // Votes/commentaires faits par l'utilisateur sur les bugs d'autres
+        verify(bugCommentRepository).deleteByAuthor(user);
+        verify(bugVoteRepository).deleteByVoter(user);
+        // Donations avant FamilyMember (recipient_id NOT NULL)
+        verify(pastDonationRepository).deleteByDonor(user);
+        // Entités simples
         verify(otherIncomeRepository).deleteByUser(user);
         verify(recurringExpenseRepository).deleteByUser(user);
         verify(possessionRepository).deleteByUser(user);
         verify(patrimoineTargetRepository).deleteByUser(user);
         verify(userBudgetRepository).deleteByUser(user);
+        verify(familyMemberRepository).deleteByUser(user);
+        verify(userAchievementRepository).deleteByUser(user);
+        verify(patrimoineKpiTargetRepository).deleteByUser(user);
+        verify(errorLogRepository).deleteByUser(user);
         verify(loanSimulationRepository).deleteAll(any());
         verify(analyticsEventRepository).deleteByUser(user);
+        verify(familyGroupInvitationRepository).deleteByInvitedUser(user);
         verify(userRepository).delete(user);  // le compte est supprimé
     }
 
