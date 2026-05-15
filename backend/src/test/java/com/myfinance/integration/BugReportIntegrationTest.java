@@ -62,7 +62,7 @@ class BugReportIntegrationTest {
         mvc().perform(get("/api/admin/bug-reports")).andExpect(status().isUnauthorized());
 
         // ── 2. Créer un user alice via l'admin ──────────────────────
-        MockHttpSession adminSession = loginAs("admin", "IntegrationTestAdminPass1!");
+        MockHttpSession adminSession = loginAs("admin", "IntegrationTestPass1!");
         mvc().perform(post("/api/users")
                         .session(adminSession)
                         .contentType(MediaType.APPLICATION_JSON)

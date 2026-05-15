@@ -137,7 +137,7 @@ class RecurringExpenseIntegrationTest {
         MvcResult result = mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "admin")
-                        .param("password", "IntegrationTestAdminPass1!"))
+                        .param("password", "IntegrationTestPass1!"))
                 .andExpect(status().isOk())
                 .andReturn();
         return (MockHttpSession) result.getRequest().getSession(false);

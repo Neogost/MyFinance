@@ -39,7 +39,7 @@ class AuthIntegrationTest {
     @Autowired UserRegistrationRequestRepository registrationRequestRepository;
 
     private static final String ADMIN_LOGIN = "admin";
-    private static final String ADMIN_PASSWORD = "IntegrationTestAdminPass1!";
+    private static final String ADMIN_PASSWORD = "IntegrationTestPass1!";
 
     private MockMvc buildMockMvc() {
         return MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();

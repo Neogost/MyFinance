@@ -66,7 +66,7 @@ class OtherIncomeIntegrationTest {
         MvcResult loginResult = mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .param("username", "admin")
-                        .param("password", "IntegrationTestAdminPass1!"))
+                        .param("password", "IntegrationTestPass1!"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.login").value("admin"))
                 .andExpect(jsonPath("$.role").value("ADMIN"))

@@ -68,7 +68,7 @@ class InfoBannerIntegrationTest {
         mvc().perform(get("/api/admin/info-banners")).andExpect(status().isUnauthorized());
 
         // ── 2. Login admin ───────────────────────────────────────────────────
-        MockHttpSession adminSession = loginAs("admin", "IntegrationTestAdminPass1!");
+        MockHttpSession adminSession = loginAs("admin", "IntegrationTestPass1!");
         assertThat(adminSession).as("session admin créée").isNotNull();
 
         // ── 3. Créer un compte USER pour tester le filtrage audience ─────────

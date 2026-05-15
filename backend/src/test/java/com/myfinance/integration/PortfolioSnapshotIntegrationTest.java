@@ -182,7 +182,7 @@ class PortfolioSnapshotIntegrationTest {
     @Test
     void createForAllUsers_admin_genereSnapshotPourTousLesUtilisateurs() throws Exception {
         MockMvc mvc = buildMockMvc();
-        MockHttpSession sessionAdmin = login(mvc, "admin", "IntegrationTestAdminPass1!");
+        MockHttpSession sessionAdmin = login(mvc, "admin", "IntegrationTestPass1!");
 
         CreateSnapshotRequest req = new CreateSnapshotRequest(LocalDate.of(2026, 8, 1));
         mvc.perform(post("/api/portfolio/snapshots/all")
