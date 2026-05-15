@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public record DonationSimulationRequest(
         @NotNull Long recipientId,
         @NotNull @Positive BigDecimal assetValueEur,
-        @NotBlank String giftLabel,
+        @NotBlank @Size(max = 200) String giftLabel,
         Boolean dismembered,
 
         /** Type de bien (MOBILIER par défaut, IMMOBILIER ajoute les taxes additionnelles). */
@@ -25,7 +25,7 @@ public record DonationSimulationRequest(
         BigDecimal pastDonationsEurOverride,
 
         /** Informations sur le donateur si différent de l'utilisateur connecté. */
-        String donorName,
+        @Size(max = 100) String donorName,
         FamilyRelationEnum donorRelationToRecipient,
         Boolean donorHandicap,
         Integer donorAge

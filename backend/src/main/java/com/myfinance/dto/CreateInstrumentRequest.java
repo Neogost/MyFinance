@@ -10,10 +10,11 @@ import jakarta.validation.constraints.Size;
 
 public record CreateInstrumentRequest(
         @NotNull AssetCategory category,
-        String isin,
-        String ticker,
-        @NotBlank String name,
-        @NotBlank String currency,
+        @Size(max = 12) String isin,
+        @Size(max = 20) String ticker,
+        @NotBlank @Size(max = 200) String name,
+        @NotBlank @Size(min = 3, max = 3) @Pattern(regexp = "^[A-Z]{3}$",
+                message = "currency doit être un code ISO 4217 à 3 lettres majuscules") String currency,
         Boolean stablePrice,
 
         // Symbole Boursorama injecté tel quel dans une URL HTTP côté scheduler

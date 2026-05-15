@@ -14,7 +14,7 @@ public record JointDonationRequest(
 
         // ── Bien transmis ─────────────────────────────────────────────
         @NotNull Long recipientId,
-        @NotBlank String giftLabel,
+        @NotBlank @Size(max = 200) String giftLabel,
         @NotNull @Positive BigDecimal assetValueEur,
         Boolean dismembered,
         BienType bienType,
@@ -24,13 +24,13 @@ public record JointDonationRequest(
         @Positive BigDecimal donor1CustomAmountEur,
         /** null = lookup DB (utilisateur connecté). Renseigné = simulation pour un tiers. */
         BigDecimal donor1PastDonationsEur,
-        String donor1Name,
+        @Size(max = 100) String donor1Name,
         FamilyRelationEnum donor1Relation,
         Boolean donor1Handicap,
         Integer donor1Age,
 
         // ── Donateur 2 ────────────────────────────────────────────────
-        @NotBlank String donor2Name,
+        @NotBlank @Size(max = 100) String donor2Name,
         @NotNull FamilyRelationEnum donor2Relation,
         Boolean donor2Handicap,
         @DecimalMin("0.01") @DecimalMax("1.0") BigDecimal donor2Share,

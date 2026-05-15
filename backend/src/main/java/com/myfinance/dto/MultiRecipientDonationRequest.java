@@ -16,7 +16,7 @@ import java.util.List;
 public record MultiRecipientDonationRequest(
 
         // ── Bien transmis ─────────────────────────────────────────────
-        @NotBlank String giftLabel,
+        @NotBlank @Size(max = 200) String giftLabel,
         @NotNull @Positive BigDecimal assetValueEur,
         Boolean dismembered,
         BienType bienType,
@@ -25,7 +25,7 @@ public record MultiRecipientDonationRequest(
         @DecimalMin("0.01") @DecimalMax("1.0") BigDecimal ownershipShare,
         @Positive BigDecimal customAmountEur,
         BigDecimal pastDonationsEurOverride,
-        String donorName,
+        @Size(max = 100) String donorName,
         Boolean donorHandicap,
         Integer donorAge,
 
