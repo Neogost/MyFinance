@@ -187,8 +187,11 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
 
   // ── Revenus mensuels ─────────────────────────────────────────
   const monthlySalary     = activeContract?.monthlyNetImposable ?? null
+  const monthlyBonuses    = activeContract?.monthlyActiveMensuelleGross > 0
+    ? activeContract.monthlyActiveMensuelleGross * 0.72
+    : null
   const monthlyTax        = taxResult?.totalEstimatedTax != null ? taxResult.totalEstimatedTax / 12 : null
-  const totalRevenus      = monthlySalary ?? 0
+  const totalRevenus      = (monthlySalary ?? 0) + (monthlyBonuses ?? 0)
 
   // ── Dépenses mensuelles ───────────────────────────────────────
   const expensesByCategory = expenseSummary?.byCategory ?? []
@@ -337,12 +340,20 @@ export default function PatrimoineDeclarationPage({ user, onNavigate }) {
             <table className="w-full text-sm mb-5">
                             <tbody>
                 {monthlySalary != null ? (
-                  <tr className="border-b border-gray-200">
-                    <td className="py-1.5 text-gray-600">
-                      Salaire net fiscal{activeContract?.companyName ? ` (${activeContract.companyName})` : ''}
-                    </td>
-                    <td className="py-1.5 text-right font-bold text-gray-900 amount">{fmtEur(monthlySalary)}</td>
-                  </tr>
+                  <>
+                    <tr className="border-b border-gray-200">
+                      <td className="py-1.5 text-gray-600">
+                        Salaire net fiscal{activeContract?.companyName ? ` (${activeContract.companyName})` : ''}
+                      </td>
+                      <td className="py-1.5 text-right font-bold text-gray-900 amount">{fmtEur(monthlySalary)}</td>
+                    </tr>
+                    {monthlyBonuses != null && (
+                      <tr className="border-b border-gray-200">
+                        <td className="py-1.5 text-gray-600">Primes mensuelles (net estimé)</td>
+                        <td className="py-1.5 text-right font-bold text-gray-900 amount">{fmtEur(monthlyBonuses)}</td>
+                      </tr>
+                    )}
+                  </>
                 ) : (
                   <tr>
                     <td className="py-1.5 text-gray-400 text-xs italic" colSpan={2}>Aucun contrat salarial actif</td>
