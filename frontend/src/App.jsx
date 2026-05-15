@@ -40,7 +40,8 @@ import SubscriptionCalendarPage from './components/expenses/SubscriptionCalendar
 import PossessionPage from './components/possessions/PossessionPage'
 import DettePage from './components/debts/DettePage'
 import { logout, getMe, getAppVersion } from './api/auth'
-import { setUnauthorizedHandler, setServerErrorHandler } from './api/client'
+import { setUnauthorizedHandler, setServerErrorHandler, setApiErrorTracker } from './api/client'
+import { trackError as apiTrackError } from './api/analytics'
 import { logFrontendError } from './hooks/useAnalytics'
 import LandingPage from './components/LandingPage'
 import DocumentationPage from './components/documentation/DocumentationPage'
@@ -79,6 +80,7 @@ export default function App() {
       setUser(null); setAuthView('landing'); clearAnalyticsSession()
     })
     setServerErrorHandler(status => setAppError(status))
+    setApiErrorTracker(apiTrackError)
 
     // Capture globale des erreurs JS non gérées
     const onError = (event) => {

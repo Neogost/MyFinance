@@ -1,34 +1,14 @@
 import api from './client'
 
-// ── Fire-and-forget (fetch natif — pas de circular dep avec client.js) ────────
-
-function getCsrfToken() {
-  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/)
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-function fireAndForget(path, body) {
-  const sessionId = sessionStorage.getItem('analytics-session-id')
-  const csrfToken = getCsrfToken()
-  fetch(path, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(sessionId  ? { 'X-Session-Id':   sessionId  } : {}),
-      ...(csrfToken  ? { 'X-XSRF-TOKEN':   csrfToken  } : {}),
-    },
-    body: JSON.stringify(body),
-  }).catch(() => {})
-}
-
-// ── Tracking côté client ───────────────────────────────────
+// Fire-and-forget : on ignore les erreurs (rate-limit 429, body trop long 400…)
+// car le tracking ne doit jamais perturber l'UX. Le client Axios gère le CSRF,
+// l'en-tête X-Session-Id (via intercepteur de requête) et `withCredentials`.
 
 export const trackEvent = (type, name, page, metadata) =>
-  fireAndForget('/api/analytics/track', { type, name, page, metadata })
+  api.post('/api/analytics/track', { type, name, page, metadata }).catch(() => {})
 
 export const trackError = (errorType, message, stack, requestPath, metadata) =>
-  fireAndForget('/api/analytics/error', { errorType, message, stack, requestPath, metadata })
+  api.post('/api/analytics/error', { errorType, message, stack, requestPath, metadata }).catch(() => {})
 
 // ── Opt-out ────────────────────────────────────────────────
 

@@ -1,5 +1,4 @@
 import axios from 'axios'
-import { trackError as apiTrackError } from './analytics'
 
 // xsrfCookieName et xsrfHeaderName matchent les valeurs par défaut de Spring Security
 // (CookieCsrfTokenRepository.withHttpOnlyFalse()). Axios lit le cookie XSRF-TOKEN posé par
@@ -12,12 +11,16 @@ const api = axios.create({
   xsrfHeaderName: 'X-XSRF-TOKEN',
 })
 
-// Callbacks injectés par App.jsx au démarrage
+// Callbacks injectés par App.jsx au démarrage. `_onApiError` casse la dépendance
+// circulaire client.js ↔ analytics.js : analytics.js peut maintenant utiliser ce
+// client (et donc bénéficier de la config CSRF / des intercepteurs) sans boucle.
 let _onUnauthorized = null
 let _onServerError  = null
+let _onApiError     = null
 
 export function setUnauthorizedHandler(fn) { _onUnauthorized = fn }
 export function setServerErrorHandler(fn)  { _onServerError  = fn }
+export function setApiErrorTracker(fn)     { _onApiError     = fn }
 
 // Injecte X-Session-Id sur toutes les requêtes (corrélation analytics ↔ erreurs)
 api.interceptors.request.use(config => {
@@ -41,10 +44,10 @@ api.interceptors.response.use(
     }
 
     // Log 5xx + 403 + 404 /api/* comme erreur frontend (sauf les endpoints analytics eux-mêmes)
-    if (!isAnalyticsEndpoint && status) {
+    if (!isAnalyticsEndpoint && status && _onApiError) {
       const method = error.config?.method?.toUpperCase()
       if (status >= 500 || (status === 403 && url.startsWith('/api/')) || (status === 404 && url.startsWith('/api/'))) {
-        apiTrackError(`HTTP_${status}`, `${method} ${url} → ${status}`, null, url)
+        _onApiError(`HTTP_${status}`, `${method} ${url} → ${status}`, null, url)
       }
     }
 
