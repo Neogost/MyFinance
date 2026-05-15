@@ -168,6 +168,33 @@ class AdminBackfillControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void upsertPriceHistory_priceNull_retourne400() throws Exception {
+        mockMvc.perform(put("/api/admin/instruments/1/price-history/2024-06-15")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"price\": null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void upsertPriceHistory_priceNegatif_retourne400() throws Exception {
+        mockMvc.perform(put("/api/admin/instruments/1/price-history/2024-06-15")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"price\": -1}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void upsertPriceHistory_priceAbsurde_retourne400() throws Exception {
+        mockMvc.perform(put("/api/admin/instruments/1/price-history/2024-06-15")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"price\": 999999999999}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void deletePriceHistory_admin_retourne204() throws Exception {
         doNothing().when(priceHistoryService).deleteEntry(eq(1L), any());
 
@@ -260,6 +287,20 @@ class AdminBackfillControllerTest {
                         .content("{\"rate\":1.08}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.source").value("MANUAL"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void upsertExchangeRate_rateNullOuNegatif_retourne400() throws Exception {
+        mockMvc.perform(put("/api/admin/exchange-rates/USD/history/2024-06-01")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"rate\": null}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/admin/exchange-rates/USD/history/2024-06-01")
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"rate\": -0.5}"))
+                .andExpect(status().isBadRequest());
     }
 
     // ── DELETE exchange-rates/{currency}/history/{date} ───────────────────────

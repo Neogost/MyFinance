@@ -8,6 +8,7 @@ import com.myfinance.dto.PriceHistoryEntryDto;
 import com.myfinance.dto.PriceHistorySummaryDto;
 import com.myfinance.dto.UpsertPriceRequest;
 import com.myfinance.dto.UpsertRateRequest;
+import jakarta.validation.Valid;
 import com.myfinance.repository.PositionOrderRepository;
 import com.myfinance.service.ExchangeRateBackfillService;
 import com.myfinance.service.ExchangeRateHistoryService;
@@ -119,7 +120,7 @@ public class AdminBackfillController {
     public ResponseEntity<PriceHistoryEntryDto> upsertPrice(
             @PathVariable Long id,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestBody UpsertPriceRequest body) {
+            @Valid @RequestBody UpsertPriceRequest body) {
         return ResponseEntity.ok(priceHistoryService.upsertManual(id, date, body.price()));
     }
 
@@ -154,7 +155,7 @@ public class AdminBackfillController {
     public ResponseEntity<ExchangeRateHistoryEntryDto> upsertExchangeRate(
             @PathVariable String currency,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestBody UpsertRateRequest body) {
+            @Valid @RequestBody UpsertRateRequest body) {
         return ResponseEntity.ok(exchangeRateHistoryService.upsertManual(currency, date, body.rate()));
     }
 
