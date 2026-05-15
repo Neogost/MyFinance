@@ -13,5 +13,5 @@ public record TrackEventRequest(
                  message = "doit respecter le format module.feature.action")
         String name,
         @Size(max = 100) String page,
-        String metadata
+        @Size(max = 2000) String metadata
 ) {}

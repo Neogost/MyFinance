@@ -431,8 +431,8 @@ frontend/src/
 ### Analytics — Tracking (public)
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
-| `POST` | `/api/analytics/track` | Authentifié | Enregistrer un event comportemental (PAGE_VIEW, FEATURE_USE, BUTTON_CLICK, FORM_SUBMIT) |
-| `POST` | `/api/analytics/error` | Authentifié | Remonter une erreur frontend |
+| `POST` | `/api/analytics/track` | Public (rate-limit IP) | Enregistrer un event comportemental (PAGE_VIEW, FEATURE_USE, BUTTON_CLICK, FORM_SUBMIT). Volontairement public pour les simulateurs avant login. |
+| `POST` | `/api/analytics/error` | Public (rate-limit IP) | Remonter une erreur frontend. Idem. |
 | `PUT` | `/api/profile/analytics-opt-out` | Authentifié | Activer/désactiver le suivi de son usage |
 
 ### Analytics — Administration (admin)

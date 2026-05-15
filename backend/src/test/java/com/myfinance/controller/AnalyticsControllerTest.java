@@ -105,4 +105,50 @@ class AnalyticsControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());
     }
+
+    // ── Protection DoS storage : bornes @Size sur les champs libres ──
+
+    @Test
+    void trackError_messageTropLong_retourne400() throws Exception {
+        TrackErrorRequest request = new TrackErrorRequest(
+                "TypeError", "x".repeat(2001), null, null, null);
+
+        mockMvc.perform(post("/api/analytics/error")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void trackError_stackTropLongue_retourne400() throws Exception {
+        TrackErrorRequest request = new TrackErrorRequest(
+                "TypeError", "msg", "x".repeat(4097), null, null);
+
+        mockMvc.perform(post("/api/analytics/error")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void trackError_metadataTropLongue_retourne400() throws Exception {
+        TrackErrorRequest request = new TrackErrorRequest(
+                "TypeError", "msg", null, null, "x".repeat(2001));
+
+        mockMvc.perform(post("/api/analytics/error")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void track_metadataTropLongue_retourne400() throws Exception {
+        TrackEventRequest request = new TrackEventRequest(
+                EventType.FEATURE_USE, "patrimoine.position.create", null, "x".repeat(2001));
+
+        mockMvc.perform(post("/api/analytics/track")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
 }
