@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAdminBugReports, getAdminBugReport, patchBugReport, updateAdminBugReport, deleteAdminBugReport, commentBugReport, getBugLogs } from '../../api/bugReports'
+import { getAdminBugReports, getAdminBugReport, patchBugReport, updateAdminBugReport, deleteAdminBugReport, commentBugReport, updateComment, getBugLogs } from '../../api/bugReports'
 import { useAnalytics } from '../../hooks/useAnalytics'
 import DateTimeInput from '../ui/DateTimeInput'
 
@@ -26,7 +26,58 @@ function utcIsoToLocalInput(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate }) {
+function AdminCommentItem({ comment: c, bugId, onSaved }) {
+  const [editing, setEditing] = useState(false)
+  const [draft,   setDraft]   = useState(c.content)
+  const [saving,  setSaving]  = useState(false)
+
+  async function handleSave() {
+    if (!draft.trim() || draft.trim() === c.content) { setEditing(false); return }
+    setSaving(true)
+    try {
+      const updated = await updateComment(bugId, c.id, draft.trim())
+      onSaved(updated)
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-lg px-3 py-2">
+      <div className="flex justify-between mb-0.5">
+        <span className="text-xs font-semibold text-gray-700">{c.authorDisplay}</span>
+        <div className="flex items-center gap-2">
+          {!editing && (
+            <button onClick={() => { setDraft(c.content); setEditing(true) }}
+              className="text-xs text-indigo-500 hover:text-indigo-700 transition">
+              Modifier
+            </button>
+          )}
+          <span className="text-xs text-gray-400">{formatDt(c.createdAt)}</span>
+        </div>
+      </div>
+      {editing ? (
+        <div className="space-y-1.5 mt-1">
+          <textarea rows={2} value={draft} onChange={e => setDraft(e.target.value)} maxLength={2000}
+            className="w-full border border-indigo-300 rounded-lg px-2 py-1.5 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)} className="text-xs text-gray-500 hover:text-gray-700 transition">Annuler</button>
+            <button onClick={handleSave} disabled={saving || !draft.trim()}
+              className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition disabled:opacity-50">
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600">{c.content}</p>
+      )}
+    </div>
+  )
+}
+
+function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate, onDelete }) {
   const [status,     setStatus]   = useState(bug.status)
   const [priority,   setPriority] = useState(bug.priority ?? '')
   const [comment,    setComment]  = useState('')
@@ -39,6 +90,15 @@ function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate }) {
   const [editForm,  setEditForm] = useState({})
   const [editSaving,setEditSaving] = useState(false)
   const [editError, setEditError]  = useState(null)
+
+  // Resynchronise les champs locaux quand le bug sélectionné change
+  useEffect(() => {
+    setStatus(bug.status)
+    setPriority(bug.priority ?? '')
+    setComment('')
+    setLogs(null)
+    setEditing(false)
+  }, [bug.id])
 
   function startEdit() {
     setEditForm({
@@ -119,10 +179,16 @@ function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate }) {
         <h3 className="font-semibold text-gray-900">{bug.title}</h3>
         <div className="flex items-center gap-2 shrink-0">
           {!editing && (
-            <button onClick={startEdit}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
-              Modifier
-            </button>
+            <>
+              <button onClick={startEdit}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                Modifier
+              </button>
+              <button onClick={() => onDelete(bug)}
+                className="text-xs text-red-500 hover:text-red-700 font-medium transition">
+                Supprimer
+              </button>
+            </>
           )}
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -152,6 +218,11 @@ function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate }) {
         )}
         <div>Signalé le : {formatDt(bug.createdAt)}</div>
         {bug.approximateDateTime && <div>Survenu vers : {formatDt(bug.approximateDateTime)}</div>}
+        {bug.browserInfo && (
+          <div className="mt-0.5">
+            Navigateur : <code className="bg-gray-100 px-1 rounded text-gray-600 break-all">{bug.browserInfo}</code>
+          </div>
+        )}
       </div>
 
       {/* Mode édition */}
@@ -282,13 +353,12 @@ function DetailPanel({ bug, detailLoading, onClose, onUpdated, onNavigate }) {
             </p>
             <div className="space-y-2 mb-3">
               {(bug.comments ?? []).map(c => (
-                <div key={c.id} className="bg-gray-50 rounded-lg px-3 py-2">
-                  <div className="flex justify-between mb-0.5">
-                    <span className="text-xs font-semibold text-gray-700">{c.authorDisplay}</span>
-                    <span className="text-xs text-gray-400">{formatDt(c.createdAt)}</span>
-                  </div>
-                  <p className="text-sm text-gray-600">{c.content}</p>
-                </div>
+                <AdminCommentItem
+                  key={c.id}
+                  comment={c}
+                  bugId={bug.id}
+                  onSaved={updated => onUpdated({ ...bug, comments: bug.comments.map(x => x.id === updated.id ? updated : x) })}
+                />
               ))}
             </div>
             <form onSubmit={handleComment} className="flex gap-2">
@@ -357,7 +427,7 @@ export default function AdminBugReportPage({ onNavigate }) {
   const [bugs,          setBugs]          = useState([])
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState(null)
-  const [statusFilter,  setStatusFilter]  = useState('')
+  const [statusFilter,  setStatusFilter]  = useState('OPEN')
   const [priorityFilter,setPriorityFilter]= useState('')
   const [selected,      setSelected]      = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -459,11 +529,11 @@ export default function AdminBugReportPage({ onNavigate }) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-100">
-                        <th className="pb-2 pr-3 pl-5">Score</th>
+                        <th className="pb-2 pr-3 pl-5">Signalé le</th>
                         <th className="pb-2 pr-3">Titre</th>
                         <th className="pb-2 pr-3">Impact</th>
                         <th className="pb-2 pr-3">Statut</th>
-                        {!selected && <th className="pb-2 pr-3">Priorité</th>}
+                        <th className="pb-2 pr-3">Priorité</th>
                         {!selected && <th className="pb-2 pr-3">Reporter</th>}
                         <th className="pb-2"></th>
                       </tr>
@@ -473,11 +543,7 @@ export default function AdminBugReportPage({ onNavigate }) {
                         <tr key={bug.id}
                           className={`hover:bg-gray-50 transition cursor-pointer ${selected?.id === bug.id ? 'bg-indigo-50' : ''}`}
                           onClick={() => handleSelectBug(bug)}>
-                          <td className="py-3 pr-3 pl-5">
-                            <span className={`font-bold ${bug.score > 0 ? 'text-green-600' : bug.score < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                              {bug.score > 0 ? '+' : ''}{bug.score}
-                            </span>
-                          </td>
+                          <td className="py-3 pr-3 pl-5 text-gray-500 text-xs whitespace-nowrap">{formatDt(bug.createdAt)}</td>
                           <td className="py-3 pr-3">
                             <p className="font-medium text-gray-900 truncate max-w-[160px]">{bug.title}</p>
                             <p className="text-xs text-gray-400">{bug.commentCount} commentaire{bug.commentCount !== 1 ? 's' : ''}</p>
@@ -492,22 +558,15 @@ export default function AdminBugReportPage({ onNavigate }) {
                               {STATUS_LABEL[bug.status]}
                             </span>
                           </td>
-                          {!selected && (
-                            <td className="py-3 pr-3 text-gray-600">
-                              {bug.priority ? SEVERITY_LABEL[bug.priority] : <span className="text-gray-300">—</span>}
-                            </td>
-                          )}
+                          <td className="py-3 pr-3">
+                            {bug.priority
+                              ? <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${IMPACT_COLOR[bug.priority]}`}>{SEVERITY_LABEL[bug.priority]}</span>
+                              : <span className="text-gray-300 text-xs">—</span>}
+                          </td>
                           {!selected && (
                             <td className="py-3 pr-3 text-gray-600">{bug.reporterLogin}</td>
                           )}
-                          <td className="py-3 pr-2">
-                            <button
-                              onClick={e => { e.stopPropagation(); handleDelete(bug) }}
-                              className="text-xs text-red-500 hover:underline font-medium"
-                            >
-                              Supprimer
-                            </button>
-                          </td>
+                          <td className="py-3 pr-2"></td>
                         </tr>
                       ))}
                     </tbody>
@@ -527,6 +586,7 @@ export default function AdminBugReportPage({ onNavigate }) {
               onClose={() => setSelected(null)}
               onUpdated={handleUpdated}
               onNavigate={onNavigate}
+              onDelete={handleDelete}
             />
           </div>
         )}

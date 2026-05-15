@@ -100,7 +100,7 @@ class BugReportControllerTest {
     @WithMockCustomUser
     void create_retourne201() throws Exception {
         CreateBugReportRequest req = new CreateBugReportRequest(
-                "Graphique vide", "Description.", null, null, null, BugSeverity.HIGH, "sess-123");
+                "Graphique vide", "Description.", null, null, null, BugSeverity.HIGH, "sess-123", null);
 
         when(bugReportService.create(any(), any())).thenReturn(summary);
 
@@ -124,11 +124,11 @@ class BugReportControllerTest {
     static Stream<Arguments> requêtesInvalides() {
         return Stream.of(
                 Arguments.of("titre vide",
-                        new CreateBugReportRequest("", "Desc.", null, null, null, BugSeverity.HIGH, null)),
+                        new CreateBugReportRequest("", "Desc.", null, null, null, BugSeverity.HIGH, null, null)),
                 Arguments.of("description vide",
-                        new CreateBugReportRequest("Titre", "", null, null, null, BugSeverity.HIGH, null)),
+                        new CreateBugReportRequest("Titre", "", null, null, null, BugSeverity.HIGH, null, null)),
                 Arguments.of("impact null",
-                        new CreateBugReportRequest("Titre", "Desc.", null, null, null, null, null))
+                        new CreateBugReportRequest("Titre", "Desc.", null, null, null, null, null, null))
         );
     }
 
@@ -178,7 +178,7 @@ class BugReportControllerTest {
     @Test
     @WithMockCustomUser
     void addComment_retourne201() throws Exception {
-        BugCommentDto comment = new BugCommentDto(5L, "Alice", "Je confirme.", LocalDateTime.now());
+        BugCommentDto comment = new BugCommentDto(5L, 1L, "Alice", "Je confirme.", LocalDateTime.now());
         when(bugReportService.addComment(eq(1L), any(), any())).thenReturn(comment);
 
         mockMvc.perform(post("/api/bug-reports/1/comments")

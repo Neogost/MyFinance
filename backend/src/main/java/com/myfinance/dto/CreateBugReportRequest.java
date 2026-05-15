@@ -14,5 +14,6 @@ public record CreateBugReportRequest(
         @Size(max = 3000) String reproductionSteps,
         LocalDateTime approximateDateTime,
         @NotNull BugSeverity userImpact,
-        @Size(max = 50) String sessionId
+        @Size(max = 50) String sessionId,
+        @Size(max = 500) String browserInfo
 ) {}

@@ -84,7 +84,7 @@ class BugReportIntegrationTest {
                 "Le graphique doit afficher les données.",
                 "1. Se connecter\n2. Se déconnecter\n3. Se reconnecter",
                 LocalDateTime.now().minusHours(1),
-                BugSeverity.HIGH, "session-test-abc");
+                BugSeverity.HIGH, "session-test-abc", "Mozilla/5.0 (Test)");
 
         MvcResult createResult = mvc().perform(post("/api/bug-reports")
                         .session(aliceSession)
@@ -180,7 +180,7 @@ class BugReportIntegrationTest {
                         .session(aliceSession)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateBugReportRequest(
-                                "", "Desc.", null, null, null, BugSeverity.LOW, null))))
+                                "", "Desc.", null, null, null, BugSeverity.LOW, null, null))))
                 .andExpect(status().isBadRequest());
 
         // ── 13. PATCH sans champ → 400 ──────────────────────────────

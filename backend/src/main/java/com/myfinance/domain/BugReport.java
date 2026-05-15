@@ -56,6 +56,10 @@ public class BugReport {
     @Column(length = 50)
     private String sessionId;
 
+    // User-Agent du navigateur au moment du signalement
+    @Column(columnDefinition = "TEXT")
+    private String browserInfo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reporter_id", nullable = false)
     private User reporter;

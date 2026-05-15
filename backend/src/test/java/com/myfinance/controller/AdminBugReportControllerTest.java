@@ -51,7 +51,7 @@ class AdminBugReportControllerTest {
         adminDetail = new BugReportAdminDetailDto(
                 1L, "Graphique vide", "Description.", null, null, null,
                 BugSeverity.HIGH, null, BugStatus.OPEN, 1, 0, LocalDateTime.now(),
-                "Alice", "alice.dupont", "sess-abc", List.of());
+                "Alice", "alice.dupont", "sess-abc", null, List.of());
     }
 
     // ── GET /api/admin/bug-reports ─────────────────────────────────

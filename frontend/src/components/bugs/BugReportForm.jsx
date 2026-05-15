@@ -39,6 +39,7 @@ export default function BugReportForm({ onClose, onSubmitted }) {
           ? new Date(form.approximateDateTime).toISOString().slice(0, 19)
           : null,
         sessionId: sessionStorage.getItem('analytics-session-id'),
+        browserInfo: navigator.userAgent,
       })
       setDone(true)
       onSubmitted?.()

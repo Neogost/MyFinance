@@ -68,6 +68,7 @@ public class BugReportService {
                 .approximateDateTime(request.approximateDateTime())
                 .userImpact(request.userImpact())
                 .sessionId(request.sessionId())
+                .browserInfo(request.browserInfo())
                 .reporter(reporter)
                 .build();
 
@@ -120,6 +121,20 @@ public class BugReportService {
     }
 
     // ── Commentaires ───────────────────────────────────────────────
+
+    public BugCommentDto updateComment(Long bugId, Long commentId, CreateBugCommentRequest request, User currentUser) {
+        getOrThrow(bugId);
+        BugComment comment = bugCommentRepository.findByIdAndBugReportId(commentId, bugId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Commentaire introuvable"));
+
+        if (!isAdmin(currentUser) && !comment.getAuthor().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Vous ne pouvez pas modifier le commentaire d'un autre utilisateur");
+        }
+
+        comment.setContent(request.content().trim());
+        return BugCommentDto.from(bugCommentRepository.save(comment), isAdmin(currentUser));
+    }
 
     public BugCommentDto addComment(Long id, CreateBugCommentRequest request, User author) {
         BugReport bug = getOrThrow(id);

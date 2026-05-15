@@ -23,6 +23,7 @@ public record BugReportAdminDetailDto(
         String reporterFirstName,
         String reporterLogin,
         String sessionId,
+        String browserInfo,
         List<BugCommentDto> comments   // authorDisplay = login [ROLE]
 ) {
     public static BugReportAdminDetailDto from(BugReport b, int score, List<BugCommentDto> comments) {
@@ -32,7 +33,7 @@ public record BugReportAdminDetailDto(
                 b.getUserImpact(), b.getPriority(), b.getStatus(),
                 score, comments.size(), b.getCreatedAt(),
                 b.getReporter().getFirstName(), b.getReporter().getLogin(),
-                b.getSessionId(), comments
+                b.getSessionId(), b.getBrowserInfo(), comments
         );
     }
 }
