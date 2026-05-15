@@ -282,8 +282,11 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
   // Affiche l'indicateur matelas une seule fois, sur la première carte LIQUIDITE ou LIVRET présente
   const snIndicatorCat = categoryStats.find(s => s.cat === 'LIQUIDITE' || s.cat === 'LIVRET')?.cat ?? null
 
-  // Map positionId → dette pour afficher la valeur nette sur les cartes IMMO_PHYSIQUE
-  const debtByPositionId = debts.reduce((m, d) => d.positionId ? { ...m, [d.positionId]: d } : m, {})
+  // Map positionId → [dettes] pour afficher toutes les dettes liées sur les cartes IMMO_PHYSIQUE
+  const debtsByPositionId = debts.reduce((m, d) => {
+    if (!d.positionId) return m
+    return { ...m, [d.positionId]: [...(m[d.positionId] ?? []), d] }
+  }, {})
 
   // Projection annuelle : valeur actuelle × taux moyen par catégorie
   const projectionByCategory = CATEGORY_ORDER
@@ -619,7 +622,7 @@ export default function PatrimoinePage({ currentUser, familyMode, onNavigate }) 
               onUpdateEstimatedValue={setEstimatedTarget}
               onViewOrders={setOrdersTarget}
               onViewHistory={setHistoryTarget}
-              linkedDebt={debtByPositionId[position.id]}
+              linkedDebts={debtsByPositionId[position.id] ?? []}
             />
           ))}
         </div>

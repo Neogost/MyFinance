@@ -3,7 +3,7 @@ import { CATEGORY_META, FISCAL_ENVELOPE_LABELS } from './constants'
 import { fmt, fmtUnits, Amount } from './utils'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 
-export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, linkedDebt }) {
+export default function PositionCard({ position, onEdit, onDelete, onClose, onUpdateBalance, onUpdateEstimatedValue, onViewOrders, onViewHistory, linkedDebts = [] }) {
   const meta   = CATEGORY_META[position.category] ?? {}
   const fiscal = FISCAL_ENVELOPE_LABELS[position.fiscalEnvelope]
   const c      = position.computed ?? {}
@@ -104,16 +104,19 @@ export default function PositionCard({ position, onEdit, onDelete, onClose, onUp
         )}
       </div>
 
-      {/* Valeur nette (IMMO_PHYSIQUE lié à un crédit) */}
-      {isImmoPhysique && linkedDebt && (() => {
-        const netValue = parseFloat(c.currentValueEur ?? 0) - parseFloat(linkedDebt.remainingCapital ?? 0)
+      {/* Valeur nette (IMMO_PHYSIQUE lié à un ou plusieurs crédits) */}
+      {isImmoPhysique && linkedDebts.length > 0 && (() => {
+        const totalDebt = linkedDebts.reduce((sum, d) => sum + parseFloat(d.remainingCapital ?? 0), 0)
+        const netValue  = parseFloat(c.currentValueEur ?? 0) - totalDebt
         return (
           <div className="col-span-2 bg-red-50 border border-red-100 rounded-lg p-3 -mt-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-red-400">Crédit lié — {linkedDebt.label}</p>
-              <p className="text-sm font-semibold text-red-600 amount">− <Amount value={linkedDebt.remainingCapital} /></p>
-            </div>
-            <div className="flex items-center justify-between border-t border-red-100 pt-1.5">
+            {linkedDebts.map(debt => (
+              <div key={debt.id} className="flex items-center justify-between mb-1">
+                <p className="text-xs text-red-400">Crédit lié — {debt.label}</p>
+                <p className="text-sm font-semibold text-red-600 amount">− <Amount value={debt.remainingCapital} /></p>
+              </div>
+            ))}
+            <div className="flex items-center justify-between border-t border-red-100 pt-1.5 mt-1">
               <p className="text-xs text-gray-500 font-medium">Valeur nette</p>
               <p className={`text-base font-bold amount ${netValue >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
                 <Amount value={netValue} />
