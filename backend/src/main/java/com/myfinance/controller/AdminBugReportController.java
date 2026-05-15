@@ -8,6 +8,8 @@ import com.myfinance.dto.LogExcerptDto;
 import com.myfinance.dto.PatchBugReportRequest;
 import com.myfinance.dto.UpdateBugReportAdminRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import com.myfinance.service.BugReportService;
 import com.myfinance.service.LogExcerptService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +31,7 @@ import java.util.List;
 @RequestMapping("/api/admin/bug-reports")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Validated
 @Tag(name = "Admin — Signalement de bugs", description = "Triage et suivi admin des bugs signalés")
 public class AdminBugReportController {
 
@@ -90,8 +94,8 @@ public class AdminBugReportController {
     @GetMapping("/{id}/logs")
     public ResponseEntity<LogExcerptDto> extractLogs(
             @PathVariable Long id,
-            @Parameter(description = "Fenêtre temporelle en minutes (défaut : 1)")
-            @RequestParam(defaultValue = "1") int window) {
+            @Parameter(description = "Fenêtre temporelle en minutes (1 à 60, défaut : 1)")
+            @RequestParam(defaultValue = "1") @Min(1) @Max(60) int window) {
         return ResponseEntity.ok(logExcerptService.extract(id, window));
     }
 }

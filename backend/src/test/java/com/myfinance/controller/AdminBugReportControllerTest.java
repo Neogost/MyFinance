@@ -198,4 +198,30 @@ class AdminBugReportControllerTest {
         mockMvc.perform(delete("/api/admin/bug-reports/99"))
                 .andExpect(status().isNotFound());
     }
+
+    // ── GET /api/admin/bug-reports/{id}/logs?window=... ──────────
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void extractLogs_windowZero_retourne400() throws Exception {
+        mockMvc.perform(get("/api/admin/bug-reports/1/logs").param("window", "0"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(logExcerptService);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void extractLogs_windowTropGrand_retourne400() throws Exception {
+        mockMvc.perform(get("/api/admin/bug-reports/1/logs").param("window", "61"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(logExcerptService);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void extractLogs_windowMaxInt_retourne400() throws Exception {
+        mockMvc.perform(get("/api/admin/bug-reports/1/logs").param("window", String.valueOf(Integer.MAX_VALUE)))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(logExcerptService);
+    }
 }
