@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  getSalaryContracts, createSalaryContract,
+  getSalaryContracts, getSalaryContract, createSalaryContract,
   updateSalaryContract, deleteSalaryContract, getBonuses, getBenefits, getOnCalls,
 } from '../../api/income'
 import SalaryContractForm from './SalaryContractForm'
@@ -26,7 +26,8 @@ export default function SalaryContractPage() {
   const [showBenefits, setShowBenefits] = useState(false)
   const [showRevisions, setShowRevisions] = useState(false)
   const [showOnCalls, setShowOnCalls] = useState(false)
-  const [annualBonuses, setAnnualBonuses] = useState([])
+  const [annualBonuses,   setAnnualBonuses]   = useState([])
+  const [monthlyBonuses,  setMonthlyBonuses]  = useState([]) // primes MENSUELLE brutes avec dates
   const [benefits, setBenefits] = useState([])
   const [onCalls, setOnCalls] = useState([])
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -35,10 +36,13 @@ export default function SalaryContractPage() {
   useEffect(() => { fetchContracts() }, [])
 
   function fetchAnnualBonuses(contractId) {
-    if (!contractId) { setAnnualBonuses([]); return }
+    if (!contractId) { setAnnualBonuses([]); setMonthlyBonuses([]); return }
     const today = new Date().toISOString().slice(0, 10)
     getBonuses(contractId)
       .then(bs => {
+        // Primes mensuelles brutes avec leurs dates pour le calcul historique dans PaySlipPanel
+        setMonthlyBonuses(bs.filter(b => b.type === 'MENSUELLE'))
+
         const forProjection = bs
           .filter(b => {
             if (b.type === 'ANNUELLE') return true
@@ -53,7 +57,7 @@ export default function SalaryContractPage() {
           )
         setAnnualBonuses(forProjection)
       })
-      .catch(() => setAnnualBonuses([]))
+      .catch(() => { setAnnualBonuses([]); setMonthlyBonuses([]) })
   }
 
   function fetchBenefits(contractId) {
@@ -89,6 +93,17 @@ export default function SalaryContractPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Re-fetch le contrat sélectionné pour mettre à jour les projections calculées
+  // (monthlyActiveMensuelleGross, monthlyNetAfterTax, etc.) sans recharger toute la page.
+  async function refreshSelectedContract() {
+    if (!selected?.id) return
+    try {
+      const updated = await getSalaryContract(selected.id)
+      setSelected(updated)
+      setContracts(cs => cs.map(c => c.id === updated.id ? updated : c))
+    } catch { /* silencieux */ }
   }
 
   async function handleSubmit(payload) {
@@ -240,7 +255,10 @@ export default function SalaryContractPage() {
               {showBonuses ? '▲ Masquer les primes' : '▼ Afficher les primes'}
             </button>
             {showBonuses && (
-              <BonusPanel contractId={selected.id} onBonusChange={() => fetchAnnualBonuses(selected.id)} />
+              <BonusPanel contractId={selected.id} onBonusChange={() => {
+                fetchAnnualBonuses(selected.id)
+                refreshSelectedContract()
+              }} />
             )}
           </div>
 
@@ -269,7 +287,7 @@ export default function SalaryContractPage() {
               {showSlips ? '▲ Masquer les bulletins de paie' : '▼ Afficher les bulletins de paie'}
             </button>
             {showSlips && (
-              <PaySlipPanel contractId={selected.id} projection={selected} />
+              <PaySlipPanel contractId={selected.id} projection={selected} monthlyBonuses={monthlyBonuses} />
             )}
           </div>
         </div>

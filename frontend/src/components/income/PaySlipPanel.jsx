@@ -9,7 +9,7 @@ function formatPeriod(iso) {
   return `${MONTHS_FR_SHORT[parseInt(month, 10) - 1]} ${year}`
 }
 
-export default function PaySlipPanel({ contractId, projection: contract }) {
+export default function PaySlipPanel({ contractId, projection: contract, monthlyBonuses = [] }) {
   const [slips, setSlips]           = useState([])
   const [revisions, setRevisions]   = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
@@ -80,19 +80,36 @@ export default function PaySlipPanel({ contractId, projection: contract }) {
       historicalAnnualGross = contract?.baseGrossSalary ?? contract?.annualGrossSalary ?? null
     }
 
+    // Primes MENSUELLE actives au mois du bulletin (comparaison YYYY-MM)
+    const slipMonth = slip.period.slice(0, 7)
+    const bonusGross = monthlyBonuses
+      .filter(b => {
+        const start = b.startDate?.slice(0, 7)
+        const end   = b.endDate?.slice(0, 7)
+        return start && start <= slipMonth && (!end || end >= slipMonth)
+      })
+      .reduce((sum, b) => sum + (b.grossAmount ?? 0), 0)
+
     if (historicalAnnualGross == null || !contract?.paidMonthsPerYear) {
-      return { gross: contract?.monthlyGrossSalary ?? null, net: contract?.monthlyNetAfterTax ?? null }
+      const baseGross = contract?.monthlyGrossSalary ?? null
+      const baseNet   = contract?.monthlyNetAfterTax  ?? null
+      return {
+        gross: baseGross != null ? baseGross + bonusGross : null,
+        net:   baseNet   != null ? baseNet   + bonusGross * 0.72 : null,
+      }
     }
 
     const monthlyGross = historicalAnnualGross / contract.paidMonthsPerYear
 
-    // Net proportionnel : net/brut ratio stable quand les taux de cotisation ne changent pas
     let monthlyNet = null
     if (contract.monthlyNetAfterTax != null && contract.monthlyGrossSalary > 0) {
       monthlyNet = monthlyGross * (contract.monthlyNetAfterTax / contract.monthlyGrossSalary)
     }
 
-    return { gross: monthlyGross, net: monthlyNet }
+    return {
+      gross: monthlyGross + bonusGross,
+      net:   monthlyNet != null ? monthlyNet + bonusGross * 0.72 : null,
+    }
   }
 
   function diff(real, theoretical) {
