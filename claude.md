@@ -477,7 +477,7 @@ frontend/src/
 ### Version de l'application
 | Méthode | URL | Rôle requis | Description |
 |---------|-----|-------------|-------------|
-| `GET` | `/api/version` | Authentifié | Version déployée de l'application |
+| `GET` | `/api/version` | Public | Version déployée de l'application (affichée sur la landing) |
 
 ### Simulations d'emprunt
 | Méthode | URL | Rôle requis | Description |

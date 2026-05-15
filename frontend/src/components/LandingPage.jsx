@@ -1,5 +1,6 @@
 import logo from '../assets/logo.png'
 import { useState, useEffect, useCallback } from 'react'
+import { getAppVersion } from '../api/auth'
 
 const SLIDES = [
   {
@@ -149,8 +150,8 @@ export default function LandingPage({ onLogin, onRegister, onDocumentation, onCo
   useEffect(() => {
     // Préchargement des images du carousel
     SLIDES.forEach(s => { const img = new Image(); img.src = s.src })
-    // Version (optionnel — endpoint authentifié, échoue silencieusement si non connecté)
-    fetch('/api/version').then(r => r.ok ? r.json() : null).then(d => d?.version && setVersion(d.version)).catch(() => {})
+    // Version (endpoint public — affiché en pied de landing)
+    getAppVersion().then(v => v && setVersion(v)).catch(() => {})
   }, [])
 
   return (

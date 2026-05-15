@@ -8,7 +8,7 @@ Base URL : `http://localhost:8080`
 
 Retourne la version actuellement déployée de l'application.
 
-**Accès** : authentifié
+**Accès** : public (affichée en pied de landing avant connexion)
 
 ```http
 GET /api/version
