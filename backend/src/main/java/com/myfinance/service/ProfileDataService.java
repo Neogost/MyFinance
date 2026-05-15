@@ -5,8 +5,11 @@ import com.myfinance.dto.DataSummaryDto;
 import com.myfinance.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -27,6 +30,7 @@ public class ProfileDataService {
     private final AnalyticsEventRepository   analyticsEventRepository;
     private final FamilyGroupRepository      familyGroupRepository;
     private final UserRepository             userRepository;
+    private final PasswordEncoder            passwordEncoder;
 
     public DataSummaryDto getSummary(User user) {
         return new DataSummaryDto(
@@ -44,7 +48,8 @@ public class ProfileDataService {
     }
 
     @Transactional
-    public void deleteAllData(User user) {
+    public void deleteAllData(User user, String currentPassword) {
+        verifyPassword(user, currentPassword);
         log.info("[ProfileData] Suppression de toutes les données de l'utilisateur {}", user.getLogin());
 
         // 1. Snapshots (cascade → PositionSnapshots)
@@ -96,7 +101,8 @@ public class ProfileDataService {
     }
 
     @Transactional
-    public void deleteDataOnly(User user) {
+    public void deleteDataOnly(User user, String currentPassword) {
+        verifyPassword(user, currentPassword);
         log.info("[ProfileData] Suppression des données (sans le compte) de l'utilisateur {}", user.getLogin());
 
         portfolioSnapshotRepository.deleteAll(
@@ -123,5 +129,15 @@ public class ProfileDataService {
         analyticsEventRepository.deleteByUser(user);
 
         log.info("[ProfileData] Données de {} supprimées, compte conservé", user.getLogin());
+    }
+
+    // Re-authentification par mot de passe avant toute opération destructive.
+    // Empêche qu'une XSS exploitant le cookie CSRF puisse détruire le compte.
+    private void verifyPassword(User user, String currentPassword) {
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            log.warn("[ProfileData] Tentative de suppression refusée pour {} : mot de passe incorrect",
+                    user.getLogin());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mot de passe incorrect");
+        }
     }
 }

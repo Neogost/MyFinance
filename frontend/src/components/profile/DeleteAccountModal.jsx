@@ -25,6 +25,7 @@ export default function DeleteAccountModal({ user, onClose, onDeleted, mode = 'a
   const [loadingSummary, setLoadingSummary] = useState(false)
   const [understood,  setUnderstood]  = useState(false)
   const [loginInput,  setLoginInput]  = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
   const [deleting,    setDeleting]    = useState(false)
   const [error,       setError]       = useState(null)
 
@@ -44,21 +45,26 @@ export default function DeleteAccountModal({ user, onClose, onDeleted, mode = 'a
 
   async function handleDelete() {
     if (loginInput.trim() !== user.login) return
+    if (!passwordInput) return
     setDeleting(true)
     setError(null)
     try {
       if (mode === 'data-only') {
-        await deleteDataOnly()
+        await deleteDataOnly(passwordInput)
         trackEvent('FEATURE_USE', 'auth.profile.data_deleted')
         onDeleted()
       } else {
-        await deleteAllData()
+        await deleteAllData(passwordInput)
         trackEvent('FEATURE_USE', 'auth.profile.account_deleted')
         await logout().catch(() => {})
         onDeleted()
       }
-    } catch {
-      setError('Une erreur est survenue. Réessayez ou contactez l\'administrateur.')
+    } catch (e) {
+      if (e?.response?.status === 401) {
+        setError('Mot de passe incorrect.')
+      } else {
+        setError('Une erreur est survenue. Réessayez ou contactez l\'administrateur.')
+      }
       setDeleting(false)
     }
   }
@@ -182,11 +188,28 @@ export default function DeleteAccountModal({ user, onClose, onDeleted, mode = 'a
                   type="text"
                   value={loginInput}
                   onChange={e => setLoginInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && loginInput === user.login && handleDelete()}
                   placeholder={user.login}
                   autoFocus
                   className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition"
                 />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-600 tracking-wide uppercase">
+                  Votre mot de passe
+                </label>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && loginInput === user.login && passwordInput && handleDelete()}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition"
+                />
+                <p className="text-xs text-gray-400">
+                  Pour des raisons de sécurité, votre mot de passe est requis pour confirmer cette action irréversible.
+                </p>
               </div>
 
               {error && <p className="text-sm text-red-600">{error}</p>}
@@ -216,7 +239,7 @@ export default function DeleteAccountModal({ user, onClose, onDeleted, mode = 'a
           ) : (
             <>
               <button
-                onClick={() => { setStep(1); setLoginInput(''); setError(null) }}
+                onClick={() => { setStep(1); setLoginInput(''); setPasswordInput(''); setError(null) }}
                 disabled={deleting}
                 className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
               >
@@ -224,7 +247,7 @@ export default function DeleteAccountModal({ user, onClose, onDeleted, mode = 'a
               </button>
               <button
                 onClick={handleDelete}
-                disabled={deleting || loginInput.trim() !== user.login}
+                disabled={deleting || loginInput.trim() !== user.login || !passwordInput}
                 className="px-4 py-2 text-sm font-semibold text-white bg-red-700 rounded-lg hover:bg-red-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
               >
                 {deleting ? 'Suppression…' : (mode === 'data-only' ? 'Supprimer mes données' : 'Supprimer définitivement')}

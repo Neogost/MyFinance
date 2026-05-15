@@ -5,6 +5,7 @@ import com.myfinance.config.PasswordEncoderConfig;
 import com.myfinance.config.SecurityConfig;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SafetyNetMode;
+import com.myfinance.dto.ConfirmPasswordRequest;
 import com.myfinance.dto.UpdateFiscalProfileRequest;
 import com.myfinance.dto.UpdatePersonalInfoRequest;
 import com.myfinance.dto.UpdateSafetyNetRequest;
@@ -25,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -245,15 +247,40 @@ class ProfileControllerTest {
     @Test
     @WithMockCustomUser
     void deleteAllData_retourne204() throws Exception {
-        doNothing().when(profileDataService).deleteAllData(any());
+        doNothing().when(profileDataService).deleteAllData(any(), any());
 
-        mockMvc.perform(delete("/api/profile/data"))
+        mockMvc.perform(delete("/api/profile/data")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("MonMotDePasse1!"))))
                 .andExpect(status().isNoContent());
     }
 
     @Test
+    @WithMockCustomUser
+    void deleteAllData_mauvaisPassword_retourne401() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mot de passe incorrect"))
+                .when(profileDataService).deleteAllData(any(), any());
+
+        mockMvc.perform(delete("/api/profile/data")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("wrong"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void deleteAllData_passwordVide_retourne400() throws Exception {
+        mockMvc.perform(delete("/api/profile/data")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest(""))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void deleteAllData_sansAuthentification_retourne401() throws Exception {
-        mockMvc.perform(delete("/api/profile/data"))
+        mockMvc.perform(delete("/api/profile/data")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("x"))))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -262,15 +289,31 @@ class ProfileControllerTest {
     @Test
     @WithMockCustomUser
     void deleteDataOnly_retourne204() throws Exception {
-        doNothing().when(profileDataService).deleteDataOnly(any());
+        doNothing().when(profileDataService).deleteDataOnly(any(), any());
 
-        mockMvc.perform(delete("/api/profile/data-only"))
+        mockMvc.perform(delete("/api/profile/data-only")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("MonMotDePasse1!"))))
                 .andExpect(status().isNoContent());
     }
 
     @Test
+    @WithMockCustomUser
+    void deleteDataOnly_mauvaisPassword_retourne401() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Mot de passe incorrect"))
+                .when(profileDataService).deleteDataOnly(any(), any());
+
+        mockMvc.perform(delete("/api/profile/data-only")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("wrong"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void deleteDataOnly_sansAuthentification_retourne401() throws Exception {
-        mockMvc.perform(delete("/api/profile/data-only"))
+        mockMvc.perform(delete("/api/profile/data-only")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ConfirmPasswordRequest("x"))))
                 .andExpect(status().isUnauthorized());
     }
 }

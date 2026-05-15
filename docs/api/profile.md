@@ -15,6 +15,9 @@ Ces endpoints permettent à l'utilisateur connecté de gérer son propre profil 
 | `PUT` | `/api/profile/safety-net` | Mettre à jour le matelas de sécurité |
 | `PUT` | `/api/profile/fiscal` | Mettre à jour le profil fiscal (parts, abattement, frais réels) |
 | `PUT` | `/api/profile/personal-info` | Mettre à jour les informations personnelles (déclaration de patrimoine) |
+| `GET` | `/api/profile/data-summary` | Compteurs des données qui seraient supprimées |
+| `DELETE` | `/api/profile/data` | Supprimer toutes ses données **et** son compte (mot de passe requis) |
+| `DELETE` | `/api/profile/data-only` | Supprimer toutes ses données, compte conservé (mot de passe requis) |
 
 **Accès** : authentifié (utilisateur connecté — ses propres données uniquement)
 
@@ -183,6 +186,52 @@ Content-Type: application/json
 ### Réponses
 
 **200 OK** — Retourne le `UserDto` complet mis à jour.
+
+---
+
+## DELETE /api/profile/data
+
+Supprime **toutes les données** de l'utilisateur connecté **et son compte**. Action irréversible. Re-authentification par mot de passe obligatoire pour neutraliser une exploitation via XSS.
+
+```http
+DELETE /api/profile/data
+Content-Type: application/json
+
+{
+  "currentPassword": "MonMotDePasse1!"
+}
+```
+
+### Réponses
+
+| Code | Raison |
+|------|--------|
+| 204 | Compte et données supprimés |
+| 400 | `currentPassword` manquant ou vide |
+| 401 | Mot de passe incorrect ou non authentifié |
+
+---
+
+## DELETE /api/profile/data-only
+
+Identique à `/api/profile/data` mais **conserve** le compte (l'utilisateur peut continuer à se connecter, les données reprennent à zéro).
+
+```http
+DELETE /api/profile/data-only
+Content-Type: application/json
+
+{
+  "currentPassword": "MonMotDePasse1!"
+}
+```
+
+### Réponses
+
+| Code | Raison |
+|------|--------|
+| 204 | Données supprimées, compte conservé |
+| 400 | `currentPassword` manquant ou vide |
+| 401 | Mot de passe incorrect ou non authentifié |
 
 ---
 

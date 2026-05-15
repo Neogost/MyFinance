@@ -9,10 +9,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -33,6 +37,7 @@ class ProfileDataServiceTest {
     @Mock AnalyticsEventRepository analyticsEventRepository;
     @Mock FamilyGroupRepository familyGroupRepository;
     @Mock UserRepository userRepository;
+    @Mock PasswordEncoder passwordEncoder;
 
     @InjectMocks ProfileDataService service;
 
@@ -40,7 +45,8 @@ class ProfileDataServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = User.builder().id(1L).login("test").role(RoleEnum.USER).build();
+        user = User.builder().id(1L).login("test").password("hash").role(RoleEnum.USER).build();
+        lenient().when(passwordEncoder.matches("good-password", "hash")).thenReturn(true);
     }
 
     // ── getSummary ────────────────────────────────────────────────────────────
@@ -104,7 +110,7 @@ class ProfileDataServiceTest {
                 .thenReturn(List.of(new DebtBalanceEntry()));
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        service.deleteAllData(user);
+        service.deleteAllData(user, "good-password");
 
         verify(portfolioSnapshotRepository).deleteAll(any());
         verify(positionRepository).deleteAll(any());
@@ -132,7 +138,7 @@ class ProfileDataServiceTest {
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        service.deleteAllData(user);
+        service.deleteAllData(user, "good-password");
 
         verify(familyGroupRepository).delete(group);
         verify(userRepository).delete(user);
@@ -150,7 +156,7 @@ class ProfileDataServiceTest {
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        service.deleteAllData(user);
+        service.deleteAllData(user, "good-password");
 
         verify(familyGroupRepository, never()).delete(any());
         verify(userRepository).delete(user);
@@ -165,7 +171,7 @@ class ProfileDataServiceTest {
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        service.deleteAllData(user);
+        service.deleteAllData(user, "good-password");
 
         verify(familyGroupRepository, never()).delete(any());
         verify(userRepository).delete(user);
@@ -181,11 +187,49 @@ class ProfileDataServiceTest {
         when(debtRepository.findByUserOrderByTypeAscLabelAsc(user)).thenReturn(List.of());
         when(loanSimulationRepository.findByUserOrderBySavedAtDesc(user)).thenReturn(List.of());
 
-        service.deleteDataOnly(user);
+        service.deleteDataOnly(user, "good-password");
 
         verify(otherIncomeRepository).deleteByUser(user);
         verify(analyticsEventRepository).deleteByUser(user);
         verify(userRepository, never()).delete(any());  // ← compte conservé
         verify(familyGroupRepository, never()).delete(any());  // ← groupe non touché
+    }
+
+    // ── Confirmation par mot de passe ─────────────────────────────────────────
+
+    @Test
+    void deleteAllData_mauvaisPassword_leve401_etNeSupprimeRien() {
+        when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteAllData(user, "wrong"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.UNAUTHORIZED);
+
+        verifyNoInteractions(portfolioSnapshotRepository, positionRepository,
+                salaryContractRepository, debtRepository, otherIncomeRepository,
+                recurringExpenseRepository, possessionRepository,
+                patrimoineTargetRepository, userBudgetRepository,
+                loanSimulationRepository, analyticsEventRepository,
+                familyGroupRepository, userRepository);
+    }
+
+    @Test
+    void deleteAllData_passwordNull_leve401() {
+        assertThatThrownBy(() -> service.deleteAllData(user, null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.UNAUTHORIZED);
+        verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteDataOnly_mauvaisPassword_leve401_etNeSupprimeRien() {
+        when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteDataOnly(user, "wrong"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.UNAUTHORIZED);
+
+        verify(otherIncomeRepository, never()).deleteByUser(any());
+        verify(analyticsEventRepository, never()).deleteByUser(any());
     }
 }

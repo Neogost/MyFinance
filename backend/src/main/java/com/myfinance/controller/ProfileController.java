@@ -75,19 +75,23 @@ public class ProfileController {
 
     @Operation(summary = "Supprimer toutes ses données et son compte")
     @ApiResponse(responseCode = "204", description = "Compte et données supprimés")
+    @ApiResponse(responseCode = "401", description = "Mot de passe incorrect")
     @DeleteMapping("/data")
     public ResponseEntity<Void> deleteAllData(
+            @Valid @RequestBody ConfirmPasswordRequest request,
             @AuthenticationPrincipal User currentUser) {
-        profileDataService.deleteAllData(currentUser);
+        profileDataService.deleteAllData(currentUser, request.currentPassword());
         return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Supprimer toutes ses données sans supprimer le compte")
     @ApiResponse(responseCode = "204", description = "Données supprimées, compte conservé")
+    @ApiResponse(responseCode = "401", description = "Mot de passe incorrect")
     @DeleteMapping("/data-only")
     public ResponseEntity<Void> deleteDataOnly(
+            @Valid @RequestBody ConfirmPasswordRequest request,
             @AuthenticationPrincipal User currentUser) {
-        profileDataService.deleteDataOnly(currentUser);
+        profileDataService.deleteDataOnly(currentUser, request.currentPassword());
         return ResponseEntity.noContent().build();
     }
 }
