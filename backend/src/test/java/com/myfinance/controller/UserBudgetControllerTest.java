@@ -81,4 +81,24 @@ class UserBudgetControllerTest {
                         .content("{\"budgets\": null}"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @WithMockCustomUser
+    void upsertAll_montantNegatif_retourne400() throws Exception {
+        Map<ExpenseCategoryEnum, Float> budgets = Map.of(ExpenseCategoryEnum.LOGEMENT, -1f);
+        mockMvc.perform(put("/api/expense-budgets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpsertUserBudgetsRequest(budgets))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockCustomUser
+    void upsertAll_montantAbsurde_retourne400() throws Exception {
+        Map<ExpenseCategoryEnum, Float> budgets = Map.of(ExpenseCategoryEnum.LOGEMENT, 1_000_000_000f);
+        mockMvc.perform(put("/api/expense-budgets")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpsertUserBudgetsRequest(budgets))))
+                .andExpect(status().isBadRequest());
+    }
 }
