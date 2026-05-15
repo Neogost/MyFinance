@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record BugCommentDto(
         Long id,
+        Long authorId,        // pour le contrôle "peut modifier" côté frontend
         String authorDisplay,
         String content,
         LocalDateTime createdAt
@@ -15,6 +16,6 @@ public record BugCommentDto(
         String display = adminView
                 ? c.getAuthor().getLogin() + " [" + c.getAuthor().getRole().name() + "]"
                 : c.getAuthor().getFirstName();
-        return new BugCommentDto(c.getId(), display, c.getContent(), c.getCreatedAt());
+        return new BugCommentDto(c.getId(), c.getAuthor().getId(), display, c.getContent(), c.getCreatedAt());
     }
 }

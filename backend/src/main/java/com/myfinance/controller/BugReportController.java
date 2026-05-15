@@ -89,4 +89,17 @@ public class BugReportController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(bugReportService.addComment(id, request, currentUser));
     }
+
+    @Operation(summary = "Modifier un commentaire (auteur ou admin)")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = BugCommentDto.class)))
+    @ApiResponse(responseCode = "403", description = "Commentaire d'un autre utilisateur")
+    @ApiResponse(responseCode = "404", description = "Commentaire introuvable")
+    @PutMapping("/{id}/comments/{commentId}")
+    public ResponseEntity<BugCommentDto> updateComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @Valid @RequestBody CreateBugCommentRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(bugReportService.updateComment(id, commentId, request, currentUser));
+    }
 }

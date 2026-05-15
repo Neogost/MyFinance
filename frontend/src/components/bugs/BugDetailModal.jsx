@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getBugReport, voteBugReport, removeVoteBugReport, commentBugReport } from '../../api/bugReports'
+import { getBugReport, voteBugReport, removeVoteBugReport, commentBugReport, updateComment } from '../../api/bugReports'
 
 const STATUS_LABEL = { OPEN: 'Ouvert', IN_PROGRESS: 'En cours', FIXED: 'Corrigé', CLOSED: 'Clôturé', REJECTED: 'Rejeté', DUPLICATE: 'Doublon' }
 const STATUS_COLOR = { OPEN: 'bg-blue-100 text-blue-700', IN_PROGRESS: 'bg-orange-100 text-orange-700', FIXED: 'bg-green-100 text-green-700', CLOSED: 'bg-gray-100 text-gray-600', REJECTED: 'bg-red-100 text-red-700', DUPLICATE: 'bg-gray-100 text-gray-500' }
@@ -10,6 +10,60 @@ function formatDt(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
   return `${d.toLocaleDateString('fr-FR')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
+
+function CommentItem({ comment: c, canEdit, onSaved, bugId }) {
+  const [editing, setEditing] = useState(false)
+  const [draft,   setDraft]   = useState(c.content)
+  const [saving,  setSaving]  = useState(false)
+
+  async function handleSave() {
+    if (!draft.trim() || draft.trim() === c.content) { setEditing(false); return }
+    setSaving(true)
+    try {
+      const updated = await updateComment(bugId, c.id, draft.trim())
+      onSaved(updated)
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-lg px-4 py-3">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold text-gray-700">{c.authorDisplay}</span>
+        <div className="flex items-center gap-2">
+          {canEdit && !editing && (
+            <button onClick={() => { setDraft(c.content); setEditing(true) }}
+              className="text-xs text-indigo-500 hover:text-indigo-700 transition">
+              Modifier
+            </button>
+          )}
+          <span className="text-xs text-gray-400">{formatDt(c.createdAt)}</span>
+        </div>
+      </div>
+      {editing ? (
+        <div className="space-y-2 mt-1">
+          <textarea rows={3} value={draft} onChange={e => setDraft(e.target.value)} maxLength={2000}
+            className="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(false)}
+              className="text-xs text-gray-500 hover:text-gray-700 transition">
+              Annuler
+            </button>
+            <button onClick={handleSave} disabled={saving || !draft.trim()}
+              className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition disabled:opacity-50">
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600 whitespace-pre-wrap">{c.content}</p>
+      )}
+    </div>
+  )
 }
 
 export default function BugDetailModal({ bugId, currentUserId, isReporter, onClose, onScoreChange }) {
@@ -142,13 +196,13 @@ export default function BugDetailModal({ bugId, currentUserId, isReporter, onClo
               </h3>
               <div className="space-y-3">
                 {(bug.comments ?? []).map(c => (
-                  <div key={c.id} className="bg-gray-50 rounded-lg px-4 py-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-gray-700">{c.authorDisplay}</span>
-                      <span className="text-xs text-gray-400">{formatDt(c.createdAt)}</span>
-                    </div>
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{c.content}</p>
-                  </div>
+                  <CommentItem
+                    key={c.id}
+                    comment={c}
+                    canEdit={c.authorId === currentUserId}
+                    onSaved={updated => setBug(b => ({ ...b, comments: b.comments.map(x => x.id === updated.id ? updated : x) }))}
+                    bugId={bugId}
+                  />
                 ))}
               </div>
 

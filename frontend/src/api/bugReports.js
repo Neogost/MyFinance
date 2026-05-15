@@ -19,6 +19,9 @@ export const removeVoteBugReport = (id) =>
 export const commentBugReport = (id, content) =>
   client.post(`/api/bug-reports/${id}/comments`, { content }).then(r => r.data)
 
+export const updateComment = (bugId, commentId, content) =>
+  client.put(`/api/bug-reports/${bugId}/comments/${commentId}`, { content }).then(r => r.data)
+
 // ── Admin ──────────────────────────────────────────────────────────
 export const getAdminBugReports = (params) =>
   client.get('/api/admin/bug-reports', { params }).then(r => r.data)

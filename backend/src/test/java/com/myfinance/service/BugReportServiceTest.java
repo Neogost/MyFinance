@@ -142,7 +142,7 @@ class BugReportServiceTest {
     void create_sauvegardeBugEtVoteInitial() {
         CreateBugReportRequest request = new CreateBugReportRequest(
                 "Graphique vide", "Le graphique ne charge pas.",
-                null, null, null, BugSeverity.HIGH, "session-abc");
+                null, null, null, BugSeverity.HIGH, "session-abc", null);
 
         when(bugReportRepository.save(any())).thenAnswer(inv -> {
             BugReport b = inv.getArgument(0);
