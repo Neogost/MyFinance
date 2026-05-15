@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { getExpenseSummary } from '../../api/expenses'
-import { useSavingsCapacity } from '../../hooks/useSavingsCapacity'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
@@ -56,7 +55,9 @@ export default function ExpensesByCategoryChart({ onHasData }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const { savingsCapacity, savingsRate } = useSavingsCapacity(summary?.totalMonthlyExpenses ?? null)
+  // savingsCapacity et savingsRate sont désormais calculés côté backend dans ExpenseSummaryDto.
+  const savingsCapacity = summary?.savingsCapacity ?? null
+  const savingsRate     = summary?.savingsRate ?? null
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>
@@ -115,7 +116,30 @@ export default function ExpensesByCategoryChart({ onHasData }) {
 
         {savingsRate !== null && (
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500">Capacité d'épargne</span>
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              Capacité d'épargne
+              {summary?.monthlyNetIncome != null && (
+                <span className="text-gray-300 text-xs cursor-default relative group">
+                  ⓘ
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-72 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 leading-relaxed font-normal normal-case tracking-normal">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between gap-6">
+                        <span>Revenus nets mensuels</span>
+                        <span className="font-medium amount">{fmtEur.format(summary.monthlyNetIncome)}</span>
+                      </div>
+                      <div className="flex justify-between gap-6 text-red-300">
+                        <span>− Dépenses récurrentes</span>
+                        <span className="font-medium amount">−{fmtEur.format(summary.totalMonthlyExpenses ?? 0)}</span>
+                      </div>
+                      <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
+                        <span>= Capacité d'épargne</span>
+                        <span className="amount">{fmtEur.format(savingsCapacity ?? 0)}</span>
+                      </div>
+                    </div>
+                  </span>
+                </span>
+              )}
+            </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`text-xs font-semibold tabular-nums amount ${savingsRate >= 0 ? 'text-teal-600' : 'text-red-500'}`}>
                 {fmtEur.format(savingsCapacity ?? 0)}

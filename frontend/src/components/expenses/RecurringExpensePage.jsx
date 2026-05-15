@@ -5,7 +5,6 @@ import { fmt } from '../../utils/formatting.js'
 import KpiCard from '../common/KpiCard'
 import DeleteConfirmModal from '../common/DeleteConfirmModal'
 import { useAnalytics } from '../../hooks/useAnalytics'
-import { useSavingsCapacity } from '../../hooks/useSavingsCapacity'
 
 const CATEGORY_META = {
   LOGEMENT:    { label: 'Logement',               color: 'bg-blue-100 text-blue-700',    dot: 'bg-blue-400' },
@@ -36,7 +35,10 @@ export default function RecurringExpensePage() {
   const [showBudgetEditor,  setShowBudgetEditor]  = useState(false)
   const [deleteTarget,      setDeleteTarget]      = useState(null)
 
-  const { savingsCapacity, savingsRate } = useSavingsCapacity(summary?.totalMonthlyExpenses ?? null)
+  // savingsCapacity et savingsRate viennent désormais directement de l'API : c'est juste
+  // monthlyNetIncome (qui inclut salaire + autres revenus récurrents) moins les dépenses.
+  const savingsCapacity = summary?.savingsCapacity ?? null
+  const savingsRate     = summary?.savingsRate ?? null
 
   function updateBudget(category, value) {
     const updated = { ...budgets }
@@ -185,6 +187,12 @@ export default function RecurringExpensePage() {
                         <span className="font-medium amount">+{fmt(summary.breakdownMonthlyBonuses)} €</span>
                       </div>
                     )}
+                    {summary.breakdownOtherIncome != null && (
+                      <div className="flex justify-between gap-6 text-emerald-300">
+                        <span>+ Autres revenus (locatif, aides)</span>
+                        <span className="font-medium amount">+{fmt(summary.breakdownOtherIncome)} €</span>
+                      </div>
+                    )}
                     <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
                       <span>= Revenu net mensuel</span>
                       <span className="amount">{fmt(summary.monthlyNetIncome)} €</span>
@@ -203,6 +211,22 @@ export default function RecurringExpensePage() {
               value={savingsCapacity}
               sub={savingsRate != null ? `Taux d'épargne : ${savingsRate.toFixed(1)} %` : null}
               color={savingsColor}
+              labelTooltip={summary.monthlyNetIncome != null ? (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between gap-6">
+                    <span>Revenus nets mensuels</span>
+                    <span className="font-medium amount">{fmt(summary.monthlyNetIncome)} €</span>
+                  </div>
+                  <div className="flex justify-between gap-6 text-red-300">
+                    <span>− Dépenses récurrentes</span>
+                    <span className="font-medium amount">−{fmt(summary.totalMonthlyExpenses)} €</span>
+                  </div>
+                  <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
+                    <span>= Capacité d'épargne</span>
+                    <span className="amount">{fmt(savingsCapacity ?? 0)} €</span>
+                  </div>
+                </div>
+              ) : null}
             />
             <KpiCard
               label="Taux d'épargne"

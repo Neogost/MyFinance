@@ -4,22 +4,14 @@ import ExpensesByCategoryChart from '../../../components/dashboard/ExpensesByCat
 import PassifsByCategoryChart from '../../../components/dashboard/PassifsByCategoryChart'
 import { getExpenseSummary } from '../../../api/expenses'
 import { getPossessionsSummary } from '../../../api/possessions'
-import { useSavingsCapacity } from '../../../hooks/useSavingsCapacity'
 
 vi.mock('../../../api/expenses',   () => ({ getExpenseSummary:     vi.fn() }))
 vi.mock('../../../api/possessions', () => ({ getPossessionsSummary: vi.fn() }))
-// Le composant calcule désormais la capacité d'épargne via le hook useSavingsCapacity
-// (qui appelle 4 APIs pour combiner revenus + impôts). On le mocke pour isoler le test.
-vi.mock('../../../hooks/useSavingsCapacity', () => ({ useSavingsCapacity: vi.fn() }))
 
 // ── ExpensesByCategoryChart ────────────────────────────────────────────────────
 
 describe('ExpensesByCategoryChart', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    // Par défaut : pas de capacité d'épargne (les tests qui en ont besoin override)
-    useSavingsCapacity.mockReturnValue({ savingsCapacity: null, savingsRate: null, loading: false })
-  })
+  beforeEach(() => vi.clearAllMocks())
 
   it('affiche "Chargement…" pendant le fetch', () => {
     getExpenseSummary.mockReturnValue(new Promise(() => {}))
@@ -61,8 +53,9 @@ describe('ExpensesByCategoryChart', () => {
     getExpenseSummary.mockResolvedValue({
       byCategory: [{ category: 'TRANSPORT', monthlyAmount: 200 }],
       totalMonthlyExpenses: 200,
+      savingsCapacity: 600,
+      savingsRate: 35,
     })
-    useSavingsCapacity.mockReturnValue({ savingsCapacity: 600, savingsRate: 35, loading: false })
     render(<ExpensesByCategoryChart />)
     await waitFor(() => {
       expect(screen.getByText(/Capacité d'épargne/)).toBeInTheDocument()

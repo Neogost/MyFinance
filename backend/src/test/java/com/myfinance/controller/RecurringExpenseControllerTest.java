@@ -75,7 +75,7 @@ class RecurringExpenseControllerTest {
     void getSummary_retourne200() throws Exception {
         ExpenseSummaryDto summary = new ExpenseSummaryDto(
                 3000f, "NET_AFTER_TAX", 500f, 6000f, 2500f, 83.33f, List.of(),
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         when(recurringExpenseService.getSummary(any())).thenReturn(summary);
 
         mockMvc.perform(get("/api/recurring-expenses/summary"))

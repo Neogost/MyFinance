@@ -2,10 +2,12 @@ package com.myfinance.service;
 
 import com.myfinance.domain.ExpenseCategoryEnum;
 import com.myfinance.domain.FrequencyEnum;
+import com.myfinance.domain.OtherIncomeTypeEnum;
 import com.myfinance.domain.RecurringExpense;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.User;
 import com.myfinance.dto.*;
+import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.RecurringExpenseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,13 @@ public class RecurringExpenseService {
 
     private final RecurringExpenseRepository recurringExpenseRepository;
     private final SalaryContractService salaryContractService;
+    private final OtherIncomeRepository otherIncomeRepository;
+
+    // Types d'OtherIncome considérés comme revenus mensuels récurrents (cf. OtherIncomeForm :
+    // ces types affichent le champ « par mois », contrairement aux DIVIDENDE/AUTRE qui sont
+    // ponctuels avec date de perception).
+    private static final List<OtherIncomeTypeEnum> RECURRING_INCOME_TYPES =
+            List.of(OtherIncomeTypeEnum.LOCATIF, OtherIncomeTypeEnum.AIDE_SOCIALE);
 
     // ── Lecture ────────────────────────────────────────────────
 
@@ -160,6 +169,21 @@ public class RecurringExpenseService {
                     ? active.employerMonthlyMealVoucherCost() : null;
         }
 
+        // Autres revenus mensuels récurrents (loyers, aides sociales)
+        float otherIncomeMonthly = (float) otherIncomeRepository.findByUserOrderByDateDesc(user).stream()
+                .filter(oi -> RECURRING_INCOME_TYPES.contains(oi.getType()))
+                .mapToDouble(oi -> oi.getAmount() != null ? oi.getAmount() : 0.0)
+                .sum();
+        Float breakdownOtherIncome = otherIncomeMonthly > 0 ? otherIncomeMonthly : null;
+        if (otherIncomeMonthly > 0) {
+            monthlyNetIncome = (monthlyNetIncome != null ? monthlyNetIncome : 0f) + otherIncomeMonthly;
+            // Si on n'a pas de contrat actif mais qu'il y a au moins un revenu locatif/aide,
+            // on remonte du statut NONE pour que le frontend cesse d'afficher "Aucun contrat actif".
+            if ("NONE".equals(incomeSource)) {
+                incomeSource = "OTHER_INCOME_ONLY";
+            }
+        }
+
         float income = monthlyNetIncome != null ? monthlyNetIncome : 0f;
         float savingsCapacity = income - totalMonthly;
         Float savingsRate = income > 0 ? (savingsCapacity / income) * 100f : null;
@@ -176,7 +200,8 @@ public class RecurringExpenseService {
                 breakdownEstimatedTax,
                 breakdownBenefits,
                 breakdownMealVoucherEmployer,
-                breakdownMonthlyBonuses
+                breakdownMonthlyBonuses,
+                breakdownOtherIncome
         );
     }
 

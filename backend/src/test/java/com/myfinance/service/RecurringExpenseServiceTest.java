@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.*;
 import com.myfinance.dto.*;
+import com.myfinance.repository.OtherIncomeRepository;
 import com.myfinance.repository.RecurringExpenseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ class RecurringExpenseServiceTest {
 
     @Mock RecurringExpenseRepository recurringExpenseRepository;
     @Mock SalaryContractService salaryContractService;
+    @Mock OtherIncomeRepository otherIncomeRepository;
     @InjectMocks RecurringExpenseService recurringExpenseService;
 
     User owner;
@@ -47,6 +49,9 @@ class RecurringExpenseServiceTest {
                 .frequency(FrequencyEnum.MONTHLY)
                 .sharePercentage(50f)
                 .build();
+
+        // Par défaut : aucun OtherIncome récurrent (les tests qui en ont besoin override).
+        lenient().when(otherIncomeRepository.findByUserOrderByDateDesc(any())).thenReturn(List.of());
     }
 
     // ── findAllByUser ──────────────────────────────────────────
