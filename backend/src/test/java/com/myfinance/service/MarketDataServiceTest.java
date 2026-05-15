@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -134,6 +135,7 @@ class MarketDataServiceTest {
         when(instrumentRepository.findByCategoryAndStablePriceFalseAndBoursoramaSymbolIsNotNull(any())).thenReturn(List.of());
         when(instrumentRepository.findByCategoryAndStablePriceFalseAndCoinGeckoIdIsNotNull(any())).thenReturn(List.of());
         when(ecbRateClient.getRates()).thenReturn(Map.of("USD", new BigDecimal("1.09")));
+        when(exchangeRateService.findAllCurrencies()).thenReturn(Set.of("USD"));
         when(portfolioSnapshotService.createForAllUsers(any()))
                 .thenReturn(new BulkSnapshotResultDto(2, 0, 0));
 

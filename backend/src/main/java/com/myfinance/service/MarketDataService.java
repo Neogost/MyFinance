@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -138,18 +140,32 @@ public class MarketDataService {
     // ── Étape 3 : taux de change ───────────────────────────────
 
     int updateExchangeRates(List<String> errors) {
-        Map<String, BigDecimal> rates = ecbRateClient.getRates();
-        if (rates.isEmpty()) {
+        Map<String, BigDecimal> allRates = ecbRateClient.getRates();
+        if (allRates.isEmpty()) {
             String msg = "Aucun taux de change récupéré depuis l'API ECB/Frankfurter";
             log.error("[Taux] {}", msg);
             errors.add(msg);
             return 0;
         }
+
+        // Seules les devises déjà configurées par l'admin sont mises à jour —
+        // les nouvelles devises retournées par ECB ne sont pas importées automatiquement.
+        Set<String> configured = exchangeRateService.findAllCurrencies();
+        Map<String, BigDecimal> rates = allRates.entrySet().stream()
+                .filter(e -> configured.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        if (rates.isEmpty()) {
+            log.info("[Taux] Aucune devise configurée à mettre à jour (configured={})", configured.size());
+            return 0;
+        }
+
         List<UpdateExchangeRateRequest> requests = rates.entrySet().stream()
                 .map(e -> new UpdateExchangeRateRequest(e.getKey(), e.getValue()))
                 .toList();
         exchangeRateService.updateRates(requests);
         rateHistoryService.saveRatesBatch(rates, LocalDate.now(PARIS), ExchangeRateHistoryService.SOURCE_ECB);
+        log.info("[Taux] {} devise(s) mises à jour sur {} disponibles depuis ECB", rates.size(), allRates.size());
         return rates.size();
     }
 

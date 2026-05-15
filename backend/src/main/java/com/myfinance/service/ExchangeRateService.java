@@ -8,6 +8,8 @@ import com.myfinance.repository.ExchangeRateHistoryRepository;
 import com.myfinance.repository.ExchangeRateRepository;
 import com.myfinance.repository.InstrumentRepository;
 import com.myfinance.repository.PositionRepository;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,12 @@ public class ExchangeRateService {
     public List<ExchangeRateDto> findAll() {
         return exchangeRateRepository.findAllByOrderByCurrencyAsc()
                 .stream().map(ExchangeRateDto::from).toList();
+    }
+
+    public Set<String> findAllCurrencies() {
+        return exchangeRateRepository.findAll().stream()
+                .map(ExchangeRate::getCurrency)
+                .collect(Collectors.toSet());
     }
 
     /**
