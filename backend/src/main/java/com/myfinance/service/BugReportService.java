@@ -11,15 +11,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BugReportService {
+
+    // Statuts qui ferment le bug : commentaires refusés pour éviter le spam sur
+    // des tickets archivés ou rejetés (cf. finding N14).
+    private static final Set<BugStatus> CLOSED_STATUSES =
+            EnumSet.of(BugStatus.CLOSED, BugStatus.REJECTED, BugStatus.DUPLICATE);
+
+    // Rate-limit applicatif basé sur les comptages BDD : pas de map mémoire
+    // (les commentaires sont rares — coût de 2 COUNT négligeable, et survit aux restarts).
+    private static final int MAX_COMMENTS_PER_USER_PER_HOUR = 10;
+    private static final int MAX_COMMENTS_PER_BUG_PER_USER_PER_HOUR = 3;
 
     private final BugReportRepository bugReportRepository;
     private final BugVoteRepository bugVoteRepository;
@@ -138,6 +151,29 @@ public class BugReportService {
 
     public BugCommentDto addComment(Long id, CreateBugCommentRequest request, User author) {
         BugReport bug = getOrThrow(id);
+
+        if (CLOSED_STATUSES.contains(bug.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Ce bug est " + bug.getStatus() + " — les commentaires sont fermés.");
+        }
+
+        // Rate-limit applicatif : limite globale + limite par bug pour empêcher le spam.
+        // Les admins en sont exemptés (ils peuvent avoir besoin de commenter rapidement).
+        if (!isAdmin(author)) {
+            LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+            long globalCount = bugCommentRepository.countByAuthorAndCreatedAtAfter(author, oneHourAgo);
+            if (globalCount >= MAX_COMMENTS_PER_USER_PER_HOUR) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Trop de commentaires postés ces dernières minutes — réessayez plus tard.");
+            }
+            long perBugCount = bugCommentRepository.countByBugReportAndAuthorAndCreatedAtAfter(
+                    bug, author, oneHourAgo);
+            if (perBugCount >= MAX_COMMENTS_PER_BUG_PER_USER_PER_HOUR) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Trop de commentaires sur ce bug ces dernières minutes — réessayez plus tard.");
+            }
+        }
+
         BugComment comment = BugComment.builder()
                 .bugReport(bug)
                 .author(author)

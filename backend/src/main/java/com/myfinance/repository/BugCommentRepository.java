@@ -5,6 +5,7 @@ import com.myfinance.domain.BugReport;
 import com.myfinance.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,8 @@ public interface BugCommentRepository extends JpaRepository<BugComment, Long> {
     void deleteByAuthor(User author);
 
     Optional<BugComment> findByIdAndBugReportId(Long id, Long bugReportId);
+
+    long countByAuthorAndCreatedAtAfter(User author, LocalDateTime cutoff);
+
+    long countByBugReportAndAuthorAndCreatedAtAfter(BugReport bugReport, User author, LocalDateTime cutoff);
 }

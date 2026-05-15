@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.lenient;
 
@@ -234,6 +235,68 @@ class BugReportServiceTest {
                 1L, new CreateBugCommentRequest("Corrigé en v1.9."), admin);
 
         assertThat(result.authorDisplay()).contains("admin").contains("ADMIN");
+    }
+
+    @Test
+    void addComment_bugFerme_leve409() {
+        bug.setStatus(BugStatus.CLOSED);
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+
+        assertThatThrownBy(() -> bugReportService.addComment(
+                1L, new CreateBugCommentRequest("Tardif."), otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+        verify(bugCommentRepository, never()).save(any());
+    }
+
+    @Test
+    void addComment_bugRejete_leve409() {
+        bug.setStatus(BugStatus.REJECTED);
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+
+        assertThatThrownBy(() -> bugReportService.addComment(
+                1L, new CreateBugCommentRequest("Tardif."), otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void addComment_userTropDeCommentairesGlobal_leve429() {
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+        when(bugCommentRepository.countByAuthorAndCreatedAtAfter(eq(otherUser), any()))
+                .thenReturn(10L);
+
+        assertThatThrownBy(() -> bugReportService.addComment(
+                1L, new CreateBugCommentRequest("Spam."), otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.TOO_MANY_REQUESTS);
+        verify(bugCommentRepository, never()).save(any());
+    }
+
+    @Test
+    void addComment_userTropDeCommentairesSurMemeBug_leve429() {
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+        when(bugCommentRepository.countByAuthorAndCreatedAtAfter(eq(otherUser), any()))
+                .thenReturn(5L);  // OK globalement
+        when(bugCommentRepository.countByBugReportAndAuthorAndCreatedAtAfter(eq(bug), eq(otherUser), any()))
+                .thenReturn(3L);  // mais au-dessus du seuil par bug
+
+        assertThatThrownBy(() -> bugReportService.addComment(
+                1L, new CreateBugCommentRequest("Encore."), otherUser))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @Test
+    void addComment_adminExempteDuRateLimit() {
+        BugComment saved = BugComment.builder().id(7L).bugReport(bug).author(admin).content("ok").build();
+        when(bugReportRepository.findById(1L)).thenReturn(Optional.of(bug));
+        when(bugCommentRepository.save(any())).thenReturn(saved);
+
+        bugReportService.addComment(1L, new CreateBugCommentRequest("ok"), admin);
+
+        verify(bugCommentRepository, never()).countByAuthorAndCreatedAtAfter(any(), any());
+        verify(bugCommentRepository).save(any());
     }
 
     // ── patch admin ────────────────────────────────────────────────
