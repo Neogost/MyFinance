@@ -1,5 +1,40 @@
 # Notes de version
 
+## v1.9.2 — 15 mai 2026
+
+> Améliorations de la gestion des bugs, des outils financiers et de l'expérience de saisie.
+
+### ✨ Nouveautés
+
+#### Signalement de bugs — informations navigateur et modification des commentaires
+
+Le formulaire de signalement capture désormais automatiquement le navigateur de l'utilisateur (User-Agent), visible par l'administrateur dans le panneau de détail. Les commentaires peuvent maintenant être modifiés en ligne par leur auteur, et par l'administrateur pour n'importe quel commentaire.
+
+#### Simulateur de fiscalité crypto — indicateur de seuil 305 €
+
+Le simulateur de cession hypothétique affiche maintenant un indicateur contextuel : vert si la cession reste sous les 305 € (pas d'obligation déclarative), rouge si elle dépasse le seuil avec impôt, ou ambre si elle dépasse le seuil sans impôt (moins-value ou PTA couvrant la vente).
+
+#### Simulateur d'impôts — décomposition par contrat
+
+En mode « bulletins de paie réels », lorsque plusieurs contrats couvrent l'année fiscale, le détail du calcul présente la contribution imposable de chaque employeur séparément.
+
+### 🔧 Améliorations
+
+- **Bulletins de paie** : la colonne « VS théorique » intègre désormais les primes mensuelles actives, filtrées par leur période de validité (les primes passées ou futures ne s'appliquent pas aux mois où elles n'étaient pas actives). Les valeurs se recalculent sans rechargement de page à chaque ajout, modification ou suppression d'une prime.
+- **Capacité d'épargne** : le widget « Répartition des dépenses » et la page Dépenses utilisent maintenant la même formule que le widget FIRE (salaire + revenus complémentaires + revenus passifs estimés − impôts).
+- **Bilan financier & déclaration de patrimoine** : les primes mensuelles actives sont incluses dans les revenus mensuels.
+- **Saisie de date** : le composant DateInput insère automatiquement les `/` au bon moment lors de la frappe (ex : `15` → `15/`, `1505` → `15/05/`).
+- **Patrimoine** : toutes les dettes liées à un bien immobilier physique sont maintenant listées sur la carte, et la valeur nette tient compte de l'ensemble des crédits.
+- **Admin — bugs** : modification du contenu d'un bug possible depuis le panneau d'administration.
+
+### 🐛 Corrections
+
+- **Bugs signalés** : filtre « Ouvert » appliqué par défaut à l'ouverture de la liste (côté utilisateur et côté admin).
+- **Formulaire de prime** : import `DateInput` manquant corrigé (erreur à l'ouverture du formulaire pour une prime mensuelle).
+- **Triage admin** : statut et priorité du panneau de détail se réinitialisent correctement lors du passage d'un bug à un autre.
+
+---
+
 ## v1.9.1 — 14 mai 2026
 
 > Correction de l'extraction de logs dans les signalements de bugs, et amélioration du sélecteur de date/heure dans les formulaires.
