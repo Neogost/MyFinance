@@ -1,49 +1,20 @@
-export const WIDGET_GROUPS = [
-  {
-    title: 'Revenus & Dépenses',
-    widgets: [
-      { key: 'cashFlow',          label: 'Flux des revenus' },
-      { key: 'salaryAnnual',      label: 'Évolution salariale annuelle' },
-      { key: 'expensesBreakdown', label: 'Répartition des dépenses' },
-      { key: 'salaryMonthly',      label: 'Détail mensuel par bulletins' },
-      { key: 'upcomingExpenses',  label: 'Prochains prélèvements' },
-      { key: 'safetyNet',         label: 'Matelas de sécurité' },
-    ],
-  },
-  {
-    title: 'Patrimoine',
-    widgets: [
-      { key: 'patrimoineNet',       label: 'Patrimoine net' },
-      { key: 'performanceYtd',      label: 'Performance YTD (TWR)' },
-      { key: 'patrimoineEvolution', label: 'Évolution du patrimoine' },
-      { key: 'fireProjection',      label: 'Projection FIRE' },
-      { key: 'patrimoineBrut',      label: 'Patrimoine brut' },
-      { key: 'patrimoineFinancier', label: 'Patrimoine financier' },
-      { key: 'enveloppe',           label: 'Répartition par enveloppe' },
-      { key: 'capitalGains',        label: 'Plus-values par catégorie' },
-      { key: 'devise',              label: 'Répartition par devise' },
-      { key: 'passifs',             label: 'Répartition des passifs' },
-      { key: 'geoExposure',         label: 'Exposition géographique' },
-      { key: 'sectorExposure',      label: 'Exposition sectorielle' },
-      { key: 'dette',               label: 'Dettes' },
-    ],
-  },
-  {
-    title: 'Objectifs & Stratégie',
-    widgets: [
-      { key: 'scorePatrimonial',       label: 'Score patrimonial' },
-      { key: 'objectives',             label: 'Avancement vers les objectifs' },
-      { key: 'kpiImmo',                label: 'KPI immobiliers (rendement, LTV)' },
-      { key: 'diversificationBourse',  label: 'Diversification — Bourse' },
-      { key: 'diversificationCrypto',  label: 'Diversification — Crypto' },
-      { key: 'diversificationImmo',    label: 'Diversification — Immobilier' },
-    ],
-  },
-]
-
-export const DEFAULT_WIDGET_CONFIG = Object.fromEntries(
-  WIDGET_GROUPS.flatMap(g => g.widgets.map(w => [w.key, true]))
-)
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { WIDGET_GROUPS, DEFAULT_WIDGET_CONFIG } from './widgets-registry'
 
 function Toggle({ enabled, onToggle }) {
   return (
@@ -56,27 +27,92 @@ function Toggle({ enabled, onToggle }) {
   )
 }
 
+function DragHandle() {
+  return (
+    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+    </svg>
+  )
+}
+
+function SortableSection({ group, config, onToggle }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.key })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="bg-gray-50 rounded-lg border border-gray-100">
+      {/* En-tête section — poignée de drag */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-0.5 -ml-0.5 touch-none"
+          aria-label={`Réordonner la section ${group.title}`}
+        >
+          <DragHandle />
+        </button>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex-1">{group.title}</p>
+      </div>
+
+      {/* Toggles widgets */}
+      <div className="px-3 py-2 space-y-2.5">
+        {group.widgets.map(w => (
+          <div key={w.key} className="flex items-center justify-between gap-3">
+            <span className={`text-sm ${config.visibility[w.key] ? 'text-gray-700' : 'text-gray-400'}`}>
+              {w.label}
+            </span>
+            <Toggle enabled={!!config.visibility[w.key]} onToggle={() => onToggle(w.key)} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardCustomizePanel({ config, onChange, onClose }) {
-  function toggle(key) {
-    onChange({ ...config, [key]: !config[key] })
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  function handleDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = config.sectionOrder.indexOf(active.id)
+    const newIndex = config.sectionOrder.indexOf(over.id)
+    onChange({ ...config, sectionOrder: arrayMove(config.sectionOrder, oldIndex, newIndex) })
+  }
+
+  function toggleWidget(key) {
+    onChange({
+      ...config,
+      visibility: { ...config.visibility, [key]: !config.visibility[key] },
+    })
   }
 
   function resetAll() {
     onChange({ ...DEFAULT_WIDGET_CONFIG })
   }
 
+  // Groupes triés selon sectionOrder courant
+  const orderedGroups = config.sectionOrder
+    .map(key => WIDGET_GROUPS.find(g => g.key === key))
+    .filter(Boolean)
+
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
       {/* Panneau */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-60 flex flex-col">
 
-        {/* En-tête — pt-safe pour passer sous la dynamic island iOS sur mobile (le panneau est plein écran) */}
+        {/* En-tête */}
         <div className="flex items-center justify-between px-5 pt-safe pb-4 sm:pt-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-800">Personnaliser le tableau de bord</h2>
           <button
@@ -91,25 +127,27 @@ export default function DashboardCustomizePanel({ config, onChange, onClose }) {
           </button>
         </div>
 
-        {/* Liste des widgets */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-          {WIDGET_GROUPS.map(group => (
-            <div key={group.title}>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">
-                {group.title}
-              </p>
-              <div className="space-y-3">
-                {group.widgets.map(w => (
-                  <div key={w.key} className="flex items-center justify-between gap-3">
-                    <span className={`text-sm ${config[w.key] ? 'text-gray-700' : 'text-gray-400'}`}>
-                      {w.label}
-                    </span>
-                    <Toggle enabled={config[w.key]} onToggle={() => toggle(w.key)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+        {/* Hint réordonnement */}
+        <div className="px-5 pt-3 pb-1">
+          <p className="text-xs text-gray-400">
+            Glissez <span className="inline-block align-middle"><DragHandle /></span> pour réordonner les sections. Activez ou désactivez les widgets ci-dessous.
+          </p>
+        </div>
+
+        {/* Liste sections drag & drop */}
+        <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={config.sectionOrder} strategy={verticalListSortingStrategy}>
+              {orderedGroups.map(group => (
+                <SortableSection
+                  key={group.key}
+                  group={group}
+                  config={config}
+                  onToggle={toggleWidget}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
 
         {/* Pied */}

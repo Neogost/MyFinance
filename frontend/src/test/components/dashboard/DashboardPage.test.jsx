@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import DashboardPage from '../../../components/dashboard/DashboardPage'
+import { migrateConfig, DEFAULT_WIDGET_CONFIG } from '../../../components/dashboard/widgets-registry'
 import { getPositions } from '../../../api/patrimoine'
 import { getMyGroupMembers, getMemberPositions } from '../../../api/familyGroup'
 
@@ -101,5 +102,51 @@ describe('DashboardPage', () => {
   it('ne charge pas les données famille si familyMode=false', () => {
     render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
     expect(getMyGroupMembers).not.toHaveBeenCalled()
+  })
+
+  // ── Migration localStorage v0 → v1 ───────────────────────
+
+  it('migrateConfig retourne la config par défaut si raw est null', () => {
+    const result = migrateConfig(null)
+    expect(result.version).toBe(1)
+    expect(result.sectionOrder).toEqual(['revenues', 'patrimoine', 'objectifs'])
+    expect(result.visibility.cashFlow).toBe(true)
+  })
+
+  it('migrateConfig convertit le format v0 (flat) en v1', () => {
+    const v0 = { cashFlow: false, salaryAnnual: true, fireProjection: false }
+    const result = migrateConfig(v0)
+    expect(result.version).toBe(1)
+    expect(result.visibility.cashFlow).toBe(false)
+    expect(result.visibility.salaryAnnual).toBe(true)
+    expect(result.visibility.fireProjection).toBe(false)
+    expect(result.sectionOrder).toEqual(['revenues', 'patrimoine', 'objectifs'])
+  })
+
+  it('migrateConfig conserve la v1 intacte et fusionne les defaults manquants', () => {
+    const v1 = { version: 1, sectionOrder: ['patrimoine', 'revenues', 'objectifs'], visibility: { cashFlow: false } }
+    const result = migrateConfig(v1)
+    expect(result.sectionOrder).toEqual(['patrimoine', 'revenues', 'objectifs'])
+    expect(result.visibility.cashFlow).toBe(false)
+    expect(result.visibility.salaryAnnual).toBe(true) // default fusionné
+  })
+
+  // ── Réordonnement des sections ───────────────────────────
+
+  it('rend les sections dans l\'ordre défini par sectionOrder', () => {
+    const wcReverse = {
+      version: 1,
+      sectionOrder: ['objectifs', 'patrimoine', 'revenues'],
+      visibility: DEFAULT_WIDGET_CONFIG.visibility,
+    }
+    const mockStorage = { getItem: vi.fn().mockReturnValue(JSON.stringify(wcReverse)), setItem: vi.fn() }
+    Object.defineProperty(window, 'localStorage', { value: mockStorage, writable: true, configurable: true })
+    render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
+    const headings = screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)
+    const idxObjectifs = headings.findIndex(t => t.includes('Objectifs'))
+    const idxRevenues  = headings.findIndex(t => t.includes('Revenus'))
+    expect(idxObjectifs).toBeGreaterThanOrEqual(0)
+    expect(idxRevenues).toBeGreaterThanOrEqual(0)
+    expect(idxObjectifs).toBeLessThan(idxRevenues)
   })
 })
