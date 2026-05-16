@@ -924,10 +924,12 @@ function PerfPositionRow({ pos }) {
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition">
       <td className="py-2 pl-6 pr-2">
-        <span className="text-sm font-medium text-gray-900">{pos.label}</span>
-        {pos.currency && pos.currency !== 'EUR' && (
-          <span className="ml-1.5 text-xs text-gray-400">{pos.currency}</span>
-        )}
+        <div className="flex items-baseline gap-1.5 min-w-0">
+          <span className="text-sm font-medium text-gray-900 truncate" title={pos.label}>{pos.label}</span>
+          {pos.currency && pos.currency !== 'EUR' && (
+            <span className="text-xs text-gray-400 shrink-0">{pos.currency}</span>
+          )}
+        </div>
       </td>
       <td className="py-2 px-2 text-right font-semibold text-sm tabular-nums text-indigo-700">
         {fmtPct(pos.twrAnnualized)}
@@ -1015,14 +1017,14 @@ function ByPositionSection({ byPosition }) {
             {/* Tableau dépliable */}
             {!isCollapsed && (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed min-w-[560px]">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      <th className="text-left text-xs text-gray-400 font-normal py-1.5 pl-6 pr-2">Position</th>
-                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">TWR</th>
-                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">MWR</th>
-                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2">Valeur actuelle</th>
-                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 pr-4">Plus-value</th>
+                      <th className="text-left text-xs text-gray-400 font-normal py-1.5 pl-6 pr-2 w-[38%]">Position</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 w-[14%]">TWR</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 w-[14%]">MWR</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 w-[17%]">Valeur actuelle</th>
+                      <th className="text-right text-xs text-gray-400 font-normal py-1.5 px-2 pr-4 w-[17%]">Plus-value</th>
                     </tr>
                   </thead>
                   <tbody>
