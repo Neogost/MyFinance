@@ -150,6 +150,7 @@ frontend/src/
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
 - Audit responsive mobile et plan de mise en conformité : `docs/audits/MOBILE-AUDIT-2026-04-29.md`
 - Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
+- Personnalisation du tableau de bord (plan d'architecture, non implémenté) : `docs/architecture/dashboard-customization.md`
 - API authentification : `docs/api/authentication.md`
 - API tableau de bord : `docs/api/dashboard.md`
 - API utilisateurs : `docs/api/users.md`
