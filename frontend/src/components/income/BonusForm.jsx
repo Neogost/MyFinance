@@ -6,7 +6,11 @@ import DateInput from '../ui/DateInput'
 
 const EMPTY = { type: 'ANNUELLE', label: '', grossAmount: '', paymentDate: '', paymentMonth: '', startDate: '', endDate: '' }
 
-export default function BonusForm({ bonus, onSubmit, onCancel }) {
+// Pour les contrats PUBLIC, les primes peuvent être négatives (retenues IFSE/CIA notamment).
+// Pour les contrats PRIVATE, on garde le min strictement positif.
+
+export default function BonusForm({ bonus, contractType, onSubmit, onCancel }) {
+  const allowNegative = contractType === 'PUBLIC'
   const isEdit = Boolean(bonus)
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
@@ -101,11 +105,18 @@ export default function BonusForm({ bonus, onSubmit, onCancel }) {
               {form.type === 'MENSUELLE' && <span className="text-gray-400 font-normal ml-1">— par mois</span>}
             </label>
             <input
-              name="grossAmount" type="number" min="0.01" step="0.01"
+              name="grossAmount" type="number"
+              min={allowNegative ? undefined : "0.01"}
+              step="0.01"
               value={form.grossAmount} onChange={handleChange}
-              required placeholder="1000.00"
+              required placeholder={allowNegative ? "ex : 1000.00 ou -50.00" : "1000.00"}
               className={inputCls}
             />
+            {allowNegative && (
+              <p className="text-xs text-gray-400">
+                Montants négatifs autorisés pour les retenues (IFSE/CIA, etc.).
+              </p>
+            )}
           </div>
 
           {/* Champ conditionnel selon le type */}

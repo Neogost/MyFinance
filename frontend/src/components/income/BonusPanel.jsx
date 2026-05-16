@@ -31,7 +31,7 @@ function MensuellePeriod({ bonus }) {
   )
 }
 
-export default function BonusPanel({ contractId, onBonusChange }) {
+export default function BonusPanel({ contractId, contractType, onBonusChange }) {
   const [bonuses, setBonuses]       = useState([])
   const [formTarget, setFormTarget] = useState(undefined)
   const [loading, setLoading]       = useState(true)
@@ -162,6 +162,7 @@ export default function BonusPanel({ contractId, onBonusChange }) {
       {formTarget !== undefined && (
         <BonusForm
           bonus={formTarget}
+          contractType={contractType}
           onSubmit={handleSubmit}
           onCancel={() => setFormTarget(undefined)}
         />

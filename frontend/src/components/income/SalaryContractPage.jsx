@@ -255,7 +255,7 @@ export default function SalaryContractPage() {
               {showBonuses ? '▲ Masquer les primes' : '▼ Afficher les primes'}
             </button>
             {showBonuses && (
-              <BonusPanel contractId={selected.id} onBonusChange={() => {
+              <BonusPanel contractId={selected.id} contractType={selected.contractType} onBonusChange={() => {
                 fetchAnnualBonuses(selected.id)
                 refreshSelectedContract()
               }} />

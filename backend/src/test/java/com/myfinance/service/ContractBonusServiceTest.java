@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.BonusTypeEnum;
 import com.myfinance.domain.ContractBonus;
+import com.myfinance.domain.ContractTypeEnum;
 import com.myfinance.domain.RoleEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
@@ -325,5 +326,57 @@ class ContractBonusServiceTest {
                         .isEqualTo(HttpStatus.NOT_FOUND));
 
         verify(contractBonusRepository, never()).deleteById(any());
+    }
+
+    // ── Montant négatif : autorisé en PUBLIC, refusé en PRIVATE ────
+
+    @Test
+    void create_montantNegatif_refuse_siContratPrivate() {
+        contract.setContractType(ContractTypeEnum.PRIVATE);
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
+
+        CreateContractBonusRequest request = new CreateContractBonusRequest(
+                "Retenue", -50f, BonusTypeEnum.MENSUELLE, null, null, LocalDate.of(2024, 1, 1), null);
+
+        assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("strictement positif");
+
+        verify(contractBonusRepository, never()).save(any());
+    }
+
+    @Test
+    void create_montantNegatif_accepte_siContratPublic() {
+        contract.setContractType(ContractTypeEnum.PUBLIC);
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
+        when(contractBonusRepository.save(any())).thenAnswer(inv -> {
+            ContractBonus b = inv.getArgument(0);
+            return ContractBonus.builder().id(99L).contract(b.getContract())
+                    .label(b.getLabel()).grossAmount(b.getGrossAmount())
+                    .type(b.getType()).startDate(b.getStartDate()).endDate(b.getEndDate()).build();
+        });
+
+        CreateContractBonusRequest request = new CreateContractBonusRequest(
+                "Retenue IFSE", -50f, BonusTypeEnum.MENSUELLE, null, null, LocalDate.of(2024, 1, 1), null);
+
+        ContractBonusDto dto = contractBonusService.create(1L, request, owner);
+
+        assertThat(dto.grossAmount()).isEqualTo(-50f);
+        verify(contractBonusRepository).save(any());
+    }
+
+    @Test
+    void create_montantZero_refuseDansLesDeuxCas() {
+        contract.setContractType(ContractTypeEnum.PUBLIC);
+        when(salaryContractRepository.findById(1L)).thenReturn(Optional.of(contract));
+
+        CreateContractBonusRequest request = new CreateContractBonusRequest(
+                "Zéro", 0f, BonusTypeEnum.MENSUELLE, null, null, LocalDate.of(2024, 1, 1), null);
+
+        assertThatThrownBy(() -> contractBonusService.create(1L, request, owner))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("statusCode", HttpStatus.BAD_REQUEST)
+                .hasMessageContaining("nul");
     }
 }

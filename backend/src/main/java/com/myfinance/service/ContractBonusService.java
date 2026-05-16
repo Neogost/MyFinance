@@ -2,6 +2,7 @@ package com.myfinance.service;
 
 import com.myfinance.domain.BonusTypeEnum;
 import com.myfinance.domain.ContractBonus;
+import com.myfinance.domain.ContractTypeEnum;
 import com.myfinance.domain.SalaryContract;
 import com.myfinance.domain.User;
 import com.myfinance.dto.ContractBonusDto;
@@ -40,6 +41,7 @@ public class ContractBonusService {
     public ContractBonusDto create(Long contractId, CreateContractBonusRequest request, User currentUser) {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         validateRequest(request.type(), request.paymentDate(), request.paymentMonth(), request.startDate(), request.endDate());
+        validateGrossAmountForContractType(request.grossAmount(), contract);
 
         ContractBonus bonus = ContractBonus.builder()
                 .contract(contract)
@@ -64,6 +66,7 @@ public class ContractBonusService {
         SalaryContract contract = salaryContractService.getContractWithOwnershipCheck(contractId, currentUser);
         ContractBonus bonus = getBonusForContract(bonusId, contract);
         validateRequest(request.type(), request.paymentDate(), request.paymentMonth(), request.startDate(), request.endDate());
+        validateGrossAmountForContractType(request.grossAmount(), contract);
 
         bonus.setLabel(request.label());
         bonus.setGrossAmount(request.grossAmount());
@@ -106,6 +109,24 @@ public class ContractBonusService {
         if (type == BonusTypeEnum.MENSUELLE && endDate != null && startDate != null && endDate.isBefore(startDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "La date de fin doit être postérieure à la date de début.");
+        }
+    }
+
+    /**
+     * Les montants de prime peuvent être négatifs uniquement pour les contrats PUBLIC
+     * (utilisé pour saisir des retenues type IFSE/CIA). Pour les contrats PRIVATE on impose
+     * un montant strictement positif (comme avant).
+     */
+    private void validateGrossAmountForContractType(Float grossAmount, SalaryContract contract) {
+        ContractTypeEnum type = contract.getContractType() != null
+                ? contract.getContractType() : ContractTypeEnum.PRIVATE;
+        if (type != ContractTypeEnum.PUBLIC && grossAmount != null && grossAmount <= 0f) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le montant doit être strictement positif pour un contrat privé.");
+        }
+        if (grossAmount != null && grossAmount == 0f) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Le montant ne peut pas être nul.");
         }
     }
 

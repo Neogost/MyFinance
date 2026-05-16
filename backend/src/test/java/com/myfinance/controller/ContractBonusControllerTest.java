@@ -146,9 +146,9 @@ class ContractBonusControllerTest {
     @Test
     @WithMockCustomUser
     void create_corpsInvalide_retourne400() throws Exception {
-        // grossAmount négatif → violation @Positive
+        // grossAmount au-delà du plafond Bean Validation (-1M..+1M)
         CreateContractBonusRequest request = new CreateContractBonusRequest(
-                "Prime", -100f, BonusTypeEnum.ANNUELLE, null, 6, null, null);
+                "Prime", 2_000_000f, BonusTypeEnum.ANNUELLE, null, 6, null, null);
 
         mockMvc.perform(post("/api/salary-contracts/1/bonuses")
                         .contentType(MediaType.APPLICATION_JSON)
