@@ -6,7 +6,7 @@ import { computeSafetyNetTarget } from '../../utils/safetyNet'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
-export default function SafetyNetWidget({ user }) {
+export default function SafetyNetWidget({ user, className = '' }) {
   const [current,        setCurrent]        = useState(null)
   const [expensesSummary, setExpensesSummary] = useState(null)
   const [activeContract, setActiveContract]  = useState(null)
@@ -52,7 +52,7 @@ export default function SafetyNetWidget({ user }) {
     : 'montant fixe'
 
   return (
-    <div className={`rounded-xl border ${border} ${bg} p-4`}>
+    <div className={`rounded-xl border ${border} ${bg} p-4 ${className}`}>
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className={`text-sm font-semibold ${textH}`}>Matelas de sécurité</p>

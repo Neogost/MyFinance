@@ -24,6 +24,7 @@ export default function DimensionDonut({
   targetBreakdowns,
   actual,
   showCoverage = true,
+  className = '',
 }) {
   const filteredTargets = (targetBreakdowns ?? []).filter(t => t.dimension === dimension)
   if (filteredTargets.length === 0) return null
@@ -73,7 +74,7 @@ export default function DimensionDonut({
   }
 
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+    <div className={`bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col ${className}`}>
       <div className="flex items-center justify-between mb-2">
         <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">{title}</span>
         {showCoverage && coverage < 100 && (

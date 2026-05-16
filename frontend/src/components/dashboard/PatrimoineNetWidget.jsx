@@ -13,7 +13,7 @@ const TYPE_META = {
   AUTRE:        { label: 'Autre',         dot: 'bg-gray-400',   bar: 'bg-gray-400'   },
 }
 
-export default function PatrimoineNetWidget() {
+export default function PatrimoineNetWidget({ className = '' }) {
   const [loading,        setLoading]        = useState(true)
   const [patrimoineBrut, setPatrimoineBrut] = useState(null)
   const [debts,          setDebts]          = useState([])
@@ -37,7 +37,7 @@ export default function PatrimoineNetWidget() {
   }, [])
 
   if (loading) return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${className}`}>
       <div className="text-sm text-gray-400">Chargement…</div>
     </div>
   )
@@ -58,7 +58,7 @@ export default function PatrimoineNetWidget() {
   const barRed    = debtPct > 33 ? 'bg-red-400'   : debtPct > 20 ? 'bg-amber-400'   : 'bg-emerald-300'
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 ${className}`}>
 
       {/* En-tête */}
       <div className="flex items-start justify-between mb-5">

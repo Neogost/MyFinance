@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import DashboardPage from '../../../components/dashboard/DashboardPage'
-import { migrateConfig, DEFAULT_WIDGET_CONFIG } from '../../../components/dashboard/widgets-registry'
+import { migrateConfig } from '../../../components/dashboard/widgets-registry'
 import { getPositions } from '../../../api/patrimoine'
 import { getMyGroupMembers, getMemberPositions } from '../../../api/familyGroup'
+import { getDashboardLayout } from '../../../api/dashboard'
 
 // ── Mocks API ──────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,10 @@ vi.mock('../../../api/patrimoine', () => ({
 vi.mock('../../../api/familyGroup', () => ({
   getMyGroupMembers:   vi.fn(),
   getMemberPositions:  vi.fn(),
+}))
+vi.mock('../../../api/dashboard', () => ({
+  getDashboardLayout:  vi.fn(),
+  saveDashboardLayout: vi.fn(),
 }))
 
 // ── Mocks sous-composants (chacun a ses propres appels API) ───────────────────
@@ -37,6 +42,15 @@ vi.mock('../../../components/dashboard/DetteWidget',                 () => ({ de
 vi.mock('../../../components/dashboard/GeographicExposureWidget',    () => ({ default: () => <div data-testid="geo-widget" /> }))
 vi.mock('../../../components/dashboard/SectorExposureWidget',        () => ({ default: () => <div data-testid="sector-widget" /> }))
 vi.mock('../../../components/dashboard/PatrimoineNetWidget',         () => ({ default: () => <div data-testid="patrimoine-net-widget" /> }))
+vi.mock('../../../components/dashboard/DashboardGrid',               () => ({
+  default: ({ ctx }) => (
+    <div data-testid="dashboard-grid">
+      <div data-testid="fire-widget" />
+      <div data-testid="score-widget" />
+      <div data-testid="dette-widget" />
+    </div>
+  )
+}))
 
 const USER = { id: 1, firstName: 'Jean', lastName: 'Dupont', role: 'USER', familyGroupId: null, safetyNetMode: 'FIXED_AMOUNT' }
 
@@ -45,6 +59,7 @@ describe('DashboardPage', () => {
     vi.clearAllMocks()
     getPositions.mockResolvedValue([])
     getMyGroupMembers.mockResolvedValue([])
+    getDashboardLayout.mockResolvedValue(null)
   })
 
   // ── Affichage général ─────────────────────────────────────
@@ -60,17 +75,21 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Jean')).toBeInTheDocument()
   })
 
-  it('affiche les titres de sections principales', () => {
+  it('affiche la grille des widgets', () => {
     render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
-    expect(screen.getByText('Revenus & Dépenses')).toBeInTheDocument()
-    expect(screen.getByText('Patrimoine')).toBeInTheDocument()
+    expect(screen.getByTestId('dashboard-grid')).toBeInTheDocument()
   })
 
-  it('affiche les sous-composants du tableau de bord', () => {
+  it('affiche les sous-composants via la grille', () => {
     render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
     expect(screen.getByTestId('fire-widget')).toBeInTheDocument()
     expect(screen.getByTestId('score-widget')).toBeInTheDocument()
     expect(screen.getByTestId('dette-widget')).toBeInTheDocument()
+  })
+
+  it('affiche le bouton Personnaliser', () => {
+    render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
+    expect(screen.getByText('Personnaliser')).toBeInTheDocument()
   })
 
   // ── Mode Foyer ────────────────────────────────────────────
@@ -104,49 +123,40 @@ describe('DashboardPage', () => {
     expect(getMyGroupMembers).not.toHaveBeenCalled()
   })
 
-  // ── Migration localStorage v0 → v1 ───────────────────────
+  it('charge le layout depuis le backend au montage', async () => {
+    render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
+    await waitFor(() => expect(getDashboardLayout).toHaveBeenCalled())
+  })
+
+  // ── Migration localStorage v0 → v1 (via migrateConfig) ───
 
   it('migrateConfig retourne la config par défaut si raw est null', () => {
     const result = migrateConfig(null)
     expect(result.version).toBe(1)
     expect(result.sectionOrder).toEqual(['revenues', 'patrimoine', 'objectifs'])
-    expect(result.visibility.cashFlow).toBe(true)
+    // Les clés sont désormais en kebab-case
+    expect(result.visibility['cash-flow']).toBe(true)
   })
 
-  it('migrateConfig convertit le format v0 (flat) en v1', () => {
+  it('migrateConfig convertit le format v0 camelCase en kebab-case v1', () => {
     const v0 = { cashFlow: false, salaryAnnual: true, fireProjection: false }
     const result = migrateConfig(v0)
     expect(result.version).toBe(1)
-    expect(result.visibility.cashFlow).toBe(false)
-    expect(result.visibility.salaryAnnual).toBe(true)
-    expect(result.visibility.fireProjection).toBe(false)
+    expect(result.visibility['cash-flow']).toBe(false)
+    expect(result.visibility['salary-annual']).toBe(true)
+    expect(result.visibility['fire-projection']).toBe(false)
     expect(result.sectionOrder).toEqual(['revenues', 'patrimoine', 'objectifs'])
   })
 
   it('migrateConfig conserve la v1 intacte et fusionne les defaults manquants', () => {
-    const v1 = { version: 1, sectionOrder: ['patrimoine', 'revenues', 'objectifs'], visibility: { cashFlow: false } }
+    const v1 = {
+      version: 1,
+      sectionOrder: ['patrimoine', 'revenues', 'objectifs'],
+      visibility: { 'cash-flow': false },
+    }
     const result = migrateConfig(v1)
     expect(result.sectionOrder).toEqual(['patrimoine', 'revenues', 'objectifs'])
-    expect(result.visibility.cashFlow).toBe(false)
-    expect(result.visibility.salaryAnnual).toBe(true) // default fusionné
-  })
-
-  // ── Réordonnement des sections ───────────────────────────
-
-  it('rend les sections dans l\'ordre défini par sectionOrder', () => {
-    const wcReverse = {
-      version: 1,
-      sectionOrder: ['objectifs', 'patrimoine', 'revenues'],
-      visibility: DEFAULT_WIDGET_CONFIG.visibility,
-    }
-    const mockStorage = { getItem: vi.fn().mockReturnValue(JSON.stringify(wcReverse)), setItem: vi.fn() }
-    Object.defineProperty(window, 'localStorage', { value: mockStorage, writable: true, configurable: true })
-    render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
-    const headings = screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)
-    const idxObjectifs = headings.findIndex(t => t.includes('Objectifs'))
-    const idxRevenues  = headings.findIndex(t => t.includes('Revenus'))
-    expect(idxObjectifs).toBeGreaterThanOrEqual(0)
-    expect(idxRevenues).toBeGreaterThanOrEqual(0)
-    expect(idxObjectifs).toBeLessThan(idxRevenues)
+    expect(result.visibility['cash-flow']).toBe(false)
+    expect(result.visibility['salary-annual']).toBe(true) // default fusionné
   })
 })

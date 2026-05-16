@@ -443,13 +443,10 @@ export default function CashFlowSankeyWidget({ hideValues = false }) {
   }
 
   // ── Desktop: Sankey chart ─────────────────────────────────────
-  const nExp        = sankeyData.nodes.filter(n => n.type === 'expense' || n.type === 'savings').length
-  const chartHeight = Math.max(280, nExp * 26 + 40)
-
   return (
     <ThemeContext.Provider value={theme}>
-      <div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4">
+      <div className="flex flex-col h-full">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4 shrink-0">
           {LEGEND_ITEMS.map(item => (
             <div key={item.label} className="flex items-center gap-1.5">
               <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: item.color, opacity: 0.85 }} />
@@ -458,9 +455,9 @@ export default function CashFlowSankeyWidget({ hideValues = false }) {
           ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: 540 }}>
-            <ResponsiveContainer width="100%" height={chartHeight}>
+        <div className="flex-1 min-h-0 overflow-x-auto">
+          <div style={{ minWidth: 540, height: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
               <Sankey
                 data={sankeyData}
                 node={<CustomNode />}

@@ -14,7 +14,7 @@ const DETTE_TYPE_LABELS = {
   AUTRE:        'Autre',
 }
 
-export default function DetteWidget({ onNavigate }) {
+export default function DetteWidget({ onNavigate, className = '' }) {
   const [summary,        setSummary]        = useState(null)
   const [debts,          setDebts]          = useState([])
   const [patrimoineBrut, setPatrimoineBrut] = useState(null)
@@ -112,7 +112,7 @@ export default function DetteWidget({ onNavigate }) {
   const barColor = (pct) => pct >= 75 ? 'bg-emerald-500' : pct >= 40 ? 'bg-indigo-500' : 'bg-amber-400'
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5 ${className}`}>
       {/* ── En-tête ── */}
       <div className="flex items-start justify-between gap-4">
         <div>

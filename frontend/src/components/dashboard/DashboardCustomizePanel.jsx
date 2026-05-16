@@ -1,114 +1,48 @@
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { WIDGET_GROUPS, DEFAULT_WIDGET_CONFIG } from './widgets-registry'
+import { WIDGETS, WIDGET_GROUPS, SECTION_META } from './widgets-registry'
 
-function Toggle({ enabled, onToggle }) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${enabled ? 'bg-indigo-600' : 'bg-gray-200'}`}
-    >
-      <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0'}`} />
-    </button>
-  )
+const SECTION_ICONS = {
+  revenues:   '💰',
+  patrimoine: '📊',
+  objectifs:  '🎯',
 }
 
-function DragHandle() {
+function WidgetRow({ widgetKey, label, visible, onShow, onHide }) {
   return (
-    <svg className="w-4 h-4 text-gray-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
-    </svg>
-  )
-}
-
-function SortableSection({ group, config, onToggle }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: group.key })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
-  return (
-    <div ref={setNodeRef} style={style} className="bg-gray-50 rounded-lg border border-gray-100">
-      {/* En-tête section — poignée de drag */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-0.5 -ml-0.5 touch-none"
-          aria-label={`Réordonner la section ${group.title}`}
-        >
-          <DragHandle />
-        </button>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wide flex-1">{group.title}</p>
-      </div>
-
-      {/* Toggles widgets */}
-      <div className="px-3 py-2 space-y-2.5">
-        {group.widgets.map(w => (
-          <div key={w.key} className="flex items-center justify-between gap-3">
-            <span className={`text-sm ${config.visibility[w.key] ? 'text-gray-700' : 'text-gray-400'}`}>
-              {w.label}
-            </span>
-            <Toggle enabled={!!config.visibility[w.key]} onToggle={() => onToggle(w.key)} />
-          </div>
-        ))}
-      </div>
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-gray-100 last:border-0">
+      <span className={`text-sm truncate ${visible ? 'text-gray-700' : 'text-gray-400'}`}>
+        {label}
+      </span>
+      <button
+        onClick={() => visible ? onHide(widgetKey) : onShow(widgetKey)}
+        title={visible ? 'Masquer ce widget' : 'Afficher ce widget'}
+        className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border transition font-bold text-sm
+          ${visible
+            ? 'border-gray-300 text-gray-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50'
+            : 'border-indigo-300 text-indigo-500 hover:border-indigo-500 hover:bg-indigo-50'}`}
+      >
+        {visible ? '−' : '+'}
+      </button>
     </div>
   )
 }
 
-export default function DashboardCustomizePanel({ config, onChange, onClose }) {
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
-
-  function handleDragEnd(event) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = config.sectionOrder.indexOf(active.id)
-    const newIndex = config.sectionOrder.indexOf(over.id)
-    onChange({ ...config, sectionOrder: arrayMove(config.sectionOrder, oldIndex, newIndex) })
-  }
-
-  function toggleWidget(key) {
-    onChange({
-      ...config,
-      visibility: { ...config.visibility, [key]: !config.visibility[key] },
-    })
-  }
-
-  function resetAll() {
-    onChange({ ...DEFAULT_WIDGET_CONFIG })
-  }
-
-  // Groupes triés selon sectionOrder courant
-  const orderedGroups = config.sectionOrder
-    .map(key => WIDGET_GROUPS.find(g => g.key === key))
-    .filter(Boolean)
+export default function DashboardCustomizePanel({
+  hiddenWidgets,
+  dividers,
+  onShowWidget,
+  onHideWidget,
+  onAddDivider,
+  onRemoveDivider,
+  onAddPrebuiltSection,
+  onReset,
+  onClose,
+}) {
+  const hiddenSet      = new Set(hiddenWidgets)
+  const dividerEntries = Object.entries(dividers ?? {})
+  const dividerLabels  = new Set(dividerEntries.map(([, d]) => d.label?.trim().toLowerCase()))
 
   return (
     <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
-
       {/* Panneau */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-60 flex flex-col">
 
@@ -127,39 +61,102 @@ export default function DashboardCustomizePanel({ config, onChange, onClose }) {
           </button>
         </div>
 
-        {/* Hint réordonnement */}
-        <div className="px-5 pt-3 pb-1">
-          <p className="text-xs text-gray-400">
-            Glissez <span className="inline-block align-middle"><DragHandle /></span> pour réordonner les sections. Activez ou désactivez les widgets ci-dessous.
-          </p>
-        </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
 
-        {/* Liste sections drag & drop */}
-        <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={config.sectionOrder} strategy={verticalListSortingStrategy}>
-              {orderedGroups.map(group => (
-                <SortableSection
-                  key={group.key}
-                  group={group}
-                  config={config}
-                  onToggle={toggleWidget}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          {/* ── Aide rapide ───────────────────────────────────── */}
+          <div className="px-5 py-3 space-y-1">
+            <p className="text-xs text-gray-500">• <strong>Déplacer</strong> : glisser un widget dans la grille</p>
+            <p className="text-xs text-gray-500">• <strong>Redimensionner</strong> : poignée bas-droite</p>
+            <p className="text-xs text-gray-500">• <strong>+</strong> affiche un widget · <strong>−</strong> le masque</p>
+          </div>
+
+          {/* ── Widgets par section ───────────────────────────── */}
+          {WIDGET_GROUPS.map(group => {
+            const groupWidgets = group.widgets.filter(w => WIDGETS[w.key])
+            if (groupWidgets.length === 0) return null
+            return (
+              <div key={group.key} className="px-5 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>{SECTION_ICONS[group.key]}</span>
+                    {group.title}
+                  </p>
+                  {!dividerLabels.has(group.title.trim().toLowerCase()) && (
+                    <button
+                      onClick={() => onAddPrebuiltSection(group.key)}
+                      className="text-xs text-indigo-500 hover:text-indigo-700 transition"
+                      title={`Ajouter la section ${group.title}`}
+                    >
+                      + section
+                    </button>
+                  )}
+                </div>
+                <div>
+                  {groupWidgets.map(w => (
+                    <WidgetRow
+                      key={w.key}
+                      widgetKey={w.key}
+                      label={w.label}
+                      visible={!hiddenSet.has(w.key)}
+                      onShow={onShowWidget}
+                      onHide={onHideWidget}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* ── Sections personnalisées (séparateurs) ─────────── */}
+          <div className="px-5 py-3">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Séparateurs de section</p>
+
+            {dividerEntries.length > 0 && (
+              <div className="mb-2 space-y-1.5">
+                {dividerEntries.map(([id, d]) => (
+                  <div key={id} className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-sm text-gray-700 truncate">{d.label || 'Sans titre'}</span>
+                    <button
+                      onClick={() => onRemoveDivider(id)}
+                      className="shrink-0 text-gray-400 hover:text-red-500 transition"
+                      title="Supprimer ce séparateur"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => onAddDivider()}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-indigo-600 bg-indigo-50 border border-dashed border-indigo-300 rounded-lg hover:bg-indigo-100 transition"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Créer une section vide
+            </button>
+          </div>
         </div>
 
         {/* Pied */}
-        <div className="px-5 py-4 border-t border-gray-100">
+        <div className="px-5 py-4 border-t border-gray-100 space-y-2">
           <button
-            onClick={resetAll}
-            className="w-full text-sm text-gray-500 hover:text-indigo-600 transition text-center"
+            onClick={onClose}
+            className="w-full py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition"
           >
-            Tout réafficher
+            Terminer la personnalisation
+          </button>
+          <button
+            onClick={() => { if (window.confirm('Réinitialiser la disposition par défaut ? Tous vos changements seront perdus.')) onReset() }}
+            className="w-full py-2 text-sm text-gray-400 hover:text-gray-600 transition text-center"
+          >
+            Réinitialiser la disposition par défaut
           </button>
         </div>
-
       </div>
     </>
   )

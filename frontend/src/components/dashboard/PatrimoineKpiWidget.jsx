@@ -71,7 +71,7 @@ function KpiGauge({ kpi }) {
   )
 }
 
-export default function PatrimoineKpiWidget() {
+export default function PatrimoineKpiWidget({ onEmpty } = {}) {
   const [kpis, setKpis] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -82,10 +82,13 @@ export default function PatrimoineKpiWidget() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return null
-  if (kpis.length === 0) return null
-
   const visibles = kpis.filter(k => k.hasData && k.actualValue != null)
+
+  useEffect(() => {
+    if (!loading && visibles.length === 0) onEmpty?.()
+  }, [loading, visibles.length])
+
+  if (loading) return null
   if (visibles.length === 0) return null
 
   return (

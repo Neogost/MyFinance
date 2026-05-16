@@ -52,6 +52,7 @@ public class UserService implements UserDetailsService {
     private final AnalyticsEventRepository       analyticsEventRepository;
     private final PastDonationRepository         pastDonationRepository;
     private final LoanSimulationRepository       loanSimulationRepository;
+    private final UserDashboardLayoutRepository  userDashboardLayoutRepository;
 
     // ── Spring Security ────────────────────────────────────────
 
@@ -271,6 +272,7 @@ public class UserService implements UserDetailsService {
         analyticsEventRepository.deleteByUser(user);
         loanSimulationRepository.deleteAll(
                 loanSimulationRepository.findByUserOrderBySavedAtDesc(user));
+        userDashboardLayoutRepository.deleteByUserId(user.getId());
 
         // 9. Suppression effective
         userRepository.delete(user);

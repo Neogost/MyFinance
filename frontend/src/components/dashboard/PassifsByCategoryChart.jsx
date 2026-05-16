@@ -27,7 +27,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function PassifsByCategoryChart({ onHasData }) {
+export default function PassifsByCategoryChart({ onHasData, onEmpty }) {
   const [data,    setData]    = useState([])
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -56,6 +56,10 @@ export default function PassifsByCategoryChart({ onHasData }) {
       .catch(() => setError('Impossible de charger les passifs'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!loading && !error && data.length === 0) onEmpty?.()
+  }, [loading, error, data.length])
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>

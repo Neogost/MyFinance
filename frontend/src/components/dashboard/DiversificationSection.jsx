@@ -40,7 +40,7 @@ function DimGrid({ catBreakdowns, dims, actualBreakdowns }) {
   )
 }
 
-export default function DiversificationSection({ showBourse = true, showCrypto = true, showImmo = true }) {
+export default function DiversificationSection({ showBourse = true, showCrypto = true, showImmo = true, className = '' }) {
   const [loading,          setLoading]          = useState(true)
   const [breakdowns,       setBreakdowns]        = useState(null)   // { BOURSE: [...], CRYPTO: [...] }
   const [actualBreakdowns, setActualBreakdowns] = useState({})
@@ -111,7 +111,7 @@ export default function DiversificationSection({ showBourse = true, showCrypto =
   if (!hasBourse && !hasCrypto && !hasImmo) return null
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${className}`}>
       {hasBourse && (
         <div>
           <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
