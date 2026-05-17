@@ -28,7 +28,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function ExpensesByCategoryChart({ onHasData, size = 'md' }) {
+export default function ExpensesByCategoryChart({ onHasData, size = 'md', onEmpty }) {
   const [data, setData]         = useState([])
   const [summary, setSummary]   = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -61,7 +61,7 @@ export default function ExpensesByCategoryChart({ onHasData, size = 'md' }) {
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>
-  if (!data.length) return null
+  if (!data.length) { onEmpty?.(); return null }
 
   const color = (cat) => CATEGORY_META[cat]?.chartColor ?? '#9ca3af'
 

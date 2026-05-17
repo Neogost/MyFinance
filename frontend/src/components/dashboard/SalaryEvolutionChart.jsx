@@ -71,7 +71,7 @@ export default function SalaryEvolutionChart({ onHasData, size = 'md' }) {
     )
   }
 
-  if (data.length === 0) return null
+  if (data.length === 0) { onEmpty?.(); return null }
 
   const showLegend  = size === 'md' || size === 'lg'
   const showTooltip = size !== 'xs'

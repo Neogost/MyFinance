@@ -74,6 +74,7 @@ export const WIDGETS = {
     defaultVisible: true,
     component: ExpensesByCategoryChart,
     getProps: () => ({}),
+    autoHide: true,
   },
   'salary-monthly': {
     label: 'Détail mensuel par bulletins',
@@ -86,6 +87,7 @@ export const WIDGETS = {
     sizeThresholds: { xs: [3, 3], sm: [4, 4], md: [6, 5] },
     getProps: () => ({}),
     desktopOnly: true,
+    autoHide: true,
   },
   'patrimoine-evolution': {
     label: 'Évolution du patrimoine',
@@ -418,11 +420,11 @@ const DEFAULT_LAYOUT_ITEMS = [
   { i: 'dim-bourse-continent',   x: 3, y: 64, w:  3, h: 5 },
   { i: 'dim-bourse-country',     x: 6, y: 64, w:  3, h: 5 },
   { i: 'dim-bourse-currency',    x: 9, y: 64, w:  3, h: 5 },
-  { i: 'dim-bourse-subtype',     x: 0, y: 69, w:  3, h: 5 },
-  { i: 'dim-crypto-type',        x: 3, y: 69, w:  3, h: 7 },
-  { i: 'dim-crypto-network',     x: 6, y: 69, w:  3, h: 7 },
-  { i: 'dim-crypto-instrument',  x: 9, y: 69, w:  3, h: 7 },
-  { i: 'dim-immo-usage',         x: 0, y: 76, w:  3, h: 7 },
+  { i: 'dim-bourse-subtype',     x: 0, y: 69, w:  3, h: 6 },
+  { i: 'dim-crypto-type',        x: 3, y: 69, w:  3, h: 6 },
+  { i: 'dim-crypto-network',     x: 6, y: 69, w:  3, h: 6 },
+  { i: 'dim-crypto-instrument',  x: 9, y: 69, w:  3, h: 6 },
+  { i: 'dim-immo-usage',         x: 0, y: 75, w:  3, h: 6 },
 ]
 
 // Séparateurs avec leur label/subtitle
