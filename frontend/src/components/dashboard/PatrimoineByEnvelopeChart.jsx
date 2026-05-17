@@ -17,7 +17,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function PatrimoineByEnvelopeChart({ positions: positionsProp = null }) {
+export default function PatrimoineByEnvelopeChart({ positions: positionsProp = null, size = 'md' }) {
   const [data, setData]       = useState([])
   const [total, setTotal]     = useState(0)
   const [loading, setLoading] = useState(positionsProp === null)
@@ -60,41 +60,57 @@ export default function PatrimoineByEnvelopeChart({ positions: positionsProp = n
     </div>
   )
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="h-44 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={42}
-              outerRadius={72}
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              {data.map(entry => (
-                <Cell
-                  key={entry.envelope}
-                  fill={FISCAL_ENVELOPE_LABELS[entry.envelope]?.chartColor ?? '#6b7280'}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+  const donut = size === 'xs' ? { inner: 28, outer: 46, h: 'h-24' }
+              : size === 'sm' ? { inner: 32, outer: 54, h: 'h-28' }
+              : { inner: 38, outer: 62, h: 'h-28' }
 
-      <div className="space-y-2">
+  const color = (e) => FISCAL_ENVELOPE_LABELS[e]?.chartColor ?? '#6b7280'
+
+  const DonutChart = () => (
+    <div className={`${donut.h} w-full`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={data} cx="50%" cy="50%" innerRadius={donut.inner} outerRadius={donut.outer} paddingAngle={2} dataKey="value" strokeWidth={0}>
+            {data.map(e => <Cell key={e.envelope} fill={color(e.envelope)} />)}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )
+
+  if (size === 'xs') return (
+    <div className="flex flex-col items-center gap-2 h-full justify-center">
+      <DonutChart />
+      <p className="text-sm font-bold text-gray-900 amount">{fmtEur.format(total)}</p>
+    </div>
+  )
+
+  if (size === 'sm') return (
+    <div className="h-full flex flex-col gap-2">
+      <div className="shrink-0"><DonutChart /></div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+          {data.map(d => (
+            <div key={d.envelope} className="flex items-center gap-1 min-w-0">
+              <span className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color(d.envelope) }} />
+              <span className="text-xs text-gray-700 truncate">{d.label}</span>
+              <span className="text-xs text-gray-400 shrink-0 ml-auto">{d.pct}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="h-full flex flex-col gap-3">
+      <div className="shrink-0"><DonutChart /></div>
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
         {data.map(d => (
           <div key={d.envelope} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: FISCAL_ENVELOPE_LABELS[d.envelope]?.chartColor ?? '#6b7280' }}
-              />
+              <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color(d.envelope) }} />
               <span className="text-xs text-gray-700 truncate">{d.label}</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -103,7 +119,6 @@ export default function PatrimoineByEnvelopeChart({ positions: positionsProp = n
             </div>
           </div>
         ))}
-
         <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
           <span className="text-xs font-semibold text-gray-900">Total</span>
           <span className="text-xs font-bold text-gray-900 tabular-nums amount">{fmtEur.format(total)}</span>
