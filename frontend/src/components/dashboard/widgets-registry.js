@@ -213,6 +213,7 @@ export const WIDGETS = {
     component: DetteWidget,
     getProps: (ctx) => ({ onNavigate: ctx.onNavigate }),
     noCard: true,
+    autoHide: true,
   },
   'score-patrimonial': {
     label: 'Score patrimonial',

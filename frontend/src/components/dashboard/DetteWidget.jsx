@@ -14,7 +14,7 @@ const DETTE_TYPE_LABELS = {
   AUTRE:        'Autre',
 }
 
-export default function DetteWidget({ onNavigate, className = '', size = 'md' }) {
+export default function DetteWidget({ onNavigate, className = '', size = 'md', onEmpty }) {
   const [summary,        setSummary]        = useState(null)
   const [debts,          setDebts]          = useState([])
   const [patrimoineBrut, setPatrimoineBrut] = useState(null)
@@ -41,7 +41,7 @@ export default function DetteWidget({ onNavigate, className = '', size = 'md' })
   }, [])
 
   if (loading) return null
-  if (!summary || summary.totalCount === 0) return null
+  if (!summary || summary.totalCount === 0) { onEmpty?.(); return null }
 
   const totalCapital    = parseFloat(summary.totalRemainingCapital ?? 0)
   const totalMensualite = parseFloat(summary.totalMonthlyCost      ?? 0)
