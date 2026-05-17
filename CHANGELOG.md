@@ -1,5 +1,50 @@
 # Notes de version
 
+## v1.10.0 — 17 mai 2026 — Tableau de bord entièrement repensé
+
+> Grille libre, widgets adaptatifs et dashboards multiples : le tableau de bord est maintenant entièrement personnalisable.
+
+### ✨ Nouveautés
+
+#### Tableau de bord — Grille libre et redimensionnement
+
+Le tableau de bord utilise désormais une grille 12 colonnes avec drag & drop et redimensionnement par poignée. Chaque widget peut être déplacé, agrandi ou réduit librement. La disposition est persistée côté serveur et synchronisée sur tous vos appareils.
+
+- **Mode édition** : activez « Personnaliser » pour glisser et redimensionner les widgets
+- **Séparateurs de section** : créez des séparateurs nommés et organisez vos widgets par thème
+- **Sections pré-construites** : ajoutez d'un clic une section complète (Revenus, Patrimoine, Objectifs)
+- **Auto-masquage** : les widgets sans données (passifs, KPI immobilier, dimensions) se masquent automatiquement
+- **Réinitialisation** : retour au layout par défaut en un clic
+
+#### Tableau de bord — Affichage adaptatif xs/sm/md/lg
+
+Chaque widget adapte son contenu à sa taille réelle dans la grille :
+
+- **xs** (≤ 3×3) : indicateurs clés uniquement
+- **sm** (≤ 4×4) : vue compacte avec légende réduite
+- **md** (≤ 6×6) : vue standard
+- **lg** (au-delà) : vue enrichie avec détails supplémentaires
+
+Tous les widgets patrimoine, revenus, stratégie et endettement sont couverts.
+
+#### Tableau de bord — Dashboards multiples
+
+Créez jusqu'à 5 tableaux de bord nommés indépendants, chacun avec son propre layout et ses propres widgets visibles.
+
+- **Sélecteur d'onglets** : naviguez entre vos dashboards en un clic (liste déroulante sur mobile)
+- **3 templates de départ** : Synthèse (vue complète), Salarié (focus revenus), Investisseur (focus patrimoine)
+- **Gestion** : renommer, réordonner, définir le dashboard par défaut, supprimer
+
+### 🔧 Améliorations
+
+- **Score patrimonial** : affichage adaptatif — xs/sm avec les axes les plus faibles mis en avant, lg avec conseil dans une carte distincte
+- **Objectifs patrimoniaux** : xs = barres de progression par catégorie, sm = radar seul, md = radar + légende 2 colonnes, lg = radar + montants actuel/objectif + écart
+- **Endettement** : xs/sm/md/lg avec niveaux de détail croissants jusqu'au détail individuel par crédit (taux, mensualité, intérêts restants)
+- **Prochains prélèvements** : section « À venir » hors-fenêtre et total mensuel en mode md/lg
+- **Donuts patrimoine** : légende 2 colonnes en mode sm, scrollable en md/lg
+
+---
+
 ## v1.9.2 — 15 mai 2026
 
 > Améliorations de la gestion des bugs, des outils financiers et de l'expérience de saisie.

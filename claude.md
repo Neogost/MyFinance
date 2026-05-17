@@ -639,7 +639,7 @@ npm run dev
 
 ## Statut du projet
 
-✅ **V1.8.0 en production** — application déployée sur NAS QNAP via Docker.
+✅ **V1.10.0 en production** — application déployée sur NAS QNAP via Docker.
 
 Modules livrés (vue à 10 000 m, sans détails) :
 
