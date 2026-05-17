@@ -149,8 +149,7 @@ frontend/src/
 - Ajout d'une position (wizard 6 catégories) : `docs/architecture/diagram/activity-asset-management-add-diagram.mmd`
 - Décisions d'architecture (ADR) : `docs/architecture/decisions/`
 - Audit responsive mobile et plan de mise en conformité : `docs/audits/MOBILE-AUDIT-2026-04-29.md`
-- Tableau de bord (graphiques) : `docs/architecture/dashboard.md`
-- Personnalisation du tableau de bord (plan d'architecture, non implémenté) : `docs/architecture/dashboard-customization.md`
+- Tableau de bord (widgets, personnalisation, multi-dashboards) : `docs/architecture/dashboard.md`
 - API authentification : `docs/api/authentication.md`
 - API tableau de bord : `docs/api/dashboard.md`
 - API utilisateurs : `docs/api/users.md`
@@ -654,7 +653,7 @@ Modules livrés (vue à 10 000 m, sans détails) :
 | **Dettes & passifs** | dettes avec amortissement · grandes possessions avec décote |
 | **Outils** | simulateur impôts · fiscalité crypto (2086) · **optimisation fiscale fin d'année (tax-loss harvesting)** · bilan financier · intérêts composés · emprunt · Lombard · enveloppes fiscales · retraite · crise · déclaration patrimoine |
 | **Stratégie** | objectifs par catégorie · diversification multi-dimensions BOURSE/CRYPTO/IMMO · KPI immo · scoring patrimonial · performance TWR/MWR |
-| **Dashboard** | personnalisable · cash flow Sankey · prochains prélèvements · FIRE · TWR YTD · widgets patrimoine · dette · score |
+| **Dashboard** | grille libre react-grid-layout · multi-dashboards (max 5) · templates · affichage adaptatif xs/sm/md/lg · cash flow Sankey · FIRE · TWR YTD · widgets patrimoine · dette · score |
 | **Gamification** | 67 hauts faits (V1 + V2 Trivial/Faible/Moyen + Plus lourd) · easter eggs secrets |
 | **Admin** | instruments · taux de change · snapshots manuels · backfill historique · analytics · **bannières d'information** · **signalements de bugs** |
 | **Plateforme** | dark mode · responsive mobile · PWA · pages d'erreur · simulateurs publics sans connexion |
