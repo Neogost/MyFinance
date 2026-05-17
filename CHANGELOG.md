@@ -1,5 +1,18 @@
 # Notes de version
 
+## v1.10.1 — 17 mai 2026
+
+> Corrections post-release du tableau de bord.
+
+### 🐛 Corrections
+
+- **Widget Dettes** : ne laisse plus de case vide quand aucun crédit n'est enregistré — se masque automatiquement.
+- **Répartition des dépenses** : se masque automatiquement si aucune dépense n'est saisie.
+- **Détail mensuel par bulletins** : se masque automatiquement si aucun bulletin n'est renseigné.
+- **Widgets dimension** (Type d'actif, Type de crypto, Par instrument) : hauteur unifiée dans le layout par défaut.
+
+---
+
 ## v1.10.0 — 17 mai 2026 — Tableau de bord entièrement repensé
 
 > Grille libre, widgets adaptatifs et dashboards multiples : le tableau de bord est maintenant entièrement personnalisable.
