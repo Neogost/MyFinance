@@ -689,3 +689,105 @@ Si **aucune échéance** n'entre dans les fenêtres ci-dessus, le widget affiche
 **Toggle config :** `upcomingExpenses` dans `DashboardCustomizePanel`.
 
 **Positionnement sur le dashboard :** à droite de `CashFlowSankeyWidget` (proportion 2/3 + 1/3). Si l'un des deux est désactivé, l'autre prend toute la largeur.
+
+---
+
+## Personnalisation du tableau de bord
+
+> **Statut : Implémenté** — Paliers 1, 2 et 3 livrés.
+
+### Architecture générale
+
+Le tableau de bord utilise une grille 12 colonnes (`react-grid-layout v2`) avec drag & drop et redimensionnement. Chaque utilisateur peut avoir jusqu'à **5 tableaux de bord nommés**, chacun avec son propre layout persisté en base.
+
+```
+DashboardPage
+├── DashboardSelector          ← onglets de navigation entre dashboards
+├── DashboardGrid              ← grille react-grid-layout
+│   └── WidgetCell             ← wrapper par widget (carte, mode édition, badge)
+├── DashboardCustomizePanel    ← panneau show/hide widgets + séparateurs
+├── DashboardCreateModal       ← création d'un dashboard avec template
+└── DashboardManagePanel       ← renommer, réordonner, supprimer dashboards
+```
+
+### Registre des widgets — `widgets-registry.js`
+
+Chaque widget est décrit par une entrée dans `WIDGETS` :
+
+```js
+'patrimoine-brut': {
+  label:       'Patrimoine brut',
+  cardTitle:   'Patrimoine brut',       // affiché dans la carte
+  section:     'patrimoine',
+  defaultSize: { w: 3, h: 6, minW: 2, minH: 3 },
+  component:   PatrimoineByCategoryChart,
+  getProps:    (ctx) => ({ positions: ctx.familyPositions }),
+  // Optionnel :
+  noCard:      false,   // true = widget avec son propre wrapper de carte
+  autoHide:    false,   // true = se masque si onEmpty() est appelé
+  maxH:        2,       // verrouiller la hauteur max
+}
+```
+
+Le registre expose aussi `DEFAULT_STATE` (layout par défaut) et `buildLayoutForItems()` utilisé par les templates.
+
+### Affichage adaptatif — système xs/sm/md/lg
+
+Chaque widget reçoit une prop `size` calculée par `calcSize(w, h, thresholds)` :
+
+| Taille | Condition (par défaut) | Usage |
+|--------|----------------------|-------|
+| `xs` | w ≤ 3 ET h ≤ 3 | Vue ultra-compacte, chiffres clés seulement |
+| `sm` | w ≤ 4 ET h ≤ 4 | Vue compacte, légende réduite |
+| `md` | w ≤ 6 ET h ≤ 6 | Vue standard (défaut) |
+| `lg` | au-delà | Vue enrichie avec détails supplémentaires |
+
+Certains widgets surchargent ces seuils via `sizeThresholds` dans le registre (ex: `salary-annual` avec `md:[6,5]`).
+
+### Persistance — modèle de données
+
+Le layout est sérialisé en JSON et stocké dans `user_dashboard_layouts` :
+
+```json
+{
+  "version": 1,
+  "layouts": {
+    "lg": [{ "i": "patrimoine-net", "x": 0, "y": 0, "w": 3, "h": 6, "minW": 2, "minH": 3 }],
+    "md": [...],
+    "xs": [...]
+  },
+  "hiddenWidgets": ["sector-exposure", "geographic-exposure"],
+  "dividers": {
+    "divider-revenues": { "label": "Revenus & Dépenses", "subtitle": "..." }
+  }
+}
+```
+
+**Entités backend :**
+
+| Entité | Table | Rôle |
+|--------|-------|------|
+| `UserDashboard` | `user_dashboards` | Dashboard nommé (isDefault, sortOrder) |
+| `UserDashboardLayout` | `user_dashboard_layouts` | Layout JSON associé à un dashboard |
+
+`UserDashboard.createdAt/updatedAt` utilisent `LocalDateTimeConverter` (converter JPA custom) pour contourner l'incompatibilité Hibernate 6 + SQLite JDBC sur le stockage des timestamps.
+
+### Multi-dashboards — Palier 3
+
+- Maximum 5 dashboards par utilisateur
+- Sélecteur sous forme d'onglets (desktop) ou `<select>` (mobile)
+- 3 templates disponibles à la création : **Synthèse** (layout par défaut), **Salarié** (focus revenus), **Investisseur** (focus patrimoine)
+- Migration automatique Palier 2 → 3 : au premier accès, le layout existant est migré dans un dashboard "Principal" (`isDefault=true`)
+- Cascade applicative à la suppression de compte via `UserService.delete()`
+
+### Mode édition
+
+- Bordures pointillées indigo sur les widgets
+- Poignée drag (`.drag-handle`) + poignée resize (coin bas-droite)
+- Badge absolu `label + ✕` sur chaque widget pour le masquer
+- Séparateurs de section avec label et sous-titre éditables inline
+- Auto-save debounced 1 seconde après chaque modification
+
+### Scripts de migration
+
+`backend/migrations/027_create_user_dashboards.sql` — script one-shot à exécuter **avant** le déploiement en production. Crée `user_dashboards`, migre les layouts existants, recrée `user_dashboard_layouts` avec `dashboard_id`.
