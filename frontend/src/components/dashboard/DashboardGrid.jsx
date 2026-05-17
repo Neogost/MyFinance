@@ -74,11 +74,22 @@ function SectionDivider({ label, subtitle, editable, onLabelChange, onSubtitleCh
 }
 
 // ── Cellule widget ────────────────────────────────────────────────────────────
-const WidgetCell = memo(function WidgetCell({ widgetKey, meta, ctx, editMode, onHide, onSelfHide, recentlyShown }) {
+function calcSize(w, h, thresholds) {
+  const [xsW, xsH] = thresholds?.xs ?? [3, 3]
+  const [smW, smH] = thresholds?.sm ?? [4, 4]
+  const [mdW, mdH] = thresholds?.md ?? [6, 6]
+  if (w <= xsW && h <= xsH) return 'xs'
+  if (w <= smW && h <= smH) return 'sm'
+  if (w <= mdW && h <= mdH) return 'md'
+  return 'lg'
+}
+
+const WidgetCell = memo(function WidgetCell({ widgetKey, meta, ctx, editMode, onHide, onSelfHide, recentlyShown, itemW, itemH }) {
   const Component   = meta.component
+  const size        = calcSize(itemW ?? meta.defaultSize.w, itemH ?? meta.defaultSize.h, meta.sizeThresholds)
   const canAutoHide = meta.autoHide && !recentlyShown?.current?.has(widgetKey)
   const handleEmpty = useCallback(() => onSelfHide(widgetKey), [onSelfHide, widgetKey])
-  const props = { ...meta.getProps(ctx), ...(canAutoHide ? { onEmpty: handleEmpty } : {}) }
+  const props = { ...meta.getProps(ctx), size, ...(canAutoHide ? { onEmpty: handleEmpty } : {}) }
 
   // Badge d'édition uniforme : label + ✕, positionné en absolu haut-droite
   const editBadge = editMode && (
@@ -202,6 +213,8 @@ export default function DashboardGrid({
           onHide={onHideWidget}
           onSelfHide={handleSelfHide}
           recentlyShown={recentlyShown}
+          itemW={item.w}
+          itemH={item.h}
         />
       </div>
     )
@@ -219,11 +232,32 @@ export default function DashboardGrid({
     onHideWidget(key)
   }
 
+  // Synchronise minW/minH depuis le registre pour chaque breakpoint
+  // (le layout persisté en backend peut avoir des valeurs périmées)
+  function syncConstraints(bpItems) {
+    return (bpItems ?? []).map(item => {
+      const meta = WIDGETS[item.i]
+      if (!meta) return item
+      return {
+        ...item,
+        minW: meta.defaultSize.minW,
+        minH: meta.defaultSize.minH,
+        ...(meta.defaultSize.maxW != null ? { maxW: meta.defaultSize.maxW } : {}),
+        ...(meta.defaultSize.maxH != null ? { maxH: meta.defaultSize.maxH } : {}),
+      }
+    })
+  }
+  const syncedLayouts = {
+    lg: syncConstraints(layouts.lg),
+    md: syncConstraints(layouts.md),
+    xs: syncConstraints(layouts.xs),
+  }
+
   return (
     <div ref={containerRef}>
       <ResponsiveGridLayout
         className="layout"
-        layouts={layouts}
+        layouts={syncedLayouts}
         width={containerWidth}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 8, sm: 6, xs: 1, xxs: 1 }}
