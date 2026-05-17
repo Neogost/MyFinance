@@ -183,8 +183,15 @@ export default function BilanFinancierPage({ user }) {
   const totalExpenses      = totalExpensesBase + (monthlyTax ?? 0)
 
   // ── Δ R-D ────────────────────────────────────────────────────────
-  const delta       = totalRevenues - totalExpenses
-  const tauxEpargne = totalRevenues > 0 ? (delta / totalRevenues) * 100 : null
+  const savingsCapacityBase  = expenseSummary?.savingsCapacity ?? null
+  const monthlyNetIncomeBase = expenseSummary?.monthlyNetIncome ?? null
+  const delta = savingsCapacityBase != null
+    ? savingsCapacityBase + totalInvestIncome
+    : totalRevenues - totalExpenses
+  const totalIncomeForRate = savingsCapacityBase != null
+    ? (monthlyNetIncomeBase ?? 0) + totalInvestIncome
+    : totalRevenues
+  const tauxEpargne = totalIncomeForRate > 0 ? (delta / totalIncomeForRate) * 100 : null
 
   // ── Actif (hors IMMO_PHYSIQUE — traité côté Passif) ───────────────
   const actifByCategory = {}
@@ -599,11 +606,32 @@ export default function BilanFinancierPage({ user }) {
                 <p className="text-xs text-violet-400">Rendement pondéré</p>
                 <p className="text-sm font-semibold text-violet-700">{(weightedRate * 100).toFixed(1)} % / an</p>
               </div>
-              <div>
-                <p className="text-xs text-violet-400">Épargne mensuelle</p>
+              <div className="relative group/epargne">
+                <p className="text-xs text-violet-400 flex items-center gap-1">
+                  Épargne mensuelle
+                  {savingsCapacityBase != null && <span className="text-violet-300 cursor-default leading-none">ⓘ</span>}
+                </p>
                 <p className={`text-sm font-semibold ${delta >= 0 ? 'text-violet-700' : 'text-red-600'}`}>
                   <span className="amount">{fmt(delta)} €</span>
                 </p>
+                {savingsCapacityBase != null && (
+                  <div className="absolute bottom-full left-0 mb-1.5 w-72 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover/epargne:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed">
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between gap-6">
+                        <span>Capacité d'épargne budgétaire</span>
+                        <span className="font-medium shrink-0">{fmt(savingsCapacityBase)} €</span>
+                      </div>
+                      <div className="flex justify-between gap-6 text-violet-300">
+                        <span>+ Revenus investissements / mois</span>
+                        <span className="font-medium shrink-0">+{fmt(totalInvestIncome)} €</span>
+                      </div>
+                      <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
+                        <span>= Épargne mensuelle totale</span>
+                        <span className="shrink-0">{fmt(delta)} €</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-xs text-violet-400">Dépenses annuelles</p>

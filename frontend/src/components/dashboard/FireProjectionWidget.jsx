@@ -10,14 +10,22 @@ function fmt(n) {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
-function StatRow({ label, value, valueClass = 'text-gray-700', sub }) {
+function StatRow({ label, value, valueClass = 'text-gray-700', sub, tooltip }) {
   return (
-    <div className="flex justify-between items-baseline text-xs">
-      <span className="text-gray-400">{label}</span>
+    <div className="relative flex justify-between items-baseline text-xs group/row">
+      <span className="text-gray-400 flex items-center gap-1">
+        {label}
+        {tooltip && <span className="text-gray-300 cursor-default leading-none">ⓘ</span>}
+      </span>
       <span className={`font-semibold ${valueClass}`}>
         {value}
         {sub && <span className="font-normal text-gray-400 ml-1">{sub}</span>}
       </span>
+      {tooltip && (
+        <span className="absolute bottom-full left-0 right-0 mb-1.5 bg-gray-800 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover/row:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed font-normal normal-case tracking-normal">
+          {tooltip}
+        </span>
+      )}
     </div>
   )
 }
@@ -62,8 +70,15 @@ export default function FireProjectionWidget({ size = 'md' }) {
       })
       const totalActif = Object.values(actifByCategory).reduce((s, v) => s + v, 0)
 
-      const delta             = totalRevenues - totalExpenses
-      const tauxEpargne       = totalRevenues > 0 ? (delta / totalRevenues) * 100 : null
+      const savingsCapacityBase  = expenseSummary?.savingsCapacity ?? null
+      const monthlyNetIncomeBase = expenseSummary?.monthlyNetIncome ?? null
+      const delta = savingsCapacityBase != null
+        ? savingsCapacityBase + totalInvestIncome
+        : totalRevenues - totalExpenses
+      const totalIncomeForRate = savingsCapacityBase != null
+        ? (monthlyNetIncomeBase ?? 0) + totalInvestIncome
+        : totalRevenues
+      const tauxEpargne = totalIncomeForRate > 0 ? (delta / totalIncomeForRate) * 100 : null
       const depensesAnnuelles = totalExpenses * 12
       const fireTarget        = depensesAnnuelles * 25
       const fireProgress      = fireTarget > 0 ? Math.min((totalActif / fireTarget) * 100, 100) : 0
@@ -100,6 +115,7 @@ export default function FireProjectionWidget({ size = 'md' }) {
         yearsToFire, weightedRate, delta, tauxEpargne,
         depensesAnnuelles, totalExpenses,
         revenusPassifsMensuels, couverturePassive,
+        savingsCapacityBase, totalInvestIncome,
       })
     })
     .catch(() => setData(null))
@@ -120,7 +136,25 @@ export default function FireProjectionWidget({ size = 'md' }) {
     yearsToFire, weightedRate, delta, tauxEpargne,
     depensesAnnuelles, totalExpenses,
     revenusPassifsMensuels, couverturePassive,
+    savingsCapacityBase, totalInvestIncome,
   } = data
+
+  const epargneTooltip = savingsCapacityBase != null ? (
+    <div className="space-y-1.5">
+      <div className="flex justify-between gap-6">
+        <span>Capacité d'épargne budgétaire</span>
+        <span className="font-medium">{fmt(savingsCapacityBase)} €</span>
+      </div>
+      <div className="flex justify-between gap-6 text-violet-300">
+        <span>+ Revenus investissements / mois</span>
+        <span className="font-medium">+{fmt(totalInvestIncome)} €</span>
+      </div>
+      <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
+        <span>= Épargne mensuelle totale</span>
+        <span>{fmt(delta)} €</span>
+      </div>
+    </div>
+  ) : null
 
   const targetYear = new Date().getFullYear() + Math.ceil(yearsToFire ?? 0)
 
@@ -273,7 +307,8 @@ export default function FireProjectionWidget({ size = 'md' }) {
         <StatRow label="Taux d'épargne" value={tauxEpargne != null ? `${tauxEpargne.toFixed(1)} %` : '—'}
           valueClass={tauxEpargne != null && tauxEpargne >= 0 ? 'text-emerald-600' : 'text-red-600'} />
         <StatRow label="Épargne mensuelle" value={`${fmt(delta)} €`}
-          valueClass={delta >= 0 ? 'text-gray-700 amount' : 'text-red-600'} />
+          valueClass={delta >= 0 ? 'text-gray-700 amount' : 'text-red-600'}
+          tooltip={epargneTooltip} />
         <StatRow label="Rendement pondéré" value={`${(weightedRate * 100).toFixed(1)} %`} sub="/ an" />
         <StatRow label="Dépenses annuelles" value={`${fmt(depensesAnnuelles)} €`} valueClass="amount" />
       </div>
