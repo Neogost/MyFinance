@@ -1,10 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getMyGroupMembers, getMemberPositions } from '../../api/familyGroup'
 import { getPositions } from '../../api/patrimoine'
-import { getDashboardLayout, saveDashboardLayout } from '../../api/dashboard'
+import {
+  getDashboards, getDashboard,
+  createDashboard, updateDashboard, deleteDashboard,
+  saveDashboardLayoutV3,
+  // Rétrocompatibilité Palier 2 (migration)
+  getDashboardLayout, saveDashboardLayout,
+} from '../../api/dashboard'
 import DashboardGrid from './DashboardGrid'
 import DashboardCustomizePanel from './DashboardCustomizePanel'
+import DashboardSelector from './DashboardSelector'
+import DashboardCreateModal from './DashboardCreateModal'
+import DashboardManagePanel from './DashboardManagePanel'
 import { DEFAULT_STATE, WIDGETS, SECTION_META, migrateConfig } from './widgets-registry'
+import { DASHBOARD_TEMPLATES } from './dashboard-templates'
 import { useAnalytics } from '../../hooks/useAnalytics'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -20,13 +30,19 @@ function parseStoredLayout(raw) {
   try { return JSON.parse(raw) } catch { return null }
 }
 
-// Layout initial : depuis le backend (priorité) ou localStorage palier 1 → DEFAULT_STATE
-function buildInitialState(serverData, lsRaw) {
+function buildStateFromLayoutJson(layoutJson) {
+  if (!layoutJson) return null
+  const parsed = parseStoredLayout(layoutJson)
+  if (parsed?.layouts) return parsed
+  return null
+}
+
+// Migration Palier 2 localStorage → Palier 3
+function buildStateFromLegacy(serverData, lsRaw) {
   if (serverData?.layoutJson) {
     const parsed = parseStoredLayout(serverData.layoutJson)
     if (parsed?.layouts) return parsed
   }
-  // Migration palier 1 localStorage → palier 2
   if (lsRaw) {
     const palier1       = migrateConfig(parseStoredLayout(lsRaw))
     const hiddenWidgets = Object.entries(palier1.visibility ?? {})
@@ -46,36 +62,38 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
   const [editMode,        setEditMode]        = useState(false)
   const [serverSynced,    setServerSynced]    = useState(false)
 
-  // État de la grille : layouts react-grid-layout + widgets masqués + séparateurs
+  // ── État multi-dashboard ──────────────────────────────────────────────────
+  const [dashboards,          setDashboards]          = useState([])
+  const [activeDashboardId,   setActiveDashboardId]   = useState(null)
+  const [dashboardLoading,    setDashboardLoading]    = useState(false)
+  const [showCreateModal,     setShowCreateModal]     = useState(false)
+  const [showManagePanel,     setShowManagePanel]     = useState(false)
+
+  // ── État de la grille ─────────────────────────────────────────────────────
   const [layouts,        setLayouts]        = useState(DEFAULT_STATE.layouts)
   const [hiddenWidgets,  setHiddenWidgets]  = useState([])
   const [dividers,       setDividers]       = useState({})
-  const nextDividerId    = useRef(1)
-  const recentlyShown    = useRef(new Set()) // widgets réactivés manuellement → immunisés vs onEmpty
+  const nextDividerId = useRef(1)
+  const recentlyShown = useRef(new Set())
 
-  // ── Chargement du layout depuis le backend ────────────────────────────────
+  // ── Chargement initial : liste des dashboards ─────────────────────────────
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
-        const serverData = await getDashboardLayout()
+        const list = await getDashboards()
         if (cancelled) return
 
-        const lsRaw = (() => { try { return localStorage.getItem('dashboardWidgets') } catch { return null } })()
-        const state  = buildInitialState(serverData, lsRaw)
-
-        setLayouts(state.layouts)
-        setHiddenWidgets(state.hiddenWidgets ?? [])
-        setDividers(state.dividers ?? {})
-
-        // Migrate localStorage → backend si premier chargement palier 2
-        if (!serverData?.layoutJson && lsRaw) {
-          await persist(state)
-          try { localStorage.removeItem('dashboardWidgets') } catch { /* ignore */ }
+        if (list.length === 0) {
+          // Utilisateur Palier 2 sans dashboard encore créé — migration
+          await migratePalier2Legacy(cancelled)
+          return
         }
-        setServerSynced(true)
+
+        setDashboards(list)
+        const defaultDash = list.find(d => d.isDefault) ?? list[0]
+        setActiveDashboardId(defaultDash.id)
       } catch {
-        // Fallback silencieux sur le layout par défaut (pas connecté, erreur réseau)
         setServerSynced(true)
       }
     }
@@ -83,16 +101,65 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
     return () => { cancelled = true }
   }, [])
 
+  async function migratePalier2Legacy(cancelled) {
+    try {
+      const serverData = await getDashboardLayout()
+      const lsRaw = (() => { try { return localStorage.getItem('dashboardWidgets') } catch { return null } })()
+      const state  = buildStateFromLegacy(serverData, lsRaw)
+
+      if (!cancelled) {
+        setLayouts(state.layouts)
+        setHiddenWidgets(state.hiddenWidgets ?? [])
+        setDividers(state.dividers ?? {})
+        setServerSynced(true)
+      }
+      // Nettoyage localStorage
+      if (lsRaw) try { localStorage.removeItem('dashboardWidgets') } catch { /* ignore */ }
+    } catch {
+      if (!cancelled) setServerSynced(true)
+    }
+  }
+
+  // ── Chargement du layout quand activeDashboardId change ──────────────────
+  useEffect(() => {
+    if (!activeDashboardId) return
+    let cancelled = false
+    async function load() {
+      setDashboardLoading(true)
+      try {
+        const data = await getDashboard(activeDashboardId)
+        if (cancelled) return
+
+        const state = buildStateFromLayoutJson(data.layoutJson) ?? DEFAULT_STATE
+        setLayouts(state.layouts)
+        setHiddenWidgets(state.hiddenWidgets ?? [])
+        setDividers(state.dividers ?? {})
+        nextDividerId.current = 1
+        setServerSynced(true)
+      } catch {
+        if (!cancelled) setServerSynced(true)
+      } finally {
+        if (!cancelled) setDashboardLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [activeDashboardId])
+
   // ── Persistance auto-debounced ────────────────────────────────────────────
   const saveTimer = useRef(null)
 
-  const persist = useCallback((state) => {
+  const persist = useCallback((state, dashId) => {
     const payload = JSON.stringify({
       version: 1,
       layouts:       state.layouts,
       hiddenWidgets: state.hiddenWidgets,
       dividers:      state.dividers,
     })
+    if (dashId) {
+      return saveDashboardLayoutV3(dashId, payload, 1).catch(() => { /* silencieux */ })
+    }
+    // Fallback rétrocompat si pas encore de dashboardId
     return saveDashboardLayout(payload, 1).catch(() => { /* silencieux */ })
   }, [])
 
@@ -100,7 +167,7 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
     if (!serverSynced) return
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(
-      () => persist({ layouts: newLayouts, hiddenWidgets: newHidden, dividers: newDividers }),
+      () => persist({ layouts: newLayouts, hiddenWidgets: newHidden, dividers: newDividers }, activeDashboardId),
       1000,
     )
   }
@@ -118,20 +185,18 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
   }
 
   function handleShowWidget(key) {
-    // Immuniser ce widget contre onEmpty pendant 5s pour éviter le re-masquage immédiat
     recentlyShown.current.add(key)
     setTimeout(() => recentlyShown.current.delete(key), 5000)
 
     const next = hiddenWidgets.filter(k => k !== key)
     setHiddenWidgets(next)
 
-    // Si le widget n'a pas encore de position dans le layout, l'ajouter à la fin
     const alreadyInLayout = (layouts.lg ?? []).some(item => item.i === key)
     if (!alreadyInLayout) {
       const meta = WIDGETS[key]
       if (meta) {
         const { w, h, minW, minH } = meta.defaultSize
-        const yEnd = maxY(layouts.lg ?? [])
+        const yEnd   = maxY(layouts.lg ?? [])
         const newItem = { i: key, x: 0, y: yEnd, w, h, minW, minH }
         const newLayouts = {
           lg: [...(layouts.lg ?? []), newItem],
@@ -143,16 +208,13 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
         return
       }
     }
-
     scheduleAutoSave(layouts, next, dividers)
   }
 
-  // Calcule le y maximal de tous les items du layout lg
   function maxY(lgItems) {
     return lgItems.reduce((m, item) => Math.max(m, item.y + item.h), 0)
   }
 
-  // Ajoute un séparateur + optionnellement des widgets à la fin de la grille
   function appendToGrid(label, widgetKeys, currentLayouts, currentHidden, currentDividers, subtitle) {
     const id          = `divider-${nextDividerId.current++}`
     const newDividers = { ...currentDividers, [id]: { label, subtitle: subtitle ?? '' } }
@@ -163,7 +225,6 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
       const meta = WIDGETS[key]
       if (!meta) return []
       const { w, h, minW, minH } = meta.defaultSize
-      // On place les widgets en colonne (x=0 toujours, react-grid-layout compacte)
       return [{ i: key, x: 0, y: yEnd + 1 + idx * h, w, h, minW, minH }]
     })
 
@@ -180,7 +241,6 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
     ]
     const newLayouts = { ...currentLayouts, lg: newLg, md: newMd, xs: newXs }
     const newHidden  = currentHidden.filter(k => !widgetKeys.includes(k))
-
     return { newLayouts, newHidden, newDividers }
   }
 
@@ -236,7 +296,53 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
     scheduleAutoSave(s.layouts, s.hiddenWidgets, s.dividers)
   }
 
-  // ── Mode famille ─────────────────────────────────────────────────────────
+  // ── Handlers multi-dashboard ──────────────────────────────────────────────
+
+  async function handleSelectDashboard(id) {
+    if (id === activeDashboardId) return
+    setActiveDashboardId(id)
+  }
+
+  async function handleCreateDashboard(name, templateKey) {
+    const data    = await createDashboard(name)
+    const template = DASHBOARD_TEMPLATES[templateKey]
+    if (template) {
+      const state   = template.getState()
+      const payload = JSON.stringify({ version: 1, ...state })
+      await saveDashboardLayoutV3(data.id, payload, 1)
+    }
+    const list = await getDashboards()
+    setDashboards(list)
+    setActiveDashboardId(data.id)
+  }
+
+  async function handleRenameDashboard(id, name) {
+    const d = dashboards.find(d => d.id === id)
+    if (!d) return
+    await updateDashboard(id, { name, sortOrder: d.sortOrder, isDefault: d.isDefault })
+    const list = await getDashboards()
+    setDashboards(list)
+  }
+
+  async function handleSetDefaultDashboard(id) {
+    const d = dashboards.find(d => d.id === id)
+    if (!d) return
+    await updateDashboard(id, { name: d.name, sortOrder: d.sortOrder, isDefault: true })
+    const list = await getDashboards()
+    setDashboards(list)
+  }
+
+  async function handleDeleteDashboard(id) {
+    await deleteDashboard(id)
+    const list = await getDashboards()
+    setDashboards(list)
+    if (id === activeDashboardId) {
+      const next = list.find(d => d.isDefault) ?? list[0]
+      if (next) setActiveDashboardId(next.id)
+    }
+  }
+
+  // ── Mode famille ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function run() {
       if (!familyMode) { setFamilyPositions(null); setMemberBreakdown(null); return }
@@ -261,7 +367,7 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
 
   return (
     <div className="space-y-3">
-      {/* ── Header ──────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Tableau de bord</h2>
@@ -293,6 +399,17 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
         </div>
       </div>
 
+      {/* ── Sélecteur de dashboards ─────────────────────────────────── */}
+      {dashboards.length > 0 && (
+        <DashboardSelector
+          dashboards={dashboards}
+          activeDashboardId={activeDashboardId}
+          onSelect={handleSelectDashboard}
+          onCreate={() => setShowCreateModal(true)}
+          onManage={() => setShowManagePanel(true)}
+        />
+      )}
+
       {familyMode && (
         <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-700 dark:text-indigo-300 font-medium">
           <span>🏠</span>
@@ -309,7 +426,7 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
         </div>
       )}
 
-      {/* ── Panneau de personnalisation ──────────────────────── */}
+      {/* ── Panneau de personnalisation ──────────────────────────────── */}
       {editMode && (
         <DashboardCustomizePanel
           hiddenWidgets={hiddenWidgets}
@@ -324,19 +441,45 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
         />
       )}
 
-      {/* ── Grille principale ────────────────────────────────── */}
-      <DashboardGrid
-        layouts={layouts}
-        hiddenWidgets={hiddenWidgets}
-        dividers={dividers}
-        editMode={editMode}
-        ctx={ctx}
-        recentlyShown={recentlyShown}
-        onLayoutChange={handleLayoutChange}
-        onHideWidget={handleHideWidget}
-        onRemoveDivider={handleRemoveDivider}
-        onDividerLabelChange={handleDividerLabelChange}
-      />
+      {/* ── Grille principale ─────────────────────────────────────────── */}
+      {dashboardLoading ? (
+        <div className="flex items-center justify-center py-16 text-gray-400 text-sm">
+          Chargement du tableau de bord…
+        </div>
+      ) : (
+        <DashboardGrid
+          layouts={layouts}
+          hiddenWidgets={hiddenWidgets}
+          dividers={dividers}
+          editMode={editMode}
+          ctx={ctx}
+          recentlyShown={recentlyShown}
+          onLayoutChange={handleLayoutChange}
+          onHideWidget={handleHideWidget}
+          onRemoveDivider={handleRemoveDivider}
+          onDividerLabelChange={handleDividerLabelChange}
+        />
+      )}
+
+      {/* ── Modals ────────────────────────────────────────────────────── */}
+      {showCreateModal && (
+        <DashboardCreateModal
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateDashboard}
+        />
+      )}
+
+      {showManagePanel && (
+        <DashboardManagePanel
+          dashboards={dashboards}
+          activeDashboardId={activeDashboardId}
+          onClose={() => setShowManagePanel(false)}
+          onRename={handleRenameDashboard}
+          onSetDefault={handleSetDefaultDashboard}
+          onDelete={handleDeleteDashboard}
+          onCreate={() => { setShowManagePanel(false); setShowCreateModal(true) }}
+        />
+      )}
     </div>
   )
 }

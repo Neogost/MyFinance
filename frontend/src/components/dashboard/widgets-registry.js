@@ -295,7 +295,7 @@ export const WIDGETS = {
   'dim-crypto-type': {
     label: 'Crypto — Type',
     section: 'objectifs',
-    defaultSize: { w: 3, h: 7, minW: 3, minH: 3 },
+    defaultSize: { w: 3, h: 5, minW: 3, minH: 3 },
     defaultVisible: true,
     component: DimensionWidget,
     getProps: () => ({ category: 'CRYPTO', dimension: 'CRYPTO_TYPE', breakdownKey: 'crypto-type', title: 'Type de crypto', showCoverage: false }),
@@ -304,7 +304,7 @@ export const WIDGETS = {
   'dim-crypto-network': {
     label: 'Crypto — Réseau',
     section: 'objectifs',
-    defaultSize: { w: 3, h: 7, minW: 3, minH: 3 },
+    defaultSize: { w: 3, h: 5, minW: 3, minH: 3 },
     defaultVisible: true,
     component: DimensionWidget,
     getProps: () => ({ category: 'CRYPTO', dimension: 'CRYPTO_NETWORK', breakdownKey: 'crypto-network', title: 'Réseau', showCoverage: false }),
@@ -313,7 +313,7 @@ export const WIDGETS = {
   'dim-crypto-instrument': {
     label: 'Crypto — Par instrument',
     section: 'objectifs',
-    defaultSize: { w: 3, h: 7, minW: 3, minH: 3 },
+    defaultSize: { w: 3, h: 5, minW: 3, minH: 3 },
     defaultVisible: true,
     component: DimensionWidget,
     getProps: () => ({ category: 'CRYPTO', dimension: 'INSTRUMENT', breakdownKey: 'instrument', breakdownCat: 'CRYPTO', title: 'Par instrument', showCoverage: false }),
@@ -323,7 +323,7 @@ export const WIDGETS = {
   'dim-immo-usage': {
     label: 'Immo — RP / Locatif',
     section: 'objectifs',
-    defaultSize: { w: 3, h: 7, minW: 3, minH: 3 },
+    defaultSize: { w: 3, h: 5, minW: 3, minH: 3 },
     defaultVisible: true,
     component: DimensionWidget,
     getProps: () => ({ category: 'IMMO_PHYSIQUE', dimension: 'PROPERTY_USAGE', breakdownKey: 'property-usage', title: 'RP / Locatif', showCoverage: false }),
@@ -429,6 +429,25 @@ const DEFAULT_DIVIDERS = {
   'divider-revenues':   { label: 'Revenus & Dépenses',    subtitle: 'Évolution du salaire et répartition des charges mensuelles.' },
   'divider-patrimoine': { label: 'Patrimoine',             subtitle: 'Évolution, répartition, plus-values et avancement vers les objectifs.' },
   'divider-objectifs':  { label: 'Objectifs & Stratégie', subtitle: 'Suivi de vos objectifs patrimoniaux, score de santé financière et analyse de diversification.' },
+}
+
+export function buildLayoutForItems(items) {
+  const lg = items.map(item => {
+    const isDivider = item.i.startsWith('divider-')
+    const meta = isDivider ? null : WIDGETS[item.i]
+    return {
+      ...item,
+      minW: isDivider ? 12 : (meta?.defaultSize.minW ?? 2),
+      minH: isDivider ? 1  : (meta?.defaultSize.minH ?? 2),
+      ...(isDivider ? { isResizable: false } : {}),
+    }
+  })
+  const md = lg.map(item => ({
+    ...item,
+    w: item.i.startsWith('divider-') ? 8 : Math.max(item.minW ?? 1, Math.round(item.w * 8 / 12)),
+  }))
+  const xs = lg.map((item, idx) => ({ i: item.i, x: 0, y: idx, w: 1, h: item.h }))
+  return { lg, md, xs }
 }
 
 function buildDefaultState() {

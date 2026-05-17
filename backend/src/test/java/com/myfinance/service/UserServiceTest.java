@@ -57,6 +57,7 @@ class UserServiceTest {
     @Mock PastDonationRepository          pastDonationRepository;
     @Mock LoanSimulationRepository        loanSimulationRepository;
     @Mock UserDashboardLayoutRepository   userDashboardLayoutRepository;
+    @Mock UserDashboardRepository         userDashboardRepository;
     @InjectMocks UserService userService;
 
     User user;

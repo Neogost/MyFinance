@@ -4,7 +4,7 @@ import DashboardPage from '../../../components/dashboard/DashboardPage'
 import { migrateConfig } from '../../../components/dashboard/widgets-registry'
 import { getPositions } from '../../../api/patrimoine'
 import { getMyGroupMembers, getMemberPositions } from '../../../api/familyGroup'
-import { getDashboardLayout } from '../../../api/dashboard'
+import { getDashboardLayout, getDashboards, getDashboard } from '../../../api/dashboard'
 
 // ── Mocks API ──────────────────────────────────────────────────────────────────
 
@@ -18,8 +18,15 @@ vi.mock('../../../api/familyGroup', () => ({
   getMemberPositions:  vi.fn(),
 }))
 vi.mock('../../../api/dashboard', () => ({
-  getDashboardLayout:  vi.fn(),
-  saveDashboardLayout: vi.fn(),
+  getDashboardLayout:     vi.fn(),
+  saveDashboardLayout:    vi.fn(),
+  getDashboards:          vi.fn(),
+  getDashboard:           vi.fn(),
+  createDashboard:        vi.fn(),
+  updateDashboard:        vi.fn(),
+  deleteDashboard:        vi.fn(),
+  saveDashboardLayoutV3:  vi.fn(),
+  reorderDashboards:      vi.fn(),
 }))
 
 // ── Mocks sous-composants (chacun a ses propres appels API) ───────────────────
@@ -55,11 +62,15 @@ vi.mock('../../../components/dashboard/DashboardGrid',               () => ({
 const USER = { id: 1, firstName: 'Jean', lastName: 'Dupont', role: 'USER', familyGroupId: null, safetyNetMode: 'FIXED_AMOUNT' }
 
 describe('DashboardPage', () => {
+  const DEFAULT_DASH = { id: 1, name: 'Principal', sortOrder: 0, isDefault: true, updatedAt: new Date().toISOString() }
+
   beforeEach(() => {
     vi.clearAllMocks()
     getPositions.mockResolvedValue([])
     getMyGroupMembers.mockResolvedValue([])
     getDashboardLayout.mockResolvedValue(null)
+    getDashboards.mockResolvedValue([DEFAULT_DASH])
+    getDashboard.mockResolvedValue({ ...DEFAULT_DASH, layoutJson: null, version: 1 })
   })
 
   // ── Affichage général ─────────────────────────────────────
@@ -123,9 +134,9 @@ describe('DashboardPage', () => {
     expect(getMyGroupMembers).not.toHaveBeenCalled()
   })
 
-  it('charge le layout depuis le backend au montage', async () => {
+  it('charge la liste des dashboards au montage', async () => {
     render(<DashboardPage user={USER} familyMode={false} onNavigate={vi.fn()} />)
-    await waitFor(() => expect(getDashboardLayout).toHaveBeenCalled())
+    await waitFor(() => expect(getDashboards).toHaveBeenCalled())
   })
 
   // ── Migration localStorage v0 → v1 (via migrateConfig) ───

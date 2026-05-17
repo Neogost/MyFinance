@@ -18,7 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -39,7 +39,7 @@ class DashboardLayoutControllerTest {
     @Test
     @WithMockCustomUser
     void getLayout_retourne200AvecLayout() throws Exception {
-        DashboardLayoutDto dto = new DashboardLayoutDto("{\"version\":1}", 1, Instant.now());
+        DashboardLayoutDto dto = new DashboardLayoutDto("{\"version\":1}", 1, LocalDateTime.now());
         when(dashboardLayoutService.getLayout(any())).thenReturn(dto);
 
         mockMvc.perform(get("/api/dashboard/layout"))
@@ -68,7 +68,7 @@ class DashboardLayoutControllerTest {
     @Test
     @WithMockCustomUser
     void saveLayout_retourne200() throws Exception {
-        DashboardLayoutDto dto = new DashboardLayoutDto("{\"version\":1}", 1, Instant.now());
+        DashboardLayoutDto dto = new DashboardLayoutDto("{\"version\":1}", 1, LocalDateTime.now());
         when(dashboardLayoutService.saveLayout(any(), any())).thenReturn(dto);
 
         SaveDashboardLayoutRequest request = new SaveDashboardLayoutRequest("{\"version\":1}", 1);
