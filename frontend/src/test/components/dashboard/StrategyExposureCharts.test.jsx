@@ -95,7 +95,7 @@ describe('GeographicExposureWidget', () => {
       id: 10,
       countryAllocation: [{ country: 'US', percentage: 60 }, { country: 'France', percentage: 40 }],
     }])
-    render(<GeographicExposureWidget positions={[BOURSE_POSITION]} />)
+    render(<GeographicExposureWidget positions={[BOURSE_POSITION]} size="lg" />)
     await waitFor(() => {
       expect(screen.getByText('US')).toBeInTheDocument()
       expect(screen.getByText('France')).toBeInTheDocument()

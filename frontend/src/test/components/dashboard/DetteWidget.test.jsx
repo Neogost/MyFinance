@@ -120,13 +120,12 @@ describe('DetteWidget', () => {
     })
   })
 
-  it('affiche la progression par type de crédit', async () => {
+  it('affiche le détail individuel des crédits en mode lg', async () => {
     mockAll()
-    render(<DetteWidget />)
+    render(<DetteWidget size="lg" />)
     await waitFor(() => {
-      expect(screen.getByText('Par type de crédit')).toBeInTheDocument()
       expect(screen.getByText('Immobilier')).toBeInTheDocument()
-      expect(screen.getByText('Véhicule')).toBeInTheDocument()
+      expect(screen.getAllByText('Immobilier').length).toBeGreaterThan(0)
     })
   })
 

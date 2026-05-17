@@ -3,10 +3,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 const DEVIATION_FILL = (dev) => {
   if (dev === null) return '#d1d5db'
   const abs = Math.abs(dev)
-  if (abs <= 2)  return '#10b981'   // emerald
-  if (abs <= 5)  return '#6366f1'   // indigo
-  if (abs <= 10) return '#f59e0b'   // amber
-  return '#ef4444'                   // red
+  if (abs <= 2)  return '#10b981'
+  if (abs <= 5)  return '#6366f1'
+  if (abs <= 10) return '#f59e0b'
+  return '#ef4444'
 }
 
 const DEVIATION_TEXT = (dev) => {
@@ -25,6 +25,7 @@ export default function DimensionDonut({
   actual,
   showCoverage = true,
   className = '',
+  size = 'md',
 }) {
   const filteredTargets = (targetBreakdowns ?? []).filter(t => t.dimension === dimension)
   if (filteredTargets.length === 0) return null
@@ -73,47 +74,112 @@ export default function DimensionDonut({
     )
   }
 
-  return (
-    <div className={`bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col ${className}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">{title}</span>
-        {showCoverage && coverage < 100 && (
-          <span className={`text-[10px] ${coverage < 80 ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
-            Couv. {coverage.toFixed(0)} %
-          </span>
-        )}
-      </div>
+  const CoverageTag = () => showCoverage && coverage < 100 ? (
+    <span className={`text-[10px] ${coverage < 80 ? 'text-amber-600 font-medium' : 'text-gray-400'}`}>
+      Couv. {coverage.toFixed(0)} %
+    </span>
+  ) : null
 
-      {/* Donut + centre */}
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={160}>
+  // ── xs : titre + donut + indicateur central ──────────────────────────────
+  if (size === 'xs') return (
+    <div className={`bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-col gap-1 h-full ${className}`}>
+      <div className="flex items-center justify-between shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">{title}</span>
+        <CoverageTag />
+      </div>
+      <div className="flex-1 relative min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie
-              data={slices}
-              cx="50%" cy="50%"
-              innerRadius={48} outerRadius={68}
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
+            <Pie data={slices} cx="50%" cy="50%"
+              innerRadius={30} outerRadius={46}
+              paddingAngle={2} dataKey="value" strokeWidth={0}
             >
               {slices.map((s, i) => <Cell key={i} fill={s.fill} />)}
             </Pie>
             <Tooltip content={<DonutTooltip />} wrapperStyle={{ zIndex: 50 }} />
           </PieChart>
         </ResponsiveContainer>
-        {/* Étiquette centrale */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
-            <div className={`text-base font-bold leading-none ${centerColor}`}>
-              {goodCount}/{totalCount}
+            <div className={`text-sm font-bold leading-none ${centerColor}`}>{goodCount}/{totalCount}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">obj.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── sm : donut + légende 2 colonnes (réel% coloré) ───────────────────────
+  if (size === 'sm') return (
+    <div className={`bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-col h-full ${className}`}>
+      <div className="flex items-center justify-between mb-1.5 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">{title}</span>
+        <CoverageTag />
+      </div>
+      <div className="relative shrink-0" style={{ height: 110 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={slices} cx="50%" cy="50%"
+              innerRadius={32} outerRadius={48}
+              paddingAngle={2} dataKey="value" strokeWidth={0}
+            >
+              {slices.map((s, i) => <Cell key={i} fill={s.fill} />)}
+            </Pie>
+            <Tooltip content={<DonutTooltip />} wrapperStyle={{ zIndex: 50 }} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <div className={`text-sm font-bold leading-none ${centerColor}`}>{goodCount}/{totalCount}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">obj.</div>
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto mt-1.5">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+          {configured.map(s => (
+            <div key={s.name} className="flex items-center gap-1 min-w-0">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: s.fill }} />
+              <span className="text-[10px] text-gray-700 truncate">{s.name}</span>
+              <span className={`text-[10px] shrink-0 ml-auto font-medium ${DEVIATION_TEXT(s.deviation)}`}>
+                {s.value.toFixed(0)}%
+              </span>
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── md / lg : complet (réel / cible / écart) ──────────────────────────────
+  return (
+    <div className={`bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col h-full ${className}`}>
+      <div className="flex items-center justify-between mb-2 shrink-0">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-gray-600">{title}</span>
+        <CoverageTag />
+      </div>
+
+      <div className="relative shrink-0">
+        <ResponsiveContainer width="100%" height={160}>
+          <PieChart>
+            <Pie data={slices} cx="50%" cy="50%"
+              innerRadius={48} outerRadius={68}
+              paddingAngle={2} dataKey="value" strokeWidth={0}
+            >
+              {slices.map((s, i) => <Cell key={i} fill={s.fill} />)}
+            </Pie>
+            <Tooltip content={<DonutTooltip />} wrapperStyle={{ zIndex: 50 }} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <div className={`text-base font-bold leading-none ${centerColor}`}>{goodCount}/{totalCount}</div>
             <div className="text-[10px] text-gray-400 mt-0.5">objectifs</div>
           </div>
         </div>
       </div>
 
-      {/* Légende */}
-      <div className="space-y-1.5 mt-1">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 mt-1">
         {configured.map(s => (
           <div key={s.name} className="flex items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-1.5 min-w-0">

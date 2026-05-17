@@ -11,6 +11,7 @@ export default function DimensionWidget({
   showCoverage = false,
   onEmpty,
   className = '',
+  size = 'md',
 }) {
   const [loading,          setLoading]          = useState(true)
   const [targetBreakdowns, setTargetBreakdowns] = useState([])
@@ -44,6 +45,7 @@ export default function DimensionWidget({
       actual={actual}
       showCoverage={showCoverage}
       className={className}
+      size={size}
     />
   )
 }
