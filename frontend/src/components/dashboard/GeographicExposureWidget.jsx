@@ -131,7 +131,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function GeographicExposureWidget({ positions: positionsProp = null }) {
+export default function GeographicExposureWidget({ positions: positionsProp = null, size = 'md' }) {
   const [data,    setData]    = useState([])
   const [total,   setTotal]   = useState(0)
   const [loading, setLoading] = useState(true)
@@ -172,18 +172,35 @@ export default function GeographicExposureWidget({ positions: positionsProp = nu
     byCont[d.continent].push(d)
   })
 
-  return (
-    <div>
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <Treemap data={data} dataKey="value" stroke="white" content={<CustomCell />}>
-            <Tooltip content={<CustomTooltip />} />
-          </Treemap>
-        </ResponsiveContainer>
-      </div>
+  const treemapH   = size === 'lg' ? 'h-64' : 'flex-1'
+  const showLegend = size !== 'xs'
 
-      {/* Légende groupée par continent */}
-      <div className="mt-3 space-y-1.5">
+  const TreemapChart = () => (
+    <div className={`${treemapH} w-full min-h-0`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <Treemap data={data} dataKey="value" stroke="white" content={<CustomCell />}>
+          <Tooltip content={<CustomTooltip />} />
+        </Treemap>
+      </ResponsiveContainer>
+    </div>
+  )
+
+  if (size === 'xs') return (
+    <div className="h-full flex flex-col">
+      <TreemapChart />
+    </div>
+  )
+
+  if (size === 'sm' || size === 'md') return (
+    <div className="h-full flex flex-col">
+      <TreemapChart />
+    </div>
+  )
+
+  return (
+    <div className="h-full flex flex-col gap-3">
+      <TreemapChart />
+      <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
         {Object.entries(byCont).map(([continent, countries]) => (
           <div key={continent}>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">

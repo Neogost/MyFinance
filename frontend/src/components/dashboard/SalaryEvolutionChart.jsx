@@ -37,7 +37,7 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
-export default function SalaryEvolutionChart({ onHasData }) {
+export default function SalaryEvolutionChart({ onHasData, size = 'md' }) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -73,24 +73,32 @@ export default function SalaryEvolutionChart({ onHasData }) {
 
   if (data.length === 0) return null
 
+  const showLegend  = size === 'md' || size === 'lg'
+  const showTooltip = size !== 'xs'
+  const tickSz      = size === 'xs' ? 9 : 11
+  const margin      = size === 'xs'
+    ? { top: 4, right: 8, left: 0, bottom: 4 }
+    : { top: 5, right: 20, left: 20, bottom: 5 }
+
+  // En xs : 12 derniers mois uniquement
+  const chartData = size === 'xs' ? data.slice(-12) : data
+
   return (
-    <ResponsiveContainer width="100%" height={380}>
-      <LineChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+    <ResponsiveContainer width="100%" height="100%" minHeight={120}>
+      <LineChart data={chartData} margin={margin}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
         <XAxis
           dataKey="periodLabel"
-          tick={{ fontSize: 11, fill: '#6b7280' }}
+          tick={{ fontSize: tickSz, fill: '#6b7280' }}
           interval="preserveStartEnd"
         />
         <YAxis
-          tickFormatter={v => `${(v / 1000).toFixed(0)}k `}
-          tick={{ fontSize: 11, fill: '#6b7280' }}
-          width={45}
+          tickFormatter={v => `${(v / 1000).toFixed(0)}k`}
+          tick={{ fontSize: tickSz, fill: '#6b7280' }}
+          width={size === 'xs' ? 32 : 45}
         />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend
-          wrapperStyle={{ fontSize: '13px', paddingTop: '12px' }}
-        />
+        {showTooltip && <Tooltip content={<CustomTooltip />} />}
+        {showLegend && <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '12px' }} />}
         <Line
           type="monotone"
           dataKey="grossSalary"

@@ -6,7 +6,7 @@ import { computeSafetyNetTarget } from '../../utils/safetyNet'
 
 const fmtEur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
-export default function SafetyNetWidget({ user, className = '' }) {
+export default function SafetyNetWidget({ user, className = '', size = 'md' }) {
   const [current,        setCurrent]        = useState(null)
   const [expensesSummary, setExpensesSummary] = useState(null)
   const [activeContract, setActiveContract]  = useState(null)
@@ -51,6 +51,23 @@ export default function SafetyNetWidget({ user, className = '' }) {
     ? `${user.safetyNetMonths} mois de salaire`
     : 'montant fixe'
 
+  // ── xs : ligne titre+montant / barre+pct ─────────────────────────────────
+  if (size === 'xs') return (
+    <div className={`rounded-xl border ${border} ${bg} px-3 py-2 flex flex-col justify-between gap-1.5 ${className}`}>
+      <div className="flex items-center justify-between gap-2">
+        <p className={`text-xs font-semibold truncate ${textH}`}>Matelas de sécurité</p>
+        <p className={`text-sm font-bold shrink-0 ${textH} amount`}>{fmtEur.format(current)}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-white/60 rounded-full h-1.5">
+          <div className={`h-1.5 rounded-full transition-all ${bar}`} style={{ width: `${pct}%` }} />
+        </div>
+        <p className={`text-xs shrink-0 ${textS}`}>{pct.toFixed(0)} %{achieved ? ' ✓' : ''}</p>
+      </div>
+    </div>
+  )
+
+  // ── md / lg : complet ─────────────────────────────────────────────────────
   return (
     <div className={`rounded-xl border ${border} ${bg} p-4 ${className}`}>
       <div className="flex items-start justify-between mb-3">

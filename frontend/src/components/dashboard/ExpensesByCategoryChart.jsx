@@ -28,7 +28,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function ExpensesByCategoryChart({ onHasData }) {
+export default function ExpensesByCategoryChart({ onHasData, size = 'md' }) {
   const [data, setData]         = useState([])
   const [summary, setSummary]   = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -55,49 +55,72 @@ export default function ExpensesByCategoryChart({ onHasData }) {
       .finally(() => setLoading(false))
   }, [])
 
-  // savingsCapacity et savingsRate sont désormais calculés côté backend dans ExpenseSummaryDto.
   const savingsCapacity = summary?.savingsCapacity ?? null
   const savingsRate     = summary?.savingsRate ?? null
+  const totalMonthly    = summary?.totalMonthlyExpenses ?? 0
 
   if (loading) return <div className="text-center text-gray-400 py-12 text-sm">Chargement…</div>
   if (error)   return <div className="text-center text-red-500 py-12 text-sm">{error}</div>
   if (!data.length) return null
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="h-44 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={42}
-              outerRadius={72}
-              paddingAngle={2}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              {data.map(entry => (
-                <Cell
-                  key={entry.category}
-                  fill={CATEGORY_META[entry.category]?.chartColor ?? '#9ca3af'}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+  const color = (cat) => CATEGORY_META[cat]?.chartColor ?? '#9ca3af'
 
-      <div className="space-y-2">
+  const donutXs = { inner: 28, outer: 46, h: 'h-24' }
+  const donutSm = { inner: 32, outer: 54, h: 'h-28' }
+  const donutMd = { inner: 38, outer: 62, h: 'h-28' }
+  const donut   = size === 'xs' ? donutXs : size === 'sm' ? donutSm : donutMd
+
+  const DonutChart = () => (
+    <div className={`${donut.h} w-full`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={data} cx="50%" cy="50%"
+            innerRadius={donut.inner} outerRadius={donut.outer}
+            paddingAngle={2} dataKey="value" strokeWidth={0}
+          >
+            {data.map(entry => <Cell key={entry.category} fill={color(entry.category)} />)}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )
+
+  // ── xs : donut + total ────────────────────────────────────────────────────
+  if (size === 'xs') return (
+    <div className="flex flex-col items-center gap-2 h-full justify-center">
+      <DonutChart />
+      <p className="text-sm font-bold text-gray-900 amount">{fmtEur.format(totalMonthly)}<span className="text-gray-400 font-normal text-xs">/m</span></p>
+    </div>
+  )
+
+  // ── sm : donut + légende 2 colonnes ──────────────────────────────────────
+  if (size === 'sm') return (
+    <div className="h-full flex flex-col gap-2">
+      <div className="shrink-0"><DonutChart /></div>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+          {data.map(d => (
+            <div key={d.category} className="flex items-center gap-1 min-w-0">
+              <span className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color(d.category) }} />
+              <span className="text-xs text-gray-700 truncate">{d.label}</span>
+              <span className="text-xs text-gray-400 shrink-0 ml-auto">{d.pct}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  // ── md / lg : complet avec capacité d'épargne ─────────────────────────────
+  return (
+    <div className="h-full flex flex-col gap-3">
+      <div className="shrink-0"><DonutChart /></div>
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
         {data.map(d => (
           <div key={d.category} className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: CATEGORY_META[d.category]?.chartColor ?? '#9ca3af' }}
-              />
+              <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color(d.category) }} />
               <span className="text-xs text-gray-700 truncate">{d.label}</span>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -110,7 +133,7 @@ export default function ExpensesByCategoryChart({ onHasData }) {
         <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
           <span className="text-xs font-semibold text-gray-900">Total mensuel</span>
           <span className="text-xs font-bold text-gray-900 tabular-nums amount">
-            {fmtEur.format(summary?.totalMonthlyExpenses ?? 0)}
+            {fmtEur.format(totalMonthly)}
           </span>
         </div>
 
@@ -129,7 +152,7 @@ export default function ExpensesByCategoryChart({ onHasData }) {
                       </div>
                       <div className="flex justify-between gap-6 text-red-300">
                         <span>− Dépenses récurrentes</span>
-                        <span className="font-medium amount">−{fmtEur.format(summary.totalMonthlyExpenses ?? 0)}</span>
+                        <span className="font-medium amount">−{fmtEur.format(totalMonthly)}</span>
                       </div>
                       <div className="border-t border-gray-500 pt-1.5 flex justify-between gap-6 font-semibold">
                         <span>= Capacité d'épargne</span>

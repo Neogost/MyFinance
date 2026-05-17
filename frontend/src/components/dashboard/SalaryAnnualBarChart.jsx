@@ -248,7 +248,7 @@ function buildYearlyData(contracts, revisionsMap, bonusesMap = {}, benefitsMap =
   }).filter(Boolean)
 }
 
-export default function SalaryAnnualBarChart() {
+export default function SalaryAnnualBarChart({ size = 'md' }) {
   const [data, setData]               = useState([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
@@ -288,32 +288,37 @@ export default function SalaryAnnualBarChart() {
 
   const hasNetAfterTax = data.some(d => d.netAfterTax != null)
 
+  const showLegend   = size === 'lg'
+  const showCheckbox = size === 'lg' && hasOtherIncomes
+  const tickSize     = size === 'xs' ? 9 : 11
+  const margin       = size === 'xs' ? { top: 4, right: 8, left: 0, bottom: 4 } : { top: 5, right: 20, left: 20, bottom: 5 }
+  const yWidth       = size === 'xs' ? 32 : 45
+
   return (
-    <div>
-      {hasOtherIncomes && (
-        <div className="flex flex-wrap gap-4 mb-3">
-          {hasOtherIncomes && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={showOtherIncomes} onChange={e => setShowOtherIncomes(e.target.checked)} className="accent-sky-500 w-4 h-4" />
-              <span className="text-sm text-gray-600">Revenus complémentaires</span>
-            </label>
-          )}
+    <div className="h-full flex flex-col">
+      {showCheckbox && (
+        <div className="flex flex-wrap gap-4 mb-3 shrink-0">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={showOtherIncomes} onChange={e => setShowOtherIncomes(e.target.checked)} className="accent-sky-500 w-4 h-4" />
+            <span className="text-sm text-gray-600">Revenus complémentaires</span>
+          </label>
         </div>
       )}
-    <ResponsiveContainer width="100%" height={340}>
-      <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }} barCategoryGap="35%">
+    <div className="flex-1 min-h-0">
+    <ResponsiveContainer width="100%" height="100%" minHeight={120}>
+      <BarChart data={data} margin={margin} barCategoryGap="35%">
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-        <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#6b7280' }} />
+        <XAxis dataKey="year" tick={{ fontSize: tickSize, fill: '#6b7280' }} />
         <YAxis
           tick={({ x, y, payload }) => (
-            <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={11} className="amount">
+            <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={tickSize} className="amount">
               {`${(payload.value / 1000).toFixed(0)}k`}
             </text>
           )}
-          width={45}
+          width={yWidth}
         />
-        <Tooltip content={<CustomTooltip showOtherIncomes={showOtherIncomes} />} cursor={{ fill: '#f9fafb' }} />
-        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />
+        {size !== 'xs' && <Tooltip content={<CustomTooltip showOtherIncomes={showOtherIncomes} />} cursor={{ fill: '#f9fafb' }} />}
+        {showLegend && <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />}
 
         {/* Segment bas : net d'impôt (affiché uniquement si profil fiscal renseigné) */}
         {hasNetAfterTax && (
@@ -349,6 +354,7 @@ export default function SalaryAnnualBarChart() {
         )}
       </BarChart>
     </ResponsiveContainer>
+    </div>
     </div>
   )
 }

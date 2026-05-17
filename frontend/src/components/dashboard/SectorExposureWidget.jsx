@@ -73,7 +73,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function SectorExposureWidget({ positions: positionsProp = null }) {
+export default function SectorExposureWidget({ positions: positionsProp = null, size = 'md' }) {
   const [data,    setData]    = useState([])
   const [total,   setTotal]   = useState(0)
   const [loading, setLoading] = useState(true)
@@ -107,22 +107,34 @@ export default function SectorExposureWidget({ positions: positionsProp = null }
     </div>
   )
 
-  return (
-    <div>
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <Treemap
-            data={data}
-            dataKey="value"
-            stroke="white"
-            content={<CustomCell />}
-          >
-            <Tooltip content={<CustomTooltip />} />
-          </Treemap>
-        </ResponsiveContainer>
-      </div>
+  const treemapH = size === 'lg' ? 'h-64' : 'flex-1'
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+  const TreemapChart = () => (
+    <div className={`${treemapH} w-full min-h-0`}>
+      <ResponsiveContainer width="100%" height="100%">
+        <Treemap data={data} dataKey="value" stroke="white" content={<CustomCell />}>
+          <Tooltip content={<CustomTooltip />} />
+        </Treemap>
+      </ResponsiveContainer>
+    </div>
+  )
+
+  if (size === 'xs') return (
+    <div className="h-full flex flex-col">
+      <TreemapChart />
+    </div>
+  )
+
+  if (size === 'sm' || size === 'md') return (
+    <div className="h-full flex flex-col">
+      <TreemapChart />
+    </div>
+  )
+
+  return (
+    <div className="h-full flex flex-col gap-3">
+      <TreemapChart />
+      <div className="flex-1 overflow-y-auto min-h-0 flex flex-wrap gap-x-4 gap-y-1.5 content-start">
         {data.map((d, i) => (
           <div key={d.name} className="flex items-center gap-1.5 text-xs text-gray-600">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: PALETTE[i % PALETTE.length] }} />

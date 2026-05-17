@@ -56,7 +56,7 @@ function buildCategoryDot(cat) {
   }
 }
 
-export default function PatrimoineEvolutionChart() {
+export default function PatrimoineEvolutionChart({ size = 'md' }) {
   const [rawData,    setRawData]    = useState([])
   const [categories, setCategories] = useState([])
   const [liveTs,     setLiveTs]     = useState(null)
@@ -141,81 +141,89 @@ export default function PatrimoineEvolutionChart() {
   const timestamps = chartData.map(d => d.timestamp)
   const xDomain    = [Math.min(...timestamps), Math.max(...timestamps)]
 
+  const showToggle  = size !== 'xs'
+  const showLegend  = size === 'md' || size === 'lg'
+  const chartMargin = size === 'xs'
+    ? { top: 4, right: 8, left: 0, bottom: 4 }
+    : { top: 5, right: 20, left: 20, bottom: 5 }
+
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-end mb-3 shrink-0">
-        <div className="flex border border-gray-200 rounded-lg overflow-hidden text-xs">
-          <button
-            onClick={() => setMode('absolute')}
-            className={`px-3 py-1.5 transition ${mode === 'absolute' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-            Valeur (€)
-          </button>
-          <button
-            onClick={() => setMode('percent')}
-            className={`px-3 py-1.5 border-l border-gray-200 transition ${mode === 'percent' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
-            Répartition (%)
-          </button>
+      {showToggle && (
+        <div className="flex justify-end mb-3 shrink-0">
+          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-xs">
+            <button
+              onClick={() => setMode('absolute')}
+              className={`px-3 py-1.5 transition ${mode === 'absolute' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              Valeur (€)
+            </button>
+            <button
+              onClick={() => setMode('percent')}
+              className={`px-3 py-1.5 border-l border-gray-200 transition ${mode === 'percent' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+              Répartition (%)
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 min-h-0">
-      <ResponsiveContainer width="100%" height="100%" minHeight={240}>
-        <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-          <defs>
-            {categories.map(cat => (
-              <linearGradient key={cat} id={`grad-${cat}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={CATEGORY_META[cat].chartColor} stopOpacity={0.4} />
-                <stop offset="95%" stopColor={CATEGORY_META[cat].chartColor} stopOpacity={0.05} />
-              </linearGradient>
-            ))}
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="timestamp"
-            type="number"
-            scale="time"
-            domain={xDomain}
-            tickFormatter={formatTs}
-            tick={{ fontSize: 11, fill: '#6b7280' }}
-            tickCount={6}
-          />
-          <YAxis
-            tick={({ x, y, payload }) => (
-              <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={11} className="amount">
-                {mode === 'percent' ? `${payload.value.toFixed(0)} %` : `${(payload.value / 1000).toFixed(0)}k`}
-              </text>
+        <ResponsiveContainer width="100%" height="100%" minHeight={120}>
+          <AreaChart data={chartData} margin={chartMargin}>
+            <defs>
+              {categories.map(cat => (
+                <linearGradient key={cat} id={`grad-${cat}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={CATEGORY_META[cat].chartColor} stopOpacity={0.4} />
+                  <stop offset="95%" stopColor={CATEGORY_META[cat].chartColor} stopOpacity={0.05} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis
+              dataKey="timestamp"
+              type="number"
+              scale="time"
+              domain={xDomain}
+              tickFormatter={formatTs}
+              tick={{ fontSize: size === 'xs' ? 9 : 11, fill: '#6b7280' }}
+              tickCount={size === 'xs' ? 3 : 6}
+            />
+            <YAxis
+              tick={({ x, y, payload }) => (
+                <text x={x} y={y} dy={4} textAnchor="end" fill="#6b7280" fontSize={size === 'xs' ? 9 : 11} className="amount">
+                  {mode === 'percent' ? `${payload.value.toFixed(0)}%` : `${(payload.value / 1000).toFixed(0)}k`}
+                </text>
+              )}
+              width={size === 'xs' ? 32 : 48}
+              domain={mode === 'percent' ? [0, 100] : [0, 'auto']}
+            />
+            <Tooltip content={<CustomTooltip mode={mode} />} />
+            {showLegend && <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />}
+            {liveTs && (
+              <ReferenceLine
+                x={liveTs}
+                stroke="#6366f1"
+                strokeDasharray="4 3"
+                strokeWidth={1.5}
+                label={{ value: "Auj.", position: 'insideTopRight', fontSize: 10, fill: '#6366f1' }}
+              />
             )}
-            width={48}
-            domain={mode === 'percent' ? [0, 100] : [0, 'auto']}
-          />
-          <Tooltip content={<CustomTooltip mode={mode} />} />
-          <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }} />
-          {liveTs && (
-            <ReferenceLine
-              x={liveTs}
-              stroke="#6366f1"
-              strokeDasharray="4 3"
-              strokeWidth={1.5}
-              label={{ value: "Auj.", position: 'insideTopRight', fontSize: 10, fill: '#6366f1' }}
-            />
-          )}
-          {categories.map(cat => (
-            <Area
-              key={cat}
-              type="monotone"
-              dataKey={cat}
-              name={CATEGORY_META[cat].label}
-              stackId="a"
-              stroke={CATEGORY_META[cat].chartColor}
-              fill={`url(#grad-${cat})`}
-              strokeWidth={1.5}
-              dot={buildCategoryDot(cat)}
-              activeDot={{ r: 5 }}
-              connectNulls
-            />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
+            {categories.map(cat => (
+              <Area
+                key={cat}
+                type="monotone"
+                dataKey={cat}
+                name={CATEGORY_META[cat].label}
+                stackId="a"
+                stroke={CATEGORY_META[cat].chartColor}
+                fill={`url(#grad-${cat})`}
+                strokeWidth={1.5}
+                dot={buildCategoryDot(cat)}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   )

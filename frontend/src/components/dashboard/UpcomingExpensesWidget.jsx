@@ -18,10 +18,8 @@ function isActive(e) {
   return new Date(e.endDate + 'T00:00:00') >= new Date()
 }
 
-/** Retourne la prochaine date de prélèvement à partir d'aujourd'hui (minuit). */
 function nextOccurrence(expense) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
-
   if (expense.frequency === 'MONTHLY' && expense.paymentDay) {
     const day = expense.paymentDay
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), day)
@@ -29,7 +27,6 @@ function nextOccurrence(expense) {
       ? thisMonth
       : new Date(today.getFullYear(), today.getMonth() + 1, day)
   }
-
   if (expense.frequency === 'ANNUAL' && expense.startDate) {
     const ref = new Date(expense.startDate + 'T00:00:00')
     const thisYear = new Date(today.getFullYear(), ref.getMonth(), ref.getDate())
@@ -37,11 +34,9 @@ function nextOccurrence(expense) {
       ? thisYear
       : new Date(today.getFullYear() + 1, ref.getMonth(), ref.getDate())
   }
-
   return null
 }
 
-/** Fenêtre d'affichage : 14j pour mensuelles, 60j pour annuelles. */
 function inWindow(expense, date) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const diff = Math.round((date - today) / 86_400_000)
@@ -61,6 +56,7 @@ function fmt(n) {
   return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// ── Ligne complète (md/lg) ────────────────────────────────────────────────────
 function ExpenseRow({ e, isUrgent }) {
   const dot    = CAT_DOT[e.category] ?? CAT_DOT.AUTRE
   const amount = e.frequency === 'ANNUAL' ? e.annualAmount : e.monthlyAmount
@@ -89,6 +85,41 @@ function ExpenseRow({ e, isUrgent }) {
   )
 }
 
+// ── Ligne compacte (sm) ───────────────────────────────────────────────────────
+function ExpenseRowSm({ e, isUrgent }) {
+  const dot    = CAT_DOT[e.category] ?? CAT_DOT.AUTRE
+  const amount = e.frequency === 'ANNUAL' ? e.annualAmount : e.monthlyAmount
+  return (
+    <li className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition
+      ${isUrgent ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      <span className="text-xs font-medium text-gray-800 truncate flex-1 min-w-0">{e.label}</span>
+      <span className={`text-[11px] shrink-0 font-medium ${isUrgent ? 'text-orange-500' : 'text-gray-400'}`}>
+        {relativeDate(e.nextDate)}
+      </span>
+      <span className="text-xs font-bold text-gray-900 whitespace-nowrap shrink-0 amount">
+        {fmt(amount ?? 0)} €
+      </span>
+    </li>
+  )
+}
+
+// ── Ligne ultra-compacte (xs) ─────────────────────────────────────────────────
+function ExpenseRowXs({ e, isUrgent }) {
+  const dot    = CAT_DOT[e.category] ?? CAT_DOT.AUTRE
+  const amount = e.frequency === 'ANNUAL' ? e.annualAmount : e.monthlyAmount
+  return (
+    <li className={`flex items-center gap-1.5 px-2 py-1 rounded-md border transition
+      ${isUrgent ? 'border-orange-200 bg-orange-50' : 'border-gray-100 bg-gray-50'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+      <span className="text-[11px] font-medium text-gray-800 truncate flex-1 min-w-0">{e.label}</span>
+      <span className="text-[11px] font-bold text-gray-900 whitespace-nowrap shrink-0 amount">
+        {fmt(amount ?? 0)} €
+      </span>
+    </li>
+  )
+}
+
 function FallbackItem({ expense: e }) {
   const dot    = CAT_DOT[e.category] ?? CAT_DOT.AUTRE
   const amount = e.annualAmount
@@ -111,7 +142,7 @@ function FallbackItem({ expense: e }) {
   )
 }
 
-export default function UpcomingExpensesWidget({ onNavigate }) {
+export default function UpcomingExpensesWidget({ onNavigate, size = 'md' }) {
   const [expenses, setExpenses] = useState([])
   const [loading,  setLoading]  = useState(true)
 
@@ -122,40 +153,102 @@ export default function UpcomingExpensesWidget({ onNavigate }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const { upcoming, fallbackAnnual } = useMemo(() => {
+  const { upcoming, comingUp, fallbackAnnual, windowTotal } = useMemo(() => {
     const withDates = expenses
       .filter(isActive)
       .map(e => ({ ...e, nextDate: nextOccurrence(e) }))
       .filter(e => e.nextDate)
+      .sort((a, b) => a.nextDate - b.nextDate)
 
+    const maxItems = size === 'xs' ? 3 : size === 'sm' ? 4 : 6
     const inWindowItems = withDates
       .filter(e => inWindow(e, e.nextDate))
-      .sort((a, b) => a.nextDate - b.nextDate)
-      .slice(0, 6)
+      .slice(0, maxItems)
 
-    // Fallback : prochaine dépense annuelle quelle que soit la date
-    const nextAnnual = inWindowItems.length === 0
+    // Pour md/lg : si moins de 4 items dans la fenêtre, compléter avec les suivants
+    const outOfWindow = (size !== 'xs' && size !== 'sm' && inWindowItems.length < 4)
       ? withDates
-          .filter(e => e.frequency === 'ANNUAL')
-          .sort((a, b) => a.nextDate - b.nextDate)[0] ?? null
+          .filter(e => !inWindow(e, e.nextDate))
+          .slice(0, 4 - inWindowItems.length)
+      : []
+
+    const nextAnnual = inWindowItems.length === 0 && outOfWindow.length === 0
+      ? withDates.filter(e => e.frequency === 'ANNUAL')[0] ?? null
       : null
 
-    return { upcoming: inWindowItems, fallbackAnnual: nextAnnual }
-  }, [expenses])
+    // Total mensuel des items dans la fenêtre
+    const total = inWindowItems.reduce((s, e) => {
+      const amount = e.frequency === 'ANNUAL' ? (e.annualAmount ?? 0) / 12 : (e.monthlyAmount ?? 0)
+      return s + amount
+    }, 0)
 
+    return { upcoming: inWindowItems, comingUp: outOfWindow, fallbackAnnual: nextAnnual, windowTotal: total }
+  }, [expenses, size])
+
+  const isUrgent = (e) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    return Math.round((e.nextDate - today) / 86_400_000) <= 3
+  }
+
+  // ── xs : liste ultra-compacte, sans titre ni sous-titre ──────────────────
+  if (size === 'xs') return (
+    <div className="flex flex-col h-full">
+      {loading && <p className="text-xs text-gray-400">Chargement…</p>}
+      {!loading && upcoming.length === 0 && !fallbackAnnual && (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-xs text-gray-400 text-center">Aucun prélèvement à venir.</p>
+        </div>
+      )}
+      {!loading && upcoming.length > 0 && (
+        <ul className="flex flex-col gap-1.5 flex-1">
+          {upcoming.map((e, i) => <ExpenseRowXs key={i} e={e} isUrgent={isUrgent(e)} />)}
+        </ul>
+      )}
+    </div>
+  )
+
+  // ── sm : titre + voir tout, liste compacte sans sous-titre ───────────────
+  if (size === 'sm') return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-2 shrink-0">
+        <h3 className="text-sm font-semibold text-gray-800">Prochains prélèvements</h3>
+        {onNavigate && (
+          <button onClick={() => onNavigate('subscription-calendar')}
+            className="text-xs text-indigo-600 hover:text-indigo-800 transition shrink-0">
+            Voir tout →
+          </button>
+        )}
+      </div>
+      {loading && <p className="text-xs text-gray-400">Chargement…</p>}
+      {!loading && upcoming.length === 0 && !fallbackAnnual && (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-xs text-gray-400 text-center">Aucun prélèvement à venir.</p>
+        </div>
+      )}
+      {!loading && upcoming.length === 0 && fallbackAnnual && (
+        <FallbackItem expense={fallbackAnnual} />
+      )}
+      {!loading && upcoming.length > 0 && (
+        <ul className="flex flex-col gap-1.5 flex-1">
+          {upcoming.map((e, i) => <ExpenseRowSm key={i} e={e} isUrgent={isUrgent(e)} />)}
+        </ul>
+      )}
+    </div>
+  )
+
+  // ── md / lg : complet avec "À venir" + total ─────────────────────────────
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1 shrink-0">
         <h3 className="text-base font-semibold text-gray-800">Prochains prélèvements</h3>
         {onNavigate && (
-          <button
-            onClick={() => onNavigate('subscription-calendar')}
+          <button onClick={() => onNavigate('subscription-calendar')}
             className="text-xs text-indigo-600 hover:text-indigo-800 transition">
             Voir tout →
           </button>
         )}
       </div>
-      <p className="text-xs text-gray-400 mb-4">
+      <p className="text-xs text-gray-400 mb-4 shrink-0">
         Mensuels dans les 14 jours · Annuels dans les 60 jours
       </p>
 
@@ -181,13 +274,45 @@ export default function UpcomingExpensesWidget({ onNavigate }) {
       )}
 
       {!loading && upcoming.length > 0 && (
-        <ul className="flex flex-col gap-2.5 flex-1">
-          {upcoming.map((e, i) => {
-            const today = new Date(); today.setHours(0, 0, 0, 0)
-            const diff  = Math.round((e.nextDate - today) / 86_400_000)
-            return <ExpenseRow key={i} e={e} isUrgent={diff <= 3} />
-          })}
-        </ul>
+        <div className="flex flex-col flex-1 min-h-0">
+          <ul className="flex flex-col gap-2.5">
+            {upcoming.map((e, i) => <ExpenseRow key={i} e={e} isUrgent={isUrgent(e)} />)}
+          </ul>
+
+          {/* Section "À venir" — items hors fenêtre pour compléter */}
+          {comingUp.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">À venir</p>
+              <ul className="flex flex-col gap-1.5">
+                {comingUp.map((e, i) => {
+                  const amount = e.frequency === 'ANNUAL' ? e.annualAmount : e.monthlyAmount
+                  const dot = CAT_DOT[e.category] ?? CAT_DOT.AUTRE
+                  return (
+                    <li key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-100 bg-gray-50/50 opacity-70">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                      <span className="text-xs text-gray-600 truncate flex-1 min-w-0">{e.label}</span>
+                      <span className="text-xs text-gray-400 shrink-0">
+                        {e.nextDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-700 whitespace-nowrap shrink-0 amount">
+                        {fmt(amount ?? 0)} €
+                        <span className="text-gray-400 font-normal">{e.frequency === 'ANNUAL' ? '/an' : '/m'}</span>
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+
+          {/* Total mensuel des prélèvements imminents */}
+          {windowTotal > 0 && (
+            <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between shrink-0">
+              <span className="text-xs text-gray-500">Total imminent <span className="text-gray-300">(équiv. mensuel)</span></span>
+              <span className="text-xs font-bold text-gray-800 amount">{fmt(windowTotal)} €</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
