@@ -10,6 +10,7 @@ function SectionDivider({ label, subtitle, editable, onLabelChange, onSubtitleCh
   const [draftLabel,      setDraftLabel]      = useState(label)
   const [draftSubtitle,   setDraftSubtitle]   = useState(subtitle ?? '')
 
+  
   function commitLabel() {
     setEditingLabel(false)
     if (draftLabel.trim() && draftLabel !== label) onLabelChange(draftLabel.trim())
@@ -232,19 +233,24 @@ export default function DashboardGrid({
     onHideWidget(key)
   }
 
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+
   // Synchronise minW/minH depuis le registre pour chaque breakpoint
   // (le layout persisté en backend peut avoir des valeurs périmées)
   function syncConstraints(bpItems) {
     return (bpItems ?? []).map(item => {
-      const meta = WIDGETS[item.i]
-      if (!meta) return item
-      return {
-        ...item,
+      // On retire toujours isDraggable/isResizable/static pour éviter qu'une
+      // valeur persistée en base ne court-circuite les props de la grille
+      const { isDraggable: _d, isResizable: _r, static: _s, ...rest } = item
+      const meta = WIDGETS[rest.i]
+      const base = meta ? {
+        ...rest,
         minW: meta.defaultSize.minW,
         minH: meta.defaultSize.minH,
         ...(meta.defaultSize.maxW != null ? { maxW: meta.defaultSize.maxW } : {}),
         ...(meta.defaultSize.maxH != null ? { maxH: meta.defaultSize.maxH } : {}),
-      }
+      } : rest
+      return isMobile ? { ...base, isDraggable: false, isResizable: false } : base
     })
   }
   const syncedLayouts = {
@@ -265,8 +271,8 @@ export default function DashboardGrid({
         margin={[16, 16]}
         containerPadding={[0, 0]}
         compactType="vertical"
-        isDraggable={editMode}
-        isResizable={editMode}
+        isDraggable={editMode && !isMobile}
+        isResizable={editMode && !isMobile}
         draggableHandle=".drag-handle"
         onLayoutChange={handleLayoutChange}
         useCSSTransforms
