@@ -172,7 +172,19 @@ export default function DashboardGrid({
   }, [])
 
   const handleLayoutChange = useCallback((currentLayout, allLayouts) => {
-    onLayoutChange(allLayouts)
+    const stripped = Object.fromEntries(
+      Object.entries(allLayouts).map(([bp, items]) => [
+        bp,
+        (items ?? []).map(item => {
+          const clean = { ...item }
+          delete clean.isDraggable
+          delete clean.isResizable
+          delete clean.static
+          return clean
+        }),
+      ])
+    )
+    onLayoutChange(stripped)
   }, [onLayoutChange])
 
   function renderItem(item) {
@@ -241,7 +253,8 @@ export default function DashboardGrid({
     return (bpItems ?? []).map(item => {
       // On retire toujours isDraggable/isResizable/static pour éviter qu'une
       // valeur persistée en base ne court-circuite les props de la grille
-      const { isDraggable: _d, isResizable: _r, static: _s, ...rest } = item
+      const rest = { ...item }
+      delete rest.isDraggable; delete rest.isResizable; delete rest.static
       const meta = WIDGETS[rest.i]
       const base = meta ? {
         ...rest,

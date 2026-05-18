@@ -386,7 +386,7 @@ export default function DashboardPage({ user, familyMode, onNavigate, hideValues
           )}
           <button
             onClick={() => setEditMode(e => !e)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition shadow-sm
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition shadow-sm
               ${editMode
                 ? 'text-indigo-600 bg-indigo-50 border-indigo-300'
                 : 'text-gray-500 bg-white border-gray-200 hover:border-indigo-400 hover:text-indigo-600'}`}

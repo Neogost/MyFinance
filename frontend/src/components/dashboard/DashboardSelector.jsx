@@ -57,7 +57,7 @@ export default function DashboardSelector({ dashboards, activeDashboardId, onSel
       </div>
 
       {/* Select mobile */}
-      <div className="sm:hidden flex items-center gap-2">
+      <div className="sm:hidden">
         <select
           value={activeDashboardId ?? ''}
           onChange={e => onSelect(Number(e.target.value))}
@@ -67,11 +67,6 @@ export default function DashboardSelector({ dashboards, activeDashboardId, onSel
             <option key={d.id} value={d.id}>{d.name}{d.isDefault ? ' ★' : ''}</option>
           ))}
         </select>
-        <button onClick={onManage} className="text-gray-400 hover:text-gray-600 transition">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
       </div>
     </div>
   )
